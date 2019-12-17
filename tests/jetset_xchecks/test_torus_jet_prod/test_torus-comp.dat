@@ -1,0 +1,6 @@
+#######################################################################################################
+#_obs is as observed from the earth: beaming+cosmo   
+#_src is in the AGN rest frame     :cosmo         
+#_blob is in the blob rest frame                   
+# log(nu_obs)|  log(nu_obs*F_nu_obs)|  nu_obs| nu_obs*F_nu_obs|   nu_src| nu_src*L_nu_src|  nu_blob| nu_blob*L_nu_blob|     
+#######################################################################################################
