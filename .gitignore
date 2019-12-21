@@ -1,0 +1,9 @@
+*.so
+*.py[cod]
+/.idea
+/.DS_Store
+*.egg-info
+*.egg
+*.xcodeproj
+*.ipynb_checkpoints
+/build
