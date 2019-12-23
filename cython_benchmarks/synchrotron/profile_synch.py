@@ -4,6 +4,7 @@ import astropy.constants as const
 import astropy.units as u
 from astropy.coordinates import Distance
 import matplotlib.pyplot as plt
+
 sys.path.append("../../")
 from agnpy.particles import Blob
 import timeit
@@ -11,16 +12,19 @@ import pstats, cProfile
 import core_synch
 import core_synch_cy
 
+
 def profile(command, label):
-	"""function to profile a given command"""
-	print(f"->{label} profiling section...")
-	cProfile.run(command, f"Profile_{label}.prof")
-	s = pstats.Stats(f"Profile_{label}.prof")
-	s.strip_dirs().sort_stats("time").print_stats(10)
+    """function to profile a given command"""
+    print(f"->{label} profiling section...")
+    cProfile.run(command, f"Profile_{label}.prof")
+    s = pstats.Stats(f"Profile_{label}.prof")
+    s.strip_dirs().sort_stats("time").print_stats(10)
+
 
 def timing(command, number):
-	"""function to time a given command, returns time in seconds"""
-	return timeit.timeit(command, globals=globals(), number=number)
+    """function to time a given command, returns time in seconds"""
+    return timeit.timeit(command, globals=globals(), number=number)
+
 
 ME = 9.10938356e-28
 C = 2.99792458e10
@@ -70,7 +74,22 @@ timer_cy_ssc = timing(command_cy_ssc, number)
 print(f"numpy / cython ssc speedup factor: {timer_py_ssc / timer_cy_ssc:.2f}")
 
 plt.loglog(epsilon_syn, core_synch.com_sed_emissivity(epsilon_syn, gamma, N_e, B.value))
-plt.loglog(epsilon_syn, core_synch_cy.com_sed_emissivity(epsilon_syn, gamma, N_e, B.value), ls=":")
-plt.loglog(epsilon_ssc, core_synch.ssc_sed_emissivity(epsilon_syn, com_sed_syn_py, epsilon_ssc, gamma, N_e, B.value, R_b.value))
-plt.loglog(epsilon_ssc, core_synch_cy.ssc_sed_emissivity(epsilon_syn, com_sed_syn_cy, epsilon_ssc, gamma, N_e, B.value, R_b.value), ls=":")
+plt.loglog(
+    epsilon_syn,
+    core_synch_cy.com_sed_emissivity(epsilon_syn, gamma, N_e, B.value),
+    ls=":",
+)
+plt.loglog(
+    epsilon_ssc,
+    core_synch.ssc_sed_emissivity(
+        epsilon_syn, com_sed_syn_py, epsilon_ssc, gamma, N_e, B.value, R_b.value
+    ),
+)
+plt.loglog(
+    epsilon_ssc,
+    core_synch_cy.ssc_sed_emissivity(
+        epsilon_syn, com_sed_syn_cy, epsilon_ssc, gamma, N_e, B.value, R_b.value
+    ),
+    ls=":",
+)
 plt.show()

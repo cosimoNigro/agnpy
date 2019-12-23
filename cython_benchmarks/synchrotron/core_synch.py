@@ -7,6 +7,7 @@ E = 4.80320425e-10
 H = 6.62607004e-27
 SIGMA_T = 6.65245872e-25
 
+
 def R(x):
     term_1_num = 1.808 * np.power(x, 1 / 3)
     term_1_denom = np.sqrt(1 + 3.4 * np.power(x, 2 / 3))
@@ -14,6 +15,7 @@ def R(x):
     term_2_denom = 1 + 1.353 * np.power(x, 2 / 3) + 0.217 * np.power(x, 4 / 3)
     value = term_1_num / term_1_denom * term_2_num / term_2_denom * np.exp(-x)
     return value
+
 
 def com_sed_emissivity(epsilon, gamma, N_e, B):
     prefactor = np.sqrt(3) * epsilon * np.power(E, 3) * B / H
@@ -26,11 +28,13 @@ def com_sed_emissivity(epsilon, gamma, N_e, B):
     integrand = _N_e * R(x)
     return prefactor * np.trapz(integrand, gamma, axis=0)
 
+
 def F_c(q, gamma_e):
     term_1 = 2 * q * np.log(q)
     term_2 = (1 + 2 * q) * (1 - q)
     term_3 = 1 / 2 * np.power(gamma_e * q, 2) / (1 + gamma_e * q) * (1 - q)
     return term_1 + term_2 + term_3
+
 
 def simple_kernel(gamma, epsilon, epsilon_s):
     gamma_e = 4 * gamma * epsilon
@@ -41,6 +45,7 @@ def simple_kernel(gamma, epsilon, epsilon_s):
     condition = (q_min <= q) * (q <= 1)
     values[~condition] = 0
     return values
+
 
 def ssc_sed_emissivity(epsilon_syn, com_syn_emissivity, epsilon, gamma, N_e, B, R_b):
     _gamma = gamma.reshape(gamma.size, 1, 1)
