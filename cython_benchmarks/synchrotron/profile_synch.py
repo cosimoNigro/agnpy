@@ -11,6 +11,17 @@ import pstats, cProfile
 import core_synch
 import core_synch_cy
 
+def profile(command, label):
+	"""function to profile a given command"""
+	print(f"->{label} profiling section...")
+	cProfile.run(command, f"Profile_{label}.prof")
+	s = pstats.Stats(f"Profile_{label}.prof")
+	s.strip_dirs().sort_stats("time").print_stats(10)
+
+def timing(command, number):
+	"""function to time a given command, returns time in seconds"""
+	return timeit.timeit(command, globals=globals(), number=number)
+
 ME = 9.10938356e-28
 C = 2.99792458e10
 E = 4.80320425e-10
@@ -30,41 +41,36 @@ blob = Blob(R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict)
 print(f"total density {blob.norm:.2e}")
 print(f"total energy {blob.W_e:.2e}")
 
-nu = np.logspace(8, 21)
+nu_syn = np.logspace(8, 21)
+nu_ssc = np.logspace(15, 30)
 
-epsilon = H * nu / MEC2
+epsilon_syn = H * nu_syn / MEC2
+epsilon_ssc = H * nu_ssc / MEC2
 gamma = blob.gamma
 N_e = blob.N_e(gamma)
-R_b = blob.R_b
+com_sed_syn_py = core_synch.com_sed_emissivity(epsilon_syn, gamma, N_e, B.value)
+com_sed_syn_cy = core_synch_cy.com_sed_emissivity(epsilon_syn, gamma, N_e, B.value)
 
-number = 1000
-print("\n\n python testing")
-py_command = "core_synch.com_sed_emissivity(epsilon, gamma, N_e, B.value)"
-cy_command = "core_synch_cy.com_sed_emissivity(epsilon, gamma, N_e, B.value)"
+number = 10
+command_py_syn = "core_synch.com_sed_emissivity(epsilon_syn, gamma, N_e, B.value)"
+command_cy_syn = "core_synch_cy.com_sed_emissivity(epsilon_syn, gamma, N_e, B.value)"
+command_py_ssc = "core_synch.ssc_sed_emissivity(epsilon_syn, com_sed_syn_py, epsilon_ssc, gamma, N_e, B.value, R_b.value)"
+command_cy_ssc = "core_synch_cy.ssc_sed_emissivity(epsilon_syn, com_sed_syn_cy, epsilon_ssc, gamma, N_e, B.value, R_b.value)"
 
-print("...synch profiling section...")
-cProfile.run(py_command, "Profile.prof")
-s = pstats.Stats("Profile.prof")
-s.strip_dirs().sort_stats("time").print_stats(10)
+profile(command_py_syn, "synch_py")
+timer_py_syn = timing(command_py_syn, number)
+profile(command_cy_syn, "synch_cy")
+timer_cy_syn = timing(command_cy_syn, number)
+print(f"numpy / cython synch speedup factor: {timer_py_syn / timer_cy_syn:.2f}")
 
-print("...synch timing section...")
-timer_py = timeit.timeit(py_command, globals=globals(), number=number)
-print(f"{timer_py} s / {number} = {timer_py / number:.2e} s")
+profile(command_py_ssc, "ssc_py")
+timer_py_ssc = timing(command_py_ssc, number)
+profile(command_cy_ssc, "ssc_cy")
+timer_cy_ssc = timing(command_cy_ssc, number)
+print(f"numpy / cython ssc speedup factor: {timer_py_ssc / timer_cy_ssc:.2f}")
 
-print("\n\n cython testing")
-
-print("...synch profiling section...")
-cProfile.run(cy_command, "Profile.prof")
-s = pstats.Stats("Profile.prof")
-s.strip_dirs().sort_stats("time").print_stats(10)
-
-print("...synch timing section...")
-timer_cy = timeit.timeit(cy_command, globals=globals(), number=number)
-print(f"{timer_cy} s / {number} = {timer_cy / number:.2e} s")
-
-print(f"speedup factor: {timer_py / timer_cy:.2f}")
-
-plt.loglog(epsilon, core_synch.com_sed_emissivity(epsilon, gamma, N_e, B.value))
-plt.loglog(epsilon, core_synch_cy.com_sed_emissivity(epsilon, gamma, N_e, B.value), ls=":")
+plt.loglog(epsilon_syn, core_synch.com_sed_emissivity(epsilon_syn, gamma, N_e, B.value))
+plt.loglog(epsilon_syn, core_synch_cy.com_sed_emissivity(epsilon_syn, gamma, N_e, B.value), ls=":")
+plt.loglog(epsilon_ssc, core_synch.ssc_sed_emissivity(epsilon_syn, com_sed_syn_py, epsilon_ssc, gamma, N_e, B.value, R_b.value))
+plt.loglog(epsilon_ssc, core_synch_cy.ssc_sed_emissivity(epsilon_syn, com_sed_syn_cy, epsilon_ssc, gamma, N_e, B.value, R_b.value), ls=":")
 plt.show()
-
