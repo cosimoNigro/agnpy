@@ -82,7 +82,7 @@ def _broken_power_law2_ssa_integrand(gamma, k_e, p1, p2, gamma_b, gamma_min, gam
 class PowerLaw:
     """Class for power law spectrum initialization"""
 
-    def __init__(self, k_e=1 * u.Unit("cm-3"), p=2.5, gamma_min=1e2, gamma_max=1e5):
+    def __init__(self, k_e, p, gamma_min, gamma_max):
         self.k_e = k_e
         self.p = p
         self.gamma_min = gamma_min
@@ -91,22 +91,24 @@ class PowerLaw:
     def __call__(self, gamma):
         return _power_law(gamma, self.k_e, self.p, self.gamma_min, self.gamma_max)
 
-    def from_normalised_u_e(self, u_e, p, gamma_min, gamma_max):
+    @classmethod
+    def from_normalised_u_e(cls, u_e, p, gamma_min, gamma_max):
         """set k_e in order to normalise to total energy density u_e
         normalization of the electron distribution Eq. 6.64 in [1]"""
         k_e_num = (p - 2) * u_e
         k_e_denum = MEC2 * (np.power(gamma_min, 2 - p) - np.power(gamma_max, 2 - p))
         k_e = (k_e_num / k_e_denum).to("cm-3")
         print(f"normalising power-law to total energy density u_e: {u_e:.2e}")
-        self.__init__(k_e, p, gamma_min, gamma_max)
+        return cls(k_e, p, gamma_min, gamma_max)
 
-    def from_normalised_density(self, norm, p, gamma_min, gamma_max):
+    @classmethod
+    def from_normalised_density(cls, norm, p, gamma_min, gamma_max):
         """set k_e in order to normalise the total particle density"""
         k_e_num = (p - 1) * norm
         k_e_denum = np.power(gamma_min, 1 - p) - np.power(gamma_max, 1 - p)
         k_e = (k_e_num / k_e_denum).to("cm-3")
         print(f"normalising power-law to total particle density: {norm:.2e}")
-        self.__init__(k_e, p, gamma_min, gamma_max)
+        return cls(k_e, p, gamma_min, gamma_max)
 
     def SSA_integrand(self, gamma):
         """integrand for the synchrotron self absorption"""
@@ -118,15 +120,7 @@ class PowerLaw:
 class BrokenPowerLaw:
     """Class for two-indexes power law spectrum initialization"""
 
-    def __init__(
-        self,
-        k_e=1 * u.Unit("cm-3"),
-        p1=2.5,
-        p2=3.5,
-        gamma_b=1e3,
-        gamma_min=1e2,
-        gamma_max=1e5,
-    ):
+    def __init__(self, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
         self.k_e = k_e
         self.p1 = p1
         self.p2 = p2
@@ -145,28 +139,28 @@ class BrokenPowerLaw:
             self.gamma_max,
         )
 
-    def from_normalised_u_e(self, u_e, p1, p2, gamma_b, gamma_min, gamma_max):
+    @classmethod
+    def from_normalised_u_e(cls, u_e, p1, p2, gamma_b, gamma_min, gamma_max):
         """set k_e in order to normalise to total energy density u_e"""
         denum_prefactor = MEC2 * np.power(gamma_b, 2)
         denum_term_1 = (1 - np.power(gamma_min / gamma_b, 2 - p1)) / (2 - p1)
         denum_term_2 = (np.power(gamma_max / gamma_b, 2 - p2) - 1) / (2 - p2)
         k_e = (u_e / (denum_prefactor * (denum_term_1 + denum_term_2))).to("cm-3")
         print(f"normalising broken power-law to total energy density u_e: {u_e:.2e}")
-        self.__init__(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
+        return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
-    def from_normalised_density(self, norm, p1, p2, gamma_b, gamma_min, gamma_max):
+    @classmethod
+    def from_normalised_density(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
         """set k_e in order to normalise the total particle density"""
-        k_e_denum_1 = (
-            (gamma_min * np.power(gamma_min / gamma_b, -p1) - gamma_b) 
-            / (p1 - 1)
+        k_e_denum_1 = (gamma_min * np.power(gamma_min / gamma_b, -p1) - gamma_b) / (
+            p1 - 1
         )
-        k_e_denum_2 = (
-            (gamma_b - gamma_max * np.power(gamma_max / gamma_b, -p2)) 
-            / (p2 - 1)
+        k_e_denum_2 = (gamma_b - gamma_max * np.power(gamma_max / gamma_b, -p2)) / (
+            p2 - 1
         )
         k_e = (norm / (k_e_denum_1 + k_e_denum_2)).to("cm-3")
         print(f"normalising broken power-law to total particle density: {norm:.2e}")
-        self.__init__(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
+        return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     def SSA_integrand(self, gamma):
         return _broken_power_law_ssa_integrand(
@@ -184,15 +178,7 @@ class BrokenPowerLaw2:
     """Smoothly broken power law as in Tavecchio et al. (1998)
     https://ui.adsabs.harvard.edu/#abs/1998ApJ...509..608T/abstract"""
 
-    def __init__(
-        self,
-        k_e=1 * u.Unit("cm-3"),
-        p1=2.5,
-        p2=3.5,
-        gamma_b=1e3,
-        gamma_min=1e2,
-        gamma_max=1e5,
-    ):
+    def __init__(self, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
         self.k_e = k_e
         self.p1 = p1
         self.p2 = p2
@@ -211,11 +197,11 @@ class BrokenPowerLaw2:
             self.gamma_max,
         )
 
-    def from_normalised_u_e(self, u_e, p1, p2, gamma_b, gamma_min, gamma_max):
+    @classmethod
+    def from_normalised_u_e(cls, u_e, p1, p2, gamma_b, gamma_min, gamma_max):
         """set k_e in order to normalise the total particle density"""
-        k_e_denum_1 = (
-            (np.power(gamma_b, 2 - p1) - np.power(gamma_min, 2 - p1)) 
-            / (2 - p1)
+        k_e_denum_1 = (np.power(gamma_b, 2 - p1) - np.power(gamma_min, 2 - p1)) / (
+            2 - p1
         )
         k_e_denum_2 = (
             np.power(gamma_b, p2 - p1)
@@ -224,14 +210,13 @@ class BrokenPowerLaw2:
         )
         k_e = (u_e / (k_e_denum_1 + k_e_denum_2)).to("cm-3")
         print(f"normalising smooth broken power-law to total energy density: {u_e:.2e}")
-        self.__init__(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
+        return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     @classmethod
-    def from_normalised_density(self, norm, p1, p2, gamma_b, gamma_min, gamma_max):
+    def from_normalised_density(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
         """set k_e in order to normalise the total particle density"""
-        k_e_denum_1 = (
-            (np.power(gamma_b, 1 - p1) - np.power(gamma_min, 1 - p1)) 
-            / (1 - p1)
+        k_e_denum_1 = (np.power(gamma_b, 1 - p1) - np.power(gamma_min, 1 - p1)) / (
+            1 - p1
         )
         k_e_denum_2 = (
             np.power(gamma_b, p2 - p1)
@@ -242,7 +227,7 @@ class BrokenPowerLaw2:
         print(
             f"normalising smooth broken power-law to total particle density: {norm:.2e}"
         )
-        self.__init__(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
+        return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     def SSA_integrand(self, gamma):
         """integrand for the synchrotron self absorption"""

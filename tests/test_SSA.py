@@ -5,7 +5,7 @@ import numpy as np
 import astropy.units as u
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
-from agnpy.particles import Blob
+from agnpy.emission_region import Blob
 from agnpy.synchrotron import Synchrotron
 from astropy.coordinates import Distance
 import time

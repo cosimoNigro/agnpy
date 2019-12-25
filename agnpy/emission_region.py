@@ -6,29 +6,9 @@ from .spectra import PowerLaw, BrokenPowerLaw, BrokenPowerLaw2
 
 
 MEC2 = (const.m_e * const.c * const.c).cgs
-model_dict = {
-    "PowerLaw": PowerLaw(),
-    "BrokenPowerLaw": BrokenPowerLaw(),
-    "BrokenPowerLaw2": BrokenPowerLaw2(),
-}
+
 
 __all__ = ["Blob"]
-
-
-def n_e_spectrum(spectrum_norm, spectrum_dict, V_b):
-    """init the spectral density"""
-    model = model_dict[spectrum_dict["type"]]
-    if spectrum_norm.unit == u.Unit("cm-3"):
-        # the normalization is directly k_e
-        model.from_normalised_density(spectrum_norm, **spectrum_dict["parameters"])
-    if spectrum_norm.unit == u.Unit("erg cm-3"):
-        # the normalization is u_e, the energy density
-        model.from_normalised_u_e(spectrum_norm, **spectrum_dict["parameters"])
-    if spectrum_norm.unit == u.Unit("erg"):
-        # the normalization W_e, the total energy
-        u_e = (spectrum_norm / V_b).to("erg cm-3")
-        model.from_normalised_u_e(u_e, **spectrum_dict["parameters"])
-    return model
 
 
 class Blob:
@@ -94,7 +74,22 @@ class Blob:
         )
         # grid of Lorentz factors for integration in the external frame
         self.gamma_to_integrate = np.logspace(1, 9, self.gamma_size)
-        self.n_e = n_e_spectrum(self.spectrum_norm, self.spectrum_dict, self.V_b)
+        # assign the spectral density
+        if spectrum_dict["type"] == "PowerLaw":
+            _model = PowerLaw
+        if spectrum_dict["type"] == "BrokenPowerLaw":
+            _model = BrokenPowerLaw
+        if spectrum_dict["type"] == "BrokenPowerLaw2":
+            _model = BrokenPowerLaw2
+        if spectrum_norm.unit == u.Unit("cm-3"):
+            self.n_e = _model.from_normalised_density(
+                spectrum_norm, **spectrum_dict["parameters"]
+            )
+        if spectrum_norm.unit == u.Unit("erg cm-3"):
+            self.n_e = _model.from_normalised_u_e(u_e, **spectrum_dict["parameters"])
+        if spectrum_norm.unit == u.Unit("erg"):
+            u_e = (spectrum_norm / self.V_b).to("erg cm-3")
+            self.n_e = _model.from_normalised_u_e(u_e, **spectrum_dict["parameters"])
 
     def __str__(self):
         """printable summary of the blob"""
