@@ -1,6 +1,5 @@
 """class and functions for synchrotron radiation"""
 import numpy as np
-from numpy import float64
 import astropy.constants as const
 import astropy.units as u
 from numba import jit
@@ -50,7 +49,7 @@ class Synchrotron:
 
 	Parameters
 	----------
-	blob : `~agnpy.particles.Blob`
+	blob : `~agnpy.emission_region.Blob`
 		emitting region and electron distribution 
 	"""
 
@@ -59,8 +58,6 @@ class Synchrotron:
         self.U_B = U_B(self.blob.B)
         self.nu_B = nu_B(self.blob.B)
         self.epsilon_B = self.blob.B.to("G").value / B_CR
-        # grid of target photons to compute SSC
-        self.epsilon_syn = np.logspace(-13, 10, 500)
 
     def com_sed_emissivity(self, epsilon):
         """Synchrotron  emissivity  (\epsilon' * J'_{syn}(\epsilon')) [erg s-1]
@@ -91,21 +88,19 @@ class Synchrotron:
         return prefactor * integral * u.Unit(EMISSIVITY_UNIT)
 
     def k_epsilon(self, epsilon):
-        """SSA absorption factor Eq. 7.142 in [1]
-        the part of the integrand that is dependent on gamma is computed
-        analytically in each class"""
+        """SSA absorption factor Eq. 7.142 in [1].
+        The part of the integrand that is dependent on gamma is computed
+        analytically in each class."""
         gamma = self.blob.gamma
         SSA_integrand = self.blob.n_e.SSA_integrand(gamma).value
         B = self.blob.B.to("G").value
         _gamma = gamma.reshape(gamma.size, 1)
         _SSA_integrand = SSA_integrand.reshape(SSA_integrand.size, 1)
         _epsilon = epsilon.reshape(1, epsilon.size)
-
         prefactor_P_syn = np.sqrt(3) * np.power(E, 3) * B / H
         prefactor_k_epsilon = (
             -1 / (8 * np.pi * ME * np.power(epsilon, 2)) * np.power(LAMBDA_C / C, 3)
         )
-
         x_num = 4 * np.pi * _epsilon * np.power(ME, 2) * np.power(C, 3)
         x_denom = 3 * E * B * H * np.power(_gamma, 2)
         x = x_num / x_denom
@@ -146,11 +141,9 @@ class Synchrotron:
                 prefactor
                 * self.attenuation_SSA(epsilon_prime)
                 * self.com_sed_emissivity(epsilon_prime)
-            ).to(EMISSIVITY_UNIT)
-        else:
-            return (prefactor * self.com_sed_emissivity(epsilon_prime)).to(
-                EMISSIVITY_UNIT
             )
+        else:
+            return prefactor * self.com_sed_emissivity(epsilon_prime)
 
     def sed_flux(self, nu, SSA=False):
         """Synchrotron flux SED (\nu F_{\nu})) [erg cm-2 s-1]
