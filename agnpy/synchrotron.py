@@ -1,11 +1,13 @@
-"""class and functions for synchrotron radiation"""
+"""class and functions describing the synchrotron radiative process"""
 import numpy as np
 import astropy.constants as const
 import astropy.units as u
 from numba import jit
 
-# cgs is not well-handled by astropy.units
+
+# electromagnetic cgs units are not well-handled by astropy.units
 # every variable indicated with capital letters is dimensionsless
+# will be used in SED computations for speed-up
 E = 4.80320425e-10  # statC (not handled by astropy units)
 H = const.h.cgs.value
 C = const.c.cgs.value

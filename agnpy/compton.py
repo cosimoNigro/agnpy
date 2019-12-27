@@ -1,11 +1,13 @@
-"""classes and functions for inverse Compton radiation"""
+"""classes and functions describing the inverse Compton radiative processes"""
 import numpy as np
 import astropy.constants as const
 import astropy.units as u
 from numba import jit
 
-# cgs is not well-handled by astropy.units
+
+# electromagnetic cgs units are not well-handled by astropy.units
 # every variable indicated with capital letters is dimensionsless
+# will be used in SED computations for speed-up
 E = 4.80320425e-10  # statC (not handled by astropy units)
 H = const.h.cgs.value
 C = const.c.cgs.value
@@ -17,7 +19,7 @@ EMISSIVITY_UNIT = "erg s-1"
 SED_UNIT = "erg cm-2 s-1"
 
 
-__all__ = ["SynchrotronSelfCompton"]
+__all__ = ["SynchrotronSelfCompton", "ExternalCompton"]
 
 
 @jit(nopython=True, cache=True)
@@ -50,8 +52,56 @@ def isotropic_kernel(gamma, epsilon, epsilon_s):
     return values
 
 
+def cos_psi(mu_s, mu, phi):
+    """Compute the angle between the blob (with zenith mu_s) and a photon with
+    zenith and azimuth (mu, phi). The system is symmetric in azimuth for the
+    electron phi_s = 0, Eq. 8 in [5]."""
+    _term_1 = mu * mu_s
+    _term_2 = np.sqrt(1 - np.power(mu, 2)) * np.sqrt(1 - np.power(mu_s, 2))
+    _term_3 = np.cos(phi)
+    return _term_1 + _term_2 * _term_3
+
+
+def get_gamma_min(epsilon_s, epsilon, mu_s, mu, phi):
+    """minimum Lorentz factor for Compton integration, 
+    Eq. 29 in [4], Eq. 38 in [5]."""
+    _cos_psi = cos_psi(mu_s, mu, phi)
+    _sqrt_term = np.sqrt(1 + 2 / (epsilon * epsilon_s * (1 - _cos_psi)))
+    return epsilon_s / 2 * (1 + _sqrt_term)
+
+
+def compton_kernel(gamma, epsilon_s, epsilon, mu_s, mu, phi):
+    """full Compton kernel (angle dependent):
+    Eq. 26-27 in [4].
+
+    Parameters
+    ----------
+    gamma : array_like
+        Lorentz factors of the electrons distribution
+    epsilon : array_like
+        energies of the target photon field
+    epsilon_s : array_like
+        energies of the scattered photon field
+    mu_s : float
+        cosine of the zenith angle of the blob
+    mu : `array_like`
+        cosine of the zenith angle of the target
+    phi : `array_like`
+        azimuth angle of the target
+    """
+    _cos_psi = cos_psi(mu_s, mu, phi)
+    epsilon_bar = gamma * epsilon * (1 - _cos_psi)
+    y = 1 - epsilon_s / gamma
+    y_1 = -(2 * epsilon_s) / (gamma * epsilon_bar * y)
+    y_2 = np.power(epsilon_s, 2) / np.power(gamma * epsilon_bar * y, 2)
+    values = y + 1 / y + _term1 + _term2
+    gamma_min = get_gamma_min(epsilon_s, epsilon, mu_s, mu, phi)
+    values = np.where(gamma >= gamma_min, y + 1 / y + y_1 + y_2, 0)
+    return values
+
+
 class SynchrotronSelfCompton:
-    """class for SSC radiation computation
+    """class for Synchrotron Self Compton radiation computation
 
     Parameters
     ----------
@@ -90,9 +140,9 @@ class SynchrotronSelfCompton:
         # variables that have to be integrated will start their names with "_"
         # in order to preserve original arrays shapes without reshaping again.
         # Quantities will be computed as matrices with:
-        # axis = 0 : electrons Lorentz factors, dimension: N_gamma
-        # axis = 1 : target photons energies, dimension: N_epsilon
-        # axis = 2 : scattered photons energies, dimension : N_epsilon_s
+        # axis = 0 : electrons Lorentz factors
+        # axis = 1 : target photons energies
+        # axis = 2 : scattered photons energies
         _gamma = gamma.reshape(gamma.size, 1, 1)
         _N_e = N_e.reshape(N_e.size, 1, 1)
         _epsilon_syn = self.epsilon_syn.reshape(1, self.epsilon_syn.size, 1)
@@ -148,3 +198,48 @@ class SynchrotronSelfCompton:
             4 * np.pi * np.power(self.blob.d_L, 2)
         )
         return (prefactor * self.com_sed_emissivity(epsilon_prime)).to(SED_UNIT)
+
+
+class ExternalCompton:
+    """class for External Compton radiation computation
+
+    Parameters
+    ----------
+    blob : `~agnpy.emission_region.Blob`
+        emitting region and electron distribution hitting the photon target
+    target : `~agnpy.targets.Target`
+        class describing the target photon field    
+    r : `~astropy.units.Quantity`
+        distance of the blob from the Black Hole (i.e. from the target photons)
+    mu_min : float
+        minimum zenith (cosine theta) subtended by the target photon field
+    mu_max : float
+        maximum zenith (cosine theta) subtended by the target photon field
+    mu_size : int
+        size of the array of the zenith dependence of the target field
+    phi_size : array_like
+        size of the array of the azimuth dependence of the target field
+    epsilon_size : int
+        size of the dimensionless photon target energy
+    """
+
+    def __init__(self, blob, target, r):
+        self.blob = blob
+        self.target = target
+        self.r = self.r
+        self.set_mu()
+        self.set_phi()
+
+    def set_mu(self, mu_size=50):
+        self.mu_size = mu_size
+        if target == "SSDisk":
+            self.mu_min = 1 / np.sqrt(
+                1 + np.power((target.R_out / self.r).decompose(), 2)
+            )
+            self.mu_max = 1 / np.sqrt(
+                1 + np.power((target.R_in / self.r).decompose(), 2)
+            )
+        self.mu = np.linspace(mu_min, mu_max, mu_size)
+
+    def set_phi(self, phi_size=50):
+        self.phi = np.linspace(0, 2 * np.pi, phi_size)
