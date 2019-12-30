@@ -1,6 +1,9 @@
 # agnpy
 Modelling Active Galactic Nuclei radiative processes with python
 
+## documentation
+https://agnpy.readthedocs.io/en/latest/
+
 ## description
 The code numerically computes the radiative output of leptonic processes in jetted Active Galactic Nuclei.    
 
