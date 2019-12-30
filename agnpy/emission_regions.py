@@ -1,3 +1,4 @@
+"""class defining the emission region, for now only a spherical blob"""
 import numpy as np
 import astropy.units as u
 import astropy.constants as const
@@ -50,7 +51,7 @@ class Blob:
     """
 
     def __init__(
-        self, R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict, gamma_size=200
+        self, R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict, gamma_size=500
     ):
         self.R_b = R_b.to("cm")
         self.z = z
@@ -108,7 +109,7 @@ class Blob:
             + f"  |- normalisation: {self.spectrum_norm:.2e}\n"
             + f"  |- spectral function: {self.spectrum_dict['type']}\n"
             + f"  |- gamma_min (minimum Lorentz factor): {self.gamma_min:.2e}\n"
-            + f"  '- gamma_max (maximum Lorentz factor): {self.gamma_max:.2e}\n"
+            + f"  '- gamma_max (maximum Lorentz factor): {self.gamma_max:.2e}"
         )
         return summary
 
@@ -125,15 +126,48 @@ class Blob:
         return self.V_b * self.n_e(gamma)
 
     @property
-    def norm(self):
+    def n_e_tot(self):
+        """total electron density"""
         return np.trapz(self.n_e(self.gamma), self.gamma)
 
     @property
+    def N_e_tot(self):
+        """total electron number"""
+        return np.trapz(self.N_e(self.gamma), self.gamma)
+
+    @property
     def u_e(self):
-        """numerical check that u_e si correctly computed"""
+        """energy density in electrons"""
         return MEC2 * np.trapz(self.gamma * self.n_e(self.gamma), self.gamma)
 
     @property
     def W_e(self):
-        """numerical check that W_e is correctly computed"""
+        """total energy in electrons"""
         return MEC2 * np.trapz(self.gamma * self.N_e(self.gamma), self.gamma)
+
+    @property
+    def P_jet_e(self):
+        """jet power in electrons"""
+        prefactor = (
+            2
+            * np.pi
+            * np.power(self.R_b, 2)
+            * self.Beta
+            * np.power(self.Gamma, 2)
+            * const.c
+        )
+        return (prefactor * self.u_e).to("erg s-1")
+
+    @property
+    def P_jet_B(self):
+        """jet power in magnetic field"""
+        prefactor = (
+            2
+            * np.pi
+            * np.power(self.R_b, 2)
+            * self.Beta
+            * np.power(self.Gamma, 2)
+            * const.c
+        )
+        U_B = np.power(self.B.value, 2) / (8 * np.pi) * u.Unit("erg cm-3")
+        return (prefactor * U_B).to("erg s-1")

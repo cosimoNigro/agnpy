@@ -18,7 +18,7 @@ M_SUN = const.M_sun.cgs.value
 K_B = const.k_B.cgs.value
 SIGMA_SB = const.sigma_sb.cgs.value
 
-__all__ = ["SSDisk"]
+__all__ = ["SSDisk", "SphericalShellBLR"]
 
 
 class SSDisk:
@@ -54,11 +54,25 @@ class SSDisk:
         self.m_dot = (self.L_disk / (self.eta * const.c * const.c)).cgs
         self._m_dot = self.m_dot.value
         # gravitational radius
-        self.R_g = G * self.M_BH.value / np.power(C, 2) * u.cm
+        self._R_g = G * self.M_BH.value / np.power(C, 2)
+        self.R_g = self._R_g * u.cm
         self.R_in = R_in.cgs
         self.R_out = R_out.cgs
         # for fast computation of the temperature dependency
         self._R_in = self.R_in.value
+        self._R_out = self.R_out.value
+
+    def __str__(self):
+        summary = (
+            f"* Shakura Sunyaev accretion disk:\n"
+            + f" - M_BH (central black hole mass): {self.M_BH:.2e}\n"
+            + f" - L_disk (disk luminosity): {self.L_disk:.2e}\n"
+            + f" - eta (accretion efficiency): {self.eta:.2e}\n"
+            + f" - dot(m) (mass accretion rate): {self.m_dot:.2e}\n"
+            + f" - R_in (disk inner radius): {self.R_in:.2e}\n"
+            + f" - R_out (disk inner radius): {self.R_out:.2e}"
+        )
+        return summary
 
     def _phi_disk(self, R):
         """Radial dependency of disk temperature
@@ -72,17 +86,55 @@ class SSDisk:
         """
         return 1 - np.sqrt(self._R_in / R)
 
-    def epsilon(self, R):
-        """monochromatic approximation for the mean photon energy at radius R
-        of the accretion disk. Eq. 64 in [4].
+    def _phi_disk_mu(self, mu, r):
+        """same as _phi_disk but computed with cosine of zenith mu and distance
+        from the black hole r. Eq. 67 in [4]."""
+        R = r * np.sqrt(np.power(mu, -2) - 1)
+        return self._phi_disk(R)
+
+    def _epsilon(self, R):
+        """Monochromatic approximation for the mean photon energy at radius R
+        of the accretion disk. Eq. 64 in [4]. R is dimensionless.
         """
-        R = R.cgs.value
-        prefactor = 2.7 * K_B / MEC2
-        num = 3 * G * self._M_BH * self._m_dot * self._phi_disk(R)
-        denum = 8 * np.pi * np.power(R, 3) * SIGMA_SB
-        return prefactor * np.power(num / denum, 1 / 4)
+        _term_1 = np.power(self.l_Edd / (self.M_8 * self.eta), 1 / 4)
+        _term_2 = np.power(R / self._R_g, -3 / 4)
+        _prefactor = 2.7 * 1e-4
+        return _prefactor * _term_1 * _term_2
+
+    def _epsilon_mu(self, mu, r):
+        """same as _epsilon but computed with cosine of zenith mu and distance
+        from the black hole r. Eq. 67 in [4]."""
+        R = r * np.sqrt(np.power(mu, -2) - 1)
+        return self._epsilon(R)
 
     def T(self, R):
         """Temperature of the disk at distance R. Eq. 64 in [4]."""
         value = const.m_e * const.c * const.c / (2.7 * const.k_B) * self.epsilon(R)
         return value.to("K")
+
+
+class SphericalShellBLR:
+    """Spherical Shell Broad Line Region.
+    Each line is emitted from an infinitesimally thin spherical shell. 
+
+    Parameters
+    ----------
+    disk : `~agnpy.targets.SSDisk`
+        disk whose radiation is being reprocessed by the BLR
+    csi_line : float
+        fraction of the disk radiation reprocessed by the disk
+    epsilon_line : float
+        dimensionless energy of the emitted line
+    R_line : `~astropy.units.Quantity`
+        radius of the spherical shell
+    """
+
+    def __init__(self, disk, csi_line, epsilon_line, R_line):
+        self.type = "SphericalShellBLR"
+        self.parent_disk = disk
+        self.csi_line = csi_line
+        self.epsilon_line = epsilon_line
+        self.R_line = R_line.cgs
+        self._R_line = self.R_line.value
+
+

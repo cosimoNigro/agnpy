@@ -242,6 +242,9 @@ class Compton:
             * target.eta
             * np.power(target.r_tilde, 3)
         )
+        import IPython
+
+        IPython.embed()
         return prefactor_num / prefactor_denom * integral_phi * unit_sed
 
     def sed_flux_shell_blr(self, nu, target):
