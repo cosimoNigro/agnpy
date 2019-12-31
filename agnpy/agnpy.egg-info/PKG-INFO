@@ -1,0 +1,11 @@
+Metadata-Version: 1.2
+Name: agnpy
+Version: 0.0.1
+Summary: Modelling jetted Active Galactic Nuclei radiative processes with python
+Home-page: https://github.com/cosimoNigro/agnpy
+Author: Cosimo Nigro
+Author-email: cosimonigro2@gmail.com
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Requires-Python: >=3.7

@@ -1,18 +1,20 @@
-from distutils.core import setup
-from distutils.extension import Extension
-from Cython.Build import cythonize
+from setuptools import setup, find_packages
 
-ext_modules = [
-    Extension(
-        name="core_synchrotron",
-        sources=["agnpy/core_synchrotron.pyx"],
-        libraries=["m", "m"],  # Unix-like specific
-    ),
-    Extension(
-        name="core_compton",
-        sources=["agnpy/core_compton.pyx"],
-        libraries=["m", "m"],  # Unix-like specific
-    ),
-]
-
-setup(ext_modules=cythonize(ext_modules, annotate=True))
+setup(
+    name="agnpy", # Replace with your own username
+    version="0.0.1",
+    author="Cosimo Nigro",
+    author_email="cosimonigro2@gmail.com",
+    description="Modelling jetted Active Galactic Nuclei radiative processes with python",
+    url="https://github.com/cosimoNigro/agnpy",
+    packages=find_packages("agnpy"),
+    package_dir={"": "agnpy"},
+    package_data={"agnpy": ["data/*.npz"]},
+    install_requires=[
+        "numpy",
+        "astropy",
+        "numba"
+        "matplotlib",
+    ],
+    python_requires=">=3.7",
+)
