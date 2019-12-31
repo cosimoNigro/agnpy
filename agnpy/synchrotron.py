@@ -129,7 +129,7 @@ class Synchrotron:
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
-          array of the frequencies, in Hz, to compute the sed
+            array of the frequencies, in Hz, to compute the sed
         SSA : bool
             whether to apply synchrotron self absorption
 
@@ -154,12 +154,12 @@ class Synchrotron:
 		Parameters
 		----------
 		nu : `~astropy.units.Quantity`
-		  array of the frequencies, in Hz, to compute the sed
+		    array of the frequencies, in Hz, to compute the sed
         SSA : bool
             whether to apply synchrotron self absorption
 
 		Note: these are observed frequencies (observer frame).
-		"""
+        """
         epsilon = H * nu.to("Hz").value / MEC2
         # correct epsilon to the jet comoving frame
         epsilon_prime = (1 + self.blob.z) * epsilon / self.blob.delta_D

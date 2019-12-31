@@ -136,5 +136,3 @@ class SphericalShellBLR:
         self.epsilon_line = epsilon_line
         self.R_line = R_line.cgs
         self._R_line = self.R_line.value
-
-

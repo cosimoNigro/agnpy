@@ -40,10 +40,6 @@ class Blob:
             p : 2
             gamma_min : 1e2
             gamma_max : 1e5
-    Reference
-    ---------
-    [1] : Dermer, Menon; High Energy Radiation From Black Holes;
-    Princeton Series in Astrophysics
 
     N.B.:
     All these quantities are defined in the comoving frame so they are actually
