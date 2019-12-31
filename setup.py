@@ -13,7 +13,7 @@ setup(
     install_requires=[
         "numpy",
         "astropy",
-        "numba"
+        "numba",
         "matplotlib",
     ],
     python_requires=">=3.7",
