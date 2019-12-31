@@ -47,7 +47,8 @@ class SSDisk:
         self._M_BH = self.M_BH.value
         self.M_8 = self.M_BH.value / (1e8 * M_SUN)
         self.L_Edd = 1.26 * 1e46 * self.M_8 * u.Unit("erg s-1")
-        self.L_disk = L_disk
+        self.L_disk = L_disk.cgs
+        self._L_disk = self.L_disk.value
         # fraction of the Eddington luminosity at which the disk is accreting
         self.l_Edd = (self.L_disk / self.L_Edd).decompose()
         self.eta = eta
@@ -136,3 +137,41 @@ class SphericalShellBLR:
         self.epsilon_line = epsilon_line
         self.R_line = R_line.cgs
         self._R_line = self.R_line.value
+
+
+class RingDustTorus:
+    """Dust Torus as infinitesimally thin annulus.
+    Monochromatic emission at the peak of the Black Body spectrum.
+
+    Parameters
+    ----------
+    disk : `~agnpy.targets.SSDisk`
+        disk whose radiation is being reprocessed by the Torus
+    csi_dt : float
+        fraction of the disk radiation reprocessed
+    epsilon_dt : float
+        dimensionless energy peak of the black body distribution
+    """
+
+    def __init__(self, disk, csi_dt, epsilon_dt, R_dt=None):
+        self.type = "RingDustTorus"
+        self.parent_disk = disk
+        self.csi_dt = csi_dt
+        self.epsilon_dt = epsilon_dt
+        # dimensionless temperature of the Dust Torus
+        self.Theta = self.epsilon_dt / 2.7
+        # temperatue in K
+        self.T_dt = self.Theta * ((const.m_e * const.c * const.c) / const.k_B).to("K")
+        self._T_dt = self.T_dt.value
+        # if the radius is not specified use saturation radius Eq. (96) of [5]
+        if R_dt is None:
+            self.R_dt = (
+                3.5
+                * 1e18
+                * np.sqrt(self.parent_disk._L_disk / 1e45)
+                * np.power(self._T_dt / 1e3, -2.6)
+            ) * u.cm
+        else:
+            self.R_dt = R_dt.cgs
+        self._R_dt = self.R_dt.value
+

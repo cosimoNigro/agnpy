@@ -98,7 +98,7 @@ def compton_kernel(gamma, epsilon_s, epsilon, mu_s, mu, phi):
     return values
 
 
-def x_re(mu, R_re, r):
+def x_re_shell(mu, R_re, r):
     """Distance between the blob and the reprocessing material,
     see Fig. 9 and Eq. (76) in [5].
     
@@ -114,6 +114,10 @@ def x_re(mu, R_re, r):
     value = np.sqrt(np.power(R_re, 2) + np.power(r, 2) - 2 * r * R_re * mu)
     return value
 
+def x_re_ring(R_re, r):
+    return np.sqrt(np.power(R_re, 2) + np.power(r, 2))
+
+
 
 def mu_star(mu, R_re, r):
     """cosine of the angle between the blob and the reprocessing material,
@@ -128,7 +132,7 @@ def mu_star(mu, R_re, r):
     r : float
         height of the emission region in the jet
     """
-    addend = np.power(R_re / x_re(mu, R_re, r), 2) * (1 - np.power(mu, 2))
+    addend = np.power(R_re / x_re_shell(mu, R_re, r), 2) * (1 - np.power(mu, 2))
     return np.sqrt(1 - addend)
 
 
@@ -265,7 +269,7 @@ class ExternalCompton:
         self.set_mu()
         self.set_phi()
 
-    def set_mu(self, mu_size=50):
+    def set_mu(self, mu_size=100):
         self.mu_size = mu_size
         if self.target.type == "SSDisk":
             self.mu_min = 1 / np.sqrt(1 + np.power(self.target._R_out / self._r, 2))
@@ -275,7 +279,7 @@ class ExternalCompton:
             self.mu_max = 1
         self.mu = np.linspace(self.mu_min, self.mu_max, self.mu_size)
 
-    def set_phi(self, phi_size=50):
+    def set_phi(self, phi_size=100):
         self.phi_size = phi_size
         self.phi = np.linspace(0, 2 * np.pi, self.phi_size)
 
@@ -371,7 +375,7 @@ class ExternalCompton:
         _phi = self.phi.reshape(1, 1, self.phi.size, 1)
         _epsilon_s = epsilon_s.reshape(1, 1, 1, epsilon_s.size)
         # define integrating function
-        _x = x_re(_mu, self.target._R_line, self._r)
+        _x = x_re_shell(_mu, self.target._R_line, self._r)
         _mu_star = mu_star(_mu, self.target._R_line, self._r)
         _kernel = compton_kernel(
             _gamma, _epsilon_s, self.target.epsilon_line, _mu_s, _mu_star, _phi
@@ -396,8 +400,63 @@ class ExternalCompton:
         )
         return prefactor_num / prefactor_denom * integral_phi * u.Unit(SED_UNIT)
 
+    def _sed_flux_ring_torus(self, nu):
+        """SED flux for Compton Scattering over the blr
+
+        Eq. (70) and (71) in [3]
+
+        Parameters
+        ----------
+        nu : `~astropy.units.Quantity`
+            array of the scattered photons, in Hz
+        target : `~agnpy.targets.RingDustTorus`
+            target blr field
+
+        Note: frequencies are observed, i.e. in the lab frame
+        """
+        # define the dimensionless energy
+        epsilon_s_obs = H * nu.to("Hz").value / MEC2
+        # transform to BH frame
+        epsilon_s = epsilon_s_obs * (1 + self.blob.z)
+        # axis 0: gamma
+        # axis 1: phi
+        # axis 2: epsilon_s
+        _mu_s = self.blob.mu_s
+        # here we plug mu =  r / x. Delta function in Eq. (91) of [3]
+        x_re = x_re_ring(self.target._R_dt, self._r)
+        _mu = self._r / x_re
+        _gamma = self.gamma.reshape(self.gamma.size, 1, 1)
+        _N_e = self.transformed_N_e.reshape(self.transformed_N_e.size, 1, 1)
+        _phi = self.phi.reshape(1, self.phi.size, 1)
+        _epsilon_s = epsilon_s.reshape(1, 1, epsilon_s.size)
+        # define integrating function
+        _kernel = compton_kernel(
+            _gamma, _epsilon_s, self.target.epsilon_dt, _mu_s, _mu, _phi
+        )
+        _integrand = np.power(_gamma, -2) * _N_e * _kernel
+        integral_gamma = np.trapz(_integrand, self.gamma, axis=0)
+        integral_phi = np.trapz(integral_gamma, self.phi, axis=0)
+        prefactor_num = (
+            3
+            * SIGMA_T
+            * np.power(epsilon_s, 2)
+            * np.power(self.blob.delta_D, 3)
+            * self.target.parent_disk.L_disk.value
+            * self.target.csi_dt
+        )
+        prefactor_denom = (
+            8
+            * np.power(4 * np.pi, 3)
+            * np.power(self.blob.d_L.value, 2)
+            * np.power(self.target.epsilon_dt, 2)
+            * np.power(x_re, 2)
+        )
+        return prefactor_num / prefactor_denom * integral_phi * u.Unit(SED_UNIT)
+
     def sed_flux(self, nu):
         if self.target.type == "SSDisk":
             return self._sed_flux_disk(nu)
         if self.target.type == "SphericalShellBLR":
             return self._sed_flux_shell_blr(nu)
+        if self.target.type == "RingDustTorus":
+            return self._sed_flux_ring_torus(nu)

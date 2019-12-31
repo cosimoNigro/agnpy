@@ -47,7 +47,7 @@ class Blob:
     """
 
     def __init__(
-        self, R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict, gamma_size=500
+        self, R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict, gamma_size=200
     ):
         self.R_b = R_b.to("cm")
         self.z = z

@@ -25,8 +25,8 @@ __all__ = ["R", "U_B", "Synchrotron"]
 
 @jit(nopython=True, cache=True, parallel=True)
 def R(x):
-    """Eq. 7.45 in [1], angle-averaged integrand of the radiated power, the 
-    approximation of this formula given in Eq. D7 of [3] is used.
+    """Eq. 7.45 in [Dermer2009]_, angle-averaged integrand of the radiated power, the 
+    approximation of this formula given in Eq. D7 of [Aharonian2010]_ is used.
     """
     term_1_num = 1.808 * np.power(x, 1 / 3)
     term_1_denom = np.sqrt(1 + 3.4 * np.power(x, 2 / 3))
@@ -62,17 +62,27 @@ class Synchrotron:
         self.epsilon_B = self.blob.B.to("G").value / B_CR
 
     def com_sed_emissivity(self, epsilon):
-        """Synchrotron  emissivity  (\epsilon' * J'_{syn}(\epsilon')) [erg s-1]
-        Eq. 116 in [1] or Eq. 18 in [2]
-        This emissivity is computed in the co-moving frame of the blob.
+        """Synchrotron  emissivity:
 
+        .. math::
+            \epsilon'\,J'_{syn}(\epsilon')\,[erg\,s^{-1}]
+
+        Eq. 116 in [DermerMenon2009]_ or Eq. 18 in [Finke2008]_.
+        
+        - Note:This emissivity is computed in the co-moving frame of the blob.
+        When calling this function from another, these energies
+        have to be transformed in the co-moving frame of the plasmoid.
+        
         Parameters
         ----------
-        epsilon : array_like
+        epsilon : `~numpy.ndarray`
             array of the dimensionless energies to compute the sed
 
-        Note: when calling this function from another these energies
-        have to be transformed in the co-moving frame of the plasmoid.
+        
+        Returns
+        -------
+        `~astropy.units.Quantity`
+            array of the emissivity corresponding to each epsilon
         """
         # strip units to speed-up calculations
         gamma = self.blob.gamma

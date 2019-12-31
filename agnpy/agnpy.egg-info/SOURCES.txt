@@ -1,7 +1,0 @@
-README.md
-setup.py
-agnpy/agnpy.egg-info/PKG-INFO
-agnpy/agnpy.egg-info/SOURCES.txt
-agnpy/agnpy.egg-info/dependency_links.txt
-agnpy/agnpy.egg-info/requires.txt
-agnpy/agnpy.egg-info/top_level.txt
