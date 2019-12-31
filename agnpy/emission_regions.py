@@ -1,4 +1,3 @@
-"""class defining the emission region, for now only a spherical blob"""
 import numpy as np
 import astropy.units as u
 import astropy.constants as const
@@ -15,6 +14,9 @@ __all__ = ["Blob"]
 class Blob:
     """Simple spherical emission region
 
+    **Note:** all these quantities are defined in the comoving frame so they are actually
+    primed quantities, when referring the notation in [DermerMenon2009]_
+
     Parameters
     ----------
     R_b : `~astropy.units.Quantity`
@@ -28,22 +30,26 @@ class Blob:
     B : `~astropy.units.Quantity`
         magnetic field in the blob (Gauss)
     spectrum_norm : `~astropy.units.Quantity`
-        normalization of the electron spectra, can be, following
-        the notation in [1]:
-        - k_e : power law spectrum normalization in cm-3
-        - u_e : total energy density in non thermal electrons in erg cm-3
-        - W_e : total non thermal electron energy in erg
+        normalization of the electron spectra, can be, following 
+        the notation in [DermerMenon2009]_:
+
+            - :math:`n_{e,\,tot}`: total electrons density in :math:`\mathrm{cm}^{-3}`
+            - :math:`u_e` : total electrons energy density in :math:`\mathrm{erg}\,\mathrm{cm}^{-3}`
+            - :math:`W_e` : total energy in non-thermal electrons in :math:`\mathrm{erg}`
+    
     spectrum_dict : dictionary
         dictionary containing type and spectral shape information, e.g.:
-        type : "PowerLaw"
-        parameters :
-            p : 2
-            gamma_min : 1e2
-            gamma_max : 1e5
 
-    N.B.:
-    All these quantities are defined in the comoving frame so they are actually
-    primed quantities, when referring the notation in [1]
+        .. code-block:: python
+
+            spectrum_dict = {
+                "type": "PowerLaw", 
+                "parameters": {
+                    "p": 2.8, 
+                    "gamma_min": 1e2, 
+                    "gamma_max": 1e7
+                }
+            }
     """
 
     def __init__(
@@ -110,7 +116,7 @@ class Blob:
         return summary
 
     def set_gamma_size(self, gamma_size):
-        """change size of electron Lorentz factor grid, update gamma grids"""
+        """change size of electron Lorentz factor grid"""
         self.gamma_size = gamma_size
         self.gamma = np.logspace(
             np.log10(self.gamma_min), np.log10(self.gamma_max), self.gamma_size
@@ -118,32 +124,53 @@ class Blob:
         self.gamma_to_integrate = np.logspace(1, 9, self.gamma_size)
 
     def N_e(self, gamma):
-        """N_e represents the particle number"""
+        """number of electrons as a function of the Lorentz factor, 
+        :math:`N_e(\gamma') = V_b\,n_e(\gamma')"""
         return self.V_b * self.n_e(gamma)
 
     @property
     def n_e_tot(self):
-        """total electron density"""
+        """total electrons density
+
+        .. math::
+            n_{e,\,tot} = \int^{\gamma'_{max}}_{\gamma'_{min}} d\gamma' \, n_e(\gamma')
+        """
         return np.trapz(self.n_e(self.gamma), self.gamma)
 
     @property
     def N_e_tot(self):
-        """total electron number"""
+        """total electrons number
+
+        .. math::
+            N_{e,\,tot} = \int^{\gamma'_{max}}_{\gamma'_{min}} d\gamma' \, N_e(\gamma')
+        """
         return np.trapz(self.N_e(self.gamma), self.gamma)
 
     @property
     def u_e(self):
-        """energy density in electrons"""
+        """total electrons energy density
+
+        .. math::
+            u_{e} = m_e\,c^2\,\int^{\gamma'_{max}}_{\gamma'_{min}} d\gamma' \,  \gamma' \, n_e(\gamma')
+        """
         return MEC2 * np.trapz(self.gamma * self.n_e(self.gamma), self.gamma)
 
     @property
     def W_e(self):
-        """total energy in electrons"""
+        """total energy in non-thermal electrons
+
+        .. math::
+            W_{e} = m_e\,c^2\,\int^{\gamma'_{max}}_{\gamma'_{min}} d\gamma' \,  \gamma' \, N_e(\gamma')
+        """
         return MEC2 * np.trapz(self.gamma * self.N_e(self.gamma), self.gamma)
 
     @property
     def P_jet_e(self):
-        """jet power in electrons"""
+        """jet power in electrons
+
+        .. math::
+            P_{jet,\,e} = 2 \pi R_b^2 \\beta \Gamma^2 c u_e
+        """
         prefactor = (
             2
             * np.pi
@@ -156,7 +183,11 @@ class Blob:
 
     @property
     def P_jet_B(self):
-        """jet power in magnetic field"""
+        """jet power in magnetic field
+
+        .. math::
+            P_{jet,\,B} = 2 \pi R_b^2 \\beta \Gamma^2 c \\frac{B^2}{8\pi}
+        """
         prefactor = (
             2
             * np.pi

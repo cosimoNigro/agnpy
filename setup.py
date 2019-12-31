@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="agnpy", # Replace with your own username
+    name="agnpy",  # Replace with your own username
     version="0.0.1",
     author="Cosimo Nigro",
     author_email="cosimonigro2@gmail.com",
@@ -10,11 +10,6 @@ setup(
     packages=find_packages("agnpy"),
     package_dir={"": "agnpy"},
     package_data={"agnpy": ["data/*.npz"]},
-    install_requires=[
-        "numpy",
-        "astropy",
-        "numba",
-        "matplotlib",
-    ],
+    install_requires=["numpy", "astropy", "numba", "matplotlib"],
     python_requires=">=3.7",
 )

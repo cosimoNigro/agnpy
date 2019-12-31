@@ -5,7 +5,7 @@ Description
 -----------
 References
 ..........
-Notation and basic formulas are borrowed from [DermerMenon2009]_ which constitutes the fundamental reference for this code. The implementation of synchrotron and synchrotron self-Compton radiative processes relies on [DermerMenon2009]_ and [Finke2008]_; while for the external Compton [Dermer2009]_ and [Finke2016]_ are the main references.
+Notation and basic formulas are borrowed from [DermerMenon2009]_ which constitutes the fundamental reference for this code. The implementation of synchrotron and synchrotron self-Compton radiative processes relies on [DermerMenon2009]_ and [Finke2008]_; for the external Compton radiative processes [Dermer2009]_ and [Finke2016]_ are the main references.
 
 Implementation
 ..............

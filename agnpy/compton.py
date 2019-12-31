@@ -114,9 +114,9 @@ def x_re_shell(mu, R_re, r):
     value = np.sqrt(np.power(R_re, 2) + np.power(r, 2) - 2 * r * R_re * mu)
     return value
 
+
 def x_re_ring(R_re, r):
     return np.sqrt(np.power(R_re, 2) + np.power(r, 2))
-
 
 
 def mu_star(mu, R_re, r):

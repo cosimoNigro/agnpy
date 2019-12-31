@@ -65,9 +65,9 @@ class Synchrotron:
         """Synchrotron  emissivity:
 
         .. math::
-            \epsilon'\,J'_{syn}(\epsilon')\,[erg\,s^{-1}]
+            \epsilon'\,J'_{\mathrm{syn}}(\epsilon')\,[\mathrm{erg}\,\mathrm{s}^{-1}]
 
-        Eq. 116 in [DermerMenon2009]_ or Eq. 18 in [Finke2008]_.
+        Eq. 7.116 in [DermerMenon2009]_ or Eq. 18 in [Finke2008]_.
         
         - Note:This emissivity is computed in the co-moving frame of the blob.
         When calling this function from another, these energies

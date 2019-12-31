@@ -174,4 +174,3 @@ class RingDustTorus:
         else:
             self.R_dt = R_dt.cgs
         self._R_dt = self.R_dt.value
-
