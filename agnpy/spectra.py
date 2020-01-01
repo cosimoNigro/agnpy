@@ -1,4 +1,3 @@
-"""basic spectra for the electrons distributions"""
 import numpy as np
 import astropy.units as u
 import astropy.constants as const
@@ -7,7 +6,7 @@ import astropy.constants as const
 MEC2 = (const.m_e * const.c * const.c).cgs
 
 
-__all__ = ["PowerLaw", "BrokenPowerLaw", "BrokenPowerLaw2"]
+__all__ = ["PowerLaw", "BrokenPowerLaw", "SmoothlyBrokenPowerLaw"]
 
 
 # in the following functions k_e is supposed to have dimensions cm-3
@@ -20,7 +19,7 @@ def _power_law(gamma, k_e, p, gamma_min, gamma_max):
 
 
 def _power_law_ssa_integrand(gamma, k_e, p, gamma_min, gamma_max):
-    """anayltical form of \gamma^2 d / d \gamma (n_e / \gamma^2)"""
+    """analytical form of the SSA integrand"""
     pwl = np.power(gamma, -p - 1)
     null_condition = (gamma_min <= gamma) * (gamma <= gamma_max)
     pwl[~null_condition] = 0
@@ -40,7 +39,7 @@ def _broken_power_law(gamma, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
 
 
 def _broken_power_law_ssa_integrand(gamma, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
-    """analytical form of \gamma^2 d / d \gamma (n_e / \gamma^2)"""
+    """analytical form of the SSA integrand"""
     pwl = np.power(gamma / gamma_b, -p1 - 1)
     pwl_prefactor = (-p1 - 2) / gamma
     # compute power law with the second spectral index
@@ -53,7 +52,7 @@ def _broken_power_law_ssa_integrand(gamma, k_e, p1, p2, gamma_b, gamma_min, gamm
     return k_e * pwl_prefactor * pwl
 
 
-def _broken_power_law2(gamma, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
+def _smoothly_broken_power_law(gamma, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
     """Tavecchio's Broken Power Law
     https://ui.adsabs.harvard.edu/abs/1998ApJ...509..608T/abstract"""
     pwl = np.power(gamma, -p1)
@@ -65,8 +64,10 @@ def _broken_power_law2(gamma, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
     return k_e * pwl
 
 
-def _broken_power_law2_ssa_integrand(gamma, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
-    """analytical form \gamma^2 d / d \gamma (n_e / \gamma^2)"""
+def _smoothly_broken_power_law_ssa_integrand(
+    gamma, k_e, p1, p2, gamma_b, gamma_min, gamma_max
+):
+    """analytical form of the SSA integrand"""
     pwl = (-p1 - 2) * np.power(gamma, -p1 - 1)
     # compute power law with the second spectral index
     p2_condition = gamma > gamma_b
@@ -80,7 +81,23 @@ def _broken_power_law2_ssa_integrand(gamma, k_e, p1, p2, gamma_b, gamma_min, gam
 
 
 class PowerLaw:
-    """Class for power law spectrum initialization"""
+    """Class for power-law particle spectrum. 
+    When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
+
+    .. math::
+        n_e(\gamma') = k_e \, \gamma'^{-p} \, H(\gamma'; \gamma'_{min}, \gamma'_{max}) 
+
+    Parameters
+    ----------
+    k_e : `~astropy.units.Quantity`
+        spectral normalisation
+    p : float
+        spectral index, note it is positive by definition, will change sign in the function
+    gamma_min : float
+        minimum Lorentz factor of the electron distribution
+    gamma_max : float
+        maximum Lorentz factor of the electron distribution
+    """
 
     def __init__(self, k_e, p, gamma_min, gamma_max):
         self.k_e = k_e
@@ -91,10 +108,21 @@ class PowerLaw:
     def __call__(self, gamma):
         return _power_law(gamma, self.k_e, self.p, self.gamma_min, self.gamma_max)
 
+    def __str__(self):
+        summary = (
+            f"* electron spectrum\n"
+            + f" - power law\n"
+            + f" - k_e: {self.k_e:.2e}\n"
+            + f" - p: {self.p:.2f}\n"
+            + f" - gamma_min: {self.gamma_min:.2e}\n"
+            + f" - gamma_max: {self.gamma_max:.2e}\n"
+        )
+        return summary
+
     @classmethod
     def from_normalised_u_e(cls, u_e, p, gamma_min, gamma_max):
-        """set k_e in order to normalise to total energy density u_e
-        normalization of the electron distribution Eq. 6.64 in [1]"""
+        """set the normalisation :math:`k_e` from the total energy density 
+        :math:`u_e`, Eq. 6.64 in [DermerMenon2009]_"""
         k_e_num = (p - 2) * u_e
         k_e_denum = MEC2 * (np.power(gamma_min, 2 - p) - np.power(gamma_max, 2 - p))
         k_e = (k_e_num / k_e_denum).to("cm-3")
@@ -103,7 +131,8 @@ class PowerLaw:
 
     @classmethod
     def from_normalised_density(cls, norm, p, gamma_min, gamma_max):
-        """set k_e in order to normalise the total particle density"""
+        """set the normalisation :math:`k_e` from the total particle density 
+        :math:`n_{e,\,tot}`"""
         k_e_num = (p - 1) * norm
         k_e_denum = np.power(gamma_min, 1 - p) - np.power(gamma_max, 1 - p)
         k_e = (k_e_num / k_e_denum).to("cm-3")
@@ -111,14 +140,38 @@ class PowerLaw:
         return cls(k_e, p, gamma_min, gamma_max)
 
     def SSA_integrand(self, gamma):
-        """integrand for the synchrotron self absorption"""
+        """integrand for the synchrotron self-absorption:
+        :math:`\gamma'^2 \\frac{d}{d \gamma'} \left(\\frac{n_e}{\gamma'^2}\\right)"""
         return _power_law_ssa_integrand(
             gamma, self.k_e, self.p, self.gamma_min, self.gamma_max
         )
 
 
 class BrokenPowerLaw:
-    """Class for two-indexes power law spectrum initialization"""
+    """Class for broken power-law particle spectrum
+    When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
+
+    .. math::
+        n_e(\gamma') = k_e \left[
+        \left(\\frac{\gamma'}{\gamma_b}\\right)^{-p_1} \, H(\gamma'; \gamma'_{min}, \gamma'_b) +
+        \left(\\frac{\gamma'}{\gamma_b}\\right)^{-p_2} \, H(\gamma'; \gamma'_{b}, \gamma'_{max}) 
+        \\right]
+
+    Parameters
+    ----------
+    k_e : `~astropy.units.Quantity`
+        spectral normalisation
+    p1 : float
+        spectral index before the break (positive by definition)
+    p2 : float
+        spectral index after the break (positive by definition)   
+    gamma_b : float
+        Lorentz factor at which the change in spectral index is occurring 
+    gamma_min : float
+        minimum Lorentz factor of the electron distribution
+    gamma_max : float
+        maximum Lorentz factor of the electron distribution
+    """
 
     def __init__(self, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
         self.k_e = k_e
@@ -139,9 +192,23 @@ class BrokenPowerLaw:
             self.gamma_max,
         )
 
+    def __str__(self):
+        summary = (
+            f"* electron spectrum\n"
+            + f" - broken power law\n"
+            + f" - k_e: {self.k_e:.2e}\n"
+            + f" - p_1: {self.p_1:.2f}\n"
+            + f" - p_2: {self.p_2:.2f}\n"
+            + f" - gamma_b: {self.gamma_b:.2e}\n"
+            + f" - gamma_min: {self.gamma_min:.2e}\n"
+            + f" - gamma_max: {self.gamma_max:.2e}\n"
+        )
+        return summary
+
     @classmethod
     def from_normalised_u_e(cls, u_e, p1, p2, gamma_b, gamma_min, gamma_max):
-        """set k_e in order to normalise to total energy density u_e"""
+        """set the normalisation :math:`k_e` from the total energy density 
+        :math:`u_e`, Eq. 6.64 in [DermerMenon2009]_"""
         denum_prefactor = MEC2 * np.power(gamma_b, 2)
         denum_term_1 = (1 - np.power(gamma_min / gamma_b, 2 - p1)) / (2 - p1)
         denum_term_2 = (np.power(gamma_max / gamma_b, 2 - p2) - 1) / (2 - p2)
@@ -151,7 +218,8 @@ class BrokenPowerLaw:
 
     @classmethod
     def from_normalised_density(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
-        """set k_e in order to normalise the total particle density"""
+        """set the normalisation :math:`k_e` from the total particle density 
+        :math:`n_{e,\,tot}`"""
         k_e_denum_1 = (gamma_min * np.power(gamma_min / gamma_b, -p1) - gamma_b) / (
             p1 - 1
         )
@@ -163,6 +231,8 @@ class BrokenPowerLaw:
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     def SSA_integrand(self, gamma):
+        """integrand for the synchrotron self-absorption:
+        :math:`\gamma'^2 \\frac{d}{d \gamma'} \left(\\frac{n_e}{\gamma'^2}\\right)`"""
         return _broken_power_law_ssa_integrand(
             gamma,
             self.k_e,
@@ -174,9 +244,31 @@ class BrokenPowerLaw:
         )
 
 
-class BrokenPowerLaw2:
-    """Smoothly broken power law as in Tavecchio et al. (1998)
-    https://ui.adsabs.harvard.edu/#abs/1998ApJ...509..608T/abstract"""
+class SmoothlyBrokenPowerLaw:
+    """Smoothly broken power law as in Eq. 1 of [Tavecchio1998]_.
+    When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
+
+    .. math::
+        n_e(\gamma') = k_e \left[
+        \gamma'^{-p_1} \, H(\gamma'; \gamma'_{min}, \gamma'_b) +
+        \gamma'^{(p_2 - p_1)}_b \, \gamma'^{-p_2} \, H(\gamma'; \gamma'_{b}, \gamma'_{max}) 
+        \\right]
+
+    Parameters
+    ----------
+    k_e : `~astropy.units.Quantity`
+        spectral normalisation
+    p1 : float
+        spectral index before the break (positive by definition)
+    p2 : float
+        spectral index after the break (positive by definition)   
+    gamma_b : float
+        Lorentz factor at which the change in spectral index is occurring 
+    gamma_min : float
+        minimum Lorentz factor of the electron distribution
+    gamma_max : float
+        maximum Lorentz factor of the electron distribution
+    """
 
     def __init__(self, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
         self.k_e = k_e
@@ -187,7 +279,7 @@ class BrokenPowerLaw2:
         self.gamma_max = gamma_max
 
     def __call__(self, gamma):
-        return _broken_power_law2(
+        return _smoothly_broken_power_law(
             gamma,
             self.k_e,
             self.p1,
@@ -197,9 +289,23 @@ class BrokenPowerLaw2:
             self.gamma_max,
         )
 
+    def __str__(self):
+        summary = (
+            f"* electron spectrum\n"
+            + f" - smoothly broken power law\n"
+            + f" - k_e: {self.k_e:.2e}\n"
+            + f" - p_1: {self.p_1:.2f}\n"
+            + f" - p_2: {self.p_2:.2f}\n"
+            + f" - gamma_b: {self.gamma_b:.2e}\n"
+            + f" - gamma_min: {self.gamma_min:.2e}\n"
+            + f" - gamma_max: {self.gamma_max:.2e}\n"
+        )
+        return summary
+
     @classmethod
     def from_normalised_u_e(cls, u_e, p1, p2, gamma_b, gamma_min, gamma_max):
-        """set k_e in order to normalise the total particle density"""
+        """set the normalisation :math:`k_e` from the total energy density 
+        :math:`u_e`, Eq. 6.64 in [DermerMenon2009]_"""
         k_e_denum_1 = (np.power(gamma_b, 2 - p1) - np.power(gamma_min, 2 - p1)) / (
             2 - p1
         )
@@ -214,7 +320,8 @@ class BrokenPowerLaw2:
 
     @classmethod
     def from_normalised_density(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
-        """set k_e in order to normalise the total particle density"""
+        """set the normalisation :math:`k_e` from the total particle density 
+        :math:`n_{e,\,tot}`"""
         k_e_denum_1 = (np.power(gamma_b, 1 - p1) - np.power(gamma_min, 1 - p1)) / (
             1 - p1
         )
@@ -230,8 +337,9 @@ class BrokenPowerLaw2:
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     def SSA_integrand(self, gamma):
-        """integrand for the synchrotron self absorption"""
-        return _broken_power_law2_ssa_integrand(
+        """integrand for the synchrotron self-absorption:
+        :math:`\gamma'^2 \\frac{d}{d \gamma'} \left(\\frac{n_e}{\gamma'^2}\\right)`"""
+        return _smoothly_broken_power_law_ssa_integrand(
             gamma,
             self.k_e,
             self.p1,

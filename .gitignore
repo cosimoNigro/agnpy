@@ -3,7 +3,7 @@ build
 _build
 *.py[cod]
 *$py.class
-*.egg*
+*.eggs*
 
 # vim
 *.swp*

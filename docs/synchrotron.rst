@@ -8,4 +8,5 @@ API
 ---
 
 .. automodule:: agnpy.synchrotron
+   :noindex:
    :members: Synchrotron 

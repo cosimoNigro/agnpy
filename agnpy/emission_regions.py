@@ -2,7 +2,7 @@ import numpy as np
 import astropy.units as u
 import astropy.constants as const
 from astropy.coordinates import Distance
-from .spectra import PowerLaw, BrokenPowerLaw, BrokenPowerLaw2
+from .spectra import PowerLaw, BrokenPowerLaw, SmoothlyBrokenPowerLaw
 
 
 MEC2 = (const.m_e * const.c * const.c).cgs
@@ -12,10 +12,10 @@ __all__ = ["Blob"]
 
 
 class Blob:
-    """Simple spherical emission region
+    """Simple spherical emission region.
 
     **Note:** all these quantities are defined in the comoving frame so they are actually
-    primed quantities, when referring the notation in [DermerMenon2009]_
+    primed quantities, when referring the notation in [DermerMenon2009]_.
 
     Parameters
     ----------
@@ -33,9 +33,9 @@ class Blob:
         normalization of the electron spectra, can be, following 
         the notation in [DermerMenon2009]_:
 
-            - :math:`n_{e,\,tot}`: total electrons density in :math:`\mathrm{cm}^{-3}`
-            - :math:`u_e` : total electrons energy density in :math:`\mathrm{erg}\,\mathrm{cm}^{-3}`
-            - :math:`W_e` : total energy in non-thermal electrons in :math:`\mathrm{erg}`
+            - :math:`n_{e,\,tot}`: total electrons density, in :math:`\mathrm{cm}^{-3}`
+            - :math:`u_e` : total electrons energy density, in :math:`\mathrm{erg}\,\mathrm{cm}^{-3}`
+            - :math:`W_e` : total energy in electrons, in :math:`\mathrm{erg}`
     
     spectrum_dict : dictionary
         dictionary containing type and spectral shape information, e.g.:
@@ -50,6 +50,9 @@ class Blob:
                     "gamma_max": 1e7
                 }
             }
+            
+    gamma_size : int
+        size of the array of electrons Lorentz factors
     """
 
     def __init__(
@@ -82,8 +85,8 @@ class Blob:
             _model = PowerLaw
         if spectrum_dict["type"] == "BrokenPowerLaw":
             _model = BrokenPowerLaw
-        if spectrum_dict["type"] == "BrokenPowerLaw2":
-            _model = BrokenPowerLaw2
+        if spectrum_dict["type"] == "SmoothlyBrokenPowerLaw":
+            _model = SmoothlyBrokenPowerLaw
         if spectrum_norm.unit == u.Unit("cm-3"):
             self.n_e = _model.from_normalised_density(
                 spectrum_norm, **spectrum_dict["parameters"]
@@ -107,16 +110,12 @@ class Blob:
             + f" - Beta (blob relativistic velocity): {self.Beta:.2e}\n"
             + f" - mu_s (cosine of the jet viewing angle): {self.mu_s:.2e}\n"
             + f" - B (magnetic field tangled to the jet): {self.B:.2e}\n"
-            + f" - electron spectra:\n"
-            + f"  |- normalisation: {self.spectrum_norm:.2e}\n"
-            + f"  |- spectral function: {self.spectrum_dict['type']}\n"
-            + f"  |- gamma_min (minimum Lorentz factor): {self.gamma_min:.2e}\n"
-            + f"  '- gamma_max (maximum Lorentz factor): {self.gamma_max:.2e}"
+            + str(self.n_e)
         )
         return summary
 
     def set_gamma_size(self, gamma_size):
-        """change size of electron Lorentz factor grid"""
+        """change size of the array of electrons Lorentz factors"""
         self.gamma_size = gamma_size
         self.gamma = np.logspace(
             np.log10(self.gamma_min), np.log10(self.gamma_max), self.gamma_size
@@ -125,7 +124,7 @@ class Blob:
 
     def N_e(self, gamma):
         """number of electrons as a function of the Lorentz factor, 
-        :math:`N_e(\gamma') = V_b\,n_e(\gamma')"""
+        :math:`N_e(\gamma') = V_b\,n_e(\gamma')`"""
         return self.V_b * self.n_e(gamma)
 
     @property

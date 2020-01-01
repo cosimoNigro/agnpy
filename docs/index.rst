@@ -1,5 +1,6 @@
 agnpy docs
 =================================
+`agnpy` focuses on the numerical computation of the photon spectra produced by leptonic radiative processes in jetted Active Galactic Nuclei (AGN).    
 
 Description
 -----------
@@ -9,7 +10,6 @@ Notation and basic formulas are borrowed from [DermerMenon2009]_ which constitut
 
 Implementation
 ..............
-`agnpy` focuses on the numerical computation of the photon spectra produced by leptonic radiative processes in jetted Active Galactic Nuclei (AGN).    
 The numerical operations are delegated to `numpy arrays <https://numpy.org>`_, all the physical quantities computed are casted as `astropy Quantities <https://docs.astropy.org/en/stable/units/>`_.
 
 License
@@ -22,10 +22,11 @@ Overview
 .. toctree::
    :maxdepth: 2
 
+   spectra
    emission_regions
    synchrotron
    compton
-   references
+   bibliography
 
 Indices and tables
 ------------------
