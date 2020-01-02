@@ -1,3 +1,7 @@
+.. image:: _static/logo.pdf
+    :width: 400px
+    :align: center
+
 agnpy docs
 =================================
 `agnpy` focuses on the numerical computation of the photon spectra produced by leptonic radiative processes in jetted Active Galactic Nuclei (AGN).    
@@ -6,11 +10,11 @@ Description
 -----------
 References
 ..........
-Notation and basic formulas are borrowed from [DermerMenon2009]_ which constitutes the fundamental reference for this code. The implementation of synchrotron and synchrotron self-Compton radiative processes relies on [DermerMenon2009]_ and [Finke2008]_; for the external Compton radiative processes [Dermer2009]_ and [Finke2016]_ are the main references.
+Notation and basic formulas are borrowed from [DermerMenon2009]_ which constitutes the fundamental reference for this code. The implementation of synchrotron and synchrotron self-Compton radiative processes relies on [DermerMenon2009]_ and [Finke2008]_; [Dermer2009]_ and [Finke2016]_ are instead the main references for the external Compton radiative processes.
 
 Implementation
 ..............
-The numerical operations are delegated to `numpy arrays <https://numpy.org>`_, all the physical quantities computed are casted as `astropy Quantities <https://docs.astropy.org/en/stable/units/>`_.
+The numerical operations are delegated to `numpy arrays <https://numpy.org>`_, all the physical quantities computed are casted as `astropy Quantities <https://docs.astropy.org/en/stable/units/>`_. 
 
 License
 -------
