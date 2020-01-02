@@ -59,7 +59,7 @@ this produces an array of `~astropy.units.Quantity`
  	2.11999976e-10 1.06769353e-10 2.42794688e-11 1.12784155e-12
  	2.22960447e-15 8.03665999e-21] erg / (cm2 s)
 	
-we can also plot the SED, accounting, for example, for the SSA
+we can also plot the SED, showing for example the difference with a self-absorbed spectrum
 
 .. code-block:: python
 
@@ -74,8 +74,6 @@ we can also plot the SED, accounting, for example, for the SSA
 .. image:: _static/synch.png
     :width: 500px
     :align: center
-
-
 
 
 API

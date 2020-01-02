@@ -46,7 +46,7 @@ def nu_B(B):
 
 
 class Synchrotron:
-    """class for synchrotron radiation computation
+    """Class for synchrotron radiation computation
 
 	Parameters
 	----------
