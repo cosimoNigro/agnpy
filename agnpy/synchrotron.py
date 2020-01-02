@@ -1,4 +1,3 @@
-"""class and functions describing the synchrotron radiative process"""
 import numpy as np
 import astropy.constants as const
 import astropy.units as u
@@ -37,12 +36,12 @@ def R(x):
 
 
 def U_B(B):
-    """U_B Eq. 7.14 in [1]"""
+    """:math:`U_B` Eq. 7.14 in [DermerMenon2009]_"""
     return np.power(B.to("G").value, 2) / (8 * np.pi) * u.Unit("erg cm-3")
 
 
 def nu_B(B):
-    """nu_B Eq. 7.19 in [1]"""
+    """:math:`\\nu_B` Eq. 7.19 in [DermerMenon2009]_"""
     return (E * B.to("G").value / MEC) * u.Hz
 
 
@@ -69,20 +68,20 @@ class Synchrotron:
 
         Eq. 7.116 in [DermerMenon2009]_ or Eq. 18 in [Finke2008]_.
         
-        - Note:This emissivity is computed in the co-moving frame of the blob.
+        **Note:** This emissivity is computed in the co-moving frame of the blob.
         When calling this function from another, these energies
         have to be transformed in the co-moving frame of the plasmoid.
         
         Parameters
         ----------
         epsilon : `~numpy.ndarray`
-            array of the dimensionless energies to compute the sed
+            array of dimensionless energies (in electron rest mass units) 
+            to compute the sed, :math:`\epsilon = h\\nu / (m_e c^2)`
 
-        
         Returns
         -------
         `~astropy.units.Quantity`
-            array of the emissivity corresponding to each epsilon
+            array of the emissivity corresponding to each dimensionless energy
         """
         # strip units to speed-up calculations
         gamma = self.blob.gamma
@@ -100,9 +99,9 @@ class Synchrotron:
         return prefactor * integral * u.Unit(EMISSIVITY_UNIT)
 
     def k_epsilon(self, epsilon):
-        """SSA absorption factor Eq. 7.142 in [1].
-        The part of the integrand that is dependent on gamma is computed
-        analytically in each class."""
+        """SSA absorption factor Eq. 7.142 in [DermerMenon2009]_.
+        The part of the integrand that is dependent on :math:`\gamma` is 
+        computed analytically in each `~agnpy.spectra` class."""
         gamma = self.blob.gamma
         SSA_integrand = self.blob.n_e.SSA_integrand(gamma).value
         B = self.blob.B.to("G").value
@@ -121,11 +120,11 @@ class Synchrotron:
         return prefactor_P_syn * prefactor_k_epsilon * integral / u.cm
 
     def tau_SSA(self, epsilon):
-        """SSA opacity, Eq. before 7.122 in [1]"""
+        """SSA opacity, Eq. before 7.122 in [DermerMenon2009]_"""
         return (2 * self.k_epsilon(epsilon) * self.blob.R_b).decompose()
 
     def attenuation_SSA(self, epsilon):
-        """SSA attenuation, Eq. 7.122 in [1]"""
+        """SSA attenuation, Eq. 7.122 in [DermerMenon2009]_"""
         tau = self.tau_SSA(epsilon)
         u = 1 / 2 + np.exp(-tau) / tau - (1 - np.exp(-tau)) / np.power(tau, 2)
         attenuation = 3 * u / tau
@@ -134,16 +133,16 @@ class Synchrotron:
         return attenuation
 
     def sed_luminosity(self, nu, SSA=False):
-        """Synchrotron luminosity SED (\nu L_{\nu}) [erg s-1]
+        """Synchrotron luminosity SED: 
+        :math:`\\nu L_{\\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]`
 
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
-            array of the frequencies, in Hz, to compute the sed
+            array of frequencies, in Hz, to compute the sed, **note** these are 
+            observed frequencies (observer frame).
         SSA : bool
-            whether to apply synchrotron self absorption
-
-        Note: these are observed frequencies (observer frame).
+            whether or not to apply synchrotron self absorption
         """
         epsilon = H * nu.to("Hz").value / MEC2
         # correct epsilon to the jet comoving frame
@@ -158,17 +157,17 @@ class Synchrotron:
             return prefactor * self.com_sed_emissivity(epsilon_prime)
 
     def sed_flux(self, nu, SSA=False):
-        """Synchrotron flux SED (\nu F_{\nu})) [erg cm-2 s-1]
-		Eq. 21 in [2]
+        """Synchrotron flux SED:
+        :math:`\\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`
+		Eq. 21 in [Finke2008]_
 
 		Parameters
 		----------
-		nu : `~astropy.units.Quantity`
-		    array of the frequencies, in Hz, to compute the sed
+        nu : `~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed, **note** these are 
+            observed frequencies (observer frame).
         SSA : bool
-            whether to apply synchrotron self absorption
-
-		Note: these are observed frequencies (observer frame).
+            whether or not to apply synchrotron self absorption
         """
         epsilon = H * nu.to("Hz").value / MEC2
         # correct epsilon to the jet comoving frame
