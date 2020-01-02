@@ -14,7 +14,7 @@ Notation and basic formulas are borrowed from [DermerMenon2009]_ which constitut
 
 Implementation
 ..............
-The numerical operations are delegated to `numpy arrays <https://numpy.org>`_, all the physical quantities computed are casted as `astropy Quantities <https://docs.astropy.org/en/stable/units/>`_. 
+The numerical operations are delegated to `numpy arrays <https://numpy.org>`_, all the physical quantities computed are casted as `astropy Quantities <https://docs.astropy.org/en/stable/units/>`_. `numba <http://numba.pydata.org>`_ is used to optimise the numerical operations.
 
 License
 -------

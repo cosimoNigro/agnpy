@@ -1,8 +1,7 @@
-"""classes and functions describing the inverse Compton radiative processes"""
 import numpy as np
 import astropy.constants as const
 import astropy.units as u
-from numba import jit, float64
+from numba import jit
 
 
 # electromagnetic cgs units are not well-handled by astropy.units
@@ -52,6 +51,7 @@ def isotropic_kernel(gamma, epsilon, epsilon_s):
     return values
 
 
+@jit(nopython=True, cache=True)
 def cos_psi(mu_s, mu, phi):
     """Compute the angle between the blob (with zenith mu_s) and a photon with
     zenith and azimuth (mu, phi). The system is symmetric in azimuth for the
@@ -62,6 +62,7 @@ def cos_psi(mu_s, mu, phi):
     return term_1 + term_2 * term_3
 
 
+@jit(nopython=True, cache=True)
 def get_gamma_min(epsilon_s, epsilon, mu_s, mu, phi):
     """minimum Lorentz factor for Compton integration, 
     Eq. 29 in [4], Eq. 38 in [5]."""
@@ -243,7 +244,7 @@ class ExternalCompton:
     ----------
     blob : `~agnpy.emission_region.Blob`
         emitting region and electron distribution hitting the photon target
-    target : `~agnpy.targets.Target`
+    target : `~agnpy.targets`
         class describing the target photon field    
     r : `~astropy.units.Quantity`
         distance of the blob from the Black Hole (i.e. from the target photons)

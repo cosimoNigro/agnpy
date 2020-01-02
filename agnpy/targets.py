@@ -123,11 +123,11 @@ class SphericalShellBLR:
     disk : `~agnpy.targets.SSDisk`
         disk whose radiation is being reprocessed by the BLR
     csi_line : float
-        fraction of the disk radiation reprocessed by the disk
+        fraction of the disk radiation reprocessed by the BLR
     epsilon_line : float
         dimensionless energy of the emitted line
     R_line : `~astropy.units.Quantity`
-        radius of the spherical shell
+        radius of the BLR spherical shell
     """
 
     def __init__(self, disk, csi_line, epsilon_line, R_line):
@@ -138,6 +138,16 @@ class SphericalShellBLR:
         self.R_line = R_line.cgs
         self._R_line = self.R_line.value
 
+    def __str__(self):
+        summary = (
+            f"* Spherical Shell Broad Line Region:\n"
+            + f" - M_BH (central black hole mass): {self.parent_disk.M_BH:.2e}\n"
+            + f" - L_disk (accretion disk luminosity): {self.parent_disk.L_disk:.2e}\n"
+            + f" - csi_line (fraction of the disk radiation reprocessed by the BLR): {self.csi_line:.2e}\n"
+            + f" - epsilon_line (dimensionless energy of the emitted line): {self.epsilon_line:.2e}\n"
+            + f" - R_line (radius of the BLR shell): {self.R_line:.2e}\n"
+        )
+        return summary
 
 class RingDustTorus:
     """Dust Torus as infinitesimally thin annulus.

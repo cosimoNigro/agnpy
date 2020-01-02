@@ -141,7 +141,7 @@ class PowerLaw:
 
     def SSA_integrand(self, gamma):
         """integrand for the synchrotron self-absorption:
-        :math:`\gamma'^2 \\frac{d}{d \gamma'} \left(\\frac{n_e}{\gamma'^2}\\right)"""
+        :math:`\gamma'^2 \\frac{d}{d \gamma'} \left(\\frac{n_e}{\gamma'^2}\\right)`"""
         return _power_law_ssa_integrand(
             gamma, self.k_e, self.p, self.gamma_min, self.gamma_max
         )
@@ -197,8 +197,8 @@ class BrokenPowerLaw:
             f"* electron spectrum\n"
             + f" - broken power law\n"
             + f" - k_e: {self.k_e:.2e}\n"
-            + f" - p_1: {self.p_1:.2f}\n"
-            + f" - p_2: {self.p_2:.2f}\n"
+            + f" - p1: {self.p1:.2f}\n"
+            + f" - p2: {self.p2:.2f}\n"
             + f" - gamma_b: {self.gamma_b:.2e}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
             + f" - gamma_max: {self.gamma_max:.2e}\n"
@@ -294,8 +294,8 @@ class SmoothlyBrokenPowerLaw:
             f"* electron spectrum\n"
             + f" - smoothly broken power law\n"
             + f" - k_e: {self.k_e:.2e}\n"
-            + f" - p_1: {self.p_1:.2f}\n"
-            + f" - p_2: {self.p_2:.2f}\n"
+            + f" - p1: {self.p_1:.2f}\n"
+            + f" - p2: {self.p_2:.2f}\n"
             + f" - gamma_b: {self.gamma_b:.2e}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
             + f" - gamma_max: {self.gamma_max:.2e}\n"
