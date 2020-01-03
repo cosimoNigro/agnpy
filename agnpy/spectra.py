@@ -89,7 +89,7 @@ class PowerLaw:
 
     Parameters
     ----------
-    k_e : `~astropy.units.Quantity`
+    k_e : :class:`~astropy.units.Quantity`
         spectral normalisation
     p : float
         spectral index, note it is positive by definition, will change sign in the function
@@ -159,7 +159,7 @@ class BrokenPowerLaw:
 
     Parameters
     ----------
-    k_e : `~astropy.units.Quantity`
+    k_e : :class:`~astropy.units.Quantity`
         spectral normalisation
     p1 : float
         spectral index before the break (positive by definition)
@@ -256,7 +256,7 @@ class SmoothlyBrokenPowerLaw:
 
     Parameters
     ----------
-    k_e : `~astropy.units.Quantity`
+    k_e : :class:`~astropy.units.Quantity`
         spectral normalisation
     p1 : float
         spectral index before the break (positive by definition)

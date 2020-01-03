@@ -1,7 +1,6 @@
 import numpy as np
 import astropy.constants as const
 import astropy.units as u
-from numba import jit
 
 
 # electromagnetic cgs units are not well-handled by astropy.units
@@ -22,7 +21,6 @@ SED_UNIT = "erg cm-2 s-1"
 __all__ = ["R", "U_B", "Synchrotron"]
 
 
-@jit(nopython=True, cache=True, parallel=True)
 def R(x):
     """Eq. 7.45 in [Dermer2009]_, angle-averaged integrand of the radiated power, the 
     approximation of this formula given in Eq. D7 of [Aharonian2010]_ is used.
@@ -50,7 +48,7 @@ class Synchrotron:
 
 	Parameters
 	----------
-	blob : `~agnpy.emission_region.Blob`
+	blob : :class:`~agnpy.emission_region.Blob`
 		emitting region and electron distribution 
 	"""
 
@@ -74,13 +72,13 @@ class Synchrotron:
         
         Parameters
         ----------
-        epsilon : `~numpy.ndarray`
+        epsilon : :class:`~numpy.ndarray`
             array of dimensionless energies (in electron rest mass units) 
             to compute the sed, :math:`\epsilon = h\\nu / (m_e c^2)`
 
         Returns
         -------
-        `~astropy.units.Quantity`
+        :class:`~astropy.units.Quantity`
             array of the emissivity corresponding to each dimensionless energy
         """
         # strip units to speed-up calculations
@@ -134,15 +132,22 @@ class Synchrotron:
 
     def sed_luminosity(self, nu, SSA=False):
         """Synchrotron luminosity SED: 
-        :math:`\\nu L_{\\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]`
+
+        .. math::
+            \\nu L_{\\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]
 
         Parameters
         ----------
-        nu : `~astropy.units.Quantity`
+        nu : :class:`~astropy.units.Quantity`
             array of frequencies, in Hz, to compute the sed, **note** these are 
             observed frequencies (observer frame).
         SSA : bool
             whether or not to apply synchrotron self absorption
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            array of the SED values corresponding to each frequency
         """
         epsilon = H * nu.to("Hz").value / MEC2
         # correct epsilon to the jet comoving frame
@@ -158,16 +163,24 @@ class Synchrotron:
 
     def sed_flux(self, nu, SSA=False):
         """Synchrotron flux SED:
-        :math:`\\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`
-		Eq. 21 in [Finke2008]_
+
+        .. math::
+            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
+		
+        Eq. 21 in [Finke2008]_
 
 		Parameters
 		----------
-        nu : `~astropy.units.Quantity`
+        nu : :class:`~astropy.units.Quantity`
             array of frequencies, in Hz, to compute the sed, **note** these are 
             observed frequencies (observer frame).
         SSA : bool
             whether or not to apply synchrotron self absorption
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            array of the SED values corresponding to each frequency
         """
         epsilon = H * nu.to("Hz").value / MEC2
         # correct epsilon to the jet comoving frame

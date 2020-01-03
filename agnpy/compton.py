@@ -1,7 +1,6 @@
 import numpy as np
 import astropy.constants as const
 import astropy.units as u
-from numba import jit
 
 
 # electromagnetic cgs units are not well-handled by astropy.units
@@ -21,9 +20,8 @@ SED_UNIT = "erg cm-2 s-1"
 __all__ = ["SynchrotronSelfCompton", "ExternalCompton"]
 
 
-@jit(nopython=True, cache=True)
 def F_c(q, gamma_e):
-    """isotropic Compton kernel, Eq. 6.75 in [1], Eq. 10 in [2]"""
+    """isotropic Compton kernel, Eq. 6.75 in [DermerMenon2009]_, Eq. 10 in [Finke2008]_"""
     term_1 = 2 * q * np.log(q)
     term_2 = (1 + 2 * q) * (1 - q)
     term_3 = 1 / 2 * np.power(gamma_e * q, 2) / (1 + gamma_e * q) * (1 - q)
@@ -33,16 +31,16 @@ def F_c(q, gamma_e):
 def isotropic_kernel(gamma, epsilon, epsilon_s):
     """Compton kernel for isotropic nonthermal electrons scattering photons of 
     an isotropic external radiation field.
-    Integrand of Eq. 6.74 in [1].
+    Integrand of Eq. 6.74 in [DermerMenon2009]_.
 
     Parameters
     ----------
-    gamma : array_like
+    gamma : `~numpy.ndarray`
         Lorentz factors of the electrons distribution
-    epsilon : array_like
-        dimesnionless energies of the target photon field
-    epsilon_s : array_like
-        dimensionless energies of the scattered photons
+    epsilon : `~numpy.ndarray`
+        dimesnionless energies (in electron rest mass units) of the target photons
+    epsilon_s : `~numpy.ndarray`
+        dimensionless energies (in electron rest mass units) of the scattered photons
     """
     gamma_e = 4 * gamma * epsilon
     q = (epsilon_s / gamma) / (gamma_e * (1 - epsilon_s / gamma))
@@ -51,43 +49,41 @@ def isotropic_kernel(gamma, epsilon, epsilon_s):
     return values
 
 
-@jit(nopython=True, cache=True)
 def cos_psi(mu_s, mu, phi):
-    """Compute the angle between the blob (with zenith mu_s) and a photon with
+    """compute the angle between the blob (with zenith mu_s) and a photon with
     zenith and azimuth (mu, phi). The system is symmetric in azimuth for the
-    electron phi_s = 0, Eq. 8 in [5]."""
+    electron phi_s = 0, Eq. 8 in [Finke2016]_."""
     term_1 = mu * mu_s
     term_2 = np.sqrt(1 - np.power(mu, 2)) * np.sqrt(1 - np.power(mu_s, 2))
     term_3 = np.cos(phi)
     return term_1 + term_2 * term_3
 
 
-@jit(nopython=True, cache=True)
 def get_gamma_min(epsilon_s, epsilon, mu_s, mu, phi):
     """minimum Lorentz factor for Compton integration, 
-    Eq. 29 in [4], Eq. 38 in [5]."""
+    Eq. 29 in [Dermer2009]_, Eq. 38 in [Finke2016]_."""
     sqrt_term = np.sqrt(1 + 2 / (epsilon * epsilon_s * (1 - cos_psi(mu_s, mu, phi))))
     return epsilon_s / 2 * (1 + sqrt_term)
 
 
 def compton_kernel(gamma, epsilon_s, epsilon, mu_s, mu, phi):
-    """Angle dependent Compton kernel:
-    Eq. 26-27 in [4].
+    """angle dependent Compton kernel:
+    Eq. 26-27 in [Dermer2009]_.
 
     Parameters
     ----------
-    gamma : array_like
+    gamma : `~numpy.ndarray`
         Lorentz factors of the electrons distribution
-    epsilon : array_like
-        energies of the target photon field
-    epsilon_s : array_like
-        energies of the scattered photon field
+    epsilon : `~numpy.ndarray`
+        dimesnionless energies (in electron rest mass units) of the target photons
+    epsilon_s : `~numpy.ndarray`
+        dimensionless energies (in electron rest mass units) of the scattered photons
     mu_s : float
-        cosine of the zenith angle of the blob
-    mu : `array_like`
-        cosine of the zenith angle of the target
-    phi : `array_like`
-        azimuth angle of the target
+        cosine of the zenith angle of the blob w.r.t the jet
+    mu : `~numpy.ndarray` or float
+        (array of) cosine of the zenith angle subtended by the target
+    phi : `~numpy.ndarray` or float
+        (array of) of the azimuth angle subtended by the target
     """
     epsilon_bar = gamma * epsilon * (1 - cos_psi(mu_s, mu, phi))
     y = 1 - epsilon_s / gamma
@@ -100,17 +96,17 @@ def compton_kernel(gamma, epsilon_s, epsilon, mu_s, mu, phi):
 
 
 def x_re_shell(mu, R_re, r):
-    """Distance between the blob and the reprocessing material,
-    see Fig. 9 and Eq. (76) in [5].
+    """distance between the blob and the reprocessing material,
+    see Fig. 9 and Eq. 76 in [Finke2016]_.
     
     Parameters
     ----------
-    mu :  array_like
-        cosine of the zenith from the central BH to the reprocessing material
+    mu : `~numpy.ndarray`
+        (array of) cosine of the zenith angle subtended by the target
     R_re : float 
         distance (in cm) from the BH to the reprocessing material
     r : float
-        height of the emission region in the jet
+        height (in cm) of the emission region in the jet
     """
     value = np.sqrt(np.power(R_re, 2) + np.power(r, 2) - 2 * r * R_re * mu)
     return value
@@ -122,16 +118,16 @@ def x_re_ring(R_re, r):
 
 def mu_star(mu, R_re, r):
     """cosine of the angle between the blob and the reprocessing material,
-    see Fig. 9 and Eq. (76) in [5].
+    see Fig. 9 and Eq. 76 in [Finke2016]_.
 
     Parameters
     ----------
-    mu :  array_like
-        cosine of the zenith from the central BH to the reprocessing material
+    mu : `~numpy.ndarray`
+        (array of) cosine of the zenith angle subtended by the target
     R_re : float 
         distance (in cm) from the BH to the reprocessing material
     r : float
-        height of the emission region in the jet
+        height (in cm) of the emission region in the jet
     """
     addend = np.power(R_re / x_re_shell(mu, R_re, r), 2) * (1 - np.power(mu, 2))
     return np.sqrt(1 - addend)
@@ -143,7 +139,7 @@ class SynchrotronSelfCompton:
     Parameters
     ----------
     blob : `~agnpy.emission_region.Blob`
-        emitting region and electron distribution hitting the photon target
+        emission region and electron distribution hitting the photon target
     synchrotron : `~agnpy.synchrotron.Synchrotron`
         class describing the synchrotron photons target
     """
@@ -158,20 +154,25 @@ class SynchrotronSelfCompton:
         )
 
     def com_sed_emissivity(self, epsilon):
-        """SSC  emissivity  (\epsilon' * J'_{SSC}(\epsilon')) [erg s-1]
-        Eq. 8 and 9 of [2].
+        """SSC  emissivity: 
+
+        .. math::
+            \epsilon'\,J'_{\mathrm{SSC}}(\epsilon')\,[\mathrm{erg}\,\mathrm{s}^{-1}]
+        
+        Eq. 8 and 9 of [Finke2008_].
+
+        **Note:** This emissivity is computed in the co-moving frame of the blob.
+        When calling this function from another, these energies
+        have to be transformed in the co-moving frame of the plasmoid.
 
         Parameters
         ----------
-        epsilon : array_like
-            dimensionless energies of the scattered photons
-
-        Note: when calling this function from another these energies
-        have to be transformed in the co-moving frame of the plasmoid.
+        epsilon : `~numpy.ndarray`
+            dimensionless energies (in electron rest mass units) of the scattered photons
         """
         gamma = self.blob.gamma
         N_e = self.blob.N_e(gamma).value
-        # Eq. 22 of [2], the factor 3 / 4 accounts for averaging in a sphere
+        # Eq. 22 of [Finke2008]_, the factor 3 / 4 accounts for averaging in a sphere
         # not included in Dermer and Finke's papers
         J_epsilon_syn = 3 / 4 * self.synch_sed_emissivity.value / self.epsilon_syn
         # variables that have to be integrated will start their names with "_"
@@ -203,14 +204,16 @@ class SynchrotronSelfCompton:
         return prefactor * integral_epsilon * u.Unit(EMISSIVITY_UNIT)
 
     def sed_luminosity(self, nu):
-        """SSC luminosity SED (\nu L_{\nu}) [erg s-1]
+        """SSC luminosity SED: 
+
+        .. math::
+            \\nu L_{\\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]
 
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
-          array of the frequencies, in Hz, to compute the sed
-
-        Note: these are observed frequencies (observer frame).
+            array of frequencies, in Hz, to compute the sed, **note** these are 
+            observed frequencies (observer frame).
         """
         epsilon = H * nu.to("Hz").value / MEC2
         # correct epsilon to the jet comoving frame
@@ -218,15 +221,18 @@ class SynchrotronSelfCompton:
         return prefactor * self.com_sed_emissivity(epsilon_prime)
 
     def sed_flux(self, nu):
-        """SSC flux SED (\nu F_{\nu})) [erg cm-2 s-1]
-        Eq. 15 in [2]
+        """SSC flux SED:
+        
+        .. math::
+            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
+        
+        Eq. 15 in [Finke2008]_
 
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
-            array of the frequencies, in Hz, to compute the sed
-
-        Note: these are observed frequencies (lab frame).
+            array of frequencies, in Hz, to compute the sed, **note** these are 
+            observed frequencies (observer frame).
         """
         epsilon = H * nu.to("Hz").value / MEC2
         # correct epsilon to the jet comoving frame
@@ -243,15 +249,18 @@ class ExternalCompton:
     Parameters
     ----------
     blob : `~agnpy.emission_region.Blob`
-        emitting region and electron distribution hitting the photon target
+        emission region and electron distribution hitting the photon target
     target : `~agnpy.targets`
         class describing the target photon field    
     r : `~astropy.units.Quantity`
         distance of the blob from the Black Hole (i.e. from the target photons)
+
+    Properties
+    ----------
     mu_min : float
-        minimum zenith (cosine theta) subtended by the target photon field
+        minimum cosine of the zenith angle subtended by the target photon field
     mu_max : float
-        maximum zenith (cosine theta) subtended by the target photon field
+        maximum cosine of the zenith angle subtended by the target photon field
     mu_size : int
         size of the array of the zenith dependence of the target field
     phi : array_like
@@ -260,7 +269,7 @@ class ExternalCompton:
 
     def __init__(self, blob, target, r):
         self.blob = blob
-        # we integrate on a larger grid to account for the transf.
+        # we integrate on a larger grid to account for the transformation
         # of the electron density in the reference frame of the BH
         self.gamma = self.blob.gamma_to_integrate
         self.transformed_N_e = self.blob.N_e(self.gamma / self.blob.delta_D).value
@@ -285,15 +294,18 @@ class ExternalCompton:
         self.phi = np.linspace(0, 2 * np.pi, self.phi_size)
 
     def _sed_flux_disk(self, nu):
-        """Flux SED (\nu F_{\nu})) [erg cm-2 s-1] for EC on SS Disk
-        Eq. 70 in [4].
+        """EC on SS Disk flux SED:
+        
+        .. math::
+            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
+
+        Eq. 70 in [Dermer2009]_.
 
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
-            array of the frequencies, in Hz, to compute the sed
-
-        Note: frequencies are observed, i.e. in the lab frame
+            array of frequencies, in Hz, to compute the sed, **note** these are 
+            observed frequencies (observer frame).
         """
         # define the dimensionless energy
         epsilon_s_obs = H * nu.to("Hz").value / MEC2
@@ -349,14 +361,18 @@ class ExternalCompton:
         return prefactor_num / prefactor_denom * integral_phi * u.Unit(SED_UNIT)
 
     def _sed_flux_shell_blr(self, nu):
-        """SED flux for Compton Scattering over the blr
+        """EC on BLR flux SED:
+        
+        .. math::
+            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
+
+        Eq. 70 in [Dermer2009]_.
 
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
-            array of the frequencies, in Hz, to compute the sed
-
-        Note: frequencies are observed, i.e. in the lab frame
+            array of frequencies, in Hz, to compute the sed, **note** these are 
+            observed frequencies (observer frame).
         """
         # define the dimensionless energy
         epsilon_s_obs = H * nu.to("Hz").value / MEC2
@@ -402,18 +418,18 @@ class ExternalCompton:
         return prefactor_num / prefactor_denom * integral_phi * u.Unit(SED_UNIT)
 
     def _sed_flux_ring_torus(self, nu):
-        """SED flux for Compton Scattering over the blr
+        """EC on Dust Torus flux SED:
+        
+        .. math::
+            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
 
-        Eq. (70) and (71) in [3]
+        Eq. 70 in [Dermer2009]_.
 
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
-            array of the scattered photons, in Hz
-        target : `~agnpy.targets.RingDustTorus`
-            target blr field
-
-        Note: frequencies are observed, i.e. in the lab frame
+            array of frequencies, in Hz, to compute the sed, **note** these are 
+            observed frequencies (observer frame).
         """
         # define the dimensionless energy
         epsilon_s_obs = H * nu.to("Hz").value / MEC2
@@ -455,6 +471,17 @@ class ExternalCompton:
         return prefactor_num / prefactor_denom * integral_phi * u.Unit(SED_UNIT)
 
     def sed_flux(self, nu):
+        """EC flux SED:
+
+        .. math::
+            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
+
+        Parameters
+        ----------
+        nu : `~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed, **note** these are 
+            observed frequencies (observer frame).
+        """
         if self.target.type == "SSDisk":
             return self._sed_flux_disk(nu)
         if self.target.type == "SphericalShellBLR":

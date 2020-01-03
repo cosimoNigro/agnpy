@@ -1,4 +1,3 @@
-"""classes and functions describing the external Compton target photon fields"""
 import numpy as np
 import astropy.constants as const
 import astropy.units as u
@@ -18,7 +17,8 @@ M_SUN = const.M_sun.cgs.value
 K_B = const.k_B.cgs.value
 SIGMA_SB = const.sigma_sb.cgs.value
 
-__all__ = ["SSDisk", "SphericalShellBLR"]
+
+__all__ = ["SSDisk", "SphericalShellBLR", "RingDustTorus"]
 
 
 class SSDisk:
@@ -184,3 +184,14 @@ class RingDustTorus:
         else:
             self.R_dt = R_dt.cgs
         self._R_dt = self.R_dt.value
+
+    def __str__(self):
+        summary = (
+            f"* SRing Dust Torus:\n"
+            + f" - M_BH (central black hole mass): {self.parent_disk.M_BH:.2e}\n"
+            + f" - L_disk (accretion disk luminosity): {self.parent_disk.L_disk:.2e}\n"
+            + f" - csi_dt (fraction of the disk radiation reprocessed by the torus): {self.csi_dt:.2e}\n"
+            + f" - epsilon_dt (dimensionless temperature of the dust torus): {self.epsilon_dt:.2e}\n"
+            + f" - R_dt (radius of the torus): {self.R_dt:.2e}\n"
+        )
+        return summary

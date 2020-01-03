@@ -4,9 +4,9 @@
 Synchrotron Radiation
 =====================
 
-At the moment we compute synchrotron radiation following the approach of [DermerMenon2009]_ and [Finke2008]_.
+The synchrotron radiation is computed following the approach of [DermerMenon2009]_ and [Finke2008]_.
 
-Expanding the example in :ref:`emission_regions`, it is here illustrated how to produce a synchrotron spectral energy distribution (SED) staring from a `~agnpy.emission_regions.Blob`. The Synchrotron Self Absorption (SSA) mechanism is considered. 
+Expanding the example in :ref:`emission_regions`, it is here illustrated how to produce a synchrotron spectral energy distribution (SED) staring from a :class:`~agnpy.emission_regions.Blob`. The Synchrotron Self Absorption (SSA) mechanism can be considered. 
 
 .. code-block:: python
 
@@ -31,7 +31,7 @@ Expanding the example in :ref:`emission_regions`, it is here illustrated how to 
 	Gamma = 10
 	blob = Blob(R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict)
 
-to initialise the synchrotron radiation just pass the blob to the Synchrotron object
+to initialise the synchrotron radiation just pass the :class:`~agnpy.emission_regions.Blob` to the :class:`~agnpy.synchrotron.Synchrotron` class intialiser 
 
 .. code-block:: python
 
@@ -41,7 +41,7 @@ to initialise the synchrotron radiation just pass the blob to the Synchrotron ob
 	synch_sed = synch.sed_flux(nu)
 	print(synch_sed)
 
-this produces an array of `~astropy.units.Quantity`
+this produces an array of :class:`~astropy.units.Quantity`
 
 .. code-block:: python
 

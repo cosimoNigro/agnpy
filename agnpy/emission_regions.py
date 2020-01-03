@@ -19,17 +19,17 @@ class Blob:
 
     Parameters
     ----------
-    R_b : `~astropy.units.Quantity`
+    R_b : :class:`~astropy.units.Quantity`
         radius of the blob
     z : float
         redshift of the source
     delta_D : float
         Doppler factor of the relativistic outflow
-    Gamma :  float
+    Gamma : float
         Lorentz factor of the relativistic outflow
-    B : `~astropy.units.Quantity`
+    B : :class:`~astropy.units.Quantity`
         magnetic field in the blob (Gauss)
-    spectrum_norm : `~astropy.units.Quantity`
+    spectrum_norm : :class:`~astropy.units.Quantity`
         normalization of the electron spectra, can be, following 
         the notation in [DermerMenon2009]_:
 

@@ -68,26 +68,42 @@ blr = SphericalShellBLR(disk, csi_line, epsilon_line, R_line)
 print("\nblr definition:")
 print(blr)
 
+# dust torus definition
+T_dt = 1e3 * u.K
+epsilon_dt = 2.7 * ((const.k_B * T_dt) / (const.m_e * const.c * const.c)).decompose()
+csi_dt = 0.1
+dt = RingDustTorus(disk, csi_dt, epsilon_dt)
+print("\ntorus definition:")
+print(dt)
+
 # define the External Compton
 ec_disk = ExternalCompton(blob, disk, r=1e17 * u.cm)
 ec_blr = ExternalCompton(blob, blr, r=1e17 * u.cm)
+ec_dt = ExternalCompton(blob, dt, r=1e17 * u.cm)
 nu = np.logspace(15, 30) * u.Hz
 
 # commands to profile
 ec_disk_sed_command = "ec_disk.sed_flux(nu)"
 ec_blr_sed_command = "ec_blr.sed_flux(nu)"
+ec_dt_sed_command = "ec_dt.sed_flux(nu)"
 
-n = 20
+n = 100
+
 print("\nprofiling sed computation external compton on disk:")
 profile(ec_disk_sed_command, "ec_disk_sed")
 time_ec_disk = timing(ec_disk_sed_command, n)
 time_ec_disk /= n
 print(f"time: {time_ec_disk:.2e} s")
 
-
 print("\nprofiling sed computation external compton on BLR:")
 profile(ec_blr_sed_command, "ec_blr_sed")
 time_ec_blr = timing(ec_blr_sed_command, n)
 time_ec_blr /= n
 print(f"time: {time_ec_blr:.2e} s")
+
+print("\nprofiling sed computation external compton on dust torus:")
+profile(ec_dt_sed_command, "ec_dt_sed")
+time_ec_dt = timing(ec_dt_sed_command, n)
+time_ec_dt /= n
+print(f"time: {time_ec_dt:.2e} s")
 

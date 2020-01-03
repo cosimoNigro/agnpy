@@ -1,3 +1,6 @@
+.. _compton:
+
+
 Inverse Compton
 ===============
 
@@ -8,4 +11,5 @@ API
 ---
 
 .. automodule:: agnpy.compton
+   :noindex:
    :members: SynchrotronSelfCompton, ExternalCompton 

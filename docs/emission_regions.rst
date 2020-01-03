@@ -1,7 +1,7 @@
 .. _emission_regions:
 
 
-Emission regions
+Emission Regions
 ================
 
 At the moment the only emission region available in the code is a simple spherical plasmoid, commonly referred to as **blob** in the literature.
@@ -29,7 +29,7 @@ Follows an example of how to initialise a `Blob` using `astropy` quantities:
 	Gamma = 10
 	blob = Blob(R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict)
 
-The `~agnpy.emission_regions.Blob` can be printed at any moment
+The :class:`~agnpy.emission_regions.Blob` can be printed at any moment
 
 .. code-block:: python
 
