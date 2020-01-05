@@ -43,7 +43,7 @@ to initialise the synchrotron radiation just pass the :class:`~agnpy.emission_re
 
 this produces an array of :class:`~astropy.units.Quantity`
 
-.. code-block:: python
+.. code-block:: text
 
 	[9.07847459e-16 2.32031260e-15 5.92493131e-15 1.51066918e-14
  	3.84225947e-14 9.73302915e-14 2.44919517e-13 6.09602446e-13

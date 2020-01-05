@@ -34,11 +34,11 @@ def isotropic_kernel(gamma, epsilon, epsilon_s):
 
     Parameters
     ----------
-    gamma : `~numpy.ndarray`
+    gamma : :class:`~numpy.ndarray`
         Lorentz factors of the electrons distribution
-    epsilon : `~numpy.ndarray`
+    epsilon : :class:`~numpy.ndarray`
         dimesnionless energies (in electron rest mass units) of the target photons
-    epsilon_s : `~numpy.ndarray`
+    epsilon_s : :class:`~numpy.ndarray`
         dimensionless energies (in electron rest mass units) of the scattered photons
     """
     gamma_e = 4 * gamma * epsilon
@@ -71,17 +71,17 @@ def compton_kernel(gamma, epsilon_s, epsilon, mu_s, mu, phi):
 
     Parameters
     ----------
-    gamma : `~numpy.ndarray`
+    gamma : :class:`~numpy.ndarray`
         Lorentz factors of the electrons distribution
-    epsilon : `~numpy.ndarray`
+    epsilon : :class:`~numpy.ndarray`
         dimesnionless energies (in electron rest mass units) of the target photons
-    epsilon_s : `~numpy.ndarray`
+    epsilon_s : :class:`~numpy.ndarray`
         dimensionless energies (in electron rest mass units) of the scattered photons
     mu_s : float
         cosine of the zenith angle of the blob w.r.t the jet
-    mu : `~numpy.ndarray` or float
+    mu : :class:`~numpy.ndarray` or float
         (array of) cosine of the zenith angle subtended by the target
-    phi : `~numpy.ndarray` or float
+    phi : :class:`~numpy.ndarray` or float
         (array of) of the azimuth angle subtended by the target
     """
     epsilon_bar = gamma * epsilon * (1 - cos_psi(mu_s, mu, phi))
@@ -100,7 +100,7 @@ def x_re_shell(mu, R_re, r):
     
     Parameters
     ----------
-    mu : `~numpy.ndarray`
+    mu : :class:`~numpy.ndarray`
         (array of) cosine of the zenith angle subtended by the target
     R_re : float 
         distance (in cm) from the BH to the reprocessing material
@@ -121,7 +121,7 @@ def mu_star(mu, R_re, r):
 
     Parameters
     ----------
-    mu : `~numpy.ndarray`
+    mu : :class:`~numpy.ndarray`
         (array of) cosine of the zenith angle subtended by the target
     R_re : float 
         distance (in cm) from the BH to the reprocessing material
@@ -137,9 +137,9 @@ class SynchrotronSelfCompton:
 
     Parameters
     ----------
-    blob : `~agnpy.emission_region.Blob`
+    blob : :class:`~agnpy.emission_region.Blob`
         emission region and electron distribution hitting the photon target
-    synchrotron : `~agnpy.synchrotron.Synchrotron`
+    synchrotron : :class:`~agnpy.synchrotron.Synchrotron`
         class describing the synchrotron photons target
     """
 
@@ -166,7 +166,7 @@ class SynchrotronSelfCompton:
 
         Parameters
         ----------
-        epsilon : `~numpy.ndarray`
+        epsilon : :class:`~numpy.ndarray`
             dimensionless energies (in electron rest mass units) of the scattered photons
         """
         gamma = self.blob.gamma
@@ -210,7 +210,7 @@ class SynchrotronSelfCompton:
 
         Parameters
         ----------
-        nu : `~astropy.units.Quantity`
+        nu : :class:`~astropy.units.Quantity`
             array of frequencies, in Hz, to compute the sed, **note** these are 
             observed frequencies (observer frame).
         """
@@ -229,7 +229,7 @@ class SynchrotronSelfCompton:
 
         Parameters
         ----------
-        nu : `~astropy.units.Quantity`
+        nu : :class:`~astropy.units.Quantity`
             array of frequencies, in Hz, to compute the sed, **note** these are 
             observed frequencies (observer frame).
         """
@@ -247,14 +247,14 @@ class ExternalCompton:
 
     Parameters
     ----------
-    blob : `~agnpy.emission_region.Blob`
+    blob : :class:`~agnpy.emission_region.Blob`
         emission region and electron distribution hitting the photon target
-    target : `~agnpy.targets`
+    target : :class:`~agnpy.targets`
         class describing the target photon field    
     r : `~astropy.units.Quantity`
         distance of the blob from the Black Hole (i.e. from the target photons)
 
-    Properties
+    Attributes
     ----------
     mu_min : float
         minimum cosine of the zenith angle subtended by the target photon field

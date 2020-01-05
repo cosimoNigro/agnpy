@@ -32,6 +32,8 @@ Overview
    targets
    compton
    bibliography
+   modules
+
 
 Indices and tables
 ------------------

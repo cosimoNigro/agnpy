@@ -37,7 +37,7 @@ The :class:`~agnpy.emission_regions.Blob` can be printed at any moment
 
 returning a summary of its properties
 
-.. code-block:: python
+.. code-block:: text
 
 	* spherical emission region
 	 - R_b (radius of the blob): 1.00e+16 cm

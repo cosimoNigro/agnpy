@@ -92,6 +92,7 @@ we can plot the Black Body SEDs produced by the accretion disk and the dust toru
     :width: 500px
     :align: center
 
+
 API
 ---
 
