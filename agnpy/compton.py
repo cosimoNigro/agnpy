@@ -3,10 +3,9 @@ import astropy.constants as const
 import astropy.units as u
 
 
-# electromagnetic cgs units are not well-handled by astropy.units
-# every variable indicated with capital letters is dimensionsless
+# every variable indicated with capital letters is unitless
 # will be used in SED computations for speed-up
-E = 4.80320425e-10  # statC (not handled by astropy units)
+E = const.e.gauss.value
 H = const.h.cgs.value
 C = const.c.cgs.value
 ME = const.m_e.cgs.value
@@ -159,7 +158,7 @@ class SynchrotronSelfCompton:
         .. math::
             \epsilon'\,J'_{\mathrm{SSC}}(\epsilon')\,[\mathrm{erg}\,\mathrm{s}^{-1}]
         
-        Eq. 8 and 9 of [Finke2008_].
+        Eq. 8 and 9 of [Finke2008]_.
 
         **Note:** This emissivity is computed in the co-moving frame of the blob.
         When calling this function from another, these energies

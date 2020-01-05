@@ -3,10 +3,9 @@ import astropy.constants as const
 import astropy.units as u
 
 
-# electromagnetic cgs units are not well-handled by astropy.units
-# every variable indicated with capital letters is dimensionsless
+# every variable indicated with capital letters is unitless
 # will be used in SED computations for speed-up
-E = 4.80320425e-10  # statC (not handled by astropy units)
+E = const.e.gauss.value
 H = const.h.cgs.value
 C = const.c.cgs.value
 ME = const.m_e.cgs.value

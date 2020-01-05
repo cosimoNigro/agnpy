@@ -63,6 +63,6 @@ master_doc = "index"
 
 # dictionary with external packages references
 intersphinx_mapping = {
-	"numpy":("https://docs.scipy.org/doc/numpy/", None),
-    "astropy":("http://docs.astropy.org/en/latest/", None)
+    "numpy": ("https://docs.scipy.org/doc/numpy/", None),
+    "astropy": ("http://docs.astropy.org/en/latest/", None),
 }

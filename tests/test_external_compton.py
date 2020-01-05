@@ -106,4 +106,3 @@ profile(ec_dt_sed_command, "ec_dt_sed")
 time_ec_dt = timing(ec_dt_sed_command, n)
 time_ec_dt /= n
 print(f"time: {time_ec_dt:.2e} s")
-
