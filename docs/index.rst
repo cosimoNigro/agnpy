@@ -22,7 +22,7 @@ The code is licensed under `GNU General Public License v3.0 <https://www.gnu.org
 
 Installation
 ------------
-The code is available in the `python package index <https://pypi.org/project/agnpy/>`_ and can be installed via `pip`
+The code is available in the `python package index <https://pypi.org/project/agnpy/>`_ and can be installed via `pip
 
 .. code-block:: bash
 
@@ -42,6 +42,7 @@ Overview
    bibliography
    modules
 
+After checking the documentation, to get more familiar with the package it is suggested to run the notebooks in `agnpy/tutorials`.
 
 Indices and tables
 ------------------
