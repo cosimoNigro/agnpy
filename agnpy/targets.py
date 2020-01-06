@@ -168,7 +168,7 @@ class SphericalShellBLR:
     ----------
     disk : :class:`~agnpy.targets.SSDisk`
         disk whose radiation is being reprocessed by the BLR
-    csi_line : float
+    xi_line : float
         fraction of the disk radiation reprocessed by the BLR
     epsilon_line : float
         dimensionless energy of the emitted line
@@ -176,10 +176,10 @@ class SphericalShellBLR:
         radius of the BLR spherical shell
     """
 
-    def __init__(self, disk, csi_line, epsilon_line, R_line):
+    def __init__(self, disk, xi_line, epsilon_line, R_line):
         self.type = "SphericalShellBLR"
         self.parent_disk = disk
-        self.csi_line = csi_line
+        self.xi_line = xi_line
         self.epsilon_line = epsilon_line
         self.R_line = R_line.cgs
         self._R_line = self.R_line.value
@@ -189,7 +189,7 @@ class SphericalShellBLR:
             f"* Spherical Shell Broad Line Region:\n"
             + f" - M_BH (central black hole mass): {self.parent_disk.M_BH:.2e}\n"
             + f" - L_disk (accretion disk luminosity): {self.parent_disk.L_disk:.2e}\n"
-            + f" - csi_line (fraction of the disk radiation reprocessed by the BLR): {self.csi_line:.2e}\n"
+            + f" - xi_line (fraction of the disk radiation reprocessed by the BLR): {self.xi_line:.2e}\n"
             + f" - epsilon_line (dimensionless energy of the emitted line): {self.epsilon_line:.2e}\n"
             + f" - R_line (radius of the BLR shell): {self.R_line:.2e}\n"
         )
@@ -205,7 +205,7 @@ class RingDustTorus:
     ----------
     disk : :class:`~agnpy.targets.SSDisk`
         disk whose radiation is being reprocessed by the Torus
-    csi_dt : float
+    xi_dt : float
         fraction of the disk radiation reprocessed
     epsilon_dt : float
         dimensionless energy peak of the black body distribution
@@ -214,10 +214,10 @@ class RingDustTorus:
         [Finke2016]_ will be used
     """
 
-    def __init__(self, disk, csi_dt, epsilon_dt, R_dt=None):
+    def __init__(self, disk, xi_dt, epsilon_dt, R_dt=None):
         self.type = "RingDustTorus"
         self.parent_disk = disk
-        self.csi_dt = csi_dt
+        self.xi_dt = xi_dt
         self.epsilon_dt = epsilon_dt
         # dimensionless temperature of the Dust Torus
         self.Theta = self.epsilon_dt / 2.7
@@ -241,7 +241,7 @@ class RingDustTorus:
             f"* SRing Dust Torus:\n"
             + f" - M_BH (central black hole mass): {self.parent_disk.M_BH:.2e}\n"
             + f" - L_disk (accretion disk luminosity): {self.parent_disk.L_disk:.2e}\n"
-            + f" - csi_dt (fraction of the disk radiation reprocessed by the torus): {self.csi_dt:.2e}\n"
+            + f" - xi_dt (fraction of the disk radiation reprocessed by the torus): {self.xi_dt:.2e}\n"
             + f" - epsilon_dt (dimensionless temperature of the dust torus): {self.epsilon_dt:.2e}\n"
             + f" - R_dt (radius of the torus): {self.R_dt:.2e}\n"
         )

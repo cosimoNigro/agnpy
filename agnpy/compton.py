@@ -406,7 +406,7 @@ class ExternalCompton:
             * np.power(epsilon_s, 2)
             * np.power(self.blob.delta_D, 3)
             * self.target.parent_disk.L_disk.value
-            * self.target.csi_line
+            * self.target.xi_line
         )
         prefactor_denom = (
             8
@@ -458,7 +458,7 @@ class ExternalCompton:
             * np.power(epsilon_s, 2)
             * np.power(self.blob.delta_D, 3)
             * self.target.parent_disk.L_disk.value
-            * self.target.csi_dt
+            * self.target.xi_dt
         )
         prefactor_denom = (
             8

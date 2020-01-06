@@ -57,17 +57,17 @@ now let us define a Broad Line Region re-emitting the Lyman-alpha line (:math:`\
 
 	# quantities defining the Broad Line Region
 	epsilon_line = 2e-5 # dimensionless energy of the Lyman alpha photons
-	csi_line = 0.024
+	xi_line = 0.024
 	R_line = 1e17 * u.cm
 	# note the accretion disk is passed as a first argument
-	blr = SphericalShellBLR(disk, csi_line, epsilon_line, R_line)
+	blr = SphericalShellBLR(disk, xi_line, epsilon_line, R_line)
 
 	# quantities defining the dust torus
 	T_dt = 1e3 * u.K
 	epsilon_dt = 2.7 * ((const.k_B * T_dt) / (const.m_e * const.c * const.c)).decompose()
-	csi_dt = 0.1
+	xi_dt = 0.1
 	# again the disk is passed as a first argument
-	dt = RingDustTorus(disk, csi_dt, epsilon_dt)
+	dt = RingDustTorus(disk, xi_dt, epsilon_dt)
 
 we can plot the Black Body SEDs produced by the accretion disk and the dust torus, let us assume we are observing a galaxy at :math:`z=0.1` with viewing angle w.r.t. the disk axis 5 deg.
 
