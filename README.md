@@ -10,7 +10,7 @@ You are invited to check the documentation at https://agnpy.readthedocs.io/en/la
 ## dependencies
 The only dependencies are:
 
-* [numpy](https://numpy.org) managing the numerical computation,
+* [numpy](https://numpy.org) managing the numerical computation;
 
 * [astropy](https://www.astropy.org) managing physical units and astronomical distances.
 
