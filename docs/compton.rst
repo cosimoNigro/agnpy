@@ -144,6 +144,7 @@ let us plot the resulting SED:
 
 For more examples of Inverse Compton radiation and reproduction of literature results, check the notebooks in `agnpy/tutorials`.
 
+
 API
 ---
 

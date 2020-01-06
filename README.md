@@ -8,7 +8,7 @@ Modelling Active Galactic Nuclei radiative processes with python.
 You are invited to check the documentation at https://agnpy.readthedocs.io/en/latest/
 
 ## dependencies
-The onle dependencies are:
+The only dependencies are:
 
 * [numpy](https://numpy.org) managing the numerical computation,
 
