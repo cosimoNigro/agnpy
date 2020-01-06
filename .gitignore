@@ -1,5 +1,6 @@
 __pycache__/
 build
+dist
 _build
 *.py[cod]
 *$py.class
