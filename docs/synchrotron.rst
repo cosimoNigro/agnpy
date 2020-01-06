@@ -76,6 +76,8 @@ we can also plot the SED, showing for example the difference with a self-absorbe
     :align: center
 
 
+For more examples of Synchrotron radiation and cross-check of literature results, check the notebooks in `agnpy/tutorials`.
+
 API
 ---
 

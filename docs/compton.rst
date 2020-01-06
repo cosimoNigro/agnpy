@@ -72,6 +72,7 @@ we can now plot the complete SED
     :width: 500px
     :align: center
 
+
 External Compton
 ----------------
 
@@ -140,7 +141,8 @@ let us plot the resulting SED:
     :width: 500px
     :align: center
 
-For more examples of External Compton radiation check the `tutorial <../tutorials/external_compton.ipynb>`_.
+
+For more examples of Inverse Compton radiation and reproduction of literature results, check the notebooks in `agnpy/tutorials`.
 
 API
 ---
