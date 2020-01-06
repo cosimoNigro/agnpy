@@ -5,7 +5,7 @@ Modelling Active Galactic Nuclei radiative processes with python.
 `agnpy` focuses on the numerical computation of the photon spectra produced by leptonic radiative processes in jetted Active Galactic Nuclei (AGN).  
 
 ## documentation
-You are invited to check the documentation at https://agnpy.readthedocs.io/en/latest/
+You are invited to check the documentation at https://agnpy.readthedocs.io/en/latest/.
 
 ## dependencies
 The only dependencies are:

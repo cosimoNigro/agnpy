@@ -288,7 +288,7 @@ class ExternalCompton:
             self.mu_max = 1
         self.mu = np.linspace(self.mu_min, self.mu_max, self.mu_size)
 
-    def set_phi(self, phi_size=100):
+    def set_phi(self, phi_size=50):
         self.phi_size = phi_size
         self.phi = np.linspace(0, 2 * np.pi, self.phi_size)
 
