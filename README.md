@@ -16,4 +16,9 @@ The only dependencies are:
 
 Additionally [matplotlib](https://matplotlib.org) is necessary to reproduce the examples in the documentation and in the `tutorials` notebooks.
 
+## installation
+The code is available in the [python package index](https://pypi.org/project/agnpy/) and can be installed via `pip`
 
+```bash
+pip install agnpy
+```

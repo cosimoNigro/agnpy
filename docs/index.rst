@@ -20,6 +20,14 @@ License
 -------
 The code is licensed under `GNU General Public License v3.0 <https://www.gnu.org/licenses/gpl-3.0.html>`_ (see `LICENSE.md` in the main directory).
 
+Installation
+------------
+The code is available in the `python package index <https://pypi.org/project/agnpy/>`_ and can be installed via `pip`
+
+.. code-block:: bash
+
+    pip install agnpy
+
 Overview
 --------
 
