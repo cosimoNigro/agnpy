@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="agnpy",
-    version="0.0.2.2",
+    version="0.0.2.3",
     author="Cosimo Nigro",
     author_email="cosimonigro2@gmail.com.com",
     description="Modelling jetted Active Galactic Nuclei radiative processes with python",
@@ -22,5 +22,5 @@ setuptools.setup(
         "astropy",
         "numpy"
     ],
-    python_requires='>=3.7',
+    python_requires='>=3.6',
 )
