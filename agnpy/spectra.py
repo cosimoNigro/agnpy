@@ -123,8 +123,8 @@ class PowerLaw:
     def from_normalised_u_e(cls, u_e, p, gamma_min, gamma_max):
         """set the normalisation :math:`k_e` from the total energy density 
         :math:`u_e`, Eq. 6.64 in [DermerMenon2009]_"""
-        # avoid and exact value of 2 for the index that will make some of the
-        # analytical simplifications diverge
+        # avoid and exact value of 2 for the index that will make the analytical 
+        # simplification diverge
         if np.isclose(p, 2.0):
             p += 1e-3
         k_e_num = (p - 2) * u_e
@@ -137,9 +137,9 @@ class PowerLaw:
     def from_normalised_density(cls, norm, p, gamma_min, gamma_max):
         """set the normalisation :math:`k_e` from the total particle density 
         :math:`n_{e,\,tot}`"""
-        # avoid and exact value of 2 for the index that will make some of the
-        # analytical simplifications diverge
-        if np.isclose(p, 2.0):
+        # avoid and exact value of 1 for the index that will make the analytical 
+        # simplification diverge
+        if np.isclose(p, 1.0):
             p += 1e-3
         k_e_num = (p - 1) * norm
         k_e_denum = np.power(gamma_min, 1 - p) - np.power(gamma_max, 1 - p)
@@ -232,9 +232,9 @@ class BrokenPowerLaw:
     def from_normalised_density(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
         """set the normalisation :math:`k_e` from the total particle density 
         :math:`n_{e,\,tot}`"""
-        if np.isclose(p1, 2.0):
+        if np.isclose(p1, 1.0):
             p1 += 1e-3
-        if np.isclose(p2, 2.0):
+        if np.isclose(p2, 1.0):
             p2 += 1e-3
         k_e_denum_1 = (gamma_min * np.power(gamma_min / gamma_b, -p1) - gamma_b) / (
             p1 - 1
@@ -342,9 +342,9 @@ class SmoothlyBrokenPowerLaw:
     def from_normalised_density(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
         """set the normalisation :math:`k_e` from the total particle density 
         :math:`n_{e,\,tot}`"""
-        if np.isclose(p1, 2.0):
+        if np.isclose(p1, 1.0):
             p1 += 1e-3
-        if np.isclose(p2, 2.0):
+        if np.isclose(p2, 1.0):
             p2 += 1e-3
         k_e_denum_1 = (np.power(gamma_b, 1 - p1) - np.power(gamma_min, 1 - p1)) / (
             1 - p1
