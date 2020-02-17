@@ -49,13 +49,55 @@ class Synchrotron:
 	----------
 	blob : :class:`~agnpy.emission_region.Blob`
 		emitting region and electron distribution 
+
+    ssa : bool
+        whether or not to consider synchrotron self absorption (SSA).    
+        The absorption factor will be taken into account in
+        :func:`~agnpy.synchrotron.Synchrotron.com_sed_emissivity`, in order to be
+        propagated to :func:`~agnpy.synchrotron.Synchrotron.sed_luminosity` and
+        :func:`~agnpy.synchrotron.Synchrotron.sed_flux`.
 	"""
 
-    def __init__(self, blob):
+    def __init__(self, blob, ssa=False):
         self.blob = blob
         self.U_B = U_B(self.blob.B)
         self.nu_B = nu_B(self.blob.B)
         self.epsilon_B = self.blob.B.to("G").value / B_CR
+        self.ssa = ssa
+
+    def k_epsilon(self, epsilon):
+        """SSA absorption factor Eq. 7.142 in [DermerMenon2009]_.
+        The part of the integrand that is dependent on :math:`\gamma` is 
+        computed analytically in each of the :class:`~agnpy.spectra` classes."""
+        gamma = self.blob.gamma
+        SSA_integrand = self.blob.n_e.SSA_integrand(gamma).value
+        B = self.blob.B.to("G").value
+        _gamma = gamma.reshape(gamma.size, 1)
+        _SSA_integrand = SSA_integrand.reshape(SSA_integrand.size, 1)
+        _epsilon = epsilon.reshape(1, epsilon.size)
+        prefactor_P_syn = np.sqrt(3) * np.power(E, 3) * B / H
+        prefactor_k_epsilon = (
+            -1 / (8 * np.pi * ME * np.power(epsilon, 2)) * np.power(LAMBDA_C / C, 3)
+        )
+        x_num = 4 * np.pi * _epsilon * np.power(ME, 2) * np.power(C, 3)
+        x_denom = 3 * E * B * H * np.power(_gamma, 2)
+        x = x_num / x_denom
+        integrand = R(x) * _SSA_integrand
+        integral = np.trapz(integrand, gamma, axis=0)
+        return prefactor_P_syn * prefactor_k_epsilon * integral / u.cm
+
+    def tau_ssa(self, epsilon):
+        """SSA opacity, Eq. before 7.122 in [DermerMenon2009]_"""
+        return (2 * self.k_epsilon(epsilon) * self.blob.R_b).decompose()
+
+    def attenuation_ssa(self, epsilon):
+        """SSA attenuation, Eq. 7.122 in [DermerMenon2009]_"""
+        tau = self.tau_ssa(epsilon)
+        u = 1 / 2 + np.exp(-tau) / tau - (1 - np.exp(-tau)) / np.power(tau, 2)
+        attenuation = 3 * u / tau
+        condition = tau < 1e-3
+        attenuation[condition] = 1
+        return attenuation
 
     def com_sed_emissivity(self, epsilon):
         """Synchrotron  emissivity:
@@ -64,7 +106,10 @@ class Synchrotron:
             \epsilon'\,J'_{\mathrm{syn}}(\epsilon')\,[\mathrm{erg}\,\mathrm{s}^{-1}]
 
         Eq. 7.116 in [DermerMenon2009]_ or Eq. 18 in [Finke2008]_.
-        
+
+        The **SSA** is taken into account by this function and propagated
+        to the other ones computing SEDs by invoking this one. 
+
         **Note:** This emissivity is computed in the co-moving frame of the blob.
         When calling this function from another, these energies
         have to be transformed in the co-moving frame of the plasmoid.
@@ -93,43 +138,12 @@ class Synchrotron:
         x = x_num / x_denom
         integrand = _N_e * R(x)
         integral = np.trapz(integrand, gamma, axis=0)
-        return prefactor * integral * u.Unit(EMISSIVITY_UNIT)
+        emissivity = prefactor * integral * u.Unit(EMISSIVITY_UNIT)
+        if self.ssa:
+            emissivity *= self.attenuation_ssa(epsilon)
+        return emissivity
 
-    def k_epsilon(self, epsilon):
-        """SSA absorption factor Eq. 7.142 in [DermerMenon2009]_.
-        The part of the integrand that is dependent on :math:`\gamma` is 
-        computed analytically in each `~agnpy.spectra` class."""
-        gamma = self.blob.gamma
-        SSA_integrand = self.blob.n_e.SSA_integrand(gamma).value
-        B = self.blob.B.to("G").value
-        _gamma = gamma.reshape(gamma.size, 1)
-        _SSA_integrand = SSA_integrand.reshape(SSA_integrand.size, 1)
-        _epsilon = epsilon.reshape(1, epsilon.size)
-        prefactor_P_syn = np.sqrt(3) * np.power(E, 3) * B / H
-        prefactor_k_epsilon = (
-            -1 / (8 * np.pi * ME * np.power(epsilon, 2)) * np.power(LAMBDA_C / C, 3)
-        )
-        x_num = 4 * np.pi * _epsilon * np.power(ME, 2) * np.power(C, 3)
-        x_denom = 3 * E * B * H * np.power(_gamma, 2)
-        x = x_num / x_denom
-        integrand = R(x) * _SSA_integrand
-        integral = np.trapz(integrand, gamma, axis=0)
-        return prefactor_P_syn * prefactor_k_epsilon * integral / u.cm
-
-    def tau_SSA(self, epsilon):
-        """SSA opacity, Eq. before 7.122 in [DermerMenon2009]_"""
-        return (2 * self.k_epsilon(epsilon) * self.blob.R_b).decompose()
-
-    def attenuation_SSA(self, epsilon):
-        """SSA attenuation, Eq. 7.122 in [DermerMenon2009]_"""
-        tau = self.tau_SSA(epsilon)
-        u = 1 / 2 + np.exp(-tau) / tau - (1 - np.exp(-tau)) / np.power(tau, 2)
-        attenuation = 3 * u / tau
-        condition = tau < 1e-3
-        attenuation[condition] = 1
-        return attenuation
-
-    def sed_luminosity(self, nu, SSA=False):
+    def sed_luminosity(self, nu):
         """Synchrotron luminosity SED: 
 
         .. math::
@@ -140,8 +154,6 @@ class Synchrotron:
         nu : :class:`~astropy.units.Quantity`
             array of frequencies, in Hz, to compute the sed, **note** these are 
             observed frequencies (observer frame).
-        SSA : bool
-            whether or not to apply synchrotron self absorption
 
         Returns
         -------
@@ -151,30 +163,21 @@ class Synchrotron:
         epsilon = H * nu.to("Hz").value / MEC2
         # correct epsilon to the jet comoving frame
         epsilon_prime = (1 + self.blob.z) * epsilon / self.blob.delta_D
-        if SSA:
-            return (
-                prefactor
-                * self.attenuation_SSA(epsilon_prime)
-                * self.com_sed_emissivity(epsilon_prime)
-            )
-        else:
-            return prefactor * self.com_sed_emissivity(epsilon_prime)
+        return prefactor * self.com_sed_emissivity(epsilon_prime)
 
-    def sed_flux(self, nu, SSA=False):
+    def sed_flux(self, nu):
         """Synchrotron flux SED:
 
         .. math::
             \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
 		
-        Eq. 21 in [Finke2008]_
+        Eq. 21 in [Finke2008]_.
 
 		Parameters
 		----------
         nu : :class:`~astropy.units.Quantity`
             array of frequencies, in Hz, to compute the sed, **note** these are 
             observed frequencies (observer frame).
-        SSA : bool
-            whether or not to apply synchrotron self absorption
 
         Returns
         -------
@@ -187,11 +190,4 @@ class Synchrotron:
         prefactor = np.power(self.blob.delta_D, 4) / (
             4 * np.pi * np.power(self.blob.d_L, 2)
         )
-        if SSA:
-            return (
-                prefactor
-                * self.attenuation_SSA(epsilon_prime)
-                * self.com_sed_emissivity(epsilon_prime)
-            ).to(SED_UNIT)
-        else:
-            return (prefactor * self.com_sed_emissivity(epsilon_prime)).to(SED_UNIT)
+        return (prefactor * self.com_sed_emissivity(epsilon_prime)).to(SED_UNIT)
