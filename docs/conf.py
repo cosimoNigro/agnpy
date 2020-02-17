@@ -22,7 +22,7 @@ copyright = "2019, Cosimo Nigro"
 author = "Cosimo Nigro"
 
 # The full version, including alpha/beta/rc tags
-release = "0.0.2.3"
+release = "0.0.2.5"
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,7 +35,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.extlinks"
+    "sphinx.ext.extlinks",
 ]
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

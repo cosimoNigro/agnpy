@@ -1,11 +1,11 @@
-import setuptools 
+import setuptools
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="agnpy",
-    version="0.0.2.3",
+    version="0.0.2.5",
     author="Cosimo Nigro",
     author_email="cosimonigro2@gmail.com.com",
     description="Modelling jetted Active Galactic Nuclei radiative processes with python",
@@ -18,9 +18,6 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    install_requires=[
-        "astropy",
-        "numpy"
-    ],
-    python_requires='>=3.6',
+    install_requires=["astropy", "numpy"],
+    python_requires=">=3.6",
 )
