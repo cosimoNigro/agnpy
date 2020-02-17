@@ -44,14 +44,17 @@ blob = Blob(R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict)
 print("blob definition:")
 print(blob)
 synch = Synchrotron(blob)
+synch_ssa = Synchrotron(blob, ssa=True)
 ssc = SynchrotronSelfCompton(blob, synch)
+ssc_ssa = SynchrotronSelfCompton(blob, synch_ssa)
 nu_syn = np.logspace(8, 23) * u.Hz
 nu_ssc = np.logspace(15, 30) * u.Hz
 
 # commands to profile
 syn_sed_command = "synch.sed_flux(nu_syn)"
-syn_sed_SSA_command = "synch.sed_flux(nu_syn, SSA=True)"
+syn_sed_ssa_command = "synch_ssa.sed_flux(nu_syn)"
 ssc_sed_command = "ssc.sed_flux(nu_ssc)"
+ssc_ssa_sed_command = "ssc_ssa.sed_flux(nu_ssc)"
 
 n = 100
 print("\nprofiling synchrotron sed computation:")
@@ -61,13 +64,19 @@ time_syn /= n
 print(f"time: {time_syn:.2e} s")
 
 print("\nprofiling synchrotron w/ SSA sed computation:")
-profile(syn_sed_SSA_command, "syn_sed_SSA")
-time_syn_SSA = timing(syn_sed_SSA_command, n)
-time_syn_SSA /= n
-print(f"time: {time_syn_SSA:.2e} s")
+profile(syn_sed_ssa_command, "syn_sed_ssa")
+time_syn_ssa = timing(syn_sed_ssa_command, n)
+time_syn_ssa /= n
+print(f"time: {time_syn_ssa:.2e} s")
 
 print("\nprofiling SSC sed computation:")
 profile(ssc_sed_command, "ssc_sed")
 time_ssc = timing(ssc_sed_command, n)
 time_ssc /= n
 print(f"time: {time_ssc:.2e} s")
+
+print("\nprofiling SSC w/ SSA sed computation:")
+profile(ssc_ssa_sed_command, "ssc_ssa_sed")
+time_ssc_ssa = timing(ssc_ssa_sed_command, n)
+time_ssc_ssa /= n
+print(f"time: {time_ssc_ssa:.2e} s")

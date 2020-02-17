@@ -31,12 +31,22 @@ Expanding the example in :ref:`emission_regions`, it is here illustrated how to 
 	Gamma = 10
 	blob = Blob(R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict)
 
-to initialise the synchrotron radiation just pass the :class:`~agnpy.emission_regions.Blob` to the :class:`~agnpy.synchrotron.Synchrotron` class intialiser 
+to initialise the synchrotron radiation the :class:`~agnpy.emission_regions.Blob` instance has to be passed to the :class:`~agnpy.synchrotron.Synchrotron` class intialiser 
 
 .. code-block:: python
 
 	synch = Synchrotron(blob)
-	# define a grid of frequency with astropy units and compute the synchrotron SED
+
+the optional argument `ssa` specify if self absorption has to be taken into account (by default it is not)
+
+.. code-block:: python
+
+	synch_ssa = Synchrotron(blob, ssa=True)
+
+to compute the spectral energy distribution (SED), an array of frequencies (astropy units) has to be passed to the :func:`~agnpy.synchrotron.Synchrotron.sed_flux` function
+
+.. code-block:: python
+
 	nu = np.logspace(8, 23) * u.Hz
 	synch_sed = synch.sed_flux(nu)
 	print(synch_sed)
@@ -59,13 +69,13 @@ this produces an array of :class:`~astropy.units.Quantity`
  	2.11999976e-10 1.06769353e-10 2.42794688e-11 1.12784155e-12
  	2.22960447e-15 8.03665999e-21] erg / (cm2 s)
 	
-we can also plot the SED, showing for example the difference with a self-absorbed spectrum
+Let us examine the different SEDs produced by the normal and self-absorbed synchrotron processes
 
 .. code-block:: python
 
-	synch_sed_SSA = synch.sed_flux(nu, SSA=True)
+	synch_sed_ssa = synch_ssa.sed_flux(nu)
 	plt.loglog(nu, synch_sed, color="k", lw=2, label="synchr.")
-	plt.loglog(nu, synch_sed_SSA, lw=2, ls="--", color="gray", label="self absorbed synchr.")
+	plt.loglog(nu, synch_sed_ssa, lw=2, ls="--", color="gray", label="self absorbed synchr.")
 	plt.xlabel(r"$\nu\,/\,\mathrm{Hz}$")
 	plt.ylabel(r"$\nu F_{\nu}\,/\,(\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1})$")
 	plt.legend()
@@ -74,7 +84,6 @@ we can also plot the SED, showing for example the difference with a self-absorbe
 .. image:: _static/synch.png
     :width: 500px
     :align: center
-
 
 For more examples of Synchrotron radiation and cross-check of literature results, check the notebooks in `agnpy/tutorials`.
 
