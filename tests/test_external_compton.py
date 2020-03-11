@@ -32,7 +32,7 @@ def timing(command, number):
 # define the blob
 spectrum_norm = 6e42 * u.erg
 parameters = {
-    "p1": 2.0001,
+    "p1": 2,
     "p2": 3.5,
     "gamma_b": 1e4,
     "gamma_min": 20,

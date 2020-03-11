@@ -107,7 +107,7 @@ class SSDisk:
 
     def _phi_disk_mu(self, mu, r):
         """same as _phi_disk but computed with cosine of zenith mu and distance
-        from the black hole r. Eq. 67 in [4]."""
+        from the black hole r. Eq. 67 in [Dermer2009]."""
         R = r * np.sqrt(np.power(mu, -2) - 1)
         return self._phi_disk(R)
 
