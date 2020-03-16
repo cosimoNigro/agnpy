@@ -67,7 +67,7 @@ class Blob:
         self.Beta = np.sqrt(1 - 1 / np.power(self.Gamma, 2))
         # viewing angle
         self.mu_s = (1 - 1 / (self.Gamma * self.delta_D)) / self.Beta
-        self.theta_s = (np.arccos(self.mu_s) * u.rad).to("deg") 
+        self.theta_s = (np.arccos(self.mu_s) * u.rad).to("deg")
         self.B = B.to("G")
         self.spectrum_norm = spectrum_norm
         self.spectrum_dict = spectrum_dict
@@ -114,7 +114,7 @@ class Blob:
             + str(self.n_e)
         )
         return summary
-    
+
     def set_delta_D(self, Gamma, theta_s):
         """set the viewing angle and the Lorentz factor of the outflow to
         obtain a specific Doppler factor
@@ -125,17 +125,17 @@ class Blob:
             Lorentz factor of the relativistic outflow
         theta_s : :class:`~astropy.units.Quantity`
             viewing angle of the jet
-        """ 
+        """
         mu_s = np.cos(theta_s.to("rad").value)
         Beta = np.sqrt(1 - 1 / np.power(self.Gamma, 2))
         delta_D = 1 / (Gamma * (1 - Beta * mu_s))
-        
+
         self.theta_s = theta_s
-        self.mu_s = mu_s  
+        self.mu_s = mu_s
         self.Gamma = Gamma
         self.Beta = Beta
         self.delta_D = delta_D
-    
+
     def set_gamma_size(self, gamma_size):
         """change size of the array of electrons Lorentz factors"""
         self.gamma_size = gamma_size

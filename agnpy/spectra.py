@@ -123,7 +123,7 @@ class PowerLaw:
     def from_normalised_u_e(cls, u_e, p, gamma_min, gamma_max):
         """set the normalisation :math:`k_e` from the total energy density 
         :math:`u_e`, Eq. 6.64 in [DermerMenon2009]_"""
-        # avoid and exact value of 2 for the index that will make the analytical 
+        # avoid and exact value of 2 for the index that will make the analytical
         # simplification diverge
         if np.isclose(p, 2.0):
             p += 1e-3
@@ -137,7 +137,7 @@ class PowerLaw:
     def from_normalised_density(cls, norm, p, gamma_min, gamma_max):
         """set the normalisation :math:`k_e` from the total particle density 
         :math:`n_{e,\,tot}`"""
-        # avoid and exact value of 1 for the index that will make the analytical 
+        # avoid and exact value of 1 for the index that will make the analytical
         # simplification diverge
         if np.isclose(p, 1.0):
             p += 1e-3
