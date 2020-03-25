@@ -39,6 +39,7 @@ Overview
    synchrotron
    targets
    compton
+   absorption
    bibliography
    modules
 

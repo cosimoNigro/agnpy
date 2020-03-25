@@ -44,10 +44,10 @@ agnpy.targets module
    :undoc-members:
    :show-inheritance:
 
-agnpy.tau module
-----------------
+agnpy.absorption module
+-----------------------
 
-.. automodule:: agnpy.tau
+.. automodule:: agnpy.absorption
    :members:
    :undoc-members:
    :show-inheritance:

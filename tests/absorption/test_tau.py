@@ -5,7 +5,7 @@ import numpy as np
 import astropy.units as u
 import astropy.constants as const
 from agnpy.emission_regions import Blob
-from agnpy.targets import SSDisk, SphericalShellBLR
+from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
 from agnpy.absorption import Absorption
 import matplotlib.pyplot as plt
 
@@ -44,20 +44,32 @@ blr = SphericalShellBLR(disk, csi_line, epsilon_line, R_line)
 print("blr definition:")
 print(blr)
 
-# let us make a 2D plot of where s will be bigger than 1
+# dust torus definition
+T_dt = 1e3 * u.K
+epsilon_dt = 2.7 * ((const.k_B * T_dt) / (const.m_e * const.c * const.c)).decompose()
+csi_dt = 0.1
+dt = RingDustTorus(disk, csi_dt, epsilon_dt)
+print("torus definition:")
+print(dt)
 
-r = 1e16 * u.cm
+# let us make a 2D plot of where s will be bigger than 1
+r = 1.1e16 * u.cm
 
 absorption_disk = Absorption(blob, disk, r=r)
+absorption_blr = Absorption(blob, blr, r=r)
+absorption_dt = Absorption(blob, dt, r=r)
 
+# a check on the values for which s > 1 in the case of the disk
 E = np.logspace(0, 5) * u.GeV
 epsilon_1 = (E / MEC2).decompose().value
 epsilon_disk = disk._epsilon_mu(absorption_disk.mu, r.value)
 E_disk = (epsilon_disk * MEC2).to("eV")
 
-def where_s_1(mu, r): 
-    s = epsilon_1 * disk._epsilon_mu(mu, r) * (1 - mu) / 2 
-    return E[s > 1][0] 
+
+def where_s_1(mu, r):
+    s = epsilon_1 * disk._epsilon_mu(mu, r) * (1 - mu) / 2
+    return E[s > 1][0]
+
 
 for _r in [1e15, 1e16, 1e17]:
     E_thr = [where_s_1(mu, _r).value for mu in absorption_disk.mu]
@@ -68,25 +80,22 @@ plt.ylabel("E (s>1) / GeV")
 plt.legend()
 plt.show()
 
-# let's plot the opacity
-fig, ax = plt.subplots()
-nu = E.to("Hz", equivalencies=u.spectral())
-tau_disk = absorption_disk._opacity_disk(nu)
-ax.loglog(E, tau_disk, lw=2)
-ax.set_xlabel("E / GeV")
-ax.set_ylabel(r"$\tau_{\gamma \gamma}$")
-ax.set_xlim([10, 1e5])
-ax.set_ylim([1e-3, 1e5])
-plt.show()
 
-absorption_blr = Absorption(blob, blr, r=r)
-# let's plot the opacity
-fig, ax = plt.subplots()
+# let's plot the opacities
+
 nu = E.to("Hz", equivalencies=u.spectral())
-tau_blr = absorption_blr._opacity_shell_blr(nu)
-ax.loglog(E, tau_blr, lw=2)
+
+tau_disk = absorption_disk.tau(nu)
+tau_blr = absorption_blr.tau(nu)
+tau_dt = absorption_dt.tau(nu)
+
+fig, ax = plt.subplots()
+ax.loglog(E, tau_disk, lw=2, ls="-", label="SS disk")
+ax.loglog(E, tau_blr, lw=2, ls="--", label="spherical shell BLR")
+ax.loglog(E, tau_dt, lw=2, ls="-.", label="ring dust torus")
+ax.legend()
 ax.set_xlabel("E / GeV")
 ax.set_ylabel(r"$\tau_{\gamma \gamma}$")
-ax.set_xlim([10, 1e5])
+ax.set_xlim([1, 1e5])
 ax.set_ylim([1e-3, 1e5])
 plt.show()
