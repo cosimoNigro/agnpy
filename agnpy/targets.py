@@ -63,12 +63,12 @@ class SSDisk:
         # masses and luminosities
         self.M_BH = M_BH.cgs
         self._M_BH = self.M_BH.value
-        self.M_8 = self.M_BH.value / (1e8 * M_SUN)
+        self.M_8 = self._M_BH / (1e8 * M_SUN)
         self.L_Edd = 1.26 * 1e46 * self.M_8 * u.Unit("erg s-1")
         self.L_disk = L_disk.cgs
         self._L_disk = self.L_disk.value
         # fraction of the Eddington luminosity at which the disk is accreting
-        self.l_Edd = (self.L_disk / self.L_Edd).decompose()
+        self.l_Edd = (self.L_disk / self.L_Edd).decompose().value
         self.eta = eta
         self.m_dot = (self.L_disk / (self.eta * const.c * const.c)).cgs
         self._m_dot = self.m_dot.value
@@ -107,7 +107,7 @@ class SSDisk:
 
     def _phi_disk_mu(self, mu, r):
         """same as _phi_disk but computed with cosine of zenith mu and distance
-        from the black hole r. Eq. 67 in [4]."""
+        from the black hole r. Eq. 67 in [Dermer2009]_."""
         R = r * np.sqrt(np.power(mu, -2) - 1)
         return self._phi_disk(R)
 

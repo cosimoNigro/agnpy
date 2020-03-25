@@ -1,7 +1,7 @@
 """profile and test external Comton radiation"""
 import sys
 
-sys.path.append("../")
+sys.path.append("../../")
 import numpy as np
 import astropy.units as u
 import astropy.constants as const
@@ -31,13 +31,7 @@ def timing(command, number):
 
 # define the blob
 spectrum_norm = 6e42 * u.erg
-parameters = {
-    "p1": 2.0001,
-    "p2": 3.5,
-    "gamma_b": 1e4,
-    "gamma_min": 20,
-    "gamma_max": 5e7,
-}
+parameters = {"p1": 2, "p2": 3.5, "gamma_b": 1e4, "gamma_min": 20, "gamma_max": 5e7}
 spectrum_dict = {"type": "BrokenPowerLaw", "parameters": parameters}
 R_b = 1e16 * u.cm
 B = 0.56 * u.G
