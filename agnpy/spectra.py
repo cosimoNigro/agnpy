@@ -229,6 +229,13 @@ class BrokenPowerLaw:
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     @classmethod
+    def from_gamma1(cls, k_1, p1, p2, gamma_b, gamma_min, gamma_max):
+        """set the normalisation :math:`k_e` to k_1 """
+        k_e = k_1.to("cm-3")*np.power(gamma_b, -p1)
+        print(f"normalising broken power-law to value at gamma=1: {k_1:.2e}: at gama_b={gamma_b}: {k_e: .2e}")
+        return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
+
+    @classmethod
     def from_normalised_density(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
         """set the normalisation :math:`k_e` from the total particle density 
         :math:`n_{e,\,tot}`"""
