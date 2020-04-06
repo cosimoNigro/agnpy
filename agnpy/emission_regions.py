@@ -88,13 +88,16 @@ class Blob:
             _model = BrokenPowerLaw
         if spectrum_dict["type"] == "SmoothlyBrokenPowerLaw":
             _model = SmoothlyBrokenPowerLaw
-        if spectrum_norm.unit == u.Unit("cm-3"):
+
+        if spectrum_norm == 0:
+            self.n_e = _model.from_gamma1(**spectrum_dict["parameters"]) #spectrum_dict["parameters"]["k_e"],
+        elif spectrum_norm.unit == u.Unit("cm-3"):
             self.n_e = _model.from_normalised_density(
                 spectrum_norm, **spectrum_dict["parameters"]
             )
-        if spectrum_norm.unit == u.Unit("erg cm-3"):
-            self.n_e = _model.from_normalised_u_e(u_e, **spectrum_dict["parameters"])
-        if spectrum_norm.unit == u.Unit("erg"):
+        elif spectrum_norm.unit == u.Unit("erg cm-3"):
+            self.n_e = _model.from_normalised_u_e(spectrum_norm, **spectrum_dict["parameters"])
+        elif spectrum_norm.unit == u.Unit("erg"):
             u_e = (spectrum_norm / self.V_b).to("erg cm-3")
             self.n_e = _model.from_normalised_u_e(u_e, **spectrum_dict["parameters"])
 
