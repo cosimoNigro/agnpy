@@ -346,11 +346,10 @@ class BrokenPowerLaw2:
         )
         k_e_denum_2 = (
             np.power(gamma_b, p2 - p1)
-            * (np.power(gamma_max, 2 - p1) - np.power(gamma_b, 2 - p1))
+            * (np.power(gamma_max, 2 - p2) - np.power(gamma_b, 2 - p2))
             / (2 - p2)
         )
-        k_e = (u_e / (k_e_denum_1 + k_e_denum_2)).to("cm-3")
-        # FIXME: something wrong here, because u_e is in erg cm-3 and ke_denum_.. without unit
+        k_e = (u_e / (MEC2 * (k_e_denum_1 + k_e_denum_2))).to("cm-3")
         print(f"normalising broken power-law 2 to total energy density: {u_e:.2e}")
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 

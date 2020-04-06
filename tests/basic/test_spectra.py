@@ -60,7 +60,7 @@ blob = Blob(
     delta_D,
     Gamma,
     B,
-    1e48 * u.erg,
-    spectrum_dict_pwl,
+    1e48 * u.Unit("erg"),
+    spectrum_dict_bpl_2,
     spectrum_norm_type="gamma=1",
 )

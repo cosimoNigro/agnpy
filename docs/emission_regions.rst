@@ -56,6 +56,18 @@ returning a summary of its properties
 	 - gamma_min: 1.00e+02
 	 - gamma_max: 1.00e+07
 
+Normalisation modes
+===================
+By chosing a normalisation in units of :math:`{\rm cm}^{-3}` one can select - 
+specifying the parameter `spectrum_norm_type` - three different modes of normalising 
+the electron distribution.
+
+  * `integral`: (default) the spectrum is set such that :math:`n_{e,\,tot}` equals the value provided by `spectrum_norm`;  
+
+  * `differential`: the spectrum is set such that :math:`k_e` equals the value provided by `spectrum_norm`;    
+
+  * `gamma=1`: the spectrum is set such that :math:`n_e(\gamma=1)` equals the value provided by `spectrum_norm`.
+
 
 API
 ---
