@@ -96,7 +96,7 @@ class Blob:
                 spectrum_norm, **spectrum_dict["parameters"]
             )
         elif spectrum_norm.unit == u.Unit("erg cm-3"):
-            self.n_e = _model.from_normalised_u_e(u_e, **spectrum_dict["parameters"])
+            self.n_e = _model.from_normalised_u_e(spectrum_norm, **spectrum_dict["parameters"])
         elif spectrum_norm.unit == u.Unit("erg"):
             u_e = (spectrum_norm / self.V_b).to("erg cm-3")
             self.n_e = _model.from_normalised_u_e(u_e, **spectrum_dict["parameters"])
