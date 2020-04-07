@@ -30,7 +30,9 @@ class Blob:
         Lorentz factor of the relativistic outflow
     B : :class:`~astropy.units.Quantity`
         magnetic field in the blob (Gauss)
-
+    xi : float
+        used in the functions computing energy limits 
+        acceleration coefficient :math:`dE/dt = \ksi  E  c / R_L`
     spectrum_norm : :class:`~astropy.units.Quantity`
         normalisation of the electron spectra, by default can be, following 
         the notation in [DermerMenon2009]_:
@@ -74,6 +76,7 @@ class Blob:
         spectrum_norm,
         spectrum_dict,
         spectrum_norm_type="integral",
+        xi=1.0,
         gamma_size=200,
     ):
         self.R_b = R_b.to("cm")
@@ -90,6 +93,7 @@ class Blob:
         self.spectrum_norm = spectrum_norm
         self.spectrum_norm_type = spectrum_norm_type
         self.spectrum_dict = spectrum_dict
+        self.xi=xi
         # size of the electron Lorentz factor grid
         self.gamma_size = gamma_size
         self.gamma_min = self.spectrum_dict["parameters"]["gamma_min"]
@@ -271,6 +275,44 @@ class Blob:
         U_B = np.power(self.B.value, 2) / (8 * np.pi) * u.Unit("erg cm-3")
         return (prefactor * U_B).to("erg s-1")
 
+    @property
+    def GammaMaxConfined(self):
+        """Maximum gamma factor of electrons that have their Larmour radius smaller then R_b. In SI units:
+
+        .. math::
+            \gamma = e * B * R_b / m_e *c 
+        """
+#        return self.R_b/(const.m_e*const.c / (self.B.si * const.e.si)).to("cm")
+        return (self.R_b* self.B.si * const.e.si/(const.m_e*const.c)).to("").value
+
+    @property
+    def GammaMaxBallistic(self):
+        """Very simple (naive) estimation of maximum gamma factor of electrons 
+        comparing acceleration time scale with ballistic time scale. 
+        for ballistic limit we assume that blob crosses its (longitudal) radius
+        (or in the frame of the blob the jet crosses R_b of the blob) 
+        Might be too naive ... 
+
+        .. math::
+            dE_acc/dt = xi *c * E/ R_L
+            T_acc = RL/(xi *c)
+            T_bal = R_b/c
+            gamma_max = R_b * xi * e*B / (m_e * c^2) # SI UNITS!
+        """
+        return (self.xi * self.R_b* self.B.si * const.e.si/(const.m_e*const.c)).to("").value
+
+    @property
+    def GammaMaxSynch(self):
+        """Simple estimation of maximum gamma factor of electrons 
+        comparing acceleration time scale with synchrotron energy losses. 
+
+        .. math::
+            dE_acc/dt = xi *c * E/ R_L
+            dE_synch/dt = (4/3) * sigmaT *(B^2/(2 mu0)) * \gamma^2 *c # SI!
+            gamma = \sqrt{1.5 mu0 \ksi  c e /(\sigma_T B)}
+        """
+        return np.sqrt(1.5*self.xi*const.c*const.e.si*const.mu0.si/(const.sigma_T*self.B)).to("").value
+    
     def plot_n_e(self):
         plt.loglog(self.gamma, self.n_e(self.gamma))
         plt.xlabel(r"$\gamma$")
