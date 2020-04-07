@@ -13,4 +13,4 @@ API
 
 .. automodule:: agnpy.spectra
    :noindex:
-   :members: PowerLaw, BrokenPowerLaw, SmoothlyBrokenPowerLaw
+   :members: PowerLaw, BrokenPowerLaw, BrokenPowerLaw2

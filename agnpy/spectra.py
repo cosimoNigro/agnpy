@@ -6,7 +6,7 @@ import astropy.constants as const
 MEC2 = (const.m_e * const.c * const.c).cgs
 
 
-__all__ = ["PowerLaw", "BrokenPowerLaw", "SmoothlyBrokenPowerLaw"]
+__all__ = ["PowerLaw", "BrokenPowerLaw", "BrokenPowerLaw2"]
 
 
 # in the following functions k_e is supposed to have dimensions cm-3
@@ -52,7 +52,7 @@ def _broken_power_law_ssa_integrand(gamma, k_e, p1, p2, gamma_b, gamma_min, gamm
     return k_e * pwl_prefactor * pwl
 
 
-def _smoothly_broken_power_law(gamma, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
+def _broken_power_law_2(gamma, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
     """Tavecchio's Broken Power Law
     https://ui.adsabs.harvard.edu/abs/1998ApJ...509..608T/abstract"""
     pwl = np.power(gamma, -p1)
@@ -64,7 +64,7 @@ def _smoothly_broken_power_law(gamma, k_e, p1, p2, gamma_b, gamma_min, gamma_max
     return k_e * pwl
 
 
-def _smoothly_broken_power_law_ssa_integrand(
+def _broken_power_law_2_ssa_integrand(
     gamma, k_e, p1, p2, gamma_b, gamma_min, gamma_max
 ):
     """analytical form of the SSA integrand"""
@@ -148,11 +148,10 @@ class PowerLaw:
         return cls(k_e, p, gamma_min, gamma_max)
 
     @classmethod
-    def from_gamma1(cls, k_1, p, gamma_min, gamma_max):
-        """set the normalisation :math:`k_e` to k_1 """
-        k_e = k_1.to("cm-3")
-        print(f"normalising power-law to value at gamma=1: {k_1:.2e}")
-        return cls(k_e, p, gamma_min, gamma_max)
+    def from_norm_at_gamma_1(cls, norm, p, gamma_min, gamma_max):
+        """sets :math:`k_e` such that `norm` = :math:`n_e(\gamma=1)`."""
+        print(f"normalising power-law to value {norm:.2e} at gamma = 1")
+        return cls(norm.to("cm-3"), p, gamma_min, gamma_max)
 
     def SSA_integrand(self, gamma):
         """integrand for the synchrotron self-absorption:
@@ -254,10 +253,12 @@ class BrokenPowerLaw:
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     @classmethod
-    def from_gamma1(cls, k_1, p1, p2, gamma_b, gamma_min, gamma_max):
-        """set the normalisation :math:`k_e` to k_1 """
-        k_e = k_1.to("cm-3")*np.power(gamma_b, -p1)
-        print(f"normalising broken power-law to value at gamma=1: {k_1:.2e}, at gamma_b={gamma_b}: {k_e: .2e}")
+    def from_norm_at_gamma_1(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
+        """sets :math:`k_e` such that `norm` = :math:`n_e(\gamma=1)`."""
+        k_e = norm.to("cm-3") * np.power(gamma_b, -p1)
+        print(
+            f"normalising broken power-law to value {k_e:.2e} at gamma = 1, and {norm: .2e} at gamma = gamma_b = {gamma_b:.2e}"
+        )
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     def SSA_integrand(self, gamma):
@@ -274,8 +275,8 @@ class BrokenPowerLaw:
         )
 
 
-class SmoothlyBrokenPowerLaw:
-    """Smoothly broken power law as in Eq. 1 of [Tavecchio1998]_.
+class BrokenPowerLaw2:
+    """Broken power law as in Eq. 1 of [Tavecchio1998]_.
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
@@ -309,7 +310,7 @@ class SmoothlyBrokenPowerLaw:
         self.gamma_max = gamma_max
 
     def __call__(self, gamma):
-        return _smoothly_broken_power_law(
+        return _broken_power_law_2(
             gamma,
             self.k_e,
             self.p1,
@@ -322,7 +323,7 @@ class SmoothlyBrokenPowerLaw:
     def __str__(self):
         summary = (
             f"* electron spectrum\n"
-            + f" - smoothly broken power law\n"
+            + f" - broken power law 2\n"
             + f" - k_e: {self.k_e:.2e}\n"
             + f" - p1: {self.p1:.2f}\n"
             + f" - p2: {self.p2:.2f}\n"
@@ -345,12 +346,11 @@ class SmoothlyBrokenPowerLaw:
         )
         k_e_denum_2 = (
             np.power(gamma_b, p2 - p1)
-            * (np.power(gamma_max, 2 - p1) - np.power(gamma_b, 2 - p1))
+            * (np.power(gamma_max, 2 - p2) - np.power(gamma_b, 2 - p2))
             / (2 - p2)
         )
-        k_e = (u_e / (k_e_denum_1 + k_e_denum_2)).to("cm-3")
-        # FIXME: something wrong here, because u_e is in erg cm-3 and ke_denum_.. without unit 
-        print(f"normalising smooth broken power-law to total energy density: {u_e:.2e}")
+        k_e = (u_e / (MEC2 * (k_e_denum_1 + k_e_denum_2))).to("cm-3")
+        print(f"normalising broken power-law 2 to total energy density: {u_e:.2e}")
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     @classmethod
@@ -370,22 +370,19 @@ class SmoothlyBrokenPowerLaw:
             / (1 - p2)
         )
         k_e = (norm / (k_e_denum_1 + k_e_denum_2)).to("cm-3")
-        print(
-            f"normalising smooth broken power-law to total particle density: {norm:.2e}"
-        )
+        print(f"normalising broken power-law 2 to total particle density: {norm:.2e}")
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     @classmethod
-    def from_gamma1(cls, k_1, p1, p2, gamma_b, gamma_min, gamma_max):
-        """set the normalisation :math:`k_e` to k_1 """
-        k_e = k_1.to("cm-3")
-        print(f"normalising smoothly broken power-law to value at gamma=1: {k_1:.2e}")
-        return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
+    def from_norm_at_gamma_1(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
+        """sets :math:`k_e` such that `spectrum_norm` = :math:`n_e(\gamma=1)`."""
+        print(f"normalising broken power-law 2 to value {norm:.2e} at gamma = 1")
+        return cls(norm.to("cm-3"), p1, p2, gamma_b, gamma_min, gamma_max)
 
     def SSA_integrand(self, gamma):
         """integrand for the synchrotron self-absorption:
         :math:`\gamma'^2 \\frac{d}{d \gamma'} \left(\\frac{n_e}{\gamma'^2}\\right)`"""
-        return _smoothly_broken_power_law_ssa_integrand(
+        return _broken_power_law_2_ssa_integrand(
             gamma,
             self.k_e,
             self.p1,

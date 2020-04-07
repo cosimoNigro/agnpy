@@ -2,7 +2,8 @@ import numpy as np
 import astropy.units as u
 import astropy.constants as const
 from astropy.coordinates import Distance
-from .spectra import PowerLaw, BrokenPowerLaw, SmoothlyBrokenPowerLaw
+import matplotlib.pyplot as plt
+from . import spectra
 
 
 MEC2 = (const.m_e * const.c * const.c).cgs
@@ -29,14 +30,17 @@ class Blob:
         Lorentz factor of the relativistic outflow
     B : :class:`~astropy.units.Quantity`
         magnetic field in the blob (Gauss)
+
     spectrum_norm : :class:`~astropy.units.Quantity`
-        normalization of the electron spectra, can be, following 
+        normalisation of the electron spectra, by default can be, following 
         the notation in [DermerMenon2009]_:
 
             - :math:`n_{e,\,tot}`: total electrons density, in :math:`\mathrm{cm}^{-3}`
             - :math:`u_e` : total electrons energy density, in :math:`\mathrm{erg}\,\mathrm{cm}^{-3}`
             - :math:`W_e` : total energy in electrons, in :math:`\mathrm{erg}`
-    
+        
+        see `spectrum_norm_type` for more details on the normalisation
+
     spectrum_dict : dictionary
         dictionary containing type and spectral shape information, e.g.:
 
@@ -50,13 +54,27 @@ class Blob:
                     "gamma_max": 1e7
                 }
             }
-            
+
+    spectrum_norm_type : `["integral", "differential", "gamma=1"]`
+        select the type of normalisation: `"integral"` is the default; 
+        `"differential"` assigns `spectrum_norm` directly to :math:`k_e`; 
+        `"gamma=1"` sets :math:`k_e` such that `spectrum_norm` = :math:`n_e(\gamma=1)`.
+
     gamma_size : int
         size of the array of electrons Lorentz factors
     """
 
     def __init__(
-        self, R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict, gamma_size=200
+        self,
+        R_b,
+        z,
+        delta_D,
+        Gamma,
+        B,
+        spectrum_norm,
+        spectrum_dict,
+        spectrum_norm_type="integral",
+        gamma_size=200,
     ):
         self.R_b = R_b.to("cm")
         self.z = z
@@ -70,6 +88,7 @@ class Blob:
         self.theta_s = (np.arccos(self.mu_s) * u.rad).to("deg")
         self.B = B.to("G")
         self.spectrum_norm = spectrum_norm
+        self.spectrum_norm_type = spectrum_norm_type
         self.spectrum_dict = spectrum_dict
         # size of the electron Lorentz factor grid
         self.gamma_size = gamma_size
@@ -81,25 +100,54 @@ class Blob:
         )
         # grid of Lorentz factors for integration in the external frame
         self.gamma_to_integrate = np.logspace(1, 9, self.gamma_size)
-        # assign the spectral density
-        if spectrum_dict["type"] == "PowerLaw":
-            _model = PowerLaw
-        if spectrum_dict["type"] == "BrokenPowerLaw":
-            _model = BrokenPowerLaw
-        if spectrum_dict["type"] == "SmoothlyBrokenPowerLaw":
-            _model = SmoothlyBrokenPowerLaw
+        self.set_n_e(self.spectrum_norm, self.spectrum_dict, self.spectrum_norm_type)
 
-        if spectrum_norm == 0:
-            self.n_e = _model.from_gamma1(**spectrum_dict["parameters"]) #spectrum_dict["parameters"]["k_e"],
-        elif spectrum_norm.unit == u.Unit("cm-3"):
-            self.n_e = _model.from_normalised_density(
+    def set_n_e(self, spectrum_norm, spectrum_dict, spectrum_norm_type):
+        """set the spectrum :math:`n_e` for the blob"""
+        print(f"* normalising {spectrum_dict['type']} in {spectrum_norm_type} mode")
+        model_dict = {
+            "PowerLaw": spectra.PowerLaw,
+            "BrokenPowerLaw": spectra.BrokenPowerLaw,
+            "BrokenPowerLaw2": spectra.BrokenPowerLaw2,
+        }
+        spectrum_type = spectrum_dict["type"]
+
+        if spectrum_norm_type != "integral" and spectrum_norm.unit in (
+            u.Unit("erg"),
+            u.Unit("erg cm-3"),
+        ):
+            raise TypeError(
+                "Normalisations different than 'integral' available only for 'spectrum_norm' in cm-3"
+            )
+
+        # check the units of the normalisation
+        # cm-3 is the only one allowing more than one normalisation type
+        if spectrum_norm.unit == u.Unit("cm-3"):
+
+            if spectrum_norm_type == "integral":
+                self.n_e = model_dict[spectrum_type].from_normalised_density(
+                    spectrum_norm, **spectrum_dict["parameters"]
+                )
+            elif spectrum_norm_type == "differential":
+                self.n_e = model_dict[spectrum_type](
+                    spectrum_norm, **spectrum_dict["parameters"]
+                )
+                print(f"setting k_e directly to {spectrum_norm:.2e}")
+            elif spectrum_norm_type == "gamma=1":
+                self.n_e = model_dict[spectrum_type].from_norm_at_gamma_1(
+                    spectrum_norm, **spectrum_dict["parameters"]
+                )
+
+        elif spectrum_norm.unit == u.Unit("erg cm-3"):
+            self.n_e = model_dict[spectrum_type].from_normalised_u_e(
                 spectrum_norm, **spectrum_dict["parameters"]
             )
-        elif spectrum_norm.unit == u.Unit("erg cm-3"):
-            self.n_e = _model.from_normalised_u_e(spectrum_norm, **spectrum_dict["parameters"])
+
         elif spectrum_norm.unit == u.Unit("erg"):
             u_e = (spectrum_norm / self.V_b).to("erg cm-3")
-            self.n_e = _model.from_normalised_u_e(u_e, **spectrum_dict["parameters"])
+            self.n_e = model_dict[spectrum_type].from_normalised_u_e(
+                u_e, **spectrum_dict["parameters"]
+            )
 
     def __str__(self):
         """printable summary of the blob"""
@@ -222,3 +270,9 @@ class Blob:
         )
         U_B = np.power(self.B.value, 2) / (8 * np.pi) * u.Unit("erg cm-3")
         return (prefactor * U_B).to("erg s-1")
+
+    def plot_n_e(self):
+        plt.loglog(self.gamma, self.n_e(self.gamma))
+        plt.xlabel(r"$\gamma$")
+        plt.ylabel(r"$n_e(\gamma)\,/\,{\rm cm}^{-3}$")
+        plt.show()
