@@ -56,8 +56,10 @@ returning a summary of its properties
 	 - gamma_min: 1.00e+02
 	 - gamma_max: 1.00e+07
 
+
 Normalisation modes
-===================
+-------------------
+
 By chosing a normalisation in units of :math:`{\rm cm}^{-3}` one can select - 
 specifying the parameter `spectrum_norm_type` - three different modes of normalising 
 the electron distribution.
