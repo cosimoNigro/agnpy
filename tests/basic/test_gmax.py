@@ -15,7 +15,7 @@ from agnpy.compton import ExternalCompton, SynchrotronSelfCompton
 from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
 
 # parameters of the blob  
-B0 = 0.03 * u.G
+B0 = 0.1 * u.G
 gmin0=10.
 gmax0=3.e4
 gbreak=300.
@@ -80,6 +80,18 @@ Emax=(gmaxsyn*const.m_e*(const.c)**2).to("GeV")
 # both values are similar
 print(f"E(gmaxsyn) = {Emax:.2e}, Elost = {Elost:.2e}")
 
+#print(gmaxconf, gmaxbal, gmaxsyn)
 
+# check of synchrotron cooling break
 
+# eq F.1 from https://ui.adsabs.harvard.edu/abs/2020arXiv200107729M/abstract
+# gammab = 3pi me c^2 / sigma_T B^2 R
+# here we use 6 instead of 3 because we only have synchrotron losses and compare then
+# with dynamical time scale of crossing R 
+
+#now compare the value from the class (computed using SI units) with the formula using CGS units
+gamma_b=blob.gamma_break_synch
+gamma_break_check=6 * np.pi * 511.e3 * u.eV.to("erg") / (0.665e-24 * (blob.B/u.G)**2 * (blob.R_b/u.cm))
+
+print(f"gamma_break = {gamma_b:.5e}, gamma_break_check = {gamma_break_check:.5e}")
 

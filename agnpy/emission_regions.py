@@ -318,6 +318,25 @@ class Blob:
         """
         return np.sqrt(1.5*self.xi*const.c*const.e.si*const.mu0.si/(const.sigma_T*self.B)).to("").value
     
+
+    @property
+    def gamma_break_synch(self):
+        """Simple estimation of cooling break of electrons 
+        comparing synchrotron cooling with dynamic time scale.
+        check eq F.1 in https://ui.adsabs.harvard.edu/abs/2020arXiv200107729M/abstract
+        original formula:
+        .. math::
+            gamma_b = 3 \pi m_e c^2 / \sigma_T B^2 R 
+        implemented formula with 2 changes:
+        3 ==> 6 (in the paper the assume that synchr and IC losses are comparable hence they probably took them twice, 
+                 or they compared with 2 * R instead of R)
+        B^2 ==> B^2 * 4 pi / mu0  # to go for SI units  
+        .. math::
+            gamma_b = 3 m_e c^2 mu_0 / 2 \sigma_T B^2 * R 
+        """
+        return (1.5 *const.c**2 * const.m_e *const.mu0.si/(const.sigma_T*self.B**2*self.R_b)).to("")# .value
+    
+
     def plot_n_e(self):
         plt.loglog(self.gamma, self.n_e(self.gamma))
         plt.xlabel(r"$\gamma$")
