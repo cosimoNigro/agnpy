@@ -100,7 +100,10 @@ class Blob:
         )
         # grid of Lorentz factors for integration in the external frame
         self.gamma_to_integrate = np.logspace(1, 9, self.gamma_size)
-        self.set_n_e(self.spectrum_norm, self.spectrum_dict, self.spectrum_norm_type)
+        # model for the electron density
+        self.n_e = self.set_n_e(
+            self.spectrum_norm, self.spectrum_dict, self.spectrum_norm_type
+        )
 
     def set_n_e(self, spectrum_norm, spectrum_dict, spectrum_norm_type):
         """set the spectrum :math:`n_e` for the blob"""
@@ -111,6 +114,7 @@ class Blob:
             "BrokenPowerLaw2": spectra.BrokenPowerLaw2,
         }
         spectrum_type = spectrum_dict["type"]
+        n_e_model = model_dict[spectrum_type]()
 
         if spectrum_norm_type != "integral" and spectrum_norm.unit in (
             u.Unit("erg"),
@@ -125,29 +129,31 @@ class Blob:
         if spectrum_norm.unit == u.Unit("cm-3"):
 
             if spectrum_norm_type == "integral":
-                self.n_e = model_dict[spectrum_type].from_normalised_density(
+                n_e_model = model_dict[spectrum_type].from_normalised_density(
                     spectrum_norm, **spectrum_dict["parameters"]
                 )
             elif spectrum_norm_type == "differential":
-                self.n_e = model_dict[spectrum_type](
+                n_e_model = model_dict[spectrum_type](
                     spectrum_norm, **spectrum_dict["parameters"]
                 )
                 print(f"setting k_e directly to {spectrum_norm:.2e}")
             elif spectrum_norm_type == "gamma=1":
-                self.n_e = model_dict[spectrum_type].from_norm_at_gamma_1(
+                n_e_model = model_dict[spectrum_type].from_norm_at_gamma_1(
                     spectrum_norm, **spectrum_dict["parameters"]
                 )
 
         elif spectrum_norm.unit == u.Unit("erg cm-3"):
-            self.n_e = model_dict[spectrum_type].from_normalised_u_e(
+            n_e_model = model_dict[spectrum_type].from_normalised_u_e(
                 spectrum_norm, **spectrum_dict["parameters"]
             )
 
         elif spectrum_norm.unit == u.Unit("erg"):
             u_e = (spectrum_norm / self.V_b).to("erg cm-3")
-            self.n_e = model_dict[spectrum_type].from_normalised_u_e(
+            n_e_model = model_dict[spectrum_type].from_normalised_u_e(
                 u_e, **spectrum_dict["parameters"]
             )
+
+        return n_e_model
 
     def __str__(self):
         """printable summary of the blob"""

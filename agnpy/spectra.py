@@ -99,7 +99,7 @@ class PowerLaw:
         maximum Lorentz factor of the electron distribution
     """
 
-    def __init__(self, k_e, p, gamma_min, gamma_max):
+    def __init__(self, k_e=1e-13 * u.Unit("cm-3"), p=2.0, gamma_min=10, gamma_max=1e5):
         self.k_e = k_e
         self.p = p
         self.gamma_min = gamma_min
@@ -187,7 +187,15 @@ class BrokenPowerLaw:
         maximum Lorentz factor of the electron distribution
     """
 
-    def __init__(self, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
+    def __init__(
+        self,
+        k_e=1e-13 * u.Unit("cm-3"),
+        p1=2.0,
+        p2=3.0,
+        gamma_b=1e3,
+        gamma_min=10,
+        gamma_max=1e5,
+    ):
         self.k_e = k_e
         self.p1 = p1
         self.p2 = p2
@@ -301,7 +309,15 @@ class BrokenPowerLaw2:
         maximum Lorentz factor of the electron distribution
     """
 
-    def __init__(self, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
+    def __init__(
+        self,
+        k_e=1e-13 * u.Unit("cm-3"),
+        p1=2.0,
+        p2=3.0,
+        gamma_b=1e3,
+        gamma_min=10,
+        gamma_max=1e5,
+    ):
         self.k_e = k_e
         self.p1 = p1
         self.p2 = p2
