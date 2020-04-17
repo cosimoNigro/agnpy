@@ -276,8 +276,12 @@ class Blob:
         return (prefactor * U_B).to("erg s-1")
 
     @property
-    def GammaMaxConfined(self):
-        """Maximum gamma factor of electrons that have their Larmour radius smaller then R_b. In SI units:
+    def gamma_max_confined(self):
+        """Maximum gamma factor of electrons that have their Larmour radius R_L smaller then R_b. In SI units Larmour radius is (see e.g. https://en.wikipedia.org/wiki/Gyroradius#Relativistic_case)
+        .. math::
+           R_L=p_{\perp} / q * B \approx = \gamma m_e * c / q * B 
+
+           so:
 
         .. math::
             \gamma = e * B * R_b / m_e *c 
@@ -286,29 +290,30 @@ class Blob:
         return (self.R_b* self.B.si * const.e.si/(const.m_e*const.c)).to("").value
 
     @property
-    def GammaMaxBallistic(self):
+    def gamma_max_ballistic(self):
         """Very simple (naive) estimation of maximum gamma factor of electrons 
         comparing acceleration time scale with ballistic time scale. 
         for ballistic limit we assume that blob crosses its (longitudal) radius
         (or in the frame of the blob the jet crosses R_b of the blob) 
+        For definition of xi (and T_acc formula) check e.g. https://arxiv.org/abs/1208.6200a eq (2)
         Might be too naive ... 
 
         .. math::
-            dE_acc/dt = xi *c * E/ R_L
-            T_acc = RL/(xi *c)
-            T_bal = R_b/c
-            gamma_max = R_b * xi * e*B / (m_e * c^2) # SI UNITS!
+            dE_{acc}/dt = xi *c * E/ R_L
+            T_{acc} = RL/(xi *c)
+            T_{bal} = R_b/c
+            gamma_{max} = R_b * xi * e*B / (m_e * c^2) # SI UNITS!
         """
         return (self.xi * self.R_b* self.B.si * const.e.si/(const.m_e*const.c)).to("").value
 
     @property
-    def GammaMaxSynch(self):
+    def gamma_max_synch(self):
         """Simple estimation of maximum gamma factor of electrons 
         comparing acceleration time scale with synchrotron energy losses. 
-
+        xi and dE_acc like in gamma_max_ballistic
         .. math::
-            dE_acc/dt = xi *c * E/ R_L
-            dE_synch/dt = (4/3) * sigmaT *(B^2/(2 mu0)) * \gamma^2 *c # SI!
+            dE_{acc}/dt = xi *c * E/ R_L
+            dE_{synch}/dt = (4/3) * sigmaT *(B^2/(2 mu0)) * \gamma^2 *c # SI!
             gamma = \sqrt{1.5 mu0 \ksi  c e /(\sigma_T B)}
         """
         return np.sqrt(1.5*self.xi*const.c*const.e.si*const.mu0.si/(const.sigma_T*self.B)).to("").value
