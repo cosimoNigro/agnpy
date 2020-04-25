@@ -76,7 +76,7 @@ we can now plot the complete SED
 External Compton
 ----------------
 
-As an example of this process let us consider Compton scattering of the photon field produced by the disk by a borken power-law electron distribution.
+As an example of this process let us consider Compton scattering of the photon field produced by the disk by a broken power-law electron distribution.
 
 .. code-block:: python
 
