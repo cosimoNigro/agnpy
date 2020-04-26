@@ -32,7 +32,7 @@ class Blob:
         magnetic field in the blob (Gauss)
     xi : float
         used in the functions computing energy limits 
-        acceleration coefficient :math:`dE/dt = \ksi  E  c / R_L`
+        acceleration coefficient :math:`dE/dt = xi E c / R_L` 
     spectrum_norm : :class:`~astropy.units.Quantity`
         normalisation of the electron spectra, by default can be, following 
         the notation in [DermerMenon2009]_:
@@ -93,7 +93,7 @@ class Blob:
         self.spectrum_norm = spectrum_norm
         self.spectrum_norm_type = spectrum_norm_type
         self.spectrum_dict = spectrum_dict
-        self.xi=xi
+        self.xi = xi
         # size of the electron Lorentz factor grid
         self.gamma_size = gamma_size
         self.gamma_min = self.spectrum_dict["parameters"]["gamma_min"]
@@ -282,66 +282,99 @@ class Blob:
         return (prefactor * U_B).to("erg s-1")
 
     @property
-    def gamma_max_confined(self):
-        """Maximum gamma factor of electrons that have their Larmour radius R_L smaller then R_b. In SI units Larmour radius is (see e.g. https://en.wikipedia.org/wiki/Gyroradius#Relativistic_case)
-        .. math::
-           R_L=p_{\perp} / q * B \approx = \gamma m_e * c / q * B 
+    def gamma_max_larmor(self):
 
-           so:
+        """Maximum gamma factor of electrons that have their Larmour radius :math:`R_L` 
+        smaller than the blob radius :math:`R_b`. 
+        The Larmor frequency and radius in Gaussian units read
+        .. math::
+            \omega_L = \frac{eB}{\gamma m_e c}
+            R_L = \frac{v}{\omega_L} = \frac{\gamma m_e v c}{e B} \approx \frac{\gamma m_e c^2}{e B}
+
+        so:
 
         .. math::
-            \gamma = e * B * R_b / m_e *c 
+            R_L  < R_b \Rightarrow \gamma < \frac{R_b e B}{m_e c^2}
         """
-#        return self.R_b/(const.m_e*const.c / (self.B.si * const.e.si)).to("cm")
-        return (self.R_b* self.B.si * const.e.si/(const.m_e*const.c)).to("").value
+        return (
+            self.R_b.to("cm").value
+            * const.e.gauss.value
+            * self.B.to("G").value
+            / MEC2.value
+        )
 
     @property
     def gamma_max_ballistic(self):
-        """Very simple (naive) estimation of maximum gamma factor of electrons 
+        r"""Very simple (naive) estimation of maximum gamma factor of electrons 
         comparing acceleration time scale with ballistic time scale. 
         for ballistic limit we assume that blob crosses its (longitudal) radius
         (or in the frame of the blob the jet crosses R_b of the blob) 
-        For definition of xi (and T_acc formula) check e.g. https://arxiv.org/abs/1208.6200a eq (2)
+        For definition of xi (and T_acc formula) check e.g. https://arxiv.org/abs/1208.6200 eq (2)
         Might be too naive ... 
 
         .. math::
-            dE_{acc}/dt = xi *c * E/ R_L
-            T_{acc} = RL/(xi *c)
+            dE_{acc}/dt = xi c  E/ R_L
+            T_{acc} = R_L/(xi c)
             T_{bal} = R_b/c
-            gamma_{max} = R_b * xi * e*B / (m_e * c^2) # SI UNITS!
+            T_{acc} < T_{bal} \Rightarrow \gamma < \frac{R_b \xi e B}{m_e c^2}
         """
-        return (self.xi * self.R_b* self.B.si * const.e.si/(const.m_e*const.c)).to("").value
+        #        return (self.xi * self.R_b* self.B.si * const.e.si/(const.m_e*const.c)).to("").value
+        return (
+            self.R_b.to("cm").value
+            * self.xi
+            * const.e.gauss.value
+            * self.B.to("G").value
+            / MEC2.value
+        )
 
     @property
     def gamma_max_synch(self):
-        """Simple estimation of maximum gamma factor of electrons 
+        r"""Simple estimation of maximum gamma factor of electrons 
         comparing acceleration time scale with synchrotron energy losses. 
         xi and dE_acc like in gamma_max_ballistic
         .. math::
-            dE_{acc}/dt = xi *c * E/ R_L
-            dE_{synch}/dt = (4/3) * sigmaT *(B^2/(2 mu0)) * \gamma^2 *c # SI!
             gamma = \sqrt{1.5 mu0 \ksi  c e /(\sigma_T B)}
+            dE_{acc}/dt = \xi  c  E / R_L
+            dE_{synch}/dt = (4/3) sigma_T U_B \gamma^2
+            dE_{acc}/dt = dE_{synch}/dt \Rightarrow gamma < \sqrt{\frac{6 \pi \xi e}{\sigma_T B}
         """
-        return np.sqrt(1.5*self.xi*const.c*const.e.si*const.mu0.si/(const.sigma_T*self.B)).to("").value
-    
+        return np.sqrt(
+            6
+            * np.pi
+            * self.xi
+            * const.e.gauss.value
+            / (const.sigma_T.cgs.value * self.B.to("G").value)
+        )
+
+    #        return np.sqrt(1.5*self.xi*const.c*const.e.si*const.mu0.si/(const.sigma_T*self.B)).to("").value
 
     @property
     def gamma_break_synch(self):
-        """Simple estimation of cooling break of electrons 
-        comparing synchrotron cooling with dynamic time scale.
-        check eq F.1 in https://ui.adsabs.harvard.edu/abs/2020arXiv200107729M/abstract
-        original formula:
+        r"""Simple estimation of cooling break of electrons 
+        comparing synchrotron cooling time scale: 
         .. math::
-            gamma_b = 3 \pi m_e c^2 / \sigma_T B^2 R 
-        implemented formula with 2 changes:
-        3 ==> 6 (in the paper the assume that synchr and IC losses are comparable hence they probably took them twice, 
-                 or they compared with 2 * R instead of R)
-        B^2 ==> B^2 * 4 pi / mu0  # to go for SI units  
+            T_{synch}=E/(dE_{synch}/dt) =  3 m_e c^2 / 4 sigma_T U_B \gamma`
+        with dynamic time scale :math:`T_{bal} = R_b/c`.
+
         .. math::
-            gamma_b = 3 m_e c^2 mu_0 / 2 \sigma_T B^2 * R 
+            \gamma_b = 6 \pi m_e c^2 / \sigma_T B^2 R 
+        original formula (check eq F.1 in https://ui.adsabs.harvard.edu/abs/2020arXiv200107729M/abstract) 
+        had 3 instead of 6. In the paper the assumption is that synchr and IC losses are comparable hence 
+        they probably took them twice, or they compared with 2 * R instead of R. 
+
         """
-        return (1.5 *const.c**2 * const.m_e *const.mu0.si/(const.sigma_T*self.B**2*self.R_b)).to("")# .value
-    
+        return (
+            6
+            * np.pi
+            * MEC2.value
+            / (
+                const.sigma_T.cgs.value
+                * self.B.to("G").value ** 2
+                * self.R_b.to("cm").value
+            )
+        )
+
+    #        return (1.5 *const.c**2 * const.m_e *const.mu0.si/(const.sigma_T*self.B**2*self.R_b)).to("")# .value
 
     def plot_n_e(self):
         plt.loglog(self.gamma, self.n_e(self.gamma))
