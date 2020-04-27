@@ -188,7 +188,7 @@ class Blob:
             viewing angle of the jet
         """
         mu_s = np.cos(theta_s.to("rad").value)
-        Beta = np.sqrt(1 - 1 / np.power(self.Gamma, 2))
+        Beta = np.sqrt(1 - 1 / np.power(Gamma, 2))
         delta_D = 1 / (Gamma * (1 - Beta * mu_s))
 
         self.theta_s = theta_s
