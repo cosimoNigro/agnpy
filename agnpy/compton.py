@@ -95,7 +95,7 @@ def compton_kernel(gamma, epsilon_s, epsilon, mu_s, mu, phi):
 
 
 def x_re_shell(mu, R_re, r):
-    """distance between the blob and the reprocessing material,
+    """distance between the blob and a spherical reprocessing material,
     see Fig. 9 and Eq. 76 in [Finke2016]_.
     
     Parameters
@@ -112,6 +112,7 @@ def x_re_shell(mu, R_re, r):
 
 
 def x_re_ring(R_re, r):
+    """distance between the blob and a ring reprocessing material"""
     return np.sqrt(np.power(R_re, 2) + np.power(r, 2))
 
 
@@ -391,8 +392,9 @@ class ExternalCompton:
         _phi = self.phi.reshape(1, 1, self.phi.size, 1)
         _epsilon_s = epsilon_s.reshape(1, 1, 1, epsilon_s.size)
         # define integrating function
-        _x = x_re_shell(_mu, self.target._R_line, self._r)
-        _mu_star = mu_star(_mu, self.target._R_line, self._r)
+        R_line = self.target.R_line.to("cm").value
+        _x = x_re_shell(_mu, R_line, self._r)
+        _mu_star = mu_star(_mu, R_line, self._r)
         _kernel = compton_kernel(
             _gamma, _epsilon_s, self.target.epsilon_line, _mu_s, _mu_star, _phi
         )
@@ -405,7 +407,7 @@ class ExternalCompton:
             * SIGMA_T
             * np.power(epsilon_s, 2)
             * np.power(self.blob.delta_D, 3)
-            * self.target.parent_disk.L_disk.value
+            * self.target.L_disk.value
             * self.target.xi_line
         )
         prefactor_denom = (
@@ -439,7 +441,8 @@ class ExternalCompton:
         # axis 2: epsilon_s
         _mu_s = self.blob.mu_s
         # here we plug mu =  r / x. Delta function in Eq. (91) of [3]
-        x_re = x_re_ring(self.target._R_dt, self._r)
+        R_dt = self.target.R_dt.to("cm").value
+        x_re = x_re_ring(R_dt, self._r)
         _mu = self._r / x_re
         _gamma = self.gamma.reshape(self.gamma.size, 1, 1)
         _N_e = self.transformed_N_e.reshape(self.transformed_N_e.size, 1, 1)
@@ -457,7 +460,7 @@ class ExternalCompton:
             * SIGMA_T
             * np.power(epsilon_s, 2)
             * np.power(self.blob.delta_D, 3)
-            * self.target.parent_disk.L_disk.value
+            * self.target.L_disk.value
             * self.target.xi_dt
         )
         prefactor_denom = (

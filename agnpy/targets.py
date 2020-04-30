@@ -20,7 +20,47 @@ EMISSIVITY_UNIT = "erg s-1"
 SED_UNIT = "erg cm-2 s-1"
 
 
-__all__ = ["SSDisk", "SphericalShellBLR", "RingDustTorus"]
+lines_dictionary = {
+    "Lyepsilon": {"lambda": 937.80 * u.Angstrom, "R_Hbeta_ratio": 2.7},
+    "Lydelta": {"lambda": 949.74 * u.Angstrom, "R_Hbeta_ratio": 2.8},
+    "CIII": {"lambda": 977.02 * u.Angstrom, "R_Hbeta_ratio": 0.83},
+    "NIII": {"lambda": 990.69 * u.Angstrom, "R_Hbeta_ratio": 0.85},
+    "Lybeta": {"lambda": 1025.72 * u.Angstrom, "R_Hbeta_ratio": 1.2},
+    "OVI": {"lambda": 1033.83 * u.Angstrom, "R_Hbeta_ratio": 1.2},
+    "ArI": {"lambda": 1066.66 * u.Angstrom, "R_Hbeta_ratio": 4.5},
+    "Lyalpha": {"lambda": 1215.67 * u.Angstrom, "R_Hbeta_ratio": 0.27},
+    "OI": {"lambda": 1304.35 * u.Angstrom, "R_Hbeta_ratio": 4.0},
+    "SiII": {"lambda": 1306.82 * u.Angstrom, "R_Hbeta_ratio": 4.0},
+    "SiIV": {"lambda": 1396.76 * u.Angstrom, "R_Hbeta_ratio": 0.83},
+    "OIV]": {"lambda": 1402.06 * u.Angstrom, "R_Hbeta_ratio": 0.83},
+    "CIV": {"lambda": 1549.06 * u.Angstrom, "R_Hbeta_ratio": 0.83},
+    "NIV": {"lambda": 1718.55 * u.Angstrom, "R_Hbeta_ratio": 3.8},
+    "AlII": {"lambda": 1721.89 * u.Angstrom, "R_Hbeta_ratio": 3.8},
+    "CIII]": {"lambda": 1908.73 * u.Angstrom, "R_Hbeta_ratio": 0.46},
+    "[NeIV]": {"lambda": 2423.83 * u.Angstrom, "R_Hbeta_ratio": 5.8},
+    "MgII": {"lambda": 2798.75 * u.Angstrom, "R_Hbeta_ratio": 0.45},
+    "HeI": {"lambda": 3188.67 * u.Angstrom, "R_Hbeta_ratio": 4.3},
+    "Hdelta": {"lambda": 4102.89 * u.Angstrom, "R_Hbeta_ratio": 3.4},
+    "Hgamma": {"lambda": 4341.68 * u.Angstrom, "R_Hbeta_ratio": 3.2},
+    "HeII": {"lambda": 4687.02 * u.Angstrom, "R_Hbeta_ratio": 0.63},
+    "Hbeta": {"lambda": 4862.68 * u.Angstrom, "R_Hbeta_ratio": 1.0},
+    "[ClIII]": {"lambda": 5539.43 * u.Angstrom, "R_Hbeta_ratio": 4.8},
+    "HeI": {"lambda": 5877.29 * u.Angstrom, "R_Hbeta_ratio": 0.39},
+    "Halpha": {"lambda": 6564.61 * u.Angstrom, "R_Hbeta_ratio": 1.3},
+}
+
+
+__all__ = ["SSDisk", "SphericalShellBLR", "RingDustTorus", "print_lines_list"]
+
+
+def print_lines_list():
+    """Print the list of the available spectral lines.
+    The dictionary with the possible emission lines is taken from Table 5 in 
+    [Finke2016]_ and contains the value of the line wavelength and the ratio of 
+    its radius to the radius of the :math:`H_{\\beta}` shell, not used at the moment.
+    """
+    for line in lines_dictionary.keys():
+        print(f"{line}: {lines_dictionary[line]}")
 
 
 def I_nu_bb(nu, T):
@@ -166,86 +206,120 @@ class SphericalShellBLR:
 
     Parameters
     ----------
-    disk : :class:`~agnpy.targets.SSDisk`
-        disk whose radiation is being reprocessed by the BLR
+    L_disk : :class:`~astropy.units.Quantity`
+        Luminosity of the disk whose radiation is being reprocessed by the BLR
     xi_line : float
         fraction of the disk radiation reprocessed by the BLR
-    epsilon_line : float
-        dimensionless energy of the emitted line
+    line : string
+        type of line emitted
     R_line : :class:`~astropy.units.Quantity`
         radius of the BLR spherical shell
     """
 
-    def __init__(self, disk, xi_line, epsilon_line, R_line):
+    def __init__(self, L_disk, xi_line, line, R_line):
         self.type = "SphericalShellBLR"
-        self.parent_disk = disk
+        self.L_disk = L_disk
         self.xi_line = xi_line
-        self.epsilon_line = epsilon_line
-        self.R_line = R_line.cgs
-        self._R_line = self.R_line.value
+        if line in lines_dictionary:
+            self.line = line
+            self.lambda_line = lines_dictionary[line]["lambda"]
+        else:
+            raise NameError(f"{line} not available in the line dictionary")
+        self.epsilon_line = (
+            self.lambda_line.to("erg", equivalencies=u.spectral()).value / MEC2
+        )
+        self.R_line = R_line
 
     def __str__(self):
         summary = (
             f"* Spherical Shell Broad Line Region:\n"
-            + f" - M_BH (central black hole mass): {self.parent_disk.M_BH:.2e}\n"
-            + f" - L_disk (accretion disk luminosity): {self.parent_disk.L_disk:.2e}\n"
+            + f" - L_disk (accretion disk luminosity): {self.L_disk:.2e}\n"
             + f" - xi_line (fraction of the disk radiation reprocessed by the BLR): {self.xi_line:.2e}\n"
-            + f" - epsilon_line (dimensionless energy of the emitted line): {self.epsilon_line:.2e}\n"
+            + f" - line (type of emitted line): {self.line}, lambda = {self.lambda_line:.2f}\n"
             + f" - R_line (radius of the BLR shell): {self.R_line:.2e}\n"
         )
         return summary
 
+    def u(self, r):
+        """Density of radiation produced by the BLR at the distance r along the 
+        jet axis.
+        Eq. 80 in [Finke2016]_
+
+        Parameters
+        ----------
+        r : :class:`~astropy.units.Quantity`
+            array of distances along the jet axis
+        """
+        mu = np.linspace(-1, 1)
+        _mu = mu.reshape(mu.size, 1)
+        _r = r.reshape(1, r.size)
+        x2 = np.power(_r, 2) + np.power(self.R_line, 2) - 2 * _r * self.R_line * _mu
+        integral = np.trapz(1 / x2, mu, axis=0)
+        prefactor = self.xi_line * self.L_disk / (np.power(4 * np.pi, 2) * const.c)
+        return (prefactor * integral).to("erg cm-3")
+
 
 class RingDustTorus:
     """Dust Torus as infinitesimally thin annulus, from [Finke2016]_.
-    For the Compton scattering monochromatic enission at the peak energy of the 
+    For the Compton scattering monochromatic emission at the peak energy of the 
     Black Body spectrum is considered.
 
     Parameters
     ----------
-    disk : :class:`~agnpy.targets.SSDisk`
-        disk whose radiation is being reprocessed by the Torus
+    L_disk : :class:`~astropy.units.Quantity`
+       Luminosity of the disk whose radiation is being reprocessed by the Torus
     xi_dt : float
         fraction of the disk radiation reprocessed
-    epsilon_dt : float
-        dimensionless energy peak of the black body distribution
+    T_dt : :class:`~astropy.units.Quantity`
+        peak temperature of the black body emission of the Torus
     R_dt : :class:`~astropy.units.Quantity`
         radius of the Torus, if not specified the saturation radius of Eq. 96 in
         [Finke2016]_ will be used
     """
 
-    def __init__(self, disk, xi_dt, epsilon_dt, R_dt=None):
+    def __init__(self, L_disk, xi_dt, T_dt, R_dt=None):
         self.type = "RingDustTorus"
-        self.parent_disk = disk
+        self.L_disk = L_disk
         self.xi_dt = xi_dt
-        self.epsilon_dt = epsilon_dt
-        # dimensionless temperature of the Dust Torus
-        self.Theta = self.epsilon_dt / 2.7
-        # temperatue in K
-        self.T_dt = self.Theta * ((const.m_e * const.c * const.c) / const.k_B).to("K")
-        self._T_dt = self.T_dt.value
+        self.T_dt = T_dt
+        # dimensionless temperature of the torus
+        self.Theta = (const.k_B * self.T_dt).to("erg").value / MEC2
+        self.epsilon_dt = 2.7 * self.Theta
+
         # if the radius is not specified use saturation radius Eq. 96 of [Finke2016]_
         if R_dt is None:
             self.R_dt = (
                 3.5
                 * 1e18
-                * np.sqrt(self.parent_disk._L_disk / 1e45)
-                * np.power(self._T_dt / 1e3, -2.6)
+                * np.sqrt(self.L_disk.cgs.value / 1e45)
+                * np.power(self.T_dt.to("K").value / 1e3, -2.6)
             ) * u.cm
         else:
             self.R_dt = R_dt.cgs
-        self._R_dt = self.R_dt.value
 
     def __str__(self):
         summary = (
-            f"* SRing Dust Torus:\n"
-            + f" - M_BH (central black hole mass): {self.parent_disk.M_BH:.2e}\n"
-            + f" - L_disk (accretion disk luminosity): {self.parent_disk.L_disk:.2e}\n"
+            f"* Ring Dust Torus:\n"
+            + f" - L_disk (accretion disk luminosity): {self.L_disk:.2e}\n"
             + f" - xi_dt (fraction of the disk radiation reprocessed by the torus): {self.xi_dt:.2e}\n"
-            + f" - epsilon_dt (dimensionless temperature of the dust torus): {self.epsilon_dt:.2e}\n"
+            + f" - T_dt (temperature of the dust torus): {self.T_dt:.2e}\n"
             + f" - R_dt (radius of the torus): {self.R_dt:.2e}\n"
         )
         return summary
+
+    def u(self, r):
+        """Density of radiation produced by the Torus at the distance r along the 
+        jet axis.
+        Eq. 85 in [Finke2016]_
+
+        Parameters
+        ----------
+        r : :class:`~astropy.units.Quantity`
+            array of distances along the jet axis
+        """
+        x2 = np.power(self.R_dt, 2) + np.power(r, 2)
+        prefactor = self.xi_dt * self.L_disk / (np.power(4 * np.pi, 2) * const.c)
+        return (prefactor * 1 / x2).to("erg cm-3")
 
     def sed_flux(self, nu, z):
         """Black Body SED generated by the Dust Torus:

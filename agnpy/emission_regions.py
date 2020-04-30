@@ -124,7 +124,7 @@ class Blob:
             u.Unit("erg"),
             u.Unit("erg cm-3"),
         ):
-            raise TypeError(
+            raise NameError(
                 "Normalisations different than 'integral' available only for 'spectrum_norm' in cm-3"
             )
 
@@ -377,6 +377,7 @@ class Blob:
     #        return (1.5 *const.c**2 * const.m_e *const.mu0.si/(const.sigma_T*self.B**2*self.R_b)).to("")# .value
 
     def plot_n_e(self):
+        """plot the electron distribution"""
         plt.loglog(self.gamma, self.n_e(self.gamma))
         plt.xlabel(r"$\gamma$")
         plt.ylabel(r"$n_e(\gamma)\,/\,{\rm cm}^{-3}$")
