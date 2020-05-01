@@ -40,8 +40,11 @@ Overview
    targets
    compton
    absorption
+   tutorials/synchrotron_self_compton.ipynb
+   tutorials/external_compton.ipynb
    bibliography
    modules
+
 
 After checking the documentation, to get more familiar with the package it is suggested to run the notebooks in `agnpy/tutorials`.
 

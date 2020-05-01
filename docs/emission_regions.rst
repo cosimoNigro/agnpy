@@ -19,8 +19,8 @@ Follows an example of how to initialise a `Blob` using `astropy` quantities:
 	spectrum_norm = 1e48 * u.Unit("erg") 
 	# define the spectral function through a dictionary
 	spectrum_dict = {
-		"type": "PowerLaw", 
-		"parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7}
+	    "type": "PowerLaw", 
+	    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7}
 	}
 	R_b = 1e16 * u.cm
 	B = 1 * u.G
