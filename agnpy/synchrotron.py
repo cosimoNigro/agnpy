@@ -156,7 +156,8 @@ class Synchrotron:
         epsilon = nu.to("", equivalencies=epsilon_equivalency)
         # correct epsilon to the jet comoving frame
         epsilon_prime = (1 + self.blob.z) * epsilon / self.blob.delta_D
-        return np.power(self.blob.delta_D, 4) * self.com_sed_emissivity(epsilon_prime)
+        prefactor = np.power(self.blob.delta_D, 4)
+        return prefactor * self.com_sed_emissivity(epsilon_prime)
 
     def sed_flux(self, nu):
         """Synchrotron flux SED:
@@ -183,4 +184,5 @@ class Synchrotron:
         prefactor = np.power(self.blob.delta_D, 4) / (
             4 * np.pi * np.power(self.blob.d_L, 2)
         )
-        return (prefactor * self.com_sed_emissivity(epsilon_prime)).to("erg cm-2 s-1")
+        sed = prefactor * self.com_sed_emissivity(epsilon_prime)
+        return sed.to("erg cm-2 s-1")

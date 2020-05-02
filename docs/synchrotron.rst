@@ -21,8 +21,8 @@ Expanding the example in :ref:`emission_regions`, it is here illustrated how to 
 	spectrum_norm = 1e48 * u.Unit("erg") 
 	# define the spectral function through a dictionary
 	spectrum_dict = {
-		"type": "PowerLaw", 
-		"parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7}
+	    "type": "PowerLaw", 
+	    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7}
 	}
 	R_b = 1e16 * u.cm
 	B = 1 * u.G
@@ -31,13 +31,13 @@ Expanding the example in :ref:`emission_regions`, it is here illustrated how to 
 	Gamma = 10
 	blob = Blob(R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict)
 
-to initialise the synchrotron radiation the :class:`~agnpy.emission_regions.Blob` instance has to be passed to the :class:`~agnpy.synchrotron.Synchrotron` class intialiser 
+to initialise the synchrotron radiation the :class:`~agnpy.emission_regions.Blob` instance has to be passed to the :class:`~agnpy.synchrotron.Synchrotron` class initialiser
 
 .. code-block:: python
 
 	synch = Synchrotron(blob)
 
-the optional argument `ssa` specify if self absorption has to be taken into account (by default it is not)
+the optional argument `ssa` specifies if self absorption has to be taken into account (by default it is not)
 
 .. code-block:: python
 
@@ -55,19 +55,19 @@ this produces an array of :class:`~astropy.units.Quantity`
 
 .. code-block:: text
 
-	[9.07847459e-16 2.32031260e-15 5.92493131e-15 1.51066918e-14
- 	3.84225947e-14 9.73302915e-14 2.44919517e-13 6.09602446e-13
- 	1.49002539e-12 3.53274287e-12 7.95174302e-12 1.63760084e-11
- 	2.91395183e-11 4.20896994e-11 4.96023122e-11 5.36546912e-11
- 	5.75762828e-11 6.17811330e-11 6.62930673e-11 7.11345123e-11
- 	7.63295326e-11 8.19039501e-11 8.78854724e-11 9.43038305e-11
- 	1.01190926e-10 1.08580991e-10 1.16510753e-10 1.25019617e-10
- 	1.34149851e-10 1.43946773e-10 1.54458910e-10 1.65738088e-10
- 	1.77839278e-10 1.90819844e-10 2.04737198e-10 2.19642423e-10
- 	2.35563710e-10 2.52464433e-10 2.70139425e-10 2.87965635e-10
- 	3.04330867e-10 3.15437411e-10 3.13250483e-10 2.83748080e-10
- 	2.11999976e-10 1.06769353e-10 2.42794688e-11 1.12784155e-12
- 	2.22960447e-15 8.03665999e-21] erg / (cm2 s)
+	[9.07847669e-16 2.32031314e-15 5.92493269e-15 1.51066953e-14
+	3.84226036e-14 9.73303142e-14 2.44919574e-13 6.09602590e-13
+	1.49002575e-12 3.53274373e-12 7.95174501e-12 1.63760127e-11
+	2.91395265e-11 4.20897124e-11 4.96023285e-11 5.36547089e-11
+	5.75763018e-11 6.17811534e-11 6.62930892e-11 7.11345358e-11
+	7.63295578e-11 8.19039772e-11 8.78855014e-11 9.43038616e-11
+	1.01190960e-10 1.08581027e-10 1.16510791e-10 1.25019658e-10
+	1.34149896e-10 1.43946820e-10 1.54458961e-10 1.65738143e-10
+	1.77839337e-10 1.90819907e-10 2.04737266e-10 2.19642496e-10
+	2.35563787e-10 2.52464517e-10 2.70139515e-10 2.87965730e-10
+	3.04330969e-10 3.15437517e-10 3.13250591e-10 2.83748181e-10
+	2.12000058e-10 1.06769402e-10 2.42794829e-11 1.12784249e-12
+	2.22960744e-15 8.03667875e-21] erg / (cm2 s)
 	
 Let us examine the different SEDs produced by the normal and self-absorbed synchrotron processes
 
@@ -85,7 +85,7 @@ Let us examine the different SEDs produced by the normal and self-absorbed synch
     :width: 500px
     :align: center
 
-For more examples of Synchrotron radiation and cross-check of literature results, check the notebooks in `agnpy/tutorials`.
+For more examples of Synchrotron radiation and cross-checks of literature results, check the tutorials.
 
 
 API
