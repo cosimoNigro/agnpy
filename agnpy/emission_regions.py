@@ -8,7 +8,7 @@ from . import spectra
 
 mec2 = const.m_e.to("erg", equivalencies=u.mass_energy())
 # equivalency for decomposing Gauss in Gaussian-cgs units (not available in astropy)
-Gauss_cgs_unit = "cm(-1/2) s(1/2) s-1"
+Gauss_cgs_unit = "cm(-1/2) g(1/2) s-1"
 Gauss_cgs_equivalency = [(u.G, u.Unit(Gauss_cgs_unit), lambda x: x, lambda x: x)]
 
 
@@ -37,7 +37,7 @@ class Blob:
         acceleration coefficient :math:`\\xi` for first-order Fermi acceleration
         :math:`(\mathrm{d}E/\mathrm{d}t \\propto v \\approx c)`
         used to compute limits on the maximum Lorentz factor via
-        :math:`\mathrm{d}E/\mathrm{d}t = \\xi E c/R_L`
+        :math:`(\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} = \\xi c E / R_L`
         
     spectrum_norm : :class:`~astropy.units.Quantity`
         normalisation of the electron spectra, by default can be, following 
@@ -123,7 +123,6 @@ class Blob:
 
     def set_n_e(self, spectrum_norm, spectrum_dict, spectrum_norm_type):
         """set the spectrum :math:`n_e` for the blob"""
-        print(f"* normalising {spectrum_dict['type']} in {spectrum_norm_type} mode")
         model_dict = {
             "PowerLaw": spectra.PowerLaw,
             "BrokenPowerLaw": spectra.BrokenPowerLaw,
@@ -152,7 +151,6 @@ class Blob:
                 n_e_model = model_dict[spectrum_type](
                     spectrum_norm, **spectrum_dict["parameters"]
                 )
-                print(f"setting k_e directly to {spectrum_norm:.2e}")
             elif spectrum_norm_type == "gamma=1":
                 n_e_model = model_dict[spectrum_type].from_norm_at_gamma_1(
                     spectrum_norm, **spectrum_dict["parameters"]
