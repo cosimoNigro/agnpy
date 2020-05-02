@@ -1,12 +1,13 @@
 import numpy as np
 import astropy.units as u
-import astropy.constants as const
+from astropy.constants import e, c, m_e, sigma_T
 from astropy.coordinates import Distance
 import matplotlib.pyplot as plt
 from . import spectra
 
 
-mec2 = const.m_e.to("erg", equivalencies=u.mass_energy())
+e = e.gauss
+mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 # equivalency for decomposing Gauss in Gaussian-cgs units (not available in astropy)
 Gauss_cgs_unit = "cm(-1/2) g(1/2) s-1"
 Gauss_cgs_equivalency = [(u.G, u.Unit(Gauss_cgs_unit), lambda x: x, lambda x: x)]
@@ -264,12 +265,7 @@ class Blob:
             P_{jet,\,e} = 2 \pi R_b^2 \\beta \Gamma^2 c u_e
         """
         prefactor = (
-            2
-            * np.pi
-            * np.power(self.R_b, 2)
-            * self.Beta
-            * np.power(self.Gamma, 2)
-            * const.c
+            2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
         )
         return (prefactor * self.u_e).to("erg s-1")
 
@@ -281,12 +277,7 @@ class Blob:
             P_{jet,\,B} = 2 \pi R_b^2 \\beta \Gamma^2 c \\frac{B^2}{8\pi}
         """
         prefactor = (
-            2
-            * np.pi
-            * np.power(self.R_b, 2)
-            * self.Beta
-            * np.power(self.Gamma, 2)
-            * const.c
+            2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
         )
         U_B = np.power(self.B.value, 2) / (8 * np.pi) * u.Unit("erg cm-3")
         return (prefactor * U_B).to("erg s-1")
@@ -308,7 +299,7 @@ class Blob:
 
             R_L < R_b \Rightarrow \gamma_{\mathrm{max}} < \\frac{R_b e B}{m_e c^2}
         """
-        gamma_max = (self.R_b * const.e.gauss * self.B_cgs / mec2).decompose()
+        gamma_max = (self.R_b * e * self.B_cgs / mec2).decompose()
         return gamma_max
 
     @property
@@ -340,9 +331,7 @@ class Blob:
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} 
             \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{6 \pi \xi e}{\sigma_T B}}
         """
-        gamma_max = np.sqrt(
-            6 * np.pi * self.xi * const.e.gauss / (const.sigma_T * self.B_cgs)
-        ).decompose()
+        gamma_max = np.sqrt(6 * np.pi * self.xi * e / (sigma_T * self.B_cgs)).to("")
         return gamma_max
 
     @property
@@ -358,8 +347,8 @@ class Blob:
             T_{\mathrm{synch}} &= T_{\mathrm{bal}} \Rightarrow \gamma_b = 6 \pi m_e c^2 / \sigma_T B^2 R 
         """
         gamma_max = (
-            6 * np.pi * mec2 / (const.sigma_T * np.power(self.B_cgs, 2) * self.R_b)
-        ).decompose()
+            6 * np.pi * mec2 / (sigma_T * np.power(self.B_cgs, 2) * self.R_b)
+        ).to("")
         return gamma_max
 
     def plot_n_e(self, gamma_power=0):
