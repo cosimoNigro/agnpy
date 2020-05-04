@@ -39,7 +39,7 @@ class Blob:
         :math:`(\mathrm{d}E/\mathrm{d}t \\propto v \\approx c)`
         used to compute limits on the maximum Lorentz factor via
         :math:`(\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} = \\xi c E / R_L`
-        
+
     spectrum_norm : :class:`~astropy.units.Quantity`
         normalisation of the electron spectra, by default can be, following 
         the notation in [DermerMenon2009]_:
@@ -72,7 +72,7 @@ class Blob:
         * `differential`: the spectrum is set such that :math:`k_e` equals the value provided by `spectrum_norm`;    
         
         * `gamma=1`: the spectrum is set such that :math:`n_e(\gamma=1)` equals the value provided by `spectrum_norm`.
-
+        
     gamma_size : int
         size of the array of electrons Lorentz factors
     """

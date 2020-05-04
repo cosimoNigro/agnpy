@@ -83,9 +83,9 @@ class SSDisk:
         luminosity of the disk 
     eta : float
         accretion efficiency
-    R_in : :class:`~astropy.units.Quantity`
+    R_in : :class:`~astropy.units.Quantity` / float
         inner disk radius
-    R_out : :class:`~astropy.units.Quantity`
+    R_out : :class:`~astropy.units.Quantity` / float
         outer disk radius
     R_g_units : bool
         whether or not input radiuses are specified in units of the gravitational radius
@@ -141,9 +141,10 @@ class SSDisk:
         )
         return summary
 
-    def mu_from_r(self, r_tilde, size=100):
-        """array of cosine angles viewed from a given distance :math:`\\tilde{r}` 
-        along the jet axis, Eq. 71 and 73 in [Finke2016]_."""
+    def mu_from_r_tilde(self, r_tilde, size=100):
+        """array of cosine angles, spanning from :math:`R_{\mathrm{in}}` to 
+        :math:`R_{\mathrm{out}}`, viewed from a given distance :math:`\\tilde{r}` 
+        along the jet axis, Eq. 72 and 73 in [Finke2016]_."""
         mu_min = 1 / np.sqrt(1 + np.power((self.R_out_tilde / r_tilde), 2))
         mu_max = 1 / np.sqrt(1 + np.power((self.R_in_tilde / r_tilde), 2))
         return np.linspace(mu_min, mu_max, size)
@@ -166,7 +167,7 @@ class SSDisk:
         return self.phi_disk(R_tilde)
 
     def epsilon(self, R_tilde):
-        """Monochromatic approximation for the mean photon energy at radius 
+        """monochromatic approximation for the mean photon energy at radius 
         :math:`\\tilde{R}` of the accretion disk. Eq. 65 in [Dermer2009]_."""
         xi = np.power(self.l_Edd / (self.M_8 * self.eta), 1 / 4)
         return 2.7 * 1e-4 * xi * np.power(R_tilde, -3 / 4)
@@ -188,7 +189,7 @@ class SSDisk:
         theta = k_B * self.T(R_tilde) / mec2
         return theta.to("").value
 
-    def u(self, r):
+    def u_ph(self, r):
         """Density of radiation produced by the Disk at the distance r along the 
         jet axis. Integral over the solid angle of Eq. 69 in [Dermer2009]_.
         
@@ -198,9 +199,10 @@ class SSDisk:
             distance along the jet axis
         """
         r_tilde = (r / self.R_g).to("").value
-        mu = self.mu_from_r(r_tilde)
-        integrand = np.power(np.power(mu, -2) - 1, -3 / 2) * self.phi_disk_mu(
-            mu, r_tilde
+        mu = self.mu_from_r_tilde(r_tilde)
+        integrand = (
+            np.power(np.power(mu, -2) - 1, -3 / 2) 
+            * self.phi_disk_mu(mu, r_tilde)
         )
         prefactor_denum = (
             16
@@ -296,24 +298,23 @@ class SphericalShellBLR:
         else:
             raise NameError(f"{line} not available in the line dictionary")
         self.epsilon_line = (
-            self.lambda_line.to("erg", equivalencies=u.spectral()).value / MEC2
+            self.lambda_line.to("erg", equivalencies=u.spectral()).value / mec2
         )
         self.R_line = R_line
 
     def __str__(self):
         summary = (
             f"* Spherical Shell Broad Line Region:\n"
-            + f" - L_disk (accretion disk luminosity): {self.L_disk:.2e}\n"
+            + f" - L_disk (accretion disk luminosity): {self.L_disk.cgs:.2e}\n"
             + f" - xi_line (fraction of the disk radiation reprocessed by the BLR): {self.xi_line:.2e}\n"
-            + f" - line (type of emitted line): {self.line}, lambda = {self.lambda_line:.2f}\n"
-            + f" - R_line (radius of the BLR shell): {self.R_line:.2e}\n"
+            + f" - line (type of emitted line): {self.line}, lambda = {self.lambda_line.cgs:.2f}\n"
+            + f" - R_line (radius of the BLR shell): {self.R_line.cgs:.2e}\n"
         )
         return summary
 
-    def u(self, r):
+    def u_ph(self, r):
         """Density of radiation produced by the BLR at the distance r along the 
-        jet axis.
-        Eq. 80 in [Finke2016]_
+        jet axis. Integral over the solid angle of Eq. 80 in [Finke2016]_.
 
         Parameters
         ----------
@@ -325,8 +326,8 @@ class SphericalShellBLR:
         _r = r.reshape(1, r.size)
         x2 = np.power(_r, 2) + np.power(self.R_line, 2) - 2 * _r * self.R_line * _mu
         integral = np.trapz(1 / x2, mu, axis=0)
-        prefactor = self.xi_line * self.L_disk / (np.power(4 * np.pi, 2) * const.c)
-        return (prefactor * integral).to("erg cm-3")
+        prefactor = self.xi_line * self.L_disk / (np.power(4 * np.pi, 2) * c)
+        return (2 * np.pi * prefactor * integral).to("erg cm-3")
 
 
 class RingDustTorus:
@@ -353,7 +354,7 @@ class RingDustTorus:
         self.xi_dt = xi_dt
         self.T_dt = T_dt
         # dimensionless temperature of the torus
-        self.Theta = (const.k_B * self.T_dt).to("erg").value / MEC2
+        self.Theta = (k_B * self.T_dt / mec2).to("").value
         self.epsilon_dt = 2.7 * self.Theta
 
         # if the radius is not specified use saturation radius Eq. 96 of [Finke2016]_
@@ -361,26 +362,25 @@ class RingDustTorus:
             self.R_dt = (
                 3.5
                 * 1e18
-                * np.sqrt(self.L_disk.cgs.value / 1e45)
-                * np.power(self.T_dt.to("K").value / 1e3, -2.6)
+                * np.sqrt((self.L_disk / (1e45 * u.Unit("erg s-1"))).to("").value)
+                * np.power((self.T_dt / (1e3 * u.K)).to("").value, -2.6)
             ) * u.cm
         else:
-            self.R_dt = R_dt.cgs
+            self.R_dt = R_dt
 
     def __str__(self):
         summary = (
             f"* Ring Dust Torus:\n"
-            + f" - L_disk (accretion disk luminosity): {self.L_disk:.2e}\n"
+            + f" - L_disk (accretion disk luminosity): {self.L_disk.cgs:.2e}\n"
             + f" - xi_dt (fraction of the disk radiation reprocessed by the torus): {self.xi_dt:.2e}\n"
             + f" - T_dt (temperature of the dust torus): {self.T_dt:.2e}\n"
-            + f" - R_dt (radius of the torus): {self.R_dt:.2e}\n"
+            + f" - R_dt (radius of the torus): {self.R_dt.cgs:.2e}\n"
         )
         return summary
 
-    def u(self, r):
+    def u_ph(self, r):
         """Density of radiation produced by the Torus at the distance r along the 
-        jet axis.
-        Eq. 85 in [Finke2016]_
+        jet axis. Integral over the solid angle of Eq. 85 in [Finke2016]_
 
         Parameters
         ----------
@@ -388,8 +388,8 @@ class RingDustTorus:
             array of distances along the jet axis
         """
         x2 = np.power(self.R_dt, 2) + np.power(r, 2)
-        prefactor = self.xi_dt * self.L_disk / (np.power(4 * np.pi, 2) * const.c)
-        return (prefactor * 1 / x2).to("erg cm-3")
+        prefactor = self.xi_dt * self.L_disk / (np.power(4 * np.pi, 2) * c)
+        return (2 * np.pi * prefactor * 1 / x2).to("erg cm-3")
 
     def sed_flux(self, nu, z):
         """Black Body SED generated by the Dust Torus:
@@ -405,8 +405,9 @@ class RingDustTorus:
             redshift of the galaxy, to correct the observed frequencies and to 
             compute the flux once the distance is obtained
         """
-        nu = nu.to("Hz").value * (1 + z)
-        d_L = Distance(z=z).to("cm").value
-        prefactor = np.pi * np.power(self._R_dt / d_L, 2)
-        sed = prefactor * nu * I_nu_bb(nu, self._T_dt)
+        nu *= 1 + z
+        epsilon = nu.to("", equivalencies=epsilon_equivalency)
+        d_L = Distance(z=z).to("cm")
+        prefactor = np.pi * np.power((self.R_dt / d_L).to("").value, 2)
+        sed = prefactor * epsilon * I_epsilon_bb(epsilon, self.Theta)
         return sed * u.Unit("erg cm-2 s-1")

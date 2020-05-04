@@ -45,7 +45,7 @@ class Synchrotron:
 	----------
 	blob : :class:`~agnpy.emission_region.Blob`
 		emitting region and electron distribution 
-
+        
     ssa : bool
         whether or not to consider synchrotron self absorption (SSA).    
         The absorption factor will be taken into account in
