@@ -19,7 +19,7 @@ from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
 # parameters of the blob
 B0 = 0.1 * u.G
 gmin0 = 10.0
-gmax0 = 3.0e4
+gmax0 = 3.0e3
 gbreak = 300.0
 z = 0.94
 delta_D = 20
@@ -28,12 +28,12 @@ Gamma = 17
 r0 = 1.0e14 * u.m
 dist = 3.0e16 * u.cm
 xi = 1.0e-4
-nu = np.logspace(8, 23) * u.Hz
+nu = np.logspace(8, 26,100) * u.Hz
 norm = 10.0 * u.Unit("cm-3")
 
 parameters = {
     "p1": 2.0,
-    "p2": 3.9,
+    "p2": 3.,
     "gamma_b": gbreak,
     "gamma_min": gmin0,
     "gamma_max": gmax0,
@@ -44,8 +44,8 @@ blob = Blob(r0, z, delta_D, Gamma, B0, norm, spectrum_dict, xi=xi)
 
 # plt.loglog(blob.gamma, blob.n_e (blob.gamma))
 
-# gmaxconf=blob.R_b/(const.m_e*const.c / (blob.B.si * const.e.si)).to("cm")
-# confinement of particles inside the blob:
+#############################################
+# limits from confinement of particles inside the blob:
 gmaxconf = blob.gamma_max_larmor
 # computing larmor radius of this electron, should be of the size of the blob
 # R_L = 33.36 km * (p/(GeV/c)) * (G/B) * Z^-1
@@ -55,6 +55,7 @@ rlarmor = (33.36 * u.km * gmaxconf * 511.0e3 / 1.0e9 / (blob.B / u.G)).to("cm")
 # both values are similar
 print("R_L (gmaxconf)=", rlarmor, "R_b=", blob.R_b)
 
+#############################################
 # now maximum from balistic time
 gmaxbal = blob.gamma_max_ballistic
 
@@ -68,6 +69,7 @@ dist_cross = (tau_acc * const.c).to("cm")
 print(f"dist_cross (tau_acc(gmaxbal))={dist_cross:.2e}, R_b={blob.R_b:.2e}")
 
 
+#############################################
 # now maximum from synchrotron losses
 gmaxsyn = blob.gamma_max_synch
 
@@ -85,6 +87,7 @@ print(f"E(gmaxsyn) = {Emax:.2e}, Elost = {Elost:.2e}")
 
 # print(gmaxconf, gmaxbal, gmaxsyn)
 
+#############################################
 # check of synchrotron cooling break
 
 # eq F.1 from https://ui.adsabs.harvard.edu/abs/2020arXiv200107729M/abstract
@@ -103,3 +106,50 @@ gamma_break_check = (
 )
 
 print(f"gamma_break = {gamma_b:.5e}, gamma_break_check = {gamma_break_check:.5e}")
+
+#############################################
+# limits for SSC 
+#print(blob.u_e)
+#print(blob.u_dens_synchr)
+
+#redo blob without beaming
+Gamma=1.01
+delta_D=1.1
+z=0.01
+blob1 = Blob(r0, z, delta_D, Gamma, B0*10., norm, spectrum_dict, xi=xi)
+
+u_dens_synchr=blob1.u_dens_synchr # energy density of 
+energy_flux_predicted=blob1.u_dens_synchr * blob1.V_b * const.c.cgs/blob1.R_b *np.power(blob1.d_L,-2)/(4*np.pi)
+
+synch1 = Synchrotron(blob1, ssa=False)
+synch1_sed = synch1.sed_flux(nu)
+
+energy_flux_sim = np.trapz(synch1_sed/(nu*const.h.cgs), nu*const.h.cgs)
+print(f"predicted energy flux: {energy_flux_predicted:.5e}, simulated energy flux: {energy_flux_sim:.5e}")
+# similar values, but not very precise
+
+ssc1 = SynchrotronSelfCompton(blob1, synch1)
+ssc1_sed = ssc1.sed_flux(nu)
+
+print("UB/Usynch = ",blob1.u_B/u_dens_synchr)
+print("SED_synch/SED_SSC=",energy_flux_sim/ np.trapz(ssc1_sed/(nu*const.h.cgs), nu*const.h.cgs))
+# also here there is a factor ~1.5 of difference  
+
+plt.rc("figure", figsize=(7.5, 5.5))
+plt.rc("font", size=12)
+plt.rc("axes", grid=True)
+plt.rc("grid", ls=":")
+sed_x_label = r"$\nu\,/\,Hz$"
+sed_y_label = r"$\nu F_{\nu}\,/\,(\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1})$"
+
+plt.loglog(nu, synch1_sed, color="k", ls="-", lw=1, label="Synchr.")  #
+plt.loglog(nu, ssc1_sed, color="r", ls="-", lw=1, label="SSC")  #
+plt.ylim(1e-25, 1e-15)
+plt.xlim(1e8, 1e27)
+plt.xscale("log")
+plt.yscale("log")
+plt.xlabel(sed_x_label)
+plt.ylabel(sed_y_label)
+plt.legend()
+plt.show()
+

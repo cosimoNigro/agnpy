@@ -335,7 +335,7 @@ class Blob:
         .. math::
             gamma = \sqrt{1.5 mu0 \ksi  c e /(\sigma_T B)}
             dE_{acc}/dt = \xi  c  E / R_L
-            dE_{synch}/dt = (4/3) sigma_T U_B \gamma^2
+            dE_{synch}/dt = (4/3) sigma_T U_B c \gamma^2
             dE_{acc}/dt = dE_{synch}/dt \Rightarrow gamma < \sqrt{\frac{6 \pi \xi e}{\sigma_T B}
         """
         return np.sqrt(
@@ -375,6 +375,32 @@ class Blob:
         )
 
     #        return (1.5 *const.c**2 * const.m_e *const.mu0.si/(const.sigma_T*self.B**2*self.R_b)).to("")# .value
+
+
+    @property
+    def u_B(self):
+        r"""
+        Energy density of magnetic field
+        U_b = B^2 / (8 pi)
+        """
+        return np.power(self.B.to("G").value, 2) / (8 * np.pi) * u.Unit("erg cm-3")
+
+    @property
+    def u_dens_synchr(self):
+        r"""
+        energy density of the synchrotron photons energy losses are:
+        dE_{synch}/dt = (4/3) sigma_T c U_B \gamma^2
+        the radiation stays an average time of R_b/c, so an e- with gamma
+        produces:
+        dE_{synch}/dt * (R_b/c) / V_b 
+        of radiation 
+        we need to integrate over the electron spectrum  (and multiply back by V_b)
+        \int n_e (gamma) * dE_{synch}/dt * R_b  d\gamma
+        so
+        4./3 * sigma_T * U_B * R_b * \int n_e(gamma) * \gamma^2
+        WARNING: this does not take into account SSA!
+        """
+        return 4./3.* const.sigma_T.cgs*self.u_B*self.R_b * np.trapz(np.power(self.gamma,2) * self.n_e(self.gamma), self.gamma)
 
     def plot_n_e(self):
         plt.loglog(self.gamma, self.n_e(self.gamma))
