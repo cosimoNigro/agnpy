@@ -1,25 +1,18 @@
 import numpy as np
-import astropy.constants as const
+from astropy.constants import m_e, h, c, k_B, M_sun, G
 import astropy.units as u
 from astropy.coordinates import Distance
 
 
-# every variable indicated with capital letters is unitless
-# will be used in SED computations for speed-up
-E = const.e.gauss.value
-H = const.h.cgs.value
-C = const.c.cgs.value
-ME = const.m_e.cgs.value
-MEC = (const.m_e * const.c).cgs.value
-MEC2 = (const.m_e * const.c * const.c).cgs.value
-G = const.G.cgs.value
-M_SUN = const.M_sun.cgs.value
-K_B = const.k_B.cgs.value
-SIGMA_SB = const.sigma_sb.cgs.value
-EMISSIVITY_UNIT = "erg s-1"
-SED_UNIT = "erg cm-2 s-1"
+mec2 = m_e.to("erg", equivalencies=u.mass_energy())
+lambda_c = (h / (m_e * c)).to("cm")  # Compton wavelength
+# equivalency to transform frequencies to energies in electron rest mass units
+epsilon_equivalency = [
+    (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
+]
 
 
+# dictionary with all the available spectral lines
 lines_dictionary = {
     "Lyepsilon": {"lambda": 937.80 * u.Angstrom, "R_Hbeta_ratio": 2.7},
     "Lydelta": {"lambda": 949.74 * u.Angstrom, "R_Hbeta_ratio": 2.8},
@@ -63,20 +56,20 @@ def print_lines_list():
         print(f"{line}: {lines_dictionary[line]}")
 
 
-def I_nu_bb(nu, T):
-    """Black-Body intensity :math:`I_{\\nu}^{bb}`, Eq. 5.14 of [DermerMenon2009]_.
-    Unitless parameters to speed-up calculations.
+def I_epsilon_bb(epsilon, Theta):
+    """Black-Body intensity :math:`I_{\\nu}^{bb}`, Eq. 5.15 of [DermerMenon2009]_.
 
     Parameters
     ----------
-    nu : :class:`~nump.ndarray`
-        array of the frequencies (in Hz) to evaluate the Black Body intensity
-    T : float or :class:`~nump.ndarray`
-        temperature of the Black Body in K (might be function of the radius)
+    epsilon : :class:`~numpy.ndarray`
+        array of dimensionless energies (in electron rest mass units) 
+    Theta : float 
+        dimensionless temperature of the Black Body 
     """
-    num = 2 * H * np.power(nu, 3)
-    denum = np.power(C, 2) * (np.exp(H * nu / (K_B * T)) - 1)
-    return num / denum
+    num = 2 * m_e * np.power(c, 3) * np.power(epsilon, 3)
+    denum = np.power(lambda_c, 3) * (np.exp(epsilon / Theta) - 1)
+    I = num / denum
+    return I.to("erg cm-2 s-1")
 
 
 class SSDisk:
@@ -94,89 +87,160 @@ class SSDisk:
         inner disk radius
     R_out : :class:`~astropy.units.Quantity`
         outer disk radius
+    R_g_units : bool
+        whether or not input radiuses are specified in units of the gravitational radius
     """
 
-    # properties with underscore are unitless, for fast computation
-
-    def __init__(self, M_BH, L_disk, eta, R_in, R_out):
+    def __init__(self, M_BH, L_disk, eta, R_in, R_out, R_g_units=False):
         self.type = "SSDisk"
         # masses and luminosities
-        self.M_BH = M_BH.cgs
-        self._M_BH = self.M_BH.value
-        self.M_8 = self._M_BH / (1e8 * M_SUN)
+        self.M_BH = M_BH
+        self.M_8 = (M_BH / (1e8 * M_sun)).to("").value
         self.L_Edd = 1.26 * 1e46 * self.M_8 * u.Unit("erg s-1")
-        self.L_disk = L_disk.cgs
-        self._L_disk = self.L_disk.value
+        self.L_disk = L_disk
         # fraction of the Eddington luminosity at which the disk is accreting
-        self.l_Edd = (self.L_disk / self.L_Edd).decompose().value
+        self.l_Edd = (self.L_disk / self.L_Edd).to("").value
         self.eta = eta
-        self.m_dot = (self.L_disk / (self.eta * const.c * const.c)).cgs
-        self._m_dot = self.m_dot.value
+        self.m_dot = self.L_disk / (self.eta * np.power(c, 2))
         # gravitational radius
-        self._R_g = G * self.M_BH.value / np.power(C, 2)
-        self.R_g = self._R_g * u.cm
-        self.R_in = R_in.cgs
-        self.R_out = R_out.cgs
-        # for fast computation of the temperature dependency
-        self._R_in = self.R_in.value
-        self._R_out = self.R_out.value
+        self.R_g = (G * self.M_BH / np.power(c, 2)).to("cm")
+        if R_g_units:
+            # check that numbers have been passed
+            R_in_unit_check = isinstance(R_in, int) or isinstance(R_in, float)
+            R_out_unit_check = isinstance(R_out, int) or isinstance(R_out, float)
+            if R_in_unit_check and R_out_unit_check:
+                self.R_in = R_in * self.R_g
+                self.R_out = R_out * self.R_g
+                self.R_in_tilde = R_in
+                self.R_out_tilde = R_out
+            else:
+                raise TypeError("R_in / R_out passed with units, int / float expected")
+        else:
+            # check that quantities have been passed
+            R_in_unit_check = isinstance(R_in, u.Quantity)
+            R_out_unit_check = isinstance(R_out, u.Quantity)
+            if R_in_unit_check and R_out_unit_check:
+                self.R_in = R_in
+                self.R_out = R_out
+                self.R_in_tilde = (self.R_in / self.R_g).to("").value
+                self.R_out_tilde = (self.R_out / self.R_g).to("").value
+            else:
+                raise TypeError("R_in / R_out passed without units")
+        # array of R_tile values
+        self.R_tilde = np.linspace(self.R_in_tilde, self.R_out_tilde)
 
     def __str__(self):
         summary = (
             f"* Shakura Sunyaev accretion disk:\n"
-            + f" - M_BH (central black hole mass): {self.M_BH:.2e}\n"
-            + f" - L_disk (disk luminosity): {self.L_disk:.2e}\n"
+            + f" - M_BH (central black hole mass): {self.M_BH.cgs:.2e}\n"
+            + f" - L_disk (disk luminosity): {self.L_disk.cgs:.2e}\n"
             + f" - eta (accretion efficiency): {self.eta:.2e}\n"
-            + f" - dot(m) (mass accretion rate): {self.m_dot:.2e}\n"
-            + f" - R_in (disk inner radius): {self.R_in:.2e}\n"
-            + f" - R_out (disk inner radius): {self.R_out:.2e}"
+            + f" - dot(m) (mass accretion rate): {self.m_dot.cgs:.2e}\n"
+            + f" - R_in (disk inner radius): {self.R_in.cgs:.2e}\n"
+            + f" - R_out (disk inner radius): {self.R_out.cgs:.2e}"
         )
         return summary
 
-    def _phi_disk(self, R):
+    def mu_from_r(self, r_tilde, size=100):
+        """array of cosine angles viewed from a given distance :math:`\\tilde{r}` 
+        along the jet axis, Eq. 71 and 73 in [Finke2016]_."""
+        mu_min = 1 / np.sqrt(1 + np.power((self.R_out_tilde / r_tilde), 2))
+        mu_max = 1 / np.sqrt(1 + np.power((self.R_in_tilde / r_tilde), 2))
+        return np.linspace(mu_min, mu_max, size)
+
+    def phi_disk(self, R_tilde):
         """Radial dependency of disk temperature
         Eq. 63 in [Dermer2009]_.
 
         Parameters
         ----------
-        R : :class:`~numpy.ndarray`
-            radial coordinate along the disk, in cm
-            dimensionless to speed-up computation in the external Compton SED
+        R_tilde : :class:`~nump.ndarray`
+            radial coordinate along the disk normalised to R_g
         """
-        return 1 - np.sqrt(self._R_in / R)
+        return 1 - np.sqrt(self.R_in_tilde / R_tilde)
 
-    def _phi_disk_mu(self, mu, r):
-        """same as _phi_disk but computed with cosine of zenith mu and distance
-        from the black hole r. Eq. 67 in [Dermer2009]_."""
-        R = r * np.sqrt(np.power(mu, -2) - 1)
-        return self._phi_disk(R)
+    def phi_disk_mu(self, mu, r_tilde):
+        """same as phi_disk but computed with cosine of zenith mu and normalised 
+        distance from the black hole :math:`\\tilde{r}` Eq. 67 in [Dermer2009]_."""
+        R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
+        return self.phi_disk(R_tilde)
 
-    def _epsilon(self, R):
-        """Monochromatic approximation for the mean photon energy at radius R
-        of the accretion disk. Eq. 64 in [Dermer2009]_. R is unitless.
+    def epsilon(self, R_tilde):
+        """Monochromatic approximation for the mean photon energy at radius 
+        :math:`\\tilde{R}` of the accretion disk. Eq. 65 in [Dermer2009]_."""
+        xi = np.power(self.l_Edd / (self.M_8 * self.eta), 1 / 4)
+        return 2.7 * 1e-4 * xi * np.power(R_tilde, -3 / 4)
+
+    def epsilon_mu(self, mu, r_tilde):
+        """same as epsilon but computed with cosine of zenith mu and distance
+        from the black hole :math:`\\tilde{r}`. Eq. 67 in [Dermer2009]_."""
+        R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
+        return self.epsilon(R_tilde)
+
+    def T(self, R_tilde):
+        """Temperature of the disk at distance :math:`\\tilde{R}`. 
+        Eq. 64 in [Dermer2009]_."""
+        value = mec2 / (2.7 * k_B) * self.epsilon(R_tilde)
+        return value.to("K")
+
+    def Theta(self, R_tilde):
+        """Dimensionless temperature of the black body at distance :math:`\\tilde{R}`"""
+        theta = k_B * self.T(R_tilde) / mec2
+        return theta.to("").value
+
+    def u(self, r):
+        """Density of radiation produced by the Disk at the distance r along the 
+        jet axis. Integral over the solid angle of Eq. 69 in [Dermer2009]_.
+        
+        Parameters
+        ----------
+        r : :class:`~astropy.units.Quantity`
+            distance along the jet axis
         """
-        _term_1 = np.power(self.l_Edd / (self.M_8 * self.eta), 1 / 4)
-        _term_2 = np.power(R / self._R_g, -3 / 4)
-        _prefactor = 2.7 * 1e-4
-        return _prefactor * _term_1 * _term_2
+        r_tilde = (r / self.R_g).to("").value
+        mu = self.mu_from_r(r_tilde)
+        integrand = np.power(np.power(mu, -2) - 1, -3 / 2) * self.phi_disk_mu(
+            mu, r_tilde
+        )
+        prefactor_denum = (
+            16
+            * np.power(np.pi, 2)
+            * c
+            * self.eta
+            * np.power(self.R_g, 2)
+            * np.power(r_tilde, 3)
+        )
+        prefactor = 3 * self.L_disk / prefactor_denum
+        density = prefactor * np.trapz(integrand, mu, axis=0)
+        return density.to("erg cm-3")
 
-    def _epsilon_mu(self, mu, r):
-        """same as _epsilon but computed with cosine of zenith mu and distance
-        from the black hole r. Eq. 67 in [Dermer2009]_."""
-        R = r * np.sqrt(np.power(mu, -2) - 1)
-        return self._epsilon(R)
-
-    def T(self, R):
-        """Temperature of the disk at distance R. Eq. 64 in [Dermer2009]_."""
-        value = MEC2 / (2.7 * K_B) * self._epsilon(R.value)
-        return value * u.K
-
-    def sed_flux(self, nu, z, mu_s):
-        """Black Body SED generated by the SS Disk:
+    def sed_flux(self, nu, z):
+        """Black Body SED generated by the SS Disk, considered as a 
+        multi-dimensional black body. I obtain the formula following 
+        Chapter 5 of [DermerMenon2009]_
 
         .. math::
-            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
-        
+            f_{\epsilon} (= \\nu F_{\\nu}) &= 
+            \epsilon \, \int_{\Omega_s} \mu I_{\epsilon} \mathrm{d}\Omega \\\\
+            &= \epsilon \, 2 \pi \int_{\mu_{\mathrm{min}}}^{\mu_{\mathrm{max}}}
+            \mu I_{\epsilon} \mathrm{d}\mu
+
+        where the cosine of the angle under which an observer at :math:`d_L` 
+        sees the disk is :math:`\mu = 1 / \sqrt{1 + (R / d_L)^2}`, integrating
+        over :math:`R` rather than :math:`\mu`
+
+        .. math::
+            f_{\epsilon} &= \epsilon \, 2 \pi \int_{R_{\mathrm{in}}}^{R_{\mathrm{out}}}
+            (1 + R^2 / d_L^2)^{-3/2} \\frac{R}{d_L^2} \, I_{\epsilon}(R) \, \mathrm{d}R \\\\
+            &= \epsilon \, 2 \pi \\frac{R_g^2}{d_L^2} 
+            \int_{\\tilde{R}_{\mathrm{in}}}^{\\tilde{R}_{\mathrm{out}}}
+            \\left(1 + \\tilde{R}^2 / \\tilde{d_L}^2 \\right)^{-3/2} \, 
+            \\tilde{R} \, I_{\epsilon}(\\tilde{R}) \, \mathrm{d}\\tilde{R}
+      
+        where in the last integral distances with :math:`\\tilde{}` have been 
+        scaled to the gravitational radius :math:`R_g`.
+
+        Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
             array of frequencies, in Hz, to compute the sed, **note** these are 
@@ -184,20 +248,26 @@ class SSDisk:
         z : float
             redshift of the galaxy, to correct the observed frequencies and to 
             compute the flux once the distance is obtained
-        mu_s : float
-            cosine of the angle between the disk axis and the line of sight,
-            same as the jet viewing angle
         """
-        nu = nu.to("Hz").value * (1 + z)
-        d_L = Distance(z=z).to("cm").value
-        prefactor = 2 * np.pi * mu_s / np.power(d_L, 2)
-        R = np.logspace(np.log10(self._R_in), np.log10(self._R_out)) * u.cm
-        T = self.T(R)
-        _R = R.value.reshape(R.size, 1)
-        _T = T.value.reshape(T.size, 1)
-        _nu = nu.reshape(1, nu.size)
-        _integrand = _R * I_nu_bb(_nu, _T)
-        return prefactor * nu * np.trapz(_integrand, R, axis=0) * u.Unit(SED_UNIT)
+        nu *= 1 + z
+        epsilon = nu.to("", equivalencies=epsilon_equivalency)
+        d_L = Distance(z=z).to("cm")
+        d_L_tilde = (d_L / self.R_g).to("").value
+        Theta = self.Theta(self.R_tilde)
+        # for multidimensional integration
+        # axis 0: radiuses (and temperatures)
+        # axis 1: photons epsilon
+        _R_tilde = np.reshape(self.R_tilde, (self.R_tilde.size, 1))
+        _Theta = np.reshape(Theta, (Theta.size, 1))
+        _epsilon = np.reshape(epsilon, (1, epsilon.size))
+        _integrand = (
+            np.power(1 + np.power(_R_tilde / d_L_tilde, 2), -3 / 2)
+            * _R_tilde
+            * I_epsilon_bb(_epsilon, _Theta)
+        )
+        prefactor = 2 * np.pi * np.power(self.R_g, 2) / np.power(d_L, 2)
+        sed = epsilon * prefactor * np.trapz(_integrand, self.R_tilde, axis=0)
+        return sed.to("erg cm-2 s-1")
 
 
 class SphericalShellBLR:

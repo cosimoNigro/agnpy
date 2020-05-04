@@ -18,7 +18,7 @@ __all__ = ["R", "U_B", "Synchrotron"]
 
 def R(x):
     """Eq. 7.45 in [Dermer2009]_, angle-averaged integrand of the radiated power, the 
-    approximation of this formula given in Eq. D7 of [Aharonian2010]_ is used.
+    approximation of this function, given in Eq. D7 of [Aharonian2010]_, is used.
     """
     term_1_num = 1.808 * np.power(x, 1 / 3)
     term_1_denom = np.sqrt(1 + 3.4 * np.power(x, 2 / 3))
@@ -58,7 +58,7 @@ class Synchrotron:
         self.blob = blob
         self.U_B = U_B(self.blob.B_cgs)
         self.nu_B = nu_B(self.blob.B_cgs)
-        self.epsilon_B = (self.blob.B / B_cr).to("")
+        self.epsilon_B = (self.blob.B / B_cr).to("").value
         self.ssa = ssa
 
     def k_epsilon(self, epsilon):
@@ -67,23 +67,27 @@ class Synchrotron:
         computed analytically in each of the :class:`~agnpy.spectra` classes."""
         gamma = self.blob.gamma
         SSA_integrand = self.blob.n_e.SSA_integrand(gamma)
-        _gamma = gamma.reshape(gamma.size, 1)
-        _SSA_integrand = SSA_integrand.reshape(SSA_integrand.size, 1)
-        _epsilon = epsilon.reshape(1, epsilon.size)
+        # for multidimensional integration
+        # axis 0: electrons gamma
+        # axis 1: photons epsilon
+        # arrays starting with _ are multidimensional and used for integration
+        _gamma = np.reshape(gamma, (gamma.size, 1))
+        _SSA_integrand = np.reshape(SSA_integrand, (SSA_integrand.size, 1))
+        _epsilon = np.reshape(epsilon, (1, epsilon.size))
         prefactor_P_syn = np.sqrt(3) * np.power(e, 3) * self.blob.B_cgs / h
         prefactor_k_epsilon = (
             -1 / (8 * np.pi * m_e * np.power(epsilon, 2)) * np.power(lambda_c / c, 3)
         )
         x_num = 4 * np.pi * _epsilon * np.power(m_e, 2) * np.power(c, 3)
         x_denom = 3 * e * self.blob.B_cgs * h * np.power(_gamma, 2)
-        x = (x_num / x_denom).to("")
+        x = (x_num / x_denom).to("").value
         integrand = R(x) * _SSA_integrand
         integral = np.trapz(integrand, gamma, axis=0)
         return (prefactor_P_syn * prefactor_k_epsilon * integral).to("cm-1")
 
     def tau_ssa(self, epsilon):
         """SSA opacity, Eq. before 7.122 in [DermerMenon2009]_"""
-        return (2 * self.k_epsilon(epsilon) * self.blob.R_b).to("")
+        return (2 * self.k_epsilon(epsilon) * self.blob.R_b).to("").value
 
     def attenuation_ssa(self, epsilon):
         """SSA attenuation, Eq. 7.122 in [DermerMenon2009]_"""
@@ -123,12 +127,16 @@ class Synchrotron:
         gamma = self.blob.gamma
         N_e = self.blob.N_e(gamma)
         prefactor = np.sqrt(3) * epsilon * np.power(e, 3) * self.blob.B_cgs / h
-        _gamma = gamma.reshape(gamma.size, 1)
-        _N_e = N_e.reshape(N_e.size, 1)
-        _epsilon = epsilon.reshape(1, epsilon.size)
+        # for multidimensional integration
+        # axis 0: electrons gamma
+        # axis 1: photons epsilon
+        # arrays starting with _ are multidimensional and used for integration
+        _gamma = np.reshape(gamma, (gamma.size, 1))
+        _N_e = np.reshape(N_e, (N_e.size, 1))
+        _epsilon = np.reshape(epsilon, (1, epsilon.size))
         x_num = 4 * np.pi * _epsilon * np.power(m_e, 2) * np.power(c, 3)
         x_denom = 3 * e * self.blob.B_cgs * h * np.power(_gamma, 2)
-        x = (x_num / x_denom).to("")
+        x = (x_num / x_denom).to("").value
         integrand = _N_e * R(x)
         integral = np.trapz(integrand, gamma, axis=0)
         emissivity = (prefactor * integral).to("erg s-1")

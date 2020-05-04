@@ -174,15 +174,15 @@ class Blob:
         """printable summary of the blob"""
         summary = (
             "* spherical emission region\n"
-            + f" - R_b (radius of the blob): {self.R_b:.2e}\n"
-            + f" - V_b (volume of the blob): {self.V_b:.2e}\n"
+            + f" - R_b (radius of the blob): {self.R_b.cgs:.2e}\n"
+            + f" - V_b (volume of the blob): {self.V_b.cgs:.2e}\n"
             + f" - z (source redshift): {self.z:.2f}\n"
-            + f" - d_L (source luminosity distance):{self.d_L:.2e}\n"
+            + f" - d_L (source luminosity distance):{self.d_L.cgs:.2e}\n"
             + f" - delta_D (blob Doppler factor): {self.delta_D:.2e}\n"
             + f" - Gamma (blob Lorentz factor): {self.Gamma:.2e}\n"
             + f" - Beta (blob relativistic velocity): {self.Beta:.2e}\n"
             + f" - theta_s (jet viewing angle): {self.theta_s:.2e}\n"
-            + f" - B (magnetic field tangled to the jet): {self.B:.2e}\n"
+            + f" - B (magnetic field tangled to the jet): {self.B.cgs:.2e}\n"
             + str(self.n_e)
         )
         return summary
@@ -299,7 +299,7 @@ class Blob:
 
             R_L < R_b \Rightarrow \gamma_{\mathrm{max}} < \\frac{R_b e B}{m_e c^2}
         """
-        gamma_max = (self.R_b * e * self.B_cgs / mec2).decompose()
+        gamma_max = (self.R_b * e * self.B_cgs / mec2).to("").value
         return gamma_max
 
     @property
@@ -331,7 +331,9 @@ class Blob:
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} 
             \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{6 \pi \xi e}{\sigma_T B}}
         """
-        gamma_max = np.sqrt(6 * np.pi * self.xi * e / (sigma_T * self.B_cgs)).to("")
+        gamma_max = (
+            np.sqrt(6 * np.pi * self.xi * e / (sigma_T * self.B_cgs)).to("").value
+        )
         return gamma_max
 
     @property
@@ -347,8 +349,10 @@ class Blob:
             T_{\mathrm{synch}} &= T_{\mathrm{bal}} \Rightarrow \gamma_b = 6 \pi m_e c^2 / \sigma_T B^2 R 
         """
         gamma_max = (
-            6 * np.pi * mec2 / (sigma_T * np.power(self.B_cgs, 2) * self.R_b)
-        ).to("")
+            (6 * np.pi * mec2 / (sigma_T * np.power(self.B_cgs, 2) * self.R_b))
+            .to("")
+            .value
+        )
         return gamma_max
 
     def plot_n_e(self, gamma_power=0):
