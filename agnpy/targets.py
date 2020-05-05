@@ -95,11 +95,11 @@ class SSDisk:
         self.type = "SSDisk"
         # masses and luminosities
         self.M_BH = M_BH
-        self.M_8 = (M_BH / (1e8 * M_sun)).to("").value
+        self.M_8 = (M_BH / (1e8 * M_sun)).to_value("")
         self.L_Edd = 1.26 * 1e46 * self.M_8 * u.Unit("erg s-1")
         self.L_disk = L_disk
         # fraction of the Eddington luminosity at which the disk is accreting
-        self.l_Edd = (self.L_disk / self.L_Edd).to("").value
+        self.l_Edd = (self.L_disk / self.L_Edd).to_value("")
         self.eta = eta
         self.m_dot = self.L_disk / (self.eta * np.power(c, 2))
         # gravitational radius
@@ -122,8 +122,8 @@ class SSDisk:
             if R_in_unit_check and R_out_unit_check:
                 self.R_in = R_in
                 self.R_out = R_out
-                self.R_in_tilde = (self.R_in / self.R_g).to("").value
-                self.R_out_tilde = (self.R_out / self.R_g).to("").value
+                self.R_in_tilde = (self.R_in / self.R_g).to_value("")
+                self.R_out_tilde = (self.R_out / self.R_g).to_value("")
             else:
                 raise TypeError("R_in / R_out passed without units")
         # array of R_tile values
@@ -187,7 +187,7 @@ class SSDisk:
     def Theta(self, R_tilde):
         """Dimensionless temperature of the black body at distance :math:`\\tilde{R}`"""
         theta = k_B * self.T(R_tilde) / mec2
-        return theta.to("").value
+        return theta.to_value("")
 
     def u_ph(self, r):
         """Density of radiation produced by the Disk at the distance r along the 
@@ -198,7 +198,7 @@ class SSDisk:
         r : :class:`~astropy.units.Quantity`
             distance along the jet axis
         """
-        r_tilde = (r / self.R_g).to("").value
+        r_tilde = (r / self.R_g).to_value("")
         mu = self.mu_from_r_tilde(r_tilde)
         integrand = np.power(np.power(mu, -2) - 1, -3 / 2) * self.phi_disk_mu(
             mu, r_tilde
@@ -253,7 +253,7 @@ class SSDisk:
         nu *= 1 + z
         epsilon = nu.to("", equivalencies=epsilon_equivalency)
         d_L = Distance(z=z).to("cm")
-        d_L_tilde = (d_L / self.R_g).to("").value
+        d_L_tilde = (d_L / self.R_g).to_value("")
         Theta = self.Theta(self.R_tilde)
         # for multidimensional integration
         # axis 0: radiuses (and temperatures)
@@ -297,8 +297,8 @@ class SphericalShellBLR:
         else:
             raise NameError(f"{line} not available in the line dictionary")
         self.epsilon_line = (
-            (self.lambda_line.to("erg", equivalencies=u.spectral()) / mec2).to("").value
-        )
+            self.lambda_line.to("erg", equivalencies=u.spectral()) / mec2
+        ).to_value("")
         self.R_line = R_line
 
     def __str__(self):
@@ -353,7 +353,7 @@ class RingDustTorus:
         self.xi_dt = xi_dt
         self.T_dt = T_dt
         # dimensionless temperature of the torus
-        self.Theta = (k_B * self.T_dt / mec2).to("").value
+        self.Theta = (k_B * self.T_dt / mec2).to_value("")
         self.epsilon_dt = 2.7 * self.Theta
 
         # if the radius is not specified use saturation radius Eq. 96 of [Finke2016]_
@@ -361,8 +361,8 @@ class RingDustTorus:
             self.R_dt = (
                 3.5
                 * 1e18
-                * np.sqrt((self.L_disk / (1e45 * u.Unit("erg s-1"))).to("").value)
-                * np.power((self.T_dt / (1e3 * u.K)).to("").value, -2.6)
+                * np.sqrt((self.L_disk / (1e45 * u.Unit("erg s-1"))).to_value(""))
+                * np.power((self.T_dt / (1e3 * u.K)).to_value(""), -2.6)
             ) * u.cm
         else:
             self.R_dt = R_dt
@@ -407,6 +407,6 @@ class RingDustTorus:
         nu *= 1 + z
         epsilon = nu.to("", equivalencies=epsilon_equivalency)
         d_L = Distance(z=z).to("cm")
-        prefactor = np.pi * np.power((self.R_dt / d_L).to("").value, 2)
+        prefactor = np.pi * np.power((self.R_dt / d_L).to_value(""), 2)
         sed = prefactor * epsilon * I_epsilon_bb(epsilon, self.Theta)
         return sed * u.Unit("erg cm-2 s-1")

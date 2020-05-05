@@ -267,7 +267,7 @@ class ExternalCompton:
         self.mu_size = mu_size
         if self.target.type == "SSDisk":
             # in case of hte disk the mu interval does not go from -1 to 1
-            r_tilde = (self.r / self.target.R_g).to("").value
+            r_tilde = (self.r / self.target.R_g).to_value("")
             self.mu = self.target.mu_from_r_tilde(r_tilde)
         else:
             self.mu = np.linspace(-1, 1, self.mu_size)
@@ -301,7 +301,7 @@ class ExternalCompton:
         # axis 3: epsilon_s
         # arrays starting with _ are multidimensional and used for integration
         # distance from the disk in gravitational radius units
-        r_tilde = (self.r / self.target.R_g).to("").value
+        r_tilde = (self.r / self.target.R_g).to_value("")
         _gamma = np.reshape(self.gamma, (self.gamma.size, 1, 1, 1))
         _N_e = np.reshape(self.transformed_N_e, (self.transformed_N_e.size, 1, 1, 1))
         _mu = np.reshape(self.mu, (1, self.mu.size, 1, 1))
@@ -426,7 +426,7 @@ class ExternalCompton:
         # arrays starting with _ are multidimensional and used for integration
         x_re = x_re_ring(self.target.R_dt, self.r)
         # here we plug mu =  r / x. Delta function in Eq. 91 of [Finke2016]_
-        mu = (self.r / x_re).to("").value
+        mu = (self.r / x_re).to_value("")
         _gamma = np.reshape(self.gamma, (self.gamma.size, 1, 1))
         _N_e = np.reshape(self.transformed_N_e, (self.transformed_N_e.size, 1, 1))
         _phi = np.reshape(self.phi, (1, self.phi.size, 1))

@@ -299,7 +299,7 @@ class Blob:
 
             R_L < R_b \Rightarrow \gamma_{\mathrm{max}} < \\frac{R_b e B}{m_e c^2}
         """
-        gamma_max = (self.R_b * e * self.B_cgs / mec2).to("").value
+        gamma_max = (self.R_b * e * self.B_cgs / mec2).to_value("")
         return gamma_max
 
     @property
@@ -331,8 +331,8 @@ class Blob:
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} 
             \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{6 \pi \xi e}{\sigma_T B}}
         """
-        gamma_max = (
-            np.sqrt(6 * np.pi * self.xi * e / (sigma_T * self.B_cgs)).to("").value
+        gamma_max = np.sqrt(6 * np.pi * self.xi * e / (sigma_T * self.B_cgs)).to_value(
+            ""
         )
         return gamma_max
 

@@ -58,7 +58,7 @@ class Synchrotron:
         self.blob = blob
         self.U_B = U_B(self.blob.B_cgs)
         self.nu_B = nu_B(self.blob.B_cgs)
-        self.epsilon_B = (self.blob.B / B_cr).to("").value
+        self.epsilon_B = (self.blob.B / B_cr).to_value("")
         self.ssa = ssa
 
     def k_epsilon(self, epsilon):
@@ -80,14 +80,14 @@ class Synchrotron:
         )
         x_num = 4 * np.pi * _epsilon * np.power(m_e, 2) * np.power(c, 3)
         x_denom = 3 * e * self.blob.B_cgs * h * np.power(_gamma, 2)
-        x = (x_num / x_denom).to("").value
+        x = (x_num / x_denom).to_value("")
         integrand = R(x) * _SSA_integrand
         integral = np.trapz(integrand, gamma, axis=0)
         return (prefactor_P_syn * prefactor_k_epsilon * integral).to("cm-1")
 
     def tau_ssa(self, epsilon):
         """SSA opacity, Eq. before 7.122 in [DermerMenon2009]_"""
-        return (2 * self.k_epsilon(epsilon) * self.blob.R_b).to("").value
+        return (2 * self.k_epsilon(epsilon) * self.blob.R_b).to_value("")
 
     def attenuation_ssa(self, epsilon):
         """SSA attenuation, Eq. 7.122 in [DermerMenon2009]_"""
@@ -136,7 +136,7 @@ class Synchrotron:
         _epsilon = np.reshape(epsilon, (1, epsilon.size))
         x_num = 4 * np.pi * _epsilon * np.power(m_e, 2) * np.power(c, 3)
         x_denom = 3 * e * self.blob.B_cgs * h * np.power(_gamma, 2)
-        x = (x_num / x_denom).to("").value
+        x = (x_num / x_denom).to_value("")
         integrand = _N_e * R(x)
         integral = np.trapz(integrand, gamma, axis=0)
         emissivity = (prefactor * integral).to("erg s-1")
