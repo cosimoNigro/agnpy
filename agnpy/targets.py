@@ -200,9 +200,8 @@ class SSDisk:
         """
         r_tilde = (r / self.R_g).to("").value
         mu = self.mu_from_r_tilde(r_tilde)
-        integrand = (
-            np.power(np.power(mu, -2) - 1, -3 / 2) 
-            * self.phi_disk_mu(mu, r_tilde)
+        integrand = np.power(np.power(mu, -2) - 1, -3 / 2) * self.phi_disk_mu(
+            mu, r_tilde
         )
         prefactor_denum = (
             16
@@ -298,7 +297,7 @@ class SphericalShellBLR:
         else:
             raise NameError(f"{line} not available in the line dictionary")
         self.epsilon_line = (
-            self.lambda_line.to("erg", equivalencies=u.spectral()).value / mec2
+            (self.lambda_line.to("erg", equivalencies=u.spectral()) / mec2).to("").value
         )
         self.R_line = R_line
 

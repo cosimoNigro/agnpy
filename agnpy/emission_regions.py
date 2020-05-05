@@ -182,7 +182,7 @@ class Blob:
             + f" - Gamma (blob Lorentz factor): {self.Gamma:.2e}\n"
             + f" - Beta (blob relativistic velocity): {self.Beta:.2e}\n"
             + f" - theta_s (jet viewing angle): {self.theta_s:.2e}\n"
-            + f" - B (magnetic field tangled to the jet): {self.B.cgs:.2e}\n"
+            + f" - B (magnetic field tangled to the jet): {self.B:.2e}\n"
             + str(self.n_e)
         )
         return summary

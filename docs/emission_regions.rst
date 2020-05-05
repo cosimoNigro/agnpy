@@ -56,6 +56,19 @@ returning a summary of its properties
 	 - gamma_min: 1.00e+02
 	 - gamma_max: 1.00e+07
 
+the electron distribution accelerated in the blob :math:`n_e` can be also visualised 
+(multiplying it by an arbitrary power of gamma):
+
+.. code-block:: python
+
+	import matplotlib.pyplot as plt
+	blob.plot_n_e(gamma_power=2)
+	plt.show()
+
+.. image:: _static/n_e_gamma.png
+    :width: 500px
+    :align: center
+
 
 Normalisation modes
 -------------------

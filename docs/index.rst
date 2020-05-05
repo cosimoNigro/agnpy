@@ -28,6 +28,17 @@ The code is available in the `python package index <https://pypi.org/project/agn
 
     pip install agnpy
 
+Dependencies
+------------
+The only dependencies are:
+
+* `numpy <https://numpy.org>`_ managing the numerical computation;
+
+* `astropy <https://www.astropy.org>`_ managing physical units and astronomical distances.
+
+* `matplotlib <https://matplotlib.org>`_ for visualisation and reproduction of the tutorials.
+
+
 Overview
 --------
 

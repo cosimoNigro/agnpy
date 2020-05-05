@@ -142,7 +142,7 @@ class Synchrotron:
         emissivity = (prefactor * integral).to("erg s-1")
         if self.ssa:
             emissivity *= self.attenuation_ssa(epsilon)
-        return emissivity
+        return emissivity.to("erg s-1")
 
     def sed_luminosity(self, nu):
         """Synchrotron luminosity SED: 

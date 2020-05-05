@@ -85,7 +85,8 @@ Let us examine the different SEDs produced by the normal and self-absorbed synch
     :width: 500px
     :align: center
 
-For more examples of Synchrotron radiation and cross-checks of literature results, check the tutorials.
+For more examples of Synchrotron radiation and cross-checks of literature results, check the 
+synchrotron and ssc tutorial.
 
 
 API

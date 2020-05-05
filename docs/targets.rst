@@ -18,7 +18,7 @@ Shakura Sunyaev disk
 --------------------
 The accretion disk can be intialised specifying the mass of the central Black Hole, :math:`M_{\mathrm{BH}}`, the disk 
 luminosity, :math:`L_{\mathrm{disk}}`, the efficiency to transform accreted matter to escaping radiant energy, :math:`\eta`,
-the inner and outer disk radii, :math:`R_{\mathrm{in}}` and :math:`R_{\mathrm{out}}`).
+the inner and outer disk radii, :math:`R_{\mathrm{in}}` and :math:`R_{\mathrm{out}}`.
 
 .. code-block:: python
 
@@ -50,7 +50,7 @@ as for other `agnpy` objects, also the disk can be printed to display a summary 
 	
 	print(disk)
 
-::
+.. code-block:: text
 
 	* Shakura Sunyaev accretion disk:
 	- M_BH (central black hole mass): 2.39e+42 g
@@ -66,7 +66,7 @@ The BLR can be initialised specifying the luminosity of the disk whose radiation
 the fraction of radiation reprocessed, :math:`\xi_{\mathrm{line}}`, the type of line emitted (for a complete list see the 
 :func:`~agnpy.targets.print_lines_list`), the radius at which the line is emitted, :math:`R_{\mathrm{line}}`.
 Let us continue from the previous snippet considering a BLR reprocessing the previous disk luminosity and re-emitting 
-the :math:`\mathrm{Ly}_{\alpha}` line:
+the :math:`\mathrm{Ly}\alpha` line:
 
 .. code-block:: python
 
@@ -84,7 +84,7 @@ we can print a summary of the BLR properties via
 
 	print(blr)                                                                                                                                                                
 
-::
+.. code-block:: text
 
 	* Spherical Shell Broad Line Region:
 	- L_disk (accretion disk luminosity): 2.00e+46 erg / s
@@ -115,7 +115,7 @@ Let us continue from the previous snippet considering a DT reprocessing the disk
 
 	print(dt)                                                                                                                                                                
 
-:: 
+.. code-block:: text 
 
 	* Ring Dust Torus:
 	- L_disk (accretion disk luminosity): 2.00e+46 erg / s
@@ -150,6 +150,25 @@ and the redshift of the galaxy have to be specified.
 	plt.show()
 
 .. image:: _static/disk_torus_black_bodies.png
+    :width: 500px
+    :align: center
+
+Radiation density
+-----------------
+In order to consider the density of target photons provided to the blob electrons for inverse Compton scattering,
+it is possible to plot the denisty of radiation as a function of the coordinate along
+the jet axis :math:`r`. As an example for the BLR:
+
+.. code-block:: python
+	
+	r = np.logspace(14, 20, 100) * u.cm
+	u_ph_blr = blr.u_ph(r)
+	plt.loglog(r, u_ph_blr)
+	plt.xlabel(r"$r\,/\,\mathrm{cm}$")
+	plt.ylabel(r"$u_{\mathrm{ph}}\,/\,(\mathrm{erg}\,\mathrm{cm}^{-3})$")
+	plt.show() 
+
+.. image:: _static/u_ph_blr.png
     :width: 500px
     :align: center
 

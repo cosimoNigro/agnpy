@@ -15,7 +15,7 @@ The only dependencies are:
 
 * [astropy](https://www.astropy.org) managing physical units and astronomical distances.
 
-Additionally [matplotlib](https://matplotlib.org) is necessary to reproduce the examples in the documentation and in the `tutorials` notebooks.
+* [matplotlib](https://matplotlib.org) for visualisation and reproduction of the tutorials.
 
 ## installation
 The code is available in the [python package index](https://pypi.org/project/agnpy/) and can be installed via `pip`
