@@ -14,25 +14,35 @@ The following objects are implemented:
 
 * :class:`~agnpy.targets.SphericalShellBLR`, representing the Dust Torus as an infintesimally thin ring, see treatment of [Finke2016]_.
 
-As physically both the Broad Line Region and the Dust Torus reprocess the radiation of the Disk, it is necessary to define a disk to intialise a BLR or Dust Torus object. Let us start defining an accretion disk around a Schwarzschild black hole of mass :math:`1.2 \times 10^9 \, M_{\odot}` (for an accretion disk around a Schwarzschild BH :math:`\eta=1/12`, :math:`R_{in} = 6 R_g`, where :math:`R_g` is the gravitational radius).
+Shakura Sunyaev disk
+--------------------
+The accretion disk can be intialised specifying the mass of the central Black Hole, :math:`M_{\mathrm{BH}}`, the disk 
+luminosity, :math:`L_{\mathrm{disk}}`, the efficiency to transform accreted matter to escaping radiant energy, :math:`\eta`,
+the inner and outer disk radii, :math:`R_{\mathrm{in}}` and :math:`R_{\mathrm{out}}`.
 
 .. code-block:: python
 
 	import numpy as np
 	import astropy.units as u
 	import astropy.constants as const
-	from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
-	import matplotlib.pyplot as plt
+	from agnpy.targets import SSDisk
 
 	# quantities defining the disk 
 	M_BH = 1.2 * 1e9 * const.M_sun
-	R_g = ((const.G * M_BH) / (const.c * const.c)).cgs
 	L_disk = 2 * 1e46 * u.Unit("erg s-1")
 	eta = 1 / 12
+	R_g = 1.77 * 1e14 * u.cm
 	R_in = 6 * R_g
 	R_out = 200 * R_g
 
 	disk = SSDisk(M_BH, L_disk, eta, R_in, R_out)
+
+Alternatively the disk can be initialised specifying R_in and R_out in dimensionless units of gravitational radius, setting the
+`R_g_units` argument to `True` (`False` by default).
+
+.. code-block:: python
+	
+	disk = SSDisk(M_BH, L_disk, eta, 6, 200, R_g_units=True)
 
 as for other `agnpy` objects, also the disk can be printed to display a summary of its values
 
@@ -40,46 +50,97 @@ as for other `agnpy` objects, also the disk can be printed to display a summary 
 	
 	print(disk)
 
-.. code-block:: python
-   
-   * Shakura Sunyaev accretion disk:
- 	- M_BH (central black hole mass): 2.39e+42 g
- 	- L_disk (disk luminosity): 2.00e+46 erg / s
+.. code-block:: text
+
+	* Shakura Sunyaev accretion disk:
+	- M_BH (central black hole mass): 2.39e+42 g
+	- L_disk (disk luminosity): 2.00e+46 erg / s
 	- eta (accretion efficiency): 8.33e-02
- 	- dot(m) (mass accretion rate): 2.67e+26 g / s
- 	- R_in (disk inner radius): 1.06e+15 cm
- 	- R_out (disk inner radius): 3.54e+16 cm
-	
+	- dot(m) (mass accretion rate): 2.67e+26 g / s
+	- R_in (disk inner radius): 1.06e+15 cm
+	- R_out (disk inner radius): 3.54e+16 cm
 
-now let us define a Broad Line Region re-emitting the Lyman-alpha line (:math:`\nu_{\mathrm{line}}=2.47 \times 10^{15}\,\mathrm{Hz}`) and a dust torus reprocessing the disk radiation in the infrared (:math:`T \sim 1000\,\mathrm{K}`).
+Broad Line Region (BLR)
+-----------------------
+The BLR can be initialised specifying the luminosity of the disk whose radiation is being reprocessed, :math:`L_{\mathrm{disk}}`, 
+the fraction of radiation reprocessed, :math:`\xi_{\mathrm{line}}`, the type of line emitted (for a complete list see the 
+:func:`~agnpy.targets.print_lines_list`), the radius at which the line is emitted, :math:`R_{\mathrm{line}}`.
+Let us continue from the previous snippet considering a BLR reprocessing the previous disk luminosity and re-emitting 
+the :math:`\mathrm{Ly}\alpha` line:
 
 .. code-block:: python
 
-	# quantities defining the Broad Line Region
-	epsilon_line = 2e-5 # dimensionless energy of the Lyman alpha photons
-	xi_line = 0.024
-	R_line = 1e17 * u.cm
-	# note the accretion disk is passed as a first argument
-	blr = SphericalShellBLR(disk, xi_line, epsilon_line, R_line)
+	from agnpy.targets import SphericalShellBLR                                                                                                                               
 
-	# quantities defining the dust torus
+	# quantities defining the BLR
+	xi_line = 0.024 
+	R_line = 1e17 * u.cm                                                                                                                                                      
+
+	blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)                                                                                                               
+
+we can print a summary of the BLR properties via
+
+.. code-block:: python
+
+	print(blr)                                                                                                                                                                
+
+.. code-block:: text
+
+	* Spherical Shell Broad Line Region:
+	- L_disk (accretion disk luminosity): 2.00e+46 erg / s
+	- xi_line (fraction of the disk radiation reprocessed by the BLR): 2.40e-02
+	- line (type of emitted line): Lyalpha, lambda = 0.00 cm
+	- R_line (radius of the BLR shell): 1.00e+17 cm
+
+Dust Torus (DT)
+---------------
+The DT can be initialised specifying the luminosity of the disk whose radiation is being reprocessed, :math:`L_{\mathrm{disk}}`, 
+the fraction of radiation reprocessed, :math:`\xi_{\mathrm{dt}}`, the temperature where the black-body radiation peaks, 
+:math:`T_{\mathrm{dt}}`, the radius of the ring representing the torus, :math:`R_{\mathrm{dt}}`. The latter is optional
+and if not specified will be automatically set at the sublimation radius (Eq. 96 in [Finke2016]_).
+Let us continue from the previous snippet considering a DT reprocessing the disk luminosity in the infrared 
+(:math:`T_{\mathrm{dt}} = 1000 \, \mathrm{K}`):
+
+.. code-block:: python
+
+	from agnpy.targets import RingDustTorus                                                                                                                             
+
+	# quantities defining the DT                            
 	T_dt = 1e3 * u.K
-	epsilon_dt = 2.7 * ((const.k_B * T_dt) / (const.m_e * const.c * const.c)).decompose()
 	xi_dt = 0.1
-	# again the disk is passed as a first argument
-	dt = RingDustTorus(disk, xi_dt, epsilon_dt)
 
-we can plot the Black Body SEDs produced by the accretion disk and the dust torus, let us assume we are observing a galaxy at :math:`z=0.1` with viewing angle w.r.t. the disk axis 5 deg.
+	dt = RingDustTorus(L_disk, xi_dt, T_dt)
 
 .. code-block:: python
 
+	print(dt)                                                                                                                                                                
+
+.. code-block:: text 
+
+	* Ring Dust Torus:
+	- L_disk (accretion disk luminosity): 2.00e+46 erg / s
+	- xi_dt (fraction of the disk radiation reprocessed by the torus): 1.00e-01
+	- T_dt (temperature of the dust torus): 1.00e+03 K
+	- R_dt (radius of the torus): 1.57e+19 cm
+
+
+Black-Body SEDs
+---------------
+The SEDs due to the black-body emission by the disk and the DT can be computed via the
+`sed_flux` members of the two classes. An array of frequencies over which to compute the SEDs
+and the redshift of the galaxy have to be specified.
+
+.. code-block:: python
+
+	import matplotlib.pyplot as plt
+	# redshift of the host galaxy
 	z = 0.1
-	mu_s = np.cos((5 * u.deg).to("rad"))
 	# array of frequencies to compute the SEDs
 	nu = np.logspace(12, 18) * u.Hz
-	disk_bb_sed = disk.sed_flux(nu, z, mu_s)
+	# compute the SEDs
+	disk_bb_sed = disk.sed_flux(nu, z)
 	dt_bb_sed = dt.sed_flux(nu, z)
-	# let us plot them
+	# plot them
 	plt.loglog(nu, disk_bb_sed, lw=2, label="Accretion Disk")
 	plt.loglog(nu, dt_bb_sed, lw=2, label="Dust Torus")
 	plt.xlabel(r"$\nu\,/\,\mathrm{Hz}$")
@@ -92,6 +153,24 @@ we can plot the Black Body SEDs produced by the accretion disk and the dust toru
     :width: 500px
     :align: center
 
+Radiation density
+-----------------
+In order to consider the density of target photons provided to the blob electrons for inverse Compton scattering,
+it is possible to plot the denisty of radiation as a function of the coordinate along
+the jet axis :math:`r`. As an example for the BLR:
+
+.. code-block:: python
+	
+	r = np.logspace(14, 20, 100) * u.cm
+	u_ph_blr = blr.u_ph(r)
+	plt.loglog(r, u_ph_blr)
+	plt.xlabel(r"$r\,/\,\mathrm{cm}$")
+	plt.ylabel(r"$u_{\mathrm{ph}}\,/\,(\mathrm{erg}\,\mathrm{cm}^{-3})$")
+	plt.show() 
+
+.. image:: _static/u_ph_blr.png
+    :width: 500px
+    :align: center
 
 API
 ---

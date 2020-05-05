@@ -22,5 +22,6 @@ Bibliography
    "Constraints on the Physical Parameters of TeV Blazars";
 
 .. [Shakura1973] `Shakura, Sunyaev (1973) <https://ui.adsabs.harvard.edu/abs/1973A%26A....24..337S/abstract>`_,
-   "Black holes in binary systems. Observational appearance.".
+   "Black holes in binary systems. Observational appearance.";
+
 

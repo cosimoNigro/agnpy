@@ -1,19 +1,13 @@
 import numpy as np
-import astropy.constants as const
+from astropy.constants import h, c, m_e, sigma_T
 import astropy.units as u
 
 
-# every variable indicated with capital letters is unitless
-# will be used in SED computations for speed-up
-E = const.e.gauss.value
-H = const.h.cgs.value
-C = const.c.cgs.value
-ME = const.m_e.cgs.value
-MEC = (const.m_e * const.c).cgs.value
-MEC2 = (const.m_e * const.c * const.c).cgs.value
-SIGMA_T = const.sigma_T.cgs.value
-EMISSIVITY_UNIT = "erg s-1"
-SED_UNIT = "erg cm-2 s-1"
+mec2 = m_e.to("erg", equivalencies=u.mass_energy())
+# equivalency to transform frequencies to energies in electron rest mass units
+epsilon_equivalency = [
+    (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
+]
 
 
 __all__ = ["SynchrotronSelfCompton", "ExternalCompton"]
@@ -95,23 +89,24 @@ def compton_kernel(gamma, epsilon_s, epsilon, mu_s, mu, phi):
 
 
 def x_re_shell(mu, R_re, r):
-    """distance between the blob and the reprocessing material,
+    """distance between the blob and a spherical reprocessing material,
     see Fig. 9 and Eq. 76 in [Finke2016]_.
     
     Parameters
     ----------
     mu : :class:`~numpy.ndarray`
         (array of) cosine of the zenith angle subtended by the target
-    R_re : float 
-        distance (in cm) from the BH to the reprocessing material
-    r : float
-        height (in cm) of the emission region in the jet
+    R_re : :class:`~astropy.units.Quantity`
+        distance from the BH to the reprocessing material
+    r : :class:`~astropy.units.Quantity`
+        height of the emission region in the jet
     """
     value = np.sqrt(np.power(R_re, 2) + np.power(r, 2) - 2 * r * R_re * mu)
     return value
 
 
 def x_re_ring(R_re, r):
+    """distance between the blob and a ring reprocessing material"""
     return np.sqrt(np.power(R_re, 2) + np.power(r, 2))
 
 
@@ -146,7 +141,7 @@ class SynchrotronSelfCompton:
     def __init__(self, blob, synchrotron):
         self.blob = blob
         self.synchrotron = synchrotron
-        # default grid of epsilon values over which to integrate
+        # default grid of epsilon values over which for the synchroton emission
         self.epsilon_syn = np.logspace(-13, 10, 300)
         self.synch_sed_emissivity = self.synchrotron.com_sed_emissivity(
             self.epsilon_syn
@@ -173,18 +168,17 @@ class SynchrotronSelfCompton:
         N_e = self.blob.N_e(gamma).value
         # Eq. 22 of [Finke2008]_, the factor 3 / 4 accounts for averaging in a sphere
         # not included in Dermer and Finke's papers
-        J_epsilon_syn = 3 / 4 * self.synch_sed_emissivity.value / self.epsilon_syn
-        # variables that have to be integrated will start their names with "_"
-        # in order to preserve original arrays shapes without reshaping again.
-        # Quantities will be computed as matrices with:
+        J_epsilon_syn = 3 / 4 * self.synch_sed_emissivity / self.epsilon_syn
+        # for multidimensional integration
         # axis = 0 : electrons Lorentz factors
         # axis = 1 : target photons energies
         # axis = 2 : scattered photons energies
-        _gamma = gamma.reshape(gamma.size, 1, 1)
-        _N_e = N_e.reshape(N_e.size, 1, 1)
-        _epsilon_syn = self.epsilon_syn.reshape(1, self.epsilon_syn.size, 1)
-        _J_epsilon_syn = J_epsilon_syn.reshape(1, J_epsilon_syn.size, 1)
-        _epsilon = epsilon.reshape(1, 1, epsilon.size)
+        # arrays starting with _ are multidimensional and used for integration
+        _gamma = np.reshape(gamma, (gamma.size, 1, 1))
+        _N_e = np.reshape(N_e, (N_e.size, 1, 1))
+        _epsilon_syn = np.reshape(self.epsilon_syn, (1, self.epsilon_syn.size, 1))
+        _J_epsilon_syn = np.reshape(J_epsilon_syn, (1, J_epsilon_syn.size, 1))
+        _epsilon = np.reshape(epsilon, (1, 1, epsilon.size))
         _kernel = isotropic_kernel(_gamma, _epsilon_syn, _epsilon)
         # build the integrands of Eq. 9 in [2], using the reshaped arrays
         integrand_epsilon = _J_epsilon_syn / np.power(_epsilon_syn, 2)
@@ -193,14 +187,14 @@ class SynchrotronSelfCompton:
         # integrate the Lorentz factor and the target synchrotron energies axes
         integral_gamma = np.trapz(integrand, gamma, axis=0)
         integral_epsilon = np.trapz(integral_gamma, self.epsilon_syn, axis=0)
-
         prefactor = (
             9
-            * SIGMA_T
+            * sigma_T
             * np.power(epsilon, 2)
-            / (16 * np.pi * np.power(self.blob.R_b.value, 2))
+            / (16 * np.pi * np.power(self.blob.R_b, 2))
         )
-        return prefactor * integral_epsilon * u.Unit(EMISSIVITY_UNIT)
+        emissivity = prefactor * integral_epsilon
+        return emissivity.to("erg s-1")
 
     def sed_luminosity(self, nu):
         """SSC luminosity SED: 
@@ -214,9 +208,10 @@ class SynchrotronSelfCompton:
             array of frequencies, in Hz, to compute the sed, **note** these are 
             observed frequencies (observer frame).
         """
-        epsilon = H * nu.to("Hz").value / MEC2
+        epsilon = nu.to("", equivalencies=epsilon_equivalency)
         # correct epsilon to the jet comoving frame
         epsilon_prime = (1 + self.blob.z) * epsilon / self.blob.delta_D
+        prefactor = np.power(self.blob.delta_D, 4)
         return prefactor * self.com_sed_emissivity(epsilon_prime)
 
     def sed_flux(self, nu):
@@ -233,13 +228,14 @@ class SynchrotronSelfCompton:
             array of frequencies, in Hz, to compute the sed, **note** these are 
             observed frequencies (observer frame).
         """
-        epsilon = H * nu.to("Hz").value / MEC2
+        epsilon = nu.to("", equivalencies=epsilon_equivalency)
         # correct epsilon to the jet comoving frame
         epsilon_prime = (1 + self.blob.z) * epsilon / self.blob.delta_D
         prefactor = np.power(self.blob.delta_D, 4) / (
             4 * np.pi * np.power(self.blob.d_L, 2)
         )
-        return (prefactor * self.com_sed_emissivity(epsilon_prime)).to(SED_UNIT)
+        sed = prefactor * self.com_sed_emissivity(epsilon_prime)
+        return sed.to("erg cm-2 s-1")
 
 
 class ExternalCompton:
@@ -253,17 +249,6 @@ class ExternalCompton:
         class describing the target photon field    
     r : `~astropy.units.Quantity`
         distance of the blob from the Black Hole (i.e. from the target photons)
-
-    Attributes
-    ----------
-    mu_min : float
-        minimum cosine of the zenith angle subtended by the target photon field
-    mu_max : float
-        maximum cosine of the zenith angle subtended by the target photon field
-    mu_size : int
-        size of the array of the zenith dependence of the target field
-    phi : array_like
-        size of the array of the azimuth dependence of the target field
     """
 
     def __init__(self, blob, target, r):
@@ -271,22 +256,21 @@ class ExternalCompton:
         # we integrate on a larger grid to account for the transformation
         # of the electron density in the reference frame of the BH
         self.gamma = self.blob.gamma_to_integrate
+        # N_e in the reference frame of the galaxy
         self.transformed_N_e = self.blob.N_e(self.gamma / self.blob.delta_D).value
         self.target = target
-        self.r = r.cgs
-        self._r = self.r.value
+        self.r = r
         self.set_mu()
         self.set_phi()
 
     def set_mu(self, mu_size=100):
         self.mu_size = mu_size
         if self.target.type == "SSDisk":
-            self.mu_min = 1 / np.sqrt(1 + np.power(self.target._R_out / self._r, 2))
-            self.mu_max = 1 / np.sqrt(1 + np.power(self.target._R_in / self._r, 2))
+            # in case of hte disk the mu interval does not go from -1 to 1
+            r_tilde = (self.r / self.target.R_g).to_value("")
+            self.mu = self.target.mu_from_r_tilde(r_tilde)
         else:
-            self.mu_min = -1
-            self.mu_max = 1
-        self.mu = np.linspace(self.mu_min, self.mu_max, self.mu_size)
+            self.mu = np.linspace(-1, 1, self.mu_size)
 
     def set_phi(self, phi_size=50):
         self.phi_size = phi_size
@@ -307,33 +291,34 @@ class ExternalCompton:
             observed frequencies (observer frame).
         """
         # define the dimensionless energy
-        epsilon_s_obs = H * nu.to("Hz").value / MEC2
+        epsilon_s = nu.to("", equivalencies=epsilon_equivalency)
         # transform to BH frame
-        epsilon_s = epsilon_s_obs * (1 + self.blob.z)
-        # variables that have to be integrated will start their names with "_"
-        # in order to preserve original arrays shapes without reshaping again.
-        # Quantities will be computed as matrices with:
+        epsilon_s *= 1 + self.blob.z
+        # for multidimensional integration
         # axis 0: gamma
         # axis 1: mu
         # axis 2: phi
         # axis 3: epsilon_s
-        _mu_s = self.blob.mu_s
-        _gamma = self.gamma.reshape(self.gamma.size, 1, 1, 1)
-        _N_e = self.transformed_N_e.reshape(self.transformed_N_e.size, 1, 1, 1)
-        _mu = self.mu.reshape(1, self.mu.size, 1, 1)
-        _phi = self.phi.reshape(1, 1, self.phi.size, 1)
-        _epsilon_s = epsilon_s.reshape(1, 1, 1, epsilon_s.size)
-        _epsilon = self.target._epsilon_mu(_mu, self._r)
+        # arrays starting with _ are multidimensional and used for integration
+        # distance from the disk in gravitational radius units
+        r_tilde = (self.r / self.target.R_g).to_value("")
+        _gamma = np.reshape(self.gamma, (self.gamma.size, 1, 1, 1))
+        _N_e = np.reshape(self.transformed_N_e, (self.transformed_N_e.size, 1, 1, 1))
+        _mu = np.reshape(self.mu, (1, self.mu.size, 1, 1))
+        _phi = np.reshape(self.phi, (1, 1, self.phi.size, 1))
+        _epsilon_s = np.reshape(epsilon_s, (1, 1, 1, epsilon_s.size))
+        _epsilon = self.target.epsilon_mu(_mu, r_tilde)
         # define integrating function
-        _kernel = compton_kernel(_gamma, _epsilon_s, _epsilon, _mu_s, _mu, _phi)
-        # set to zero everything below gamma_low
-        _integrand_mu_num = self.target._phi_disk_mu(_mu, self._r)
-        _integrand_mu_denom = np.power(np.power(_mu, -2) - 1, 3 / 2) * np.power(
+        _kernel = compton_kernel(
+            _gamma, _epsilon_s, _epsilon, self.blob.mu_s, _mu, _phi
+        )
+        _integrand_mu_num = self.target.phi_disk_mu(_mu, r_tilde)
+        _integrand_mu_denum = np.power(np.power(_mu, -2) - 1, 3 / 2) * np.power(
             _epsilon, 2
         )
         _integrand = (
             _integrand_mu_num
-            / _integrand_mu_denom
+            / _integrand_mu_denum
             * np.power(_gamma, -2)
             * _N_e
             * _kernel
@@ -343,21 +328,22 @@ class ExternalCompton:
         integral_phi = np.trapz(integral_mu, self.phi, axis=0)
         prefactor_num = (
             9
-            * SIGMA_T
+            * sigma_T
             * np.power(epsilon_s, 2)
             * self.target.l_Edd
-            * self.target.L_Edd.value
+            * self.target.L_Edd
             * np.power(self.blob.delta_D, 3)
         )
         prefactor_denom = (
             np.power(2, 9)
             * np.power(np.pi, 3)
-            * np.power(self.blob.d_L.value, 2)
-            * np.power(self.target.R_g.value, 2)
+            * np.power(self.blob.d_L, 2)
+            * np.power(self.target.R_g, 2)
             * self.target.eta
-            * np.power(self._r / self.target._R_g, 3)
+            * np.power(r_tilde, 3)
         )
-        return prefactor_num / prefactor_denom * integral_phi * u.Unit(SED_UNIT)
+        sed = prefactor_num / prefactor_denom * integral_phi
+        return sed.to("erg cm-2 s-1")
 
     def _sed_flux_shell_blr(self, nu):
         """EC on BLR flux SED:
@@ -365,7 +351,7 @@ class ExternalCompton:
         .. math::
             \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
 
-        Eq. 70 in [Dermer2009]_.
+        Eq. 80 in [Finke2016]_ plugged in Eq. (1).
 
         Parameters
         ----------
@@ -374,27 +360,25 @@ class ExternalCompton:
             observed frequencies (observer frame).
         """
         # define the dimensionless energy
-        epsilon_s_obs = H * nu.to("Hz").value / MEC2
+        epsilon_s = nu.to("", equivalencies=epsilon_equivalency)
         # transform to BH frame
-        epsilon_s = epsilon_s_obs * (1 + self.blob.z)
-        # variables that have to be integrated will start their names with "_"
-        # in order to preserve original arrays shapes without reshaping again.
-        # Quantities will be computed as matrices with:
+        epsilon_s *= 1 + self.blob.z
+        # for multidimensional integration
         # axis 0: gamma
         # axis 1: mu_re (cosine zenith from BH to re-processing material)
         # axis 2: phi
         # axis 3: epsilon_s
-        _mu_s = self.blob.mu_s
-        _gamma = self.gamma.reshape(self.gamma.size, 1, 1, 1)
-        _N_e = self.transformed_N_e.reshape(self.transformed_N_e.size, 1, 1, 1)
-        _mu = self.mu.reshape(1, self.mu.size, 1, 1)
-        _phi = self.phi.reshape(1, 1, self.phi.size, 1)
-        _epsilon_s = epsilon_s.reshape(1, 1, 1, epsilon_s.size)
-        # define integrating function
-        _x = x_re_shell(_mu, self.target._R_line, self._r)
-        _mu_star = mu_star(_mu, self.target._R_line, self._r)
+        # arrays starting with _ are multidimensional and used for integration
+        _gamma = np.reshape(self.gamma, (self.gamma.size, 1, 1, 1))
+        _N_e = np.reshape(self.transformed_N_e, (self.transformed_N_e.size, 1, 1, 1))
+        _mu = np.reshape(self.mu, (1, self.mu.size, 1, 1))
+        _phi = np.reshape(self.phi, (1, 1, self.phi.size, 1))
+        _epsilon_s = np.reshape(epsilon_s, (1, 1, 1, epsilon_s.size))
+        # define integrating functionlue
+        _x = x_re_shell(_mu, self.target.R_line, self.r)
+        _mu_star = mu_star(_mu, self.target.R_line, self.r)
         _kernel = compton_kernel(
-            _gamma, _epsilon_s, self.target.epsilon_line, _mu_s, _mu_star, _phi
+            _gamma, _epsilon_s, self.target.epsilon_line, self.blob.mu_s, _mu_star, _phi
         )
         _integrand = np.power(_x, -2) * np.power(_gamma, -2) * _N_e * _kernel
         integral_gamma = np.trapz(_integrand, self.gamma, axis=0)
@@ -402,19 +386,20 @@ class ExternalCompton:
         integral_phi = np.trapz(integral_mu, self.phi, axis=0)
         prefactor_num = (
             3
-            * SIGMA_T
+            * sigma_T
             * np.power(epsilon_s, 2)
             * np.power(self.blob.delta_D, 3)
-            * self.target.parent_disk.L_disk.value
+            * self.target.L_disk
             * self.target.xi_line
         )
         prefactor_denom = (
             8
             * np.power(4 * np.pi, 3)
-            * np.power(self.blob.d_L.value, 2)
+            * np.power(self.blob.d_L, 2)
             * np.power(self.target.epsilon_line, 2)
         )
-        return prefactor_num / prefactor_denom * integral_phi * u.Unit(SED_UNIT)
+        sed = prefactor_num / prefactor_denom * integral_phi
+        return sed.to("erg cm-2 s-1")
 
     def _sed_flux_ring_torus(self, nu):
         """EC on Dust Torus flux SED:
@@ -431,43 +416,45 @@ class ExternalCompton:
             observed frequencies (observer frame).
         """
         # define the dimensionless energy
-        epsilon_s_obs = H * nu.to("Hz").value / MEC2
+        epsilon_s = nu.to("", equivalencies=epsilon_equivalency)
         # transform to BH frame
-        epsilon_s = epsilon_s_obs * (1 + self.blob.z)
+        epsilon_s *= 1 + self.blob.z
+        # for multidimensional integration
         # axis 0: gamma
         # axis 1: phi
         # axis 2: epsilon_s
-        _mu_s = self.blob.mu_s
-        # here we plug mu =  r / x. Delta function in Eq. (91) of [3]
-        x_re = x_re_ring(self.target._R_dt, self._r)
-        _mu = self._r / x_re
-        _gamma = self.gamma.reshape(self.gamma.size, 1, 1)
-        _N_e = self.transformed_N_e.reshape(self.transformed_N_e.size, 1, 1)
-        _phi = self.phi.reshape(1, self.phi.size, 1)
-        _epsilon_s = epsilon_s.reshape(1, 1, epsilon_s.size)
+        # arrays starting with _ are multidimensional and used for integration
+        x_re = x_re_ring(self.target.R_dt, self.r)
+        # here we plug mu =  r / x. Delta function in Eq. 91 of [Finke2016]_
+        mu = (self.r / x_re).to_value("")
+        _gamma = np.reshape(self.gamma, (self.gamma.size, 1, 1))
+        _N_e = np.reshape(self.transformed_N_e, (self.transformed_N_e.size, 1, 1))
+        _phi = np.reshape(self.phi, (1, self.phi.size, 1))
+        _epsilon_s = np.reshape(epsilon_s, (1, 1, epsilon_s.size))
         # define integrating function
         _kernel = compton_kernel(
-            _gamma, _epsilon_s, self.target.epsilon_dt, _mu_s, _mu, _phi
+            _gamma, _epsilon_s, self.target.epsilon_dt, self.blob.mu_s, mu, _phi
         )
         _integrand = np.power(_gamma, -2) * _N_e * _kernel
         integral_gamma = np.trapz(_integrand, self.gamma, axis=0)
         integral_phi = np.trapz(integral_gamma, self.phi, axis=0)
         prefactor_num = (
             3
-            * SIGMA_T
+            * sigma_T
             * np.power(epsilon_s, 2)
             * np.power(self.blob.delta_D, 3)
-            * self.target.parent_disk.L_disk.value
+            * self.target.L_disk
             * self.target.xi_dt
         )
         prefactor_denom = (
             8
             * np.power(4 * np.pi, 3)
-            * np.power(self.blob.d_L.value, 2)
+            * np.power(self.blob.d_L, 2)
             * np.power(self.target.epsilon_dt, 2)
             * np.power(x_re, 2)
         )
-        return prefactor_num / prefactor_denom * integral_phi * u.Unit(SED_UNIT)
+        sed = prefactor_num / prefactor_denom * integral_phi
+        return sed.to("erg cm-2 s-1")
 
     def sed_flux(self, nu):
         """EC flux SED:

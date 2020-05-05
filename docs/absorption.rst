@@ -12,9 +12,9 @@ The photon fields that represent the target for the Compton scattering might re-
                                \frac{u(\epsilon, \mu, \phi; l)}{\epsilon m_e c^2} \, \sigma_{\gamma \gamma}(s),
 
 where: 
-  - :math:`\cos\psi = \mu\mu_s + \sqrt{1 - \mu^2}\sqrt{1 - \mu_s^2} \cos\phi` is the cosine of the angle between the hitting and the absorbing photon;
-  - :math:`u(\epsilon, \mu, \phi; l)` is the energy density of the target photon field;
-  - :math:`\sigma_{\gamma \gamma}(s)` is the pair-production cross section, with :math:`s = \epsilon_1 \epsilon \, (1 - \cos\psi)\,/\,2` and :math:`\epsilon_1 = h \nu\,/\,(m_e c^2)` the dimensionless hitting photon energy.
+    - :math:`\cos\psi = \mu\mu_s + \sqrt{1 - \mu^2}\sqrt{1 - \mu_s^2} \cos\phi` is the cosine of the angle between the hitting and the absorbing photon;
+    - :math:`u(\epsilon, \mu, \phi; l)` is the energy density of the target photon field;
+    - :math:`\sigma_{\gamma \gamma}(s)` is the pair-production cross section, with :math:`s = \epsilon_1 \epsilon \, (1 - \cos\psi)\,/\,2` and :math:`\epsilon_1 = h \nu\,/\,(m_e c^2)` the dimensionless hitting photon energy.
 
 Photoabsorption results in an attenuation of the photon flux by a factor :math:`\exp(-\tau_{\gamma \gamma})`.
 
@@ -47,32 +47,30 @@ In the following example we compute the optical depths produced by the disk, the
 	delta_D = 40
 	Gamma = 40
 	blob = Blob(R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict)
-	print("blob definition:")
-	print(blob)
 
 	# disk parameters
-	M_sun = const.M_sun.cgs
-	M_BH = 1.2 * 1e9 * M_sun
-	R_g = ((const.G * M_BH) / (const.c * const.c)).cgs
+	M_BH = 1.2 * 1e9 * const.M_sun.cgs
 	L_disk = 2 * 1e46 * u.Unit("erg s-1")
 	eta = 1 / 12
-	R_in = 6 * R_g
-	R_out = 200 * R_g
-	disk = SSDisk(M_BH, L_disk, eta, R_in, R_out)
+	R_in = 6 
+	R_out = 200 
+	disk = SSDisk(M_BH, L_disk, eta, R_in, R_out, R_g_units=True)
 
 	# blr definition
-	epsilon_line = 2e-5
 	csi_line = 0.024
 	R_line = 1e17 * u.cm
-	blr = SphericalShellBLR(disk, csi_line, epsilon_line, R_line)
+	blr = SphericalShellBLR(L_disk, csi_line, "Lyalpha", R_line)
 
 	# dust torus definition
 	T_dt = 1e3 * u.K
-	epsilon_dt = 2.7 * ((const.k_B * T_dt) / (const.m_e * const.c * const.c)).decompose()
 	csi_dt = 0.1
-	dt = RingDustTorus(disk, csi_dt, epsilon_dt)
+	dt = RingDustTorus(L_disk, csi_dt, T_dt)
 
-as for the :class:`~agnpy.compton.ExternalCompton` radiation, the absortpion can be computed passing to the :class:`~agnpy.absorption.Absorption` class the :class:`~agnpy.emission_regions.Blob` and :class:`~agnpy.targets.SSDisk` (or any other target) instances. Remember also to set the distance between the blob and the target photon field (`r`)
+as for the :class:`~agnpy.compton.ExternalCompton` radiation, the absortpion can 
+be computed passing to the :class:`~agnpy.absorption.Absorption` class the 
+:class:`~agnpy.emission_regions.Blob` and :class:`~agnpy.targets.SSDisk` 
+(or any other target) instances. 
+Remember also to set the distance between the blob and the target photon field (:math:`r`)
 
 .. code-block:: python
 

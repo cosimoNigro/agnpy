@@ -29,8 +29,8 @@ Again let us define the blob
 	spectrum_norm = 1e48 * u.Unit("erg") 
 	# define the spectral function through a dictionary
 	spectrum_dict = {
-		"type": "PowerLaw", 
-		"parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7}
+	    "type": "PowerLaw", 
+	    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7}
 	}
 	R_b = 1e16 * u.cm
 	B = 1 * u.G
@@ -45,7 +45,6 @@ and the synchrotron radiation produced by it
 
 	synch = Synchrotron(blob)
 	
-
 the SSC radiation can be computed passing to the :class:`~agnpy.compton.SynchrotronSelfCompton` class the :class:`~agnpy.emission_regions.Blob` and :class:`~agnpy.synchrotron.Synchrotron` instances
 
 .. code-block:: python
@@ -91,11 +90,11 @@ As an example of this process let us consider Compton scattering of the photon f
 
 	spectrum_norm = 6e42 * u.erg
 	parameters = {
-		"p1": 2.1,
-		"p2": 3.5,
-		"gamma_b": 1e4,
-		"gamma_min": 20,
-		"gamma_max": 5e7,
+	    "p1": 2.1,
+	    "p2": 3.5,
+	    "gamma_b": 1e4,
+	    "gamma_min": 20,
+	    "gamma_max": 5e7,
 	}
 	spectrum_dict = {"type": "BrokenPowerLaw", "parameters": parameters}
 	R_b = 1e16 * u.cm
@@ -111,12 +110,11 @@ let us define the target disk
 
 	# disk parameters
 	M_BH = 1.2 * 1e9 * const.M_sun
-	R_g = ((const.G * M_BH) / (const.c * const.c)).cgs
 	L_disk = 2 * 1e46 * u.Unit("erg s-1")
 	eta = 1 / 12
-	R_in = 6 * R_g
-	R_out = 200 * R_g
-	disk = SSDisk(M_BH, L_disk, eta, R_in, R_out)
+	R_in = 6
+	R_out = 200 
+	disk = SSDisk(M_BH, L_disk, eta, R_in, R_out, R_g_units=True)
 
 the EC radiation can be computed passing to the :class:`~agnpy.compton.ExternalCompton` class the :class:`~agnpy.emission_regions.Blob` and :class:`~agnpy.targets.SSDisk` instances. Remember also to set the distance between the blob and the target photon field (`r`)
 
@@ -141,8 +139,8 @@ let us plot the resulting SED:
     :width: 500px
     :align: center
 
-
-For more examples of Inverse Compton radiation and reproduction of literature results, check the notebooks in `agnpy/tutorials`.
+For more examples of Inverse Compton radiation and reproduction of literature results, 
+check the external compton tutorial.
 
 
 API
