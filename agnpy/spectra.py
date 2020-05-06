@@ -130,7 +130,6 @@ class PowerLaw:
         k_e_num = (p - 2) * u_e
         k_e_denum = MEC2 * (np.power(gamma_min, 2 - p) - np.power(gamma_max, 2 - p))
         k_e = (k_e_num / k_e_denum).to("cm-3")
-        print(f"normalising power-law to total energy density u_e: {u_e:.2e}")
         return cls(k_e, p, gamma_min, gamma_max)
 
     @classmethod
@@ -144,13 +143,11 @@ class PowerLaw:
         k_e_num = (p - 1) * norm
         k_e_denum = np.power(gamma_min, 1 - p) - np.power(gamma_max, 1 - p)
         k_e = (k_e_num / k_e_denum).to("cm-3")
-        print(f"normalising power-law to total particle density: {norm:.2e}")
         return cls(k_e, p, gamma_min, gamma_max)
 
     @classmethod
     def from_norm_at_gamma_1(cls, norm, p, gamma_min, gamma_max):
         """sets :math:`k_e` such that `norm` = :math:`n_e(\gamma=1)`."""
-        print(f"normalising power-law to value {norm:.2e} at gamma = 1")
         return cls(norm.to("cm-3"), p, gamma_min, gamma_max)
 
     def SSA_integrand(self, gamma):
@@ -239,7 +236,6 @@ class BrokenPowerLaw:
         denum_term_1 = (1 - np.power(gamma_min / gamma_b, 2 - p1)) / (2 - p1)
         denum_term_2 = (np.power(gamma_max / gamma_b, 2 - p2) - 1) / (2 - p2)
         k_e = (u_e / (denum_prefactor * (denum_term_1 + denum_term_2))).to("cm-3")
-        print(f"normalising broken power-law to total energy density u_e: {u_e:.2e}")
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     @classmethod
@@ -257,7 +253,6 @@ class BrokenPowerLaw:
             p2 - 1
         )
         k_e = (norm / (k_e_denum_1 + k_e_denum_2)).to("cm-3")
-        print(f"normalising broken power-law to total particle density: {norm:.2e}")
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     @classmethod
@@ -366,7 +361,6 @@ class BrokenPowerLaw2:
             / (2 - p2)
         )
         k_e = (u_e / (MEC2 * (k_e_denum_1 + k_e_denum_2))).to("cm-3")
-        print(f"normalising broken power-law 2 to total energy density: {u_e:.2e}")
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     @classmethod
@@ -386,13 +380,11 @@ class BrokenPowerLaw2:
             / (1 - p2)
         )
         k_e = (norm / (k_e_denum_1 + k_e_denum_2)).to("cm-3")
-        print(f"normalising broken power-law 2 to total particle density: {norm:.2e}")
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
     @classmethod
     def from_norm_at_gamma_1(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
         """sets :math:`k_e` such that `spectrum_norm` = :math:`n_e(\gamma=1)`."""
-        print(f"normalising broken power-law 2 to value {norm:.2e} at gamma = 1")
         return cls(norm.to("cm-3"), p1, p2, gamma_b, gamma_min, gamma_max)
 
     def SSA_integrand(self, gamma):

@@ -19,8 +19,8 @@ Follows an example of how to initialise a `Blob` using `astropy` quantities:
 	spectrum_norm = 1e48 * u.Unit("erg") 
 	# define the spectral function through a dictionary
 	spectrum_dict = {
-		"type": "PowerLaw", 
-		"parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7}
+	    "type": "PowerLaw", 
+	    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7}
 	}
 	R_b = 1e16 * u.cm
 	B = 1 * u.G
@@ -55,6 +55,19 @@ returning a summary of its properties
 	 - p: 2.80
 	 - gamma_min: 1.00e+02
 	 - gamma_max: 1.00e+07
+
+the electron distribution accelerated in the blob :math:`n_e` can be also visualised 
+(multiplying it by an arbitrary power of gamma):
+
+.. code-block:: python
+
+	import matplotlib.pyplot as plt
+	blob.plot_n_e(gamma_power=2)
+	plt.show()
+
+.. image:: _static/n_e_gamma.png
+    :width: 500px
+    :align: center
 
 
 Normalisation modes
