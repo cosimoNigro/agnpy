@@ -28,8 +28,8 @@ Gamma = 17
 r0 = 1.0e14 * u.m
 dist = 3.0e16 * u.cm
 xi = 1.0e-4
-nu = np.logspace(8, 26,100) * u.Hz
-norm = 10.0 * u.Unit("cm-3")
+nu = np.logspace(8, 26,200) * u.Hz
+norm = 15000.0 * u.Unit("cm-3")
 
 parameters = {
     "p1": 2.0,
@@ -118,8 +118,8 @@ delta_D=1.1
 z=0.01
 blob1 = Blob(r0, z, delta_D, Gamma, B0*10., norm, spectrum_dict, xi=xi)
 
-u_dens_synchr=blob1.u_dens_synchr # energy density of 
-energy_flux_predicted=blob1.u_dens_synchr * blob1.V_b * const.c.cgs/blob1.R_b *np.power(blob1.d_L,-2)/(4*np.pi)
+u_dens_synchr=blob1.u_dens_synchr # energy density of synchr photons
+energy_flux_predicted=(blob1.u_dens_synchr * blob1.V_b * const.c.cgs/blob1.R_b *np.power(blob1.d_L,-2)/(4*np.pi)).to("erg cm-2 s-1")
 
 synch1 = Synchrotron(blob1, ssa=False)
 synch1_sed = synch1.sed_flux(nu)
@@ -134,6 +134,10 @@ ssc1_sed = ssc1.sed_flux(nu)
 print("UB/Usynch = ",blob1.u_B/u_dens_synchr)
 print("SED_synch/SED_SSC=",energy_flux_sim/ np.trapz(ssc1_sed/(nu*const.h.cgs), nu*const.h.cgs))
 # also here there is a factor ~1.5 of difference  
+print("break_synchr/break_SSC = ",blob1.gamma_break_synch/blob1.gamma_break_SSC)
+
+# SSC is at the same level as Synchr. so the cooling breaks should be also similar:
+
 
 plt.rc("figure", figsize=(7.5, 5.5))
 plt.rc("font", size=12)
@@ -144,7 +148,7 @@ sed_y_label = r"$\nu F_{\nu}\,/\,(\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1
 
 plt.loglog(nu, synch1_sed, color="k", ls="-", lw=1, label="Synchr.")  #
 plt.loglog(nu, ssc1_sed, color="r", ls="-", lw=1, label="SSC")  #
-plt.ylim(1e-25, 1e-15)
+plt.ylim(1e-15, 1e-10)
 plt.xlim(1e8, 1e27)
 plt.xscale("log")
 plt.yscale("log")

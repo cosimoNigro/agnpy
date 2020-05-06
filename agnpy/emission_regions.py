@@ -279,8 +279,7 @@ class Blob:
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
         )
-        U_B = np.power(self.B.value, 2) / (8 * np.pi) * u.Unit("erg cm-3")
-        return (prefactor * U_B).to("erg s-1")
+        return (prefactor * self.u_B).to("erg s-1")
 
     @property
     def gamma_max_larmor(self):
@@ -326,7 +325,7 @@ class Blob:
 
         .. math::
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= \xi c E / R_L \\\\
-            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} &= 4 / 3 \sigma_T U_B \gamma^2 \\\\
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} &= 4 / 3 \sigma_T c U_B \gamma^2 \\\\
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} 
             \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{6 \pi \xi e}{\sigma_T B}}
         """
@@ -343,7 +342,7 @@ class Blob:
             T_{\mathrm{synch}} &= E\,/\,(\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} 
             =  3 m_e c^2 / (4 \sigma_T U_B \gamma) \\\\
             T_{\mathrm{bal}} &= R_b / c \\\\
-            T_{\mathrm{synch}} &= T_{\mathrm{bal}} \Rightarrow \gamma_b = 6 \pi m_e c^2 / \sigma_T B^2 R 
+            T_{\mathrm{synch}} &= T_{\mathrm{bal}} \Rightarrow \gamma_b = 6 \pi m_e c^2 / \sigma_T B^2 R_b 
         """
         gamma_max = (
             (6 * np.pi * mec2 / (sigma_T * np.power(self.B_cgs, 2) * self.R_b))
@@ -353,29 +352,51 @@ class Blob:
         return gamma_max
 
     @property
+    def gamma_break_SSC(self):
+        r"""Simple estimation of the cooling break of electrons comparing 
+        SSC time scale (see B&G 1970) with the ballistic time scale: 
+        WARNING: only applicable in Thomson regime
+
+        .. math::
+            T_{\mathrm{SSC}} &= E\,/\,(\mathrm{d}E/\mathrm{d}t)_{\mathrm{SSC}} 
+            &=  3 m_e c^2 / (4 \sigma_T U_{\mathrm{SSC}} \gamma) \\\\
+            T_{\mathrm{bal}} &= R_b / c \\\\
+            T_{\mathrm{SSC}} &= T_{\mathrm{bal}} \Rightarrow \gamma_b = 3  m_e c^2 / 4 \sigma_T U_{\mathrm{SSC}} R_b 
+        """
+        return ((3  * mec2 / (4* sigma_T * self.u_dens_synchr * self.R_b)).to("").value)
+
+    @property
     def u_B(self):
         r"""
         Energy density of magnetic field
-        U_b = B^2 / (8 pi)
+        .. math::
+            U_b = B^2 / (8 \pi)
         """
-        return np.power(self.B.to("G").value, 2) / (8 * np.pi) * u.Unit("erg cm-3")
+        return np.power(self.B_cgs, 2) / (8 * np.pi)
 
     @property
     def u_dens_synchr(self):
         r"""
         energy density of the synchrotron photons energy losses are:
-        dE_{synch}/dt = (4/3) sigma_T c U_B \gamma^2
+        .. math::        
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} = 4 / 3 \sigma_T c U_B \gamma^2 
+
         the radiation stays an average time of R_b/c, so an e- with gamma
         produces:
-        dE_{synch}/dt * (R_b/c) / V_b 
+        .. math::        
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} (R_b/c) / V_b 
+
         of radiation 
         we need to integrate over the electron spectrum  (and multiply back by V_b)
-        \int n_e (gamma) * dE_{synch}/dt * R_b  d\gamma
+        .. math::        
+            \int n_e(\gamma) (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}}  R_b  \mathrm{d}\gamma
         so
-        4./3 * sigma_T * U_B * R_b * \int n_e(gamma) * \gamma^2
+        .. math::        
+            u_{\mathrm{synch}} = 4./3 * \sigma_T * U_B * R_b * \int n_e(gamma) * \gamma^2 \mathrm{d}\gamma
+
         WARNING: this does not take into account SSA!
         """
-        return 4./3.* const.sigma_T.cgs*self.u_B*self.R_b * np.trapz(np.power(self.gamma,2) * self.n_e(self.gamma), self.gamma)
+        return 4./3.* sigma_T.cgs*self.u_B*self.R_b * np.trapz(np.power(self.gamma,2) * self.n_e(self.gamma), self.gamma)
 
     def plot_n_e(self, gamma_power=0):
         """plot the  electron distribution
