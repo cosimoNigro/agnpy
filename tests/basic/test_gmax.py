@@ -19,7 +19,7 @@ from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
 # parameters of the blob
 B0 = 0.1 * u.G
 gmin0 = 10.0
-gmax0 = 3.0e3
+gmax0 = 3000.
 gbreak = 300.0
 z = 0.94
 delta_D = 20
@@ -95,7 +95,7 @@ print(f"E(gmaxsyn) = {Emax:.2e}, Elost = {Elost:.2e}")
 # here we use 6 instead of 3 because we only have synchrotron losses and compare then
 # with dynamical time scale of crossing R
 
-# now compare the value from the class (computed using SI units) with the formula using CGS units
+# now compare the value from the class with the formula below
 gamma_b = blob.gamma_break_synch
 gamma_break_check = (
     6
@@ -114,29 +114,35 @@ print(f"gamma_break = {gamma_b:.5e}, gamma_break_check = {gamma_break_check:.5e}
 
 #redo blob without beaming
 Gamma=1.01
-delta_D=1.1
+delta_D=1.02
 z=0.01
 blob1 = Blob(r0, z, delta_D, Gamma, B0*10., norm, spectrum_dict, xi=xi)
 
 u_dens_synchr=blob1.u_dens_synchr # energy density of synchr photons
-energy_flux_predicted=(blob1.u_dens_synchr * blob1.V_b * const.c.cgs/blob1.R_b *np.power(blob1.d_L,-2)/(4*np.pi)).to("erg cm-2 s-1")
+# u_dens * V_b is the total energy in the blob, 
+# photons spend an average time of 0.75 * R_b/c in the blob 
+# so the total energy flux is:
+# total energy in blob / (average time  * 4 pi dist^2)
+energy_flux_predicted=(blob1.u_dens_synchr * blob1.V_b / (0.75 * blob1.R_b  / const.c.cgs) *np.power(blob1.d_L,-2)/(4*np.pi)).to("erg cm-2 s-1")
 
 synch1 = Synchrotron(blob1, ssa=False)
 synch1_sed = synch1.sed_flux(nu)
 
 energy_flux_sim = np.trapz(synch1_sed/(nu*const.h.cgs), nu*const.h.cgs)
 print(f"predicted energy flux: {energy_flux_predicted:.5e}, simulated energy flux: {energy_flux_sim:.5e}")
-# similar values, but not very precise
+# nice agreement
 
 ssc1 = SynchrotronSelfCompton(blob1, synch1)
 ssc1_sed = ssc1.sed_flux(nu)
 
 print("UB/Usynch = ",blob1.u_B/u_dens_synchr)
 print("SED_synch/SED_SSC=",energy_flux_sim/ np.trapz(ssc1_sed/(nu*const.h.cgs), nu*const.h.cgs))
-# also here there is a factor ~1.5 of difference  
+# same energy densities mean in Thomson regime the same energy losses ==> the same energy flux
 print("break_synchr/break_SSC = ",blob1.gamma_break_synch/blob1.gamma_break_SSC)
 
-# SSC is at the same level as Synchr. so the cooling breaks should be also similar:
+print("gmax_synchr/gmax_SSC = ",blob1.gamma_max_synch/blob1.gamma_max_SSC)
+
+# SSC is at the same level as Synchr. so the cooling breaks and maximum energies are also same
 
 
 plt.rc("figure", figsize=(7.5, 5.5))

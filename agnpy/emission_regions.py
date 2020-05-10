@@ -333,6 +333,21 @@ class Blob:
         return gamma_max
 
     @property
+    def gamma_max_SSC(self):
+        r"""Simple estimation of maximum Lorentz factor of electrons 
+        comparing the acceleration time scale with the SSC energy loss (in Thomson range)
+        WARNING: the highest energy electrons will most often scatter in Klein-Nishina range instead
+
+        .. math::
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= \xi c E / R_L \\\\
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{SSC}} &= 4 / 3 \sigma_T c U_{\mathrm{synch}} \gamma^2 \\\\
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= (\mathrm{d}E/\mathrm{d}t)_{\mathrm{SSC}} 
+            \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{3 \xi e B }{\sigma_T U_SSC}}
+        """
+        gamma_max = np.sqrt(3 *  self.xi * e * self.B_cgs / (4* sigma_T *self.u_dens_synchr)).to_value("")
+        return gamma_max
+
+    @property
     def gamma_break_synch(self):
         r"""Simple estimation of the cooling break of electrons comparing 
         synchrotron cooling time scale with the ballistic time scale: 
@@ -367,8 +382,8 @@ class Blob:
 
     @property
     def u_B(self):
-        r"""
-        Energy density of magnetic field
+        r"""Energy density of magnetic field
+
         .. math::
             U_b = B^2 / (8 \pi)
         """
@@ -378,25 +393,29 @@ class Blob:
     def u_dens_synchr(self):
         r"""
         energy density of the synchrotron photons energy losses are:
+
         .. math::        
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} = 4 / 3 \sigma_T c U_B \gamma^2 
 
-        the radiation stays an average time of R_b/c, so an e- with gamma
+        the radiation stays an average time of :math:`(3/4) (R_b/c)` (the factor of 3/4 cames from averaging over a sphere), so an e- with gamma
         produces:
+
         .. math::        
-            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} (R_b/c) / V_b 
+            0.75 (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} (R_b/c) / V_b 
 
         of radiation 
         we need to integrate over the electron spectrum  (and multiply back by V_b)
+
         .. math::        
-            \int n_e(\gamma) (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}}  R_b  \mathrm{d}\gamma
+            0.75 \int n_e(\gamma) (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}}  R_b  \mathrm{d}\gamma
         so
+
         .. math::        
-            u_{\mathrm{synch}} = 4./3 * \sigma_T * U_B * R_b * \int n_e(gamma) * \gamma^2 \mathrm{d}\gamma
+            u_{\mathrm{synch}} = \sigma_T  U_B  R_b  \int n_e(\gamma) * \gamma^2 \mathrm{d}\gamma
 
         WARNING: this does not take into account SSA!
         """
-        return 4./3.* sigma_T.cgs*self.u_B*self.R_b * np.trapz(np.power(self.gamma,2) * self.n_e(self.gamma), self.gamma)
+        return sigma_T.cgs*self.u_B*self.R_b * np.trapz(np.power(self.gamma,2) * self.n_e(self.gamma), self.gamma)
 
     def plot_n_e(self, gamma_power=0):
         """plot the  electron distribution
