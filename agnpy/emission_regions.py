@@ -329,7 +329,9 @@ class Blob:
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} 
             \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{6 \pi \xi e}{\sigma_T B}}
         """
-        gamma_max = np.sqrt(6 * np.pi * self.xi * e / (sigma_T * self.B_cgs)).to_value("")
+        gamma_max = np.sqrt(6 * np.pi * self.xi * e / (sigma_T * self.B_cgs)).to_value(
+            ""
+        )
         return gamma_max
 
     @property
@@ -344,7 +346,9 @@ class Blob:
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= (\mathrm{d}E/\mathrm{d}t)_{\mathrm{SSC}} 
             \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{3 \xi e B }{\sigma_T U_SSC}}
         """
-        gamma_max = np.sqrt(3 *  self.xi * e * self.B_cgs / (4* sigma_T *self.u_dens_synchr)).to_value("")
+        gamma_max = np.sqrt(
+            3 * self.xi * e * self.B_cgs / (4 * sigma_T * self.u_dens_synchr)
+        ).to_value("")
         return gamma_max
 
     @property
@@ -378,7 +382,7 @@ class Blob:
             T_{\mathrm{bal}} &= R_b / c \\\\
             T_{\mathrm{SSC}} &= T_{\mathrm{bal}} \Rightarrow \gamma_b = 3  m_e c^2 / 4 \sigma_T U_{\mathrm{SSC}} R_b 
         """
-        return ((3  * mec2 / (4* sigma_T * self.u_dens_synchr * self.R_b)).to("").value)
+        return (3 * mec2 / (4 * sigma_T * self.u_dens_synchr * self.R_b)).to("").value
 
     @property
     def u_B(self):
@@ -415,7 +419,12 @@ class Blob:
 
         WARNING: this does not take into account SSA!
         """
-        return sigma_T.cgs*self.u_B*self.R_b * np.trapz(np.power(self.gamma,2) * self.n_e(self.gamma), self.gamma)
+        return (
+            sigma_T.cgs
+            * self.u_B
+            * self.R_b
+            * np.trapz(np.power(self.gamma, 2) * self.n_e(self.gamma), self.gamma)
+        )
 
     def plot_n_e(self, gamma_power=0):
         """plot the  electron distribution
