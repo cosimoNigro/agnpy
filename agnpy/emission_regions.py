@@ -347,7 +347,7 @@ class Blob:
             \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{3 \xi e B }{\sigma_T U_SSC}}
         """
         gamma_max = np.sqrt(
-            3 * self.xi * e * self.B_cgs / (4 * sigma_T * self.u_dens_synchr)
+            3 * self.xi * e * self.B_cgs / (4 * sigma_T * self.u_ph_synch)
         ).to_value("")
         return gamma_max
 
@@ -378,71 +378,76 @@ class Blob:
 
         .. math::
             T_{\mathrm{SSC}} &= E\,/\,(\mathrm{d}E/\mathrm{d}t)_{\mathrm{SSC}} 
-            &=  3 m_e c^2 / (4 \sigma_T U_{\mathrm{SSC}} \gamma) \\\\
+            =  3 m_e c^2 / (4 \sigma_T U_{\mathrm{SSC}} \gamma) \\\\
             T_{\mathrm{bal}} &= R_b / c \\\\
             T_{\mathrm{SSC}} &= T_{\mathrm{bal}} \Rightarrow \gamma_b = 3  m_e c^2 / 4 \sigma_T U_{\mathrm{SSC}} R_b 
         """
-        return (3 * mec2 / (4 * sigma_T * self.u_dens_synchr * self.R_b)).to("").value
+        return (3 * mec2 / (4 * sigma_T * self.u_ph_synch * self.R_b)).to("").value
 
     @property
-    def u_B(self):
+    def U_B(self):
         r"""Energy density of magnetic field
 
         .. math::
-            U_b = B^2 / (8 \pi)
+            U_B = B^2 / (8 \pi)
         """
-        return np.power(self.B_cgs, 2) / (8 * np.pi)
+        U_B = np.power(self.B_cgs, 2) / (8 * np.pi)
+        return U_B.to("erg cm-3")
 
     @property
-    def u_dens_synchr(self):
-        r"""
-        energy density of the synchrotron photons energy losses are:
+    def u_ph_synch(self):
+        """energy density of the synchrotron photons energy losses are:
 
         .. math::        
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} = 4 / 3 \sigma_T c U_B \gamma^2 
 
-        the radiation stays an average time of :math:`(3/4) (R_b/c)` (the factor of 3/4 cames from averaging over a sphere), so an e- with gamma
-        produces:
+        the radiation stays an average time of :math:`(3/4) (R_b/c)` (the factor of 3/4 cames from averaging over a sphere), 
+        so an e- with Lorentz factor :math:`\gamma` produces:
 
         .. math::        
-            0.75 (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} (R_b/c) / V_b 
+            0.75\,(\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}}\,(R_b/c)\,/\,V_b 
 
-        of radiation 
-        we need to integrate over the electron spectrum  (and multiply back by V_b)
+        of radiation. We need to integrate over the electron spectrum  (and multiply back by V_b)
 
         .. math::        
-            0.75 \int n_e(\gamma) (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}}  R_b  \mathrm{d}\gamma
+            0.75\,\int n_e(\gamma) (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}}  R_b  \mathrm{d}\gamma
+        
         so
 
         .. math::        
-            u_{\mathrm{synch}} = \sigma_T  U_B  R_b  \int n_e(\gamma) * \gamma^2 \mathrm{d}\gamma
+            u_{\mathrm{synch}} = \sigma_T  U_B  R_b  \int n_e(\gamma) \, \gamma^2 \mathrm{d}\gamma
 
         WARNING: this does not take into account SSA!
         """
-        return (
+        u_ph = (
             sigma_T.cgs
-            * self.u_B
+            * self.U_B
             * self.R_b
             * np.trapz(np.power(self.gamma, 2) * self.n_e(self.gamma), self.gamma)
         )
+        return u_ph.to("erg cm-3")
 
-    def plot_n_e(self, gamma_power=0):
+    def plot_n_e(self, ax=None, gamma_power=0):
         """plot the  electron distribution
         
         Parameters 
         ----------
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            Axis
         gamma_power : float
             power of gamma to raise the electron distribution
         """
-        plt.loglog(self.gamma, np.power(self.gamma, gamma_power) * self.n_e(self.gamma))
-        plt.xlabel(r"$\gamma$")
+        ax = plt.gca() if ax is None else ax
+
+        ax.loglog(self.gamma, np.power(self.gamma, gamma_power) * self.n_e(self.gamma))
+        ax.xlabel(r"$\gamma$")
         if gamma_power == 0:
-            plt.ylabel(r"$n_e(\gamma)\,/\,{\rm cm}^{-3}$")
+            ax.ylabel(r"$n_e(\gamma)\,/\,{\rm cm}^{-3}$")
         else:
-            plt.ylabel(
+            ax.ylabel(
                 r"$\gamma^{"
                 + str(gamma_power)
                 + r"}$"
                 + r"$\,n_e(\gamma)\,/\,{\rm cm}^{-3}$"
             )
-        plt.show()
+        return ax

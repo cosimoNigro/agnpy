@@ -41,10 +41,10 @@ def nu_B(B):
 class Synchrotron:
     """Class for synchrotron radiation computation
 
-	Parameters
-	----------
-	blob : :class:`~agnpy.emission_region.Blob`
-		emitting region and electron distribution 
+    Parameters
+    ----------
+    blob : :class:`~agnpy.emission_region.Blob`
+        emitting region and electron distribution 
         
     ssa : bool
         whether or not to consider synchrotron self absorption (SSA).    
@@ -172,11 +172,11 @@ class Synchrotron:
 
         .. math::
             \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
-		
+
         Eq. 21 in [Finke2008]_.
 
-		Parameters
-		----------
+        Parameters
+        ----------
         nu : :class:`~astropy.units.Quantity`
             array of frequencies, in Hz, to compute the sed, **note** these are 
             observed frequencies (observer frame).
@@ -194,3 +194,14 @@ class Synchrotron:
         )
         sed = prefactor * self.com_sed_emissivity(epsilon_prime)
         return sed.to("erg cm-2 s-1")
+
+    def sed_peak_flux(nu):
+        """provided a grid of frequencies nu, returns the peak flux of the SED
+        """
+        return self.sed_flux(nu).max()
+
+    def sed_peak_nu(nu):
+        """provided a grid of frequencies nu, returns the frequency at which the SED peaks
+        """
+        idx_max = self.sed_flux(nu).argmax()
+        return nu[idx_max] 
