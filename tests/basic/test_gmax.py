@@ -7,7 +7,7 @@ import astropy.constants as const
 from astropy.coordinates import Distance
 import matplotlib.pyplot as plt
 
-plt.ion()
+# plt.ion()
 import sys
 
 sys.path.append("../../")
@@ -118,13 +118,13 @@ delta_D = 1.02
 z = 0.01
 blob1 = Blob(r0, z, delta_D, Gamma, B0 * 10.0, norm, spectrum_dict, xi=xi)
 
-u_dens_synchr = blob1.u_dens_synchr  # energy density of synchr photons
+u_ph_synch = blob1.u_ph_synch  # energy density of synchr photons
 # u_dens * V_b is the total energy in the blob,
 # photons spend an average time of 0.75 * R_b/c in the blob
 # so the total energy flux is:
 # total energy in blob / (average time  * 4 pi dist^2)
 energy_flux_predicted = (
-    blob1.u_dens_synchr
+    blob.u_ph_synch
     * blob1.V_b
     / (0.75 * blob1.R_b / const.c.cgs)
     * np.power(blob1.d_L, -2)
@@ -143,7 +143,7 @@ print(
 ssc1 = SynchrotronSelfCompton(blob1, synch1)
 ssc1_sed = ssc1.sed_flux(nu)
 
-print("UB/Usynch = ", blob1.u_B / u_dens_synchr)
+print("UB/Usynch = ", blob1.U_B / u_ph_synch)
 print(
     "SED_synch/SED_SSC=",
     energy_flux_sim / np.trapz(ssc1_sed / (nu * const.h.cgs), nu * const.h.cgs),

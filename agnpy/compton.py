@@ -237,6 +237,17 @@ class SynchrotronSelfCompton:
         sed = prefactor * self.com_sed_emissivity(epsilon_prime)
         return sed.to("erg cm-2 s-1")
 
+    def sed_peak_flux(nu):
+        """provided a grid of frequencies nu, returns the peak flux of the SED
+        """
+        return self.sed_flux(nu).max()
+
+    def sed_peak_nu(nu):
+        """provided a grid of frequencies nu, returns the frequency at which the SED peaks
+        """
+        idx_max = self.sed_flux(nu).argmax()
+        return nu[idx_max]
+
 
 class ExternalCompton:
     """class for External Compton radiation computation
@@ -474,3 +485,14 @@ class ExternalCompton:
             return self._sed_flux_shell_blr(nu)
         if self.target.type == "RingDustTorus":
             return self._sed_flux_ring_torus(nu)
+
+    def sed_peak_flux(nu):
+        """provided a grid of frequencies nu, returns the peak flux of the SED
+        """
+        return self.sed_flux(nu).max()
+
+    def sed_peak_nu(nu):
+        """provided a grid of frequencies nu, returns the frequency at which the SED peaks
+        """
+        idx_max = self.sed_flux(nu).argmax()
+        return nu[idx_max]
