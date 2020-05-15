@@ -204,4 +204,4 @@ class Synchrotron:
         """provided a grid of frequencies nu, returns the frequency at which the SED peaks
         """
         idx_max = self.sed_flux(nu).argmax()
-        return nu[idx_max] 
+        return nu[idx_max]

@@ -66,5 +66,5 @@ master_doc = "index"
 intersphinx_mapping = {
     "numpy": ("https://numpy.org", None),
     "astropy": ("http://docs.astropy.org/en/latest/", None),
-    "matplotlib": ("https://matplotlib.org", None)
+    "matplotlib": ("https://matplotlib.org", None),
 }

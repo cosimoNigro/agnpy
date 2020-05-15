@@ -7,7 +7,7 @@ import astropy.constants as const
 from astropy.coordinates import Distance
 import matplotlib.pyplot as plt
 
-#plt.ion()
+# plt.ion()
 import sys
 
 sys.path.append("../../")
