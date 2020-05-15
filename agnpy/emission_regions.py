@@ -279,7 +279,7 @@ class Blob:
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
         )
-        return (prefactor * self.u_B).to("erg s-1")
+        return (prefactor * self.U_B).to("erg s-1")
 
     @property
     def gamma_max_larmor(self):
