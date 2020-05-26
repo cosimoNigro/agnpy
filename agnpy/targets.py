@@ -130,16 +130,15 @@ class SSDisk:
         self.R_tilde = np.linspace(self.R_in_tilde, self.R_out_tilde)
 
     def __str__(self):
-        summary = (
-            f"* Shakura Sunyaev accretion disk:\n"
-            + f" - M_BH (central black hole mass): {self.M_BH.cgs:.2e}\n"
-            + f" - L_disk (disk luminosity): {self.L_disk.cgs:.2e}\n"
-            + f" - eta (accretion efficiency): {self.eta:.2e}\n"
-            + f" - dot(m) (mass accretion rate): {self.m_dot.cgs:.2e}\n"
-            + f" - R_in (disk inner radius): {self.R_in.cgs:.2e}\n"
-            + f" - R_out (disk inner radius): {self.R_out.cgs:.2e}"
-        )
-        return summary
+        return (
+                f"* Shakura Sunyaev accretion disk:\n"
+                + f" - M_BH (central black hole mass): {self.M_BH.cgs:.2e}\n"
+                + f" - L_disk (disk luminosity): {self.L_disk.cgs:.2e}\n"
+                + f" - eta (accretion efficiency): {self.eta:.2e}\n"
+                + f" - dot(m) (mass accretion rate): {self.m_dot.cgs:.2e}\n"
+                + f" - R_in (disk inner radius): {self.R_in.cgs:.2e}\n"
+                + f" - R_out (disk inner radius): {self.R_out.cgs:.2e}"
+            )
 
     def mu_from_r_tilde(self, r_tilde, size=100):
         """array of cosine angles, spanning from :math:`R_{\mathrm{in}}` to 
@@ -302,14 +301,13 @@ class SphericalShellBLR:
         self.R_line = R_line
 
     def __str__(self):
-        summary = (
+        return (
             f"* Spherical Shell Broad Line Region:\n"
             + f" - L_disk (accretion disk luminosity): {self.L_disk.cgs:.2e}\n"
             + f" - xi_line (fraction of the disk radiation reprocessed by the BLR): {self.xi_line:.2e}\n"
             + f" - line (type of emitted line): {self.line}, lambda = {self.lambda_line.cgs:.2f}\n"
             + f" - R_line (radius of the BLR shell): {self.R_line.cgs:.2e}\n"
         )
-        return summary
 
     def u_ph(self, r):
         """Density of radiation produced by the BLR at the distance r along the 
@@ -368,14 +366,13 @@ class RingDustTorus:
             self.R_dt = R_dt
 
     def __str__(self):
-        summary = (
+        return (
             f"* Ring Dust Torus:\n"
             + f" - L_disk (accretion disk luminosity): {self.L_disk.cgs:.2e}\n"
             + f" - xi_dt (fraction of the disk radiation reprocessed by the torus): {self.xi_dt:.2e}\n"
             + f" - T_dt (temperature of the dust torus): {self.T_dt:.2e}\n"
             + f" - R_dt (radius of the torus): {self.R_dt.cgs:.2e}\n"
         )
-        return summary
 
     def u_ph(self, r):
         """Density of radiation produced by the Torus at the distance r along the 
