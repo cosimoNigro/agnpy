@@ -118,7 +118,7 @@ class Blob:
         # grid of Lorentz factors for integration in the external frame
         self.gamma_to_integrate = np.logspace(1, 9, self.gamma_size)
         # model for the electron density
-        self.n_e = self.set_n_e(
+        self.set_n_e(
             self.spectrum_norm, self.spectrum_dict, self.spectrum_norm_type
         )
 
@@ -130,7 +130,6 @@ class Blob:
             "BrokenPowerLaw2": spectra.BrokenPowerLaw2,
         }
         spectrum_type = spectrum_dict["type"]
-        n_e_model = model_dict[spectrum_type]()
 
         if spectrum_norm_type != "integral" and spectrum_norm.unit in (
             u.Unit("erg"),
@@ -145,30 +144,28 @@ class Blob:
         if spectrum_norm.unit == u.Unit("cm-3"):
 
             if spectrum_norm_type == "integral":
-                n_e_model = model_dict[spectrum_type].from_normalised_density(
+                self.n_e = model_dict[spectrum_type].from_normalised_density(
                     spectrum_norm, **spectrum_dict["parameters"]
                 )
             elif spectrum_norm_type == "differential":
-                n_e_model = model_dict[spectrum_type](
+                self.n_e = model_dict[spectrum_type](
                     spectrum_norm, **spectrum_dict["parameters"]
                 )
             elif spectrum_norm_type == "gamma=1":
-                n_e_model = model_dict[spectrum_type].from_norm_at_gamma_1(
+                self.n_e = model_dict[spectrum_type].from_norm_at_gamma_1(
                     spectrum_norm, **spectrum_dict["parameters"]
                 )
 
         elif spectrum_norm.unit == u.Unit("erg cm-3"):
-            n_e_model = model_dict[spectrum_type].from_normalised_u_e(
+            self.n_e = model_dict[spectrum_type].from_normalised_u_e(
                 spectrum_norm, **spectrum_dict["parameters"]
             )
 
         elif spectrum_norm.unit == u.Unit("erg"):
             u_e = (spectrum_norm / self.V_b).to("erg cm-3")
-            n_e_model = model_dict[spectrum_type].from_normalised_u_e(
+            self.n_e = model_dict[spectrum_type].from_normalised_u_e(
                 u_e, **spectrum_dict["parameters"]
             )
-
-        return n_e_model
 
     def __str__(self):
         """printable summary of the blob"""
@@ -279,7 +276,7 @@ class Blob:
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
         )
-        return (prefactor * self.u_B).to("erg s-1")
+        return (prefactor * self.U_B).to("erg s-1")
 
     @property
     def gamma_max_larmor(self):
