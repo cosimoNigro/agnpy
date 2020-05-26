@@ -258,7 +258,7 @@ class BrokenPowerLaw:
         """sets :math:`k_e` such that `norm` = :math:`n_e(\gamma=1)`."""
         k_e = norm.to("cm-3") * np.power(gamma_b, -p1)
         print(
-            f"normalising broken power-law to value {k_e:.2e} at gamma = 1, and {norm: .2e} at gamma = gamma_b = {gamma_b:.2e}"
+            f"normalising broken power-law to value {norm:.2e} at gamma = 1, and {k_e: .2e} at gamma_b = {gamma_b:.2e}"
         )
         return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
 
