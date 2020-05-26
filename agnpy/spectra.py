@@ -109,15 +109,14 @@ class PowerLaw:
         return _power_law(gamma, self.k_e, self.p, self.gamma_min, self.gamma_max)
 
     def __str__(self):
-        summary = (
-            f"* electron spectrum\n"
-            + f" - power law\n"
-            + f" - k_e: {self.k_e:.2e}\n"
-            + f" - p: {self.p:.2f}\n"
-            + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}\n"
-        )
-        return summary
+        return (
+                f"* electron spectrum\n"
+                + f" - power law\n"
+                + f" - k_e: {self.k_e:.2e}\n"
+                + f" - p: {self.p:.2f}\n"
+                + f" - gamma_min: {self.gamma_min:.2e}\n"
+                + f" - gamma_max: {self.gamma_max:.2e}\n"
+            )
 
     @classmethod
     def from_normalised_u_e(cls, u_e, p, gamma_min, gamma_max):
@@ -212,17 +211,16 @@ class BrokenPowerLaw:
         )
 
     def __str__(self):
-        summary = (
-            f"* electron spectrum\n"
-            + f" - broken power law\n"
-            + f" - k_e: {self.k_e:.2e}\n"
-            + f" - p1: {self.p1:.2f}\n"
-            + f" - p2: {self.p2:.2f}\n"
-            + f" - gamma_b: {self.gamma_b:.2e}\n"
-            + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}\n"
-        )
-        return summary
+        return (
+                f"* electron spectrum\n"
+                + f" - broken power law\n"
+                + f" - k_e: {self.k_e:.2e}\n"
+                + f" - p1: {self.p1:.2f}\n"
+                + f" - p2: {self.p2:.2f}\n"
+                + f" - gamma_b: {self.gamma_b:.2e}\n"
+                + f" - gamma_min: {self.gamma_min:.2e}\n"
+                + f" - gamma_max: {self.gamma_max:.2e}\n"
+            )
 
     @classmethod
     def from_normalised_u_e(cls, u_e, p1, p2, gamma_b, gamma_min, gamma_max):
@@ -332,17 +330,16 @@ class BrokenPowerLaw2:
         )
 
     def __str__(self):
-        summary = (
-            f"* electron spectrum\n"
-            + f" - broken power law 2\n"
-            + f" - k_e: {self.k_e:.2e}\n"
-            + f" - p1: {self.p1:.2f}\n"
-            + f" - p2: {self.p2:.2f}\n"
-            + f" - gamma_b: {self.gamma_b:.2e}\n"
-            + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}\n"
-        )
-        return summary
+        return (
+                f"* electron spectrum\n"
+                + f" - broken power law 2\n"
+                + f" - k_e: {self.k_e:.2e}\n"
+                + f" - p1: {self.p1:.2f}\n"
+                + f" - p2: {self.p2:.2f}\n"
+                + f" - gamma_b: {self.gamma_b:.2e}\n"
+                + f" - gamma_min: {self.gamma_min:.2e}\n"
+                + f" - gamma_max: {self.gamma_max:.2e}\n"
+            )
 
     @classmethod
     def from_normalised_u_e(cls, u_e, p1, p2, gamma_b, gamma_min, gamma_max):

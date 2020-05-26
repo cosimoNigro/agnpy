@@ -24,8 +24,7 @@ def R(x):
     term_1_denom = np.sqrt(1 + 3.4 * np.power(x, 2 / 3))
     term_2_num = 1 + 2.21 * np.power(x, 2 / 3) + 0.347 * np.power(x, 4 / 3)
     term_2_denom = 1 + 1.353 * np.power(x, 2 / 3) + 0.217 * np.power(x, 4 / 3)
-    value = term_1_num / term_1_denom * term_2_num / term_2_denom * np.exp(-x)
-    return value
+    return term_1_num / term_1_denom * term_2_num / term_2_denom * np.exp(-x)
 
 
 def U_B(B):

@@ -341,6 +341,18 @@ class Blob:
                 3 * self.xi * e * self.B_cgs / (4 * sigma_T * self.u_ph_synch)
             ).to_value("")
 
+    def gamma_max_EC_DT(self, dt, r=0 * u.cm):
+        r"""Simple estimation of maximum Lorentz factor of electrons comparing the acceleration time scale 
+        with the EC energy loss (in Thomson range, see B&G 1970), like in gamma_max_SSC 
+        WARNING: assumes Thomson regime
+
+        .. math::            
+            \gamma_{\mathrm{max}} = \sqrt{\frac{3 \xi e B }{ \sigma_T U'_\mathrm{ext}}} 
+        """
+        return np.sqrt(
+                3 * self.xi * e * self.B_cgs / (4 * sigma_T * dt.u_ph(r, self))
+            ).to_value("")
+
     @property
     def gamma_break_synch(self):
         r"""Simple estimation of the cooling break of electrons comparing 
@@ -373,6 +385,17 @@ class Blob:
             T_{\mathrm{SSC}} &= T_{\mathrm{bal}} \Rightarrow \gamma_b = 3  m_e c^2 / 4 \sigma_T U_{\mathrm{SSC}} R_b 
         """
         return (3 * mec2 / (4 * sigma_T * self.u_ph_synch * self.R_b)).to("").value
+
+    def gamma_break_EC_DT(self, dt, r=0 * u.cm):
+        r"""Simple estimation of the cooling break of electrons comparing 
+        EC time scale (see B&G 1970) with the ballistic time scale, like in gamma_break_SSC 
+        WARNING: assumes Thomson regime
+
+        .. math::            
+            \gamma_b = 3  m_e c^2 / 4 \sigma_T U'_{\mathrm{ext}} R_b 
+        """
+        #        u_ext=np.power(self.Gamma,2) * np.power(1-mu*self.Beta,2) * dt.xi_dt*dt.L_disk/(4*np.pi*np.power(d,2) * c)
+        return (3 * mec2 / (4 * sigma_T * dt.u_ph(r, self) * self.R_b)).to("").value
 
     @property
     def U_B(self):
