@@ -118,9 +118,7 @@ class Blob:
         # grid of Lorentz factors for integration in the external frame
         self.gamma_to_integrate = np.logspace(1, 9, self.gamma_size)
         # model for the electron density
-        self.set_n_e(
-            self.spectrum_norm, self.spectrum_dict, self.spectrum_norm_type
-        )
+        self.set_n_e(self.spectrum_norm, self.spectrum_dict, self.spectrum_norm_type)
 
     def set_n_e(self, spectrum_norm, spectrum_dict, spectrum_norm_type):
         """set the spectrum :math:`n_e` for the blob"""

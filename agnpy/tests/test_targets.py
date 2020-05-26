@@ -17,7 +17,7 @@ R_OUT = R_OUT_G_UNITS * R_G
 DISK = SSDisk(M_BH, L_DISK, ETA, R_IN, R_OUT)
 
 # useful for checks
-L_EDD = 15.12 * 1e46 * u.Unit("erg s-1") 
+L_EDD = 15.12 * 1e46 * u.Unit("erg s-1")
 M_DOT = 2.019 * 1e26 * u.Unit("g s-1")
 
 RTOL = 1e-2
@@ -37,17 +37,14 @@ class TestDisk:
 
     @pytest.mark.parametrize(
         "R_in, R_out, R_g_units",
-        [
-            (R_IN_G_UNITS, R_OUT_G_UNITS, False),
-            (R_IN, R_OUT, True),
-        ],
+        [(R_IN_G_UNITS, R_OUT_G_UNITS, False), (R_IN, R_OUT, True),],
     )
     def test_R_in_R_out_units(self, R_in, R_out, R_g_units):
         """check if a TypeError is raised when passing R_in and R_out with 
         (without) units but specifiying R_g_units True (False)"""
         with pytest.raises(TypeError):
             disk = SSDisk(M_BH, L_DISK, ETA, R_in, R_out, R_g_units)
-    
+
     def test_R_g(self):
         assert u.allclose(DISK.R_g, R_G, rtol=RTOL)
 
@@ -56,7 +53,7 @@ class TestDisk:
         mu_min_expected = 0.050
         mu_max_expected = 0.858
         assert np.allclose(mu[0], mu_min_expected, rtol=RTOL)
-        assert np.allclose(mu[-1], mu_max_expected, rtol=RTOL) 
+        assert np.allclose(mu[-1], mu_max_expected, rtol=RTOL)
 
     def test_phi_disk(self):
         R_tilde = 10
@@ -74,7 +71,7 @@ class TestDisk:
         R_tilde = 10
         epsilon_expected = 2.7e-5
         assert np.allclose(DISK.epsilon(R_tilde), epsilon_expected, rtol=RTOL)
-    
+
     def test_epsilon_mu(self):
         r_tilde = 10
         # assume R_tilde = 10 as before
@@ -88,8 +85,7 @@ class TestDisk:
         phi_expected = 0.225
         # Eq. 64 [Dermer2009]
         T_expected = np.power(
-            3 * G * M_BH * M_DOT / (8 * np.pi * np.power(R, 3) * sigma_sb),
-            1 / 4
+            3 * G * M_BH * M_DOT / (8 * np.pi * np.power(R, 3) * sigma_sb), 1 / 4
         ).to("K")
         assert u.allclose(DISK.T(R_tilde), T_expected, rtol=RTOL)
 
@@ -98,4 +94,3 @@ class TestDisk:
         epsilon = DISK.epsilon(R_tilde)
         Theta = DISK.Theta(R_tilde)
         assert np.allclose(epsilon, 2.7 * Theta, rtol=RTOL)
-    
