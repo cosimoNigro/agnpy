@@ -38,8 +38,7 @@ def isotropic_kernel(gamma, epsilon, epsilon_s):
     gamma_e = 4 * gamma * epsilon
     q = (epsilon_s / gamma) / (gamma_e * (1 - epsilon_s / gamma))
     q_min = 1 / (4 * np.power(gamma, 2))
-    values = np.where((q_min <= q) * (q <= 1), F_c(q, gamma_e), 0)
-    return values
+    return np.where((q_min <= q) * (q <= 1), F_c(q, gamma_e), 0)
 
 
 def cos_psi(mu_s, mu, phi):
@@ -101,8 +100,7 @@ def x_re_shell(mu, R_re, r):
     r : :class:`~astropy.units.Quantity`
         height of the emission region in the jet
     """
-    value = np.sqrt(np.power(R_re, 2) + np.power(r, 2) - 2 * r * R_re * mu)
-    return value
+    return np.sqrt(np.power(R_re, 2) + np.power(r, 2) - 2 * r * R_re * mu)
 
 
 def x_re_ring(R_re, r):
