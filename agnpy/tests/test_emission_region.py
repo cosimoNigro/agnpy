@@ -21,13 +21,13 @@ DELTA_D = 10
 GAMMA = 10
 B = 0.1 * u.G
 PWL_BLOB = Blob(R_B, Z, DELTA_D, GAMMA, B, SPECTRUM_NORM, PWL_IDX_2_DICT)
-# parameters useful for checks
+# useful for checks
 BETA = 1 - 1 / np.power(GAMMA, 2)
 V_B = 4 / 3 * np.pi * np.power(R_B, 3)
 
 
 class TestBlob:
-    """test suite for the Blob emission region"""
+    """class grouping all tests related to the Blob emission region"""
 
     def test_default_norm_type(self):
         """the default norm type should be 'integral'"""

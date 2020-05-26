@@ -101,7 +101,7 @@ class SSDisk:
         # fraction of the Eddington luminosity at which the disk is accreting
         self.l_Edd = (self.L_disk / self.L_Edd).to_value("")
         self.eta = eta
-        self.m_dot = self.L_disk / (self.eta * np.power(c, 2))
+        self.m_dot = (self.L_disk / (self.eta * np.power(c, 2))).to("g s-1")
         # gravitational radius
         self.R_g = (G * self.M_BH / np.power(c, 2)).to("cm")
         if R_g_units:
