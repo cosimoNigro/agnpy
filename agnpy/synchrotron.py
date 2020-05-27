@@ -194,12 +194,12 @@ class Synchrotron:
         sed = prefactor * self.com_sed_emissivity(epsilon_prime)
         return sed.to("erg cm-2 s-1")
 
-    def sed_peak_flux(nu):
+    def sed_peak_flux(self, nu):
         """provided a grid of frequencies nu, returns the peak flux of the SED
         """
         return self.sed_flux(nu).max()
 
-    def sed_peak_nu(nu):
+    def sed_peak_nu(self, nu):
         """provided a grid of frequencies nu, returns the frequency at which the SED peaks
         """
         idx_max = self.sed_flux(nu).argmax()
