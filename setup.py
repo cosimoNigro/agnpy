@@ -18,6 +18,6 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    install_requires=["astropy", "numpy", "matplotlib"],
+    install_requires=["astropy", "numpy", "scipy", "matplotlib"],
     python_requires=">=3.6",
 )
