@@ -6,7 +6,8 @@ Modelling Active Galactic Nuclei radiative processes with python.
 
 ## documentation and quickstart
 You are invited to check the documentation at https://agnpy.readthedocs.io/en/latest/.    
-To get familiar with the code you can run the notebooks in `tutorials`.
+To get familiar with the code you can run the notebooks in the `tutorials` section
+of the documentation.
 
 ## dependencies
 The only dependencies are:
@@ -23,3 +24,6 @@ The code is available in the [python package index](https://pypi.org/project/agn
 ```bash
 pip install agnpy
 ```
+
+## shields
+![](https://github.com/cosimoNigro/agnpy/workflows/test.yaml/badge.svg)
