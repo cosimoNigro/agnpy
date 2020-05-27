@@ -26,4 +26,4 @@ pip install agnpy
 ```
 
 ## shields
-![](https://github.com/cosimoNigro/agnpy/.github/workflows/test.yml/badge.svg)
+![](https://github.com/cosimoNigro/agnpy/.github/workflows/CI%20test/badge.svg)
