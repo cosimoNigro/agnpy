@@ -27,3 +27,7 @@ pip install agnpy
 
 ## shields
 ![](https://github.com/cosimoNigro/agnpy/workflows/CI%20test/badge.svg)
+
+![](https://codecov.io/gh/cosimoNigro/agnpy/branch/master/graph/badge.svg)
+
+![](http://img.shields.io/pypi/v/agnpy.svg?text=version)
