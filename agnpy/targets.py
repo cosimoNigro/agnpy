@@ -43,21 +43,28 @@ lines_dictionary = {
 }
 
 
-__all__ = ["SSDisk", "SphericalShellBLR", "RingDustTorus", "print_lines_list"]
+__all__ = [
+    "CMB",
+    "SSDisk",
+    "PointSourceBehindJet",
+    "SphericalShellBLR",
+    "RingDustTorus",
+    "print_lines_list",
+]
 
 
 def print_lines_list():
-    """Print the list of the available spectral lines.
+    r"""Print the list of the available spectral lines.
     The dictionary with the possible emission lines is taken from Table 5 in 
     [Finke2016]_ and contains the value of the line wavelength and the ratio of 
-    its radius to the radius of the :math:`H_{\\beta}` shell, not used at the moment.
+    its radius to the radius of the :math:`H_{\beta}` shell, not used at the moment.
     """
     for line in lines_dictionary.keys():
         print(f"{line}: {lines_dictionary[line]}")
 
 
 def I_epsilon_bb(epsilon, Theta):
-    """Black-Body intensity :math:`I_{\\nu}^{bb}`, Eq. 5.15 of [DermerMenon2009]_.
+    r"""Black-Body intensity :math:`I_{\nu}^{bb}`, Eq. 5.15 of [DermerMenon2009]_.
 
     Parameters
     ----------
@@ -70,6 +77,73 @@ def I_epsilon_bb(epsilon, Theta):
     denum = np.power(lambda_c, 3) * (np.exp(epsilon / Theta) - 1)
     I = num / denum
     return I.to("erg cm-2 s-1")
+
+
+class CMB:
+    """Cosmic Microwave Background radiation, approximated as an isotropic
+    monochromatic target.
+    
+    Parameters
+    ----------
+    z : float
+        redshift at which the CMB is considered
+    """
+
+    def __init__(self, z):
+        self.name = "Cosmic Microwave Background Radiation"
+        a = 7.5657 * 1e-15 * u.Unit("erg cm-3 K-4")  # radiation constant
+        T = 2.72548 * u.K
+        self.u_0 = (a * np.power(T, 4)).to("erg cm-3") * np.power(1 + z, 4)
+        self.epsilon_0 = (2.7 * k_B * T / mec2).to_value("") * (1 + z)
+
+    def u(self, blob=None):
+        """integral energy density of the CMB
+
+        Parameters
+        ----------
+        blob : :class:`~agnpy.emission_regions.Blob`
+            if provided, the energy density is computed in a reference frame 
+            comvoing with the blob
+        """
+        if blob:
+            return u_0 * np.power(blob.Gamma, 2) * (1 + np.power(blob.Beta, 2) / 3)
+        else:
+            return self.u_0
+
+
+class PointSourceBehindJet:
+    """Monochromatic point source behind the jet.
+    
+    Parameters
+    ----------
+    L_0 : :class:`~astropy.units.Quantity`
+        luminosity of the source
+    epsilon_0 : float
+        dimensionless monochromatic energy of the source
+    """
+
+    def __init__(self, L_0, epsilon_0):
+        self.name = "Monochromatic Point Source Behind the Jet"
+        self.L_0 = L_0
+        self.epsilon_0 = epsilon_0
+
+    def u(self, r, blob=None):
+        """integral energy density of the point source at distance r along the 
+        jet axis
+
+        Parameters
+        ----------
+        r : :class:`~astropy.units.Quantity`
+            array of distances along the jet axis
+        blob : :class:`~agnpy.emission_regions.Blob`
+            if provided, the energy density is computed in a reference frame 
+            comvoing with the blob
+        """
+        u_0 = (self.L_0 / (4 * np.pi * c * np.power(r, 2))).to("erg cm-3")
+        if blob:
+            return u_0 / (np.power(blob.Gamma, 2) * np.power(1 + blob.Beta, 2))
+        else:
+            return u_0
 
 
 class SSDisk:
@@ -92,7 +166,7 @@ class SSDisk:
     """
 
     def __init__(self, M_BH, L_disk, eta, R_in, R_out, R_g_units=False):
-        self.type = "SSDisk"
+        self.name = "Shakura Sunyaev Accretion Disk"
         # masses and luminosities
         self.M_BH = M_BH
         self.M_8 = (M_BH / (1e8 * M_sun)).to_value("")
@@ -131,26 +205,25 @@ class SSDisk:
 
     def __str__(self):
         return (
-                f"* Shakura Sunyaev accretion disk:\n"
-                + f" - M_BH (central black hole mass): {self.M_BH.cgs:.2e}\n"
-                + f" - L_disk (disk luminosity): {self.L_disk.cgs:.2e}\n"
-                + f" - eta (accretion efficiency): {self.eta:.2e}\n"
-                + f" - dot(m) (mass accretion rate): {self.m_dot.cgs:.2e}\n"
-                + f" - R_in (disk inner radius): {self.R_in.cgs:.2e}\n"
-                + f" - R_out (disk inner radius): {self.R_out.cgs:.2e}"
-            )
+            f"* Shakura Sunyaev accretion disk:\n"
+            + f" - M_BH (central black hole mass): {self.M_BH.cgs:.2e}\n"
+            + f" - L_disk (disk luminosity): {self.L_disk.cgs:.2e}\n"
+            + f" - eta (accretion efficiency): {self.eta:.2e}\n"
+            + f" - dot(m) (mass accretion rate): {self.m_dot.cgs:.2e}\n"
+            + f" - R_in (disk inner radius): {self.R_in.cgs:.2e}\n"
+            + f" - R_out (disk inner radius): {self.R_out.cgs:.2e}"
+        )
 
     def mu_from_r_tilde(self, r_tilde, size=100):
-        """array of cosine angles, spanning from :math:`R_{\mathrm{in}}` to 
-        :math:`R_{\mathrm{out}}`, viewed from a given distance :math:`\\tilde{r}` 
+        r"""array of cosine angles, spanning from :math:`R_{\mathrm{in}}` to 
+        :math:`R_{\mathrm{out}}`, viewed from a given distance :math:`\tilde{r}` 
         along the jet axis, Eq. 72 and 73 in [Finke2016]_."""
         mu_min = 1 / np.sqrt(1 + np.power((self.R_out_tilde / r_tilde), 2))
         mu_max = 1 / np.sqrt(1 + np.power((self.R_in_tilde / r_tilde), 2))
         return np.linspace(mu_min, mu_max, size)
 
     def phi_disk(self, R_tilde):
-        """Radial dependency of disk temperature
-        Eq. 63 in [Dermer2009]_.
+        """Radial dependency of disk temperature, Eq. 63 in [Dermer2009]_.
 
         Parameters
         ----------
@@ -160,59 +233,72 @@ class SSDisk:
         return 1 - np.sqrt(self.R_in_tilde / R_tilde)
 
     def phi_disk_mu(self, mu, r_tilde):
-        """same as phi_disk but computed with cosine of zenith mu and normalised 
-        distance from the black hole :math:`\\tilde{r}` Eq. 67 in [Dermer2009]_."""
+        r"""same as phi_disk but computed with cosine of zenith mu and normalised 
+        distance from the black hole :math:`\tilde{r}` Eq. 67 in [Dermer2009]_."""
         R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
         return self.phi_disk(R_tilde)
 
     def epsilon(self, R_tilde):
-        """monochromatic approximation for the mean photon energy at radius 
-        :math:`\\tilde{R}` of the accretion disk. Eq. 65 in [Dermer2009]_."""
+        r"""monochromatic approximation for the mean photon energy at radius 
+        :math:`\tilde{R}` of the accretion disk. Eq. 65 in [Dermer2009]_."""
         xi = np.power(self.l_Edd / (self.M_8 * self.eta), 1 / 4)
         return 2.7 * 1e-4 * xi * np.power(R_tilde, -3 / 4)
 
     def epsilon_mu(self, mu, r_tilde):
-        """same as epsilon but computed with cosine of zenith mu and distance
-        from the black hole :math:`\\tilde{r}`. Eq. 67 in [Dermer2009]_."""
+        r"""same as epsilon but computed with cosine of zenith mu and distance
+        from the black hole :math:`\tilde{r}`. Eq. 67 in [Dermer2009]_."""
         R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
         return self.epsilon(R_tilde)
 
     def T(self, R_tilde):
-        """Temperature of the disk at distance :math:`\\tilde{R}`. 
+        r"""Temperature of the disk at distance :math:`\tilde{R}`. 
         Eq. 64 in [Dermer2009]_."""
         value = mec2 / (2.7 * k_B) * self.epsilon(R_tilde)
         return value.to("K")
 
     def Theta(self, R_tilde):
-        """Dimensionless temperature of the black body at distance :math:`\\tilde{R}`"""
+        r"""Dimensionless temperature of the black body at distance :math:`\tilde{R}`"""
         theta = k_B * self.T(R_tilde) / mec2
         return theta.to_value("")
 
-    def u_ph(self, r):
-        """Density of radiation produced by the Disk at the distance r along the 
-        jet axis. Integral over the solid angle of Eq. 69 in [Dermer2009]_.
+    def u(self, r, blob=None):
+        """integral energy density of radiation produced by the Disk at the distance 
+        r along the jet axis. Integral over the solid angle of Eq. 69 in [Dermer2009]_.
         
         Parameters
         ----------
         r : :class:`~astropy.units.Quantity`
-            distance along the jet axis
+            array of distances along the jet axis
+        blob : :class:`~agnpy.emission_regions.Blob`
+            if provided, the energy density is computed in a reference frame 
+            comvoing with the blob
         """
         r_tilde = (r / self.R_g).to_value("")
         mu = self.mu_from_r_tilde(r_tilde)
-        integrand = np.power(np.power(mu, -2) - 1, -3 / 2) * self.phi_disk_mu(
-            mu, r_tilde
+        prefactor = (
+            3
+            * self.l_Edd
+            * self.L_Edd
+            * self.R_g
+            / (8 * np.pi * c * self.eta * np.power(r, 3))
         )
-        prefactor_denum = (
-            16
-            * np.power(np.pi, 2)
-            * c
-            * self.eta
-            * np.power(self.R_g, 2)
-            * np.power(r_tilde, 3)
+        integrand = (
+            1
+            / mu
+            * np.power(np.power(mu, -2) - 1, -3 / 2)
+            * self.phi_disk_mu(mu, r_tilde)
         )
-        prefactor = 3 * self.L_disk / prefactor_denum
-        density = prefactor * np.trapz(integrand, mu, axis=0)
-        return density.to("erg cm-3")
+        if blob:
+            mu_prime = (mu - blob.Beta) / (1 - blob.Beta * mu)
+            integrand_prefactor = 1 / (
+                np.power(blob.Gamma, 6)
+                * np.power(1 - blob.Beta * mu, 2)
+                * np.power(1 + blob.Beta * mu_prime, 4)
+            )
+            integrand *= integrand_prefactor
+
+        integral = np.trapz(integrand, mu, axis=0)
+        return (prefactor * integral).to("erg cm-3")
 
     def sed_flux(self, nu, z):
         """Black Body SED generated by the SS Disk, considered as a 
@@ -309,7 +395,7 @@ class SphericalShellBLR:
             + f" - R_line (radius of the BLR shell): {self.R_line.cgs:.2e}\n"
         )
 
-    def u_ph(self, r):
+    def u(self, r, blob=None):
         """Density of radiation produced by the BLR at the distance r along the 
         jet axis. Integral over the solid angle of Eq. 80 in [Finke2016]_.
 
@@ -317,14 +403,26 @@ class SphericalShellBLR:
         ----------
         r : :class:`~astropy.units.Quantity`
             array of distances along the jet axis
+        blob : :class:`~agnpy.emission_regions.Blob`
+            if provided, the energy density is computed in a reference frame 
+            comvoing with the blob
         """
         mu = np.linspace(-1, 1)
         _mu = mu.reshape(mu.size, 1)
         _r = r.reshape(1, r.size)
-        x2 = np.power(_r, 2) + np.power(self.R_line, 2) - 2 * _r * self.R_line * _mu
-        integral = np.trapz(1 / x2, mu, axis=0)
-        prefactor = self.xi_line * self.L_disk / (np.power(4 * np.pi, 2) * c)
-        return (2 * np.pi * prefactor * integral).to("erg cm-3")
+        _x2 = np.power(_r, 2) + np.power(self.R_line, 2) - 2 * _r * self.R_line * _mu
+        prefactor = self.xi_line * self.L_disk / (8 * np.pi * c)
+        integrand = 1 / _x2
+        if blob:
+            _mu_star = np.sqrt(
+                1 - np.power(self.R_line, 2) / _x2 * np.power(1 - _mu, 2)
+            )
+            integrand_prefactor = np.power(blob.Gamma, 2) * np.power(
+                1 - blob.Beta * _mu_star, 2
+            )
+            integrand *= integrand_prefactor
+        integral = np.trapz(integrand, mu, axis=0)
+        return (prefactor * integral).to("erg cm-3")
 
 
 class RingDustTorus:
@@ -374,31 +472,25 @@ class RingDustTorus:
             + f" - R_dt (radius of the torus): {self.R_dt.cgs:.2e}\n"
         )
 
-    def u_ph(self, r, blob=None):
+    def u(self, r, blob=None):
         r"""Density of radiation produced by the Torus at the distance r along the 
         jet axis. Integral over the solid angle of Eq. 85 in [Finke2016]_
-
-        (Optional) transformation of EC radiation field to the blob's frame:
-        https://iopscience.iop.org/article/10.1086/341431/fulltext/ derived from Eq. 9
-
-        .. math::
-            \mu = r / d  \\
-            U'_{\mathrm{ext}}=\Gamma^2 (1-\mu \beta)^2 U_{\mathrm{ext}}
 
         Parameters
         ----------
         r : :class:`~astropy.units.Quantity`
             array of distances along the jet axis
-        blob : :class:`Blob`
-            if provided, the density is computed in blob's frame 
+        blob : :class:`~agnpy.emission_regions.Blob`
+            if provided, the energy density is computed in a reference frame 
+            comvoing with the blob
         """
         x2 = np.power(self.R_dt, 2) + np.power(r, 2)
-        prefactor = self.xi_dt * self.L_disk / (np.power(4 * np.pi, 2) * c)
-        if blob != None:
-            mu = (r / np.sqrt(x2)).to("")
-            prefactor *= np.power(blob.Gamma * (1 - mu * blob.Beta), 2)
-        #        return (2 * np.pi * prefactor * 1 / x2).to("erg cm-3")
-        return (4 * np.pi * prefactor * 1 / x2).to("erg cm-3")
+        x = np.sqrt(x2)
+        integral = self.xi_dt * self.L_disk / (4 * np.pi * c * x2)
+        if blob:
+            mu = (r / x).to_value("")
+            integral *= np.power(blob.Gamma * (1 - blob.Beta * mu), 2)
+        return integral.to("erg cm-3")
 
     def sed_flux(self, nu, z):
         """Black Body SED generated by the Dust Torus:
