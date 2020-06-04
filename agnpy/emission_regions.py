@@ -451,11 +451,11 @@ class Blob:
         ax = plt.gca() if ax is None else ax
 
         ax.loglog(self.gamma, np.power(self.gamma, gamma_power) * self.n_e(self.gamma))
-        ax.xlabel(r"$\gamma$")
+        ax.set_xlabel(r"$\gamma$")
         if gamma_power == 0:
-            ax.ylabel(r"$n_e(\gamma)\,/\,{\rm cm}^{-3}$")
+            ax.set_ylabel(r"$n_e(\gamma)\,/\,{\rm cm}^{-3}$")
         else:
-            ax.ylabel(
+            ax.set_ylabel(
                 r"$\gamma^{"
                 + str(gamma_power)
                 + r"}$"

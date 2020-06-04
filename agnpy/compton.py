@@ -1,6 +1,7 @@
 import numpy as np
 from astropy.constants import h, c, m_e, sigma_T
 import astropy.units as u
+from .targets import SSDisk, SphericalShellBLR, RingDustTorus
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
@@ -274,7 +275,7 @@ class ExternalCompton:
 
     def set_mu(self, mu_size=100):
         self.mu_size = mu_size
-        if self.target.type == "SSDisk":
+        if isinstance(self.target, SSDisk):
             # in case of hte disk the mu interval does not go from -1 to 1
             r_tilde = (self.r / self.target.R_g).to_value("")
             self.mu = self.target.mu_from_r_tilde(r_tilde)
@@ -477,11 +478,11 @@ class ExternalCompton:
             array of frequencies, in Hz, to compute the sed, **note** these are 
             observed frequencies (observer frame).
         """
-        if self.target.type == "SSDisk":
+        if isinstance(self.target, SSDisk):
             return self._sed_flux_disk(nu)
-        if self.target.type == "SphericalShellBLR":
+        if isinstance(self.target, SphericalShellBLR):
             return self._sed_flux_shell_blr(nu)
-        if self.target.type == "RingDustTorus":
+        if isinstance(self.target, RingDustTorus):
             return self._sed_flux_ring_torus(nu)
 
     def sed_peak_flux(self, nu):

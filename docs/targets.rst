@@ -1,7 +1,7 @@
 .. _targets:
 
 
-Photon targets for External Compton
+Photon Targets for External Compton
 ===================================
 The classes here described will provide the targets for the external Compton scattering.
 They also allow, in the case of the accretion disk and dust torus, to compute their own black-body radiative emission.
