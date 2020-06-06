@@ -41,14 +41,14 @@ Transformations
 ---------------
 Quantities specified in the Blob comoving frame are primed. We recall the following 
 energy and cosine transformations, from the stationary 
-to the comoving frame: 
+to the comoving frame
 
 .. math::
     \epsilon' &= \Gamma \epsilon (1 - \Beta \mu), \\
     \mu' &= \frac{\mu - \Beta}{1 - \Beta \mu};
     :label: boost_stat_to_com
 
-and viceversa from the comoving to the stationary
+and viceversa from the comoving to the stationary frame
 
 .. math::
     \epsilon &= \Gamma \epsilon' (1 + \Beta \mu'), \\
@@ -100,7 +100,10 @@ energy density :math:`u_0\,/\,\uunits`,
         = \boxed{u_0\,\Gamma^2 \left(1 + \frac{\Beta^2}{3}\right).}
 
 And we have reobtained the result in Eq. 5 of [Dermer1994]_ and Eq. 10 of 
-[Dermer2002]_.
+[Dermer2002]_. Note that from the first to the second line we have replaced 
+:math:`\diff \epsilon'` with :math:`\diff \epsilon / (\Gamma (1 + \Beta \mu'))` 
+(from Eq. :eq:`boost_stat_to_com`) in order to simplify :math:`\diff \epsilon` with the Dirac delta,
+this type of simplification wil recur in the following calculations.
 
 
 Monochromatic Point Source Behind the Jet
@@ -110,15 +113,15 @@ Let us consider a source of luminosity :math:`L_0` at a distance :math:`r` from 
 .. math::
     u(\epsilon, \Omega; r) = \frac{L_0}{4 \pi c r^2} \frac{\delta(\mu-1)}{2 \pi} \delta(\epsilon - \epsilon_0)
 
-where we label :math:`u_0 = \frac{L_0}{4 \pi c r^2}` for convenience.
+where we label :math:`u_0(r) = \frac{L_0}{4 \pi c r^2}` for convenience.
 
 **Galaxy Frame**
 
 .. math::
-    u = \int_{0}^{\infty}\diff\epsilon\;
-        \int_{0}^{2\pi}\diff\phi\;
-        \int_{-1}^{1}\diff\mu\; u_0 \frac{\delta(\mu-1)}{2 \pi} \delta(\epsilon - \epsilon_0) = u_0
-        \left( = \frac{L_0}{4 \pi c r^2} \right), 
+    u(r) = \int_{0}^{\infty}\diff\epsilon\;
+           \int_{0}^{2\pi}\diff\phi\;
+           \int_{-1}^{1}\diff\mu\; u_0(r) \frac{\delta(\mu-1)}{2 \pi} \delta(\epsilon - \epsilon_0) 
+         = u_0(r) \left( = \frac{L_0}{4 \pi c r^2} \right), 
     :label: point_source_stat
 
 where the normalisation :math:`2\pi` cancels out the result of the integration in 
@@ -127,11 +130,11 @@ where the normalisation :math:`2\pi` cancels out the result of the integration i
 **Comoving Frame**
 
 .. math::    
-    u' = \int_{0}^{\infty}\diff\epsilon'\;
-         \int_{0}^{2\pi}\diff\phi'\;
-         \int_{-1}^{1}\diff\mu'\; 
-          u_0 \frac{\delta(\mu-1)}{2 \pi} \delta(\epsilon - \epsilon_0)\,
-         \frac{1}{\utransform},
+    u'(r) = \int_{0}^{\infty}\diff\epsilon'\;
+            \int_{0}^{2\pi}\diff\phi'\;
+            \int_{-1}^{1}\diff\mu'\; 
+            u_0(r) \frac{\delta(\mu-1)}{2 \pi} \delta(\epsilon - \epsilon_0)\,
+            \frac{1}{\utransform},
 
 Now we convert the differentials in :math:`\epsilon'` and :math:`\mu'` in :math:`\epsilon` and :math:`\mu`, 
 in order to simplify them with the deltas. We note that from Eq. :eq:`boost_stat_to_com`
@@ -143,19 +146,20 @@ in order to simplify them with the deltas. We note that from Eq. :eq:`boost_stat
 therefore
 
 .. math::
-    u' &= 2\pi \int_{0}^{\infty} \frac{\diff \epsilon}{\Gamma (1 + \Beta\mu')}\;
-            \int_{-1}^{1}\frac{\diff\mu}{\Gamma^2 (1 - \Beta\mu)^2}\; 
-            \frac{u_0}{2\pi} \delta(\epsilon - \epsilon_0) \delta(\mu - 1)\,
-            \frac{1}{\utransform} \\
-        &= \frac{u_0}{\Gamma^6} \int_{-1}^{1} \frac{\diff\mu}{(1 - \Beta\mu)^2(1 + \Beta\mu')^4}\;
-            \delta(\mu - 1) \\
-        &= \frac{u_0}{\Gamma^6} \frac{1}{(1 - \Beta)^2(1 + \Beta)^4} 
-        = \boxed{\frac{u_0}{\Gamma^2 (1 + \Beta)^2}},   
+    u'(r) &= 2\pi \int_{0}^{\infty} \frac{\diff \epsilon}{\Gamma (1 + \Beta\mu')}\;
+             \int_{-1}^{1}\frac{\diff\mu}{\Gamma^2 (1 - \Beta\mu)^2}\; 
+             \frac{u_0(r)}{2\pi} \delta(\epsilon - \epsilon_0) \delta(\mu - 1)\,
+             \frac{1}{\utransform} \\
+          &= \frac{u_0(r)}{\Gamma^6} \int_{-1}^{1} \frac{\diff\mu}{(1 - \Beta\mu)^2(1 + \Beta\mu')^4}\;
+             \delta(\mu - 1) \\
+          &= \frac{u_0(r)}{\Gamma^6} \frac{1}{(1 - \Beta)^2(1 + \Beta)^4} 
+           = \boxed{\frac{u_0(r)}{\Gamma^2 (1 + \Beta)^2}.}   
     :label: point_source_com
 
-where in the penultimate equality we have used :math:`\mu = 1 \Rightarrow \mu'=1` 
+In the penultimate equality we have used :math:`\mu = 1 \Rightarrow \mu'=1` 
 from Eq. :eq:`boost_stat_to_com` and the condition imposed by the dirac delta.
 We have reobtained Eq. 6 of [Dermer1994]_.
+
 **NOTE** we will use Eq. :eq:`point_source_stat` and :eq:`point_source_com` 
 as a crosscheck for the radiation fields of more complicate objects 
 (for distances much larger than their dimensions they should appear as a point 
@@ -197,7 +201,8 @@ same quantity expressed in :math:`10^8\,M_{\odot}` units), :math:`\dot{m}` is th
 BH mass accretion rate, :math:`\eta` the fraction of gravitational energy converted 
 to radiant energy, :math:`l_{\rm Edd}` the fraction of the disk luminosity to the 
 Eddington luminosity, :math:`R_g` the gravitational radius. The geometry of the 
-problem is illustrated in Figure :numref:`compton_disk`. Notice that
+problem is illustrated in :numref:`compton_disk` (in our equations :math:`\mu=\cos\theta`). 
+Notice that
 
 .. math::
     R = r \sqrt{\mu^{-2} - 1}
@@ -212,48 +217,49 @@ distance :math:`r`, are
 
 where :math:`R_{\rm in}` and :math:`R_{\rm out}` are inner and outer radiuses of 
 the disk, respectively. Note that given Eq. :eq:`R_from_mu_r` we can write 
-Eq. :eq:`phi_R` and :eq:`epsilon_R` as :math:`\varphi(\mu, r)` and 
-:math:`\bar{\epsilon}(\mu, r)`.
+Eq. :eq:`phi_R` and :eq:`epsilon_R` as :math:`\varphi(\mu; r)` and 
+:math:`\bar{\epsilon}(\mu; r)`.
 
 **Galaxy Frame**
 
 .. math::
-    u &= \int_{0}^{\infty}\diff\epsilon\;
+    u(r) &= \int_{0}^{\infty}\diff\epsilon\;
             \int_{0}^{2\pi}\diff\phi\;
             \int_{\mu_{\rm min}}^{\mu_{\rm max}}\diff\mu\;
             \frac{3}{(4 \pi)^2 c} 
             \frac{G M \dot{m}}{R^3 \mu}
             \varphi(R) \, \delta(\epsilon - \bar{\epsilon}(R)) \\
-        &= \frac{3}{8 \pi c} \frac{G M \dot{m}}{r^3} 
+         &= \boxed{\frac{3}{8 \pi c} \frac{G M \dot{m}}{r^3} 
             \int_{\mu_{\rm min}}^{\mu_{\rm max}}\diff\mu\;
-            \frac{\varphi(\mu)}{\mu(\mu^{-2} - 1)^{3/2}}.
+            \frac{\varphi(\mu; r)}{\mu(\mu^{-2} - 1)^{3/2}}.}
     :label: ssdisk_stat
 
 **Comoving Frame**
 
 .. math::
-    u' &= \int_{0}^{\infty}\diff\epsilon'\;
-            \int_{0}^{2\pi}\diff\phi'\;
-            \int_{\mu'_{\rm min}}^{\mu'_{\rm max}}\diff\mu'\; 
-            \frac{3}{(4 \pi)^2 c} 
-            \frac{G M \dot{m}}{R^3 \mu}
-            \varphi(R)
-            \delta(\epsilon - \bar{\epsilon}(R))
-            \frac{1}{\utransform} \\
-        &= \frac{3}{8 \pi c} \frac{G M \dot{m}}{r^3}
-            \int_{0}^{\infty}\frac{\diff \epsilon}{\Gamma (1 + \Beta\mu')}\;
-            \int_{\mu_{\rm min}}^{\mu_{\rm max}}\frac{\diff\mu}{\Gamma^2 (1 - \Beta\mu)^2}\;
-            \frac{\varphi(\mu, r)}{\mu(\mu^{-2} - 1)^{-3/2}}
-            \frac{\delta(\epsilon - \bar{\epsilon}(\mu, r))}{\utransform} \\
-        &= \frac{3}{8 \pi c} \frac{G M \dot{m}}{r^3}
-            \int_{\mu_{\rm min}}^{\mu_{\rm max}}\diff\mu\;
-            \frac{\varphi(\mu, r)}{\Gamma^6 (1 - \Beta\mu)^2 (1 + \Beta \mu')^4 \mu(\mu^{-2} - 1)^{-3/2}}.
+    u'(r) &= \int_{0}^{\infty}\diff\epsilon'\;
+             \int_{0}^{2\pi}\diff\phi'\;
+             \int_{\mu'_{\rm min}}^{\mu'_{\rm max}}\diff\mu'\; 
+             \frac{3}{(4 \pi)^2 c} 
+             \frac{G M \dot{m}}{R^3 \mu}
+             \varphi(R)
+             \delta(\epsilon - \bar{\epsilon}(R))
+             \frac{1}{\utransform} \\
+          &= \frac{3}{8 \pi c} \frac{G M \dot{m}}{r^3}
+             \int_{0}^{\infty}\frac{\diff \epsilon}{\Gamma (1 + \Beta\mu')}\;
+             \int_{\mu_{\rm min}}^{\mu_{\rm max}}\frac{\diff\mu}{\Gamma^2 (1 - \Beta\mu)^2}\;
+             \frac{\varphi(\mu; r)}{\mu(\mu^{-2} - 1)^{-3/2}}
+             \frac{\delta(\epsilon - \bar{\epsilon}(\mu, r))}{\utransform} \\
+          &= \boxed{\frac{3}{8 \pi c} \frac{G M \dot{m}}{r^3}
+             \int_{\mu_{\rm min}}^{\mu_{\rm max}}\diff\mu\;
+             \frac{\varphi(\mu; r)}{\Gamma^6 (1 - \Beta\mu)^2 (1 + \Beta \mu')^4 \mu(\mu^{-2} - 1)^{-3/2}}.}
     :label: ssdisk_com
 
-Both these equations cannot be simplified analytically, we can check numerically,
-thorugh the functions implemented in `agnpy` if their limit for large values of 
+Both these equations cannot be simplified analytically, we can check numerically
+- through the functions implemented in `agnpy` - if their limit for large values of 
 :math:`r` reduces to the case of point source behind the jet, i.e. Eq. 
 :eq:`point_source_com` and :eq:`point_source_stat`.
+Check the `tutorial notebook on energy densities <tutorials/energy_densities.html>`_.
 
 
 Spherical Shell Broad Line Region
@@ -272,24 +278,28 @@ thin (:math:`R_{\rm li}`) shell, as in [Finke2016]_
     \delta(\epsilon - \epsilon_{\rm li}) 
     \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \delta(\mu - \mu_*),
     
-where
+where :math:`\xi_{\rm li}` is the fraction fo the disk radiation recprocessed by 
+the BLR and
 
 .. math::        
         \mu_*^2 &= 1 - \left( \frac{R_{\rm li}}{x} \right)^2 (1 - \mu_{\rm re}^2), \\
             x^2 &= R_{\rm li}^2 + r^2 - 2 r  R_{\rm li} \mu_{\rm re},
 
-and the geometry of the reprocessing material is illustrated in :numref:`compton_reprocessed`.
+the geometry of the problem with reprocessing material is illustrated in 
+:numref:`compton_reprocessed` (in our equations :math:`\mu=\cos\theta`, 
+:math:`\mu_* = \cos\theta_*`, :math:`\mu_{\rm re} = \cos \theta_{\rm re}` and we have replaced 
+the radius of the reprocessing material with the one of the BLR :math:`R_{\rm li}`).
 
 **Galaxy Frame**
 
 .. math::
-    u &= \int_{0}^{\infty}\diff\epsilon\;
+    u(r) &= \int_{0}^{\infty}\diff\epsilon\;
             \int_{0}^{2\pi}\diff\phi\;
             \int_{-1}^{1}\diff\mu\;
             \frac{\xi_{\rm li} L_{\rm disk}}{(4\pi)^2c} 
             \delta(\epsilon - \epsilon_{\rm li}) 
             \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \delta(\mu - \mu_*) \\
-        &= \frac{\xi_{\rm li} L_{\rm disk}}{8 \pi c} \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2}.
+        &= \boxed{\frac{\xi_{\rm li} L_{\rm disk}}{8 \pi c} \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2}.}
     :label: blr_stat
 
 Let us examine if for large distances (:math:`r \gg R_{\rm li}`) Eq. :eq:`blr_stat` 
@@ -297,60 +307,127 @@ Let us examine if for large distances (:math:`r \gg R_{\rm li}`) Eq. :eq:`blr_st
 source behind the jet. Since :math:`x \xrightarrow[r \gg R_{\rm li}]{} r`, we have
 
 .. math::
-    u = \frac{\xi_{\rm li} L_{\rm disk}}{8 \pi c} \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{r^2} 
-      = \frac{\xi_{\rm li} L_{\rm disk}}{4 \pi c r^2},
+    u(r) = \frac{\xi_{\rm li} L_{\rm disk}}{8 \pi c} \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{r^2} 
+         = \frac{\xi_{\rm li} L_{\rm disk}}{4 \pi c r^2},
 
 which is :eq:`point_source_stat`, i.e. the energy density of a monochromatic 
-point source behind the jet, with :math:`u_0 = \frac{\xi_{\rm li} L_{\rm disk}}{4 \pi c r^2}` 
-(:math:`L_0 = \xi_{\rm li} L_{\rm disk}`).
+point source behind the jet with :math:`L_0 = \xi_{\rm li} L_{\rm disk}`.
 
 **Comoving Frame**
 
 .. math::
-    u' &= \int_{0}^{\infty}\diff\epsilon'\;
-            \int_{0}^{2\pi}\diff\phi'\;
-            \int_{-1}^{1}\diff\mu'\; 
-            \frac{\xi_{\rm li} L_{\rm disk}}{(4\pi)^2c} 
-            \delta(\epsilon - \epsilon_{\rm li}) 
-            \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \delta(\mu - \mu_*) 
-            \frac{1}{\utransform} \\
-        &= 2\pi \int_{0}^{\infty} \frac{\diff \epsilon}{\Gamma (1 + \Beta\mu')}\;
-            \int_{-1}^{1}\frac{\diff\mu}{\Gamma^2 (1 - \Beta\mu)^2}\;
-            \frac{\xi_{\rm li} L_{\rm disk}}{(4\pi)^2c} 
-            \delta(\epsilon - \epsilon_{\rm li}) 
-            \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \delta(\mu - \mu_*) 
-            \frac{1}{\utransform} \\
-        &= \frac{\xi_{\rm li} L_{\rm disk}}{8 \pi c}
-            \int_{-1}^{1} \frac{\diff\mu}{\Gamma^2 (1 - \Beta\mu)^2 \Gamma^4 (1 + \Beta\mu')^4}
-            \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \delta(\mu - \mu_*), 
+    u'(r) &= \int_{0}^{\infty}\diff\epsilon'\;
+             \int_{0}^{2\pi}\diff\phi'\;
+             \int_{-1}^{1}\diff\mu'\; 
+             \frac{\xi_{\rm li} L_{\rm disk}}{(4\pi)^2c} 
+             \delta(\epsilon - \epsilon_{\rm li}) 
+             \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \delta(\mu - \mu_*) 
+             \frac{1}{\utransform} \\
+         &= 2\pi \int_{0}^{\infty} \frac{\diff \epsilon}{\Gamma (1 + \Beta\mu')}\;
+             \int_{-1}^{1}\frac{\diff\mu}{\Gamma^2 (1 - \Beta\mu)^2}\;
+             \frac{\xi_{\rm li} L_{\rm disk}}{(4\pi)^2c} 
+             \delta(\epsilon - \epsilon_{\rm li}) 
+             \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \delta(\mu - \mu_*) 
+             \frac{1}{\utransform} \\
+          &= \frac{\xi_{\rm li} L_{\rm disk}}{8 \pi c}
+             \int_{-1}^{1} \frac{\diff\mu}{\Gamma^2 (1 - \Beta\mu)^2 \Gamma^4 (1 + \Beta\mu')^4}
+             \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \delta(\mu - \mu_*), 
 
 using the delta condition :math:`\mu = \mu_* \Rightarrow \mu' = \frac{\mu_* - \Beta}{1 - \Beta \mu_*}`.
 The latter in turns imply :math:`1 + \Beta\mu' = \frac{1}{\Gamma^2 (1 - \Beta\mu_*)}`, 
 therefore
 
 .. math::        
-    u' &= \frac{\xi_{\rm li} L_{\rm disk}}{8 \pi c}
-          \frac{\Gamma^8 (1 - \Beta\mu_*)^4}{\Gamma^6 (1 - \Beta\mu_*)^2}
-          \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \\
-        &= \frac{\xi_{\rm li} L_{\rm disk}}{8 \pi c}
-           \int_{-1}^{1} \Gamma^2 (1 - \Beta\mu_*)^2
-           \frac{\diff\mu_{\rm re}}{x^2}. 
+    u'(r) &= \frac{\xi_{\rm li} L_{\rm disk}}{8 \pi c}
+             \int_{-1}^{1} \frac{\Gamma^8 (1 - \Beta\mu_*)^4}{\Gamma^6 (1 - \Beta\mu_*)^2} 
+             \frac{\diff\mu_{\rm re}}{x^2} \\
+          &= \boxed{\frac{\xi_{\rm li} L_{\rm disk}}{8 \pi c}
+             \Gamma^2 \int_{-1}^{1} (1 - \Beta\mu_*)^2
+             \frac{\diff\mu_{\rm re}}{x^2}.}
     :label: blr_com
 
 If the calculation was done correctly, in the limit of large distances (:math:`r \gg R_{\rm li}`)
-:eq:`blr_com` :math:`rightarrow` :eq:`point_source_com`, i.e. the BLR 
+:eq:`blr_com` :math:`\rightarrow` :eq:`point_source_com`, i.e. the BLR 
 should appear as a point source behind the jet (also in the comoving frame).
 For :math:`r \gg R_{\rm li}`, :math:`x^2 \rightarrow r^2` and 
 :math:`\mu_* \rightarrow 1`, so
 
 .. math::
-    u' = \Gamma^2 (1 - \Beta)^2 \frac{\xi_{\rm li} L_{\rm disk}}{8 \pi c}
-         \frac{2}{r^2} = \frac{\Gamma^2 (1 - \Beta^2)^2}{(1 + \Beta)^2} 
-         \frac{\xi_{\rm li} L_{\rm disk}}{4 \pi c r^2} 
-       = \frac{1}{\Gamma^2 (1 + \Beta)^2} 
-         \frac{\xi_{\rm li} L_{\rm disk}}{4 \pi c r^2}.
+    u'(r) = \Gamma^2 (1 - \Beta)^2 \frac{\xi_{\rm li} L_{\rm disk}}{8 \pi c}
+            \frac{2}{r^2} = \frac{\Gamma^2 (1 - \Beta^2)^2}{(1 + \Beta)^2} 
+            \frac{\xi_{\rm li} L_{\rm disk}}{4 \pi c r^2} 
+          = \frac{1}{\Gamma^2 (1 + \Beta)^2} 
+            \frac{\xi_{\rm li} L_{\rm disk}}{4 \pi c r^2}.
 
-where in the penultimate equality we have multiplied and divided by $(1 + \Beta)^2$.
-We have reobtained \refeq{eq:point_source_com} with 
-:math:`u_0 = \frac{\xi_{\rm li} L_{\rm disk}}{4 \pi c r^2}` 
-(:math:`L_0 = \xi_{\rm li} L_{\rm disk}`).
+where in the penultimate equality we have multiplied and divided by :math:`(1 + \Beta)^2`.
+We have reobtained :eq:`point_source_com` with :math:`L_0 = \xi_{\rm li} L_{\rm disk}`.
+
+
+Ring Dust Torus
+---------------
+
+Following [Finke2016]_, let us approximate the torus with a infinitesimally thin
+ring of radius :math:`R_{\rm dt}`, whose Black Body radiation peaks at the dimensionless 
+energy :math:`\epsilon_{\rm dt}`
+
+.. math::
+    u(\epsilon, \Omega; r) = \frac{\xi_{\rm dt} L_{\rm disk}}{8 \pi^2 c x^2} 
+    \delta(\mu - r/x) \delta(\epsilon - 2.7 \Theta),
+    :label: u_dt
+
+:math:`\xi_{\rm dt}` is the fraction fo the disk radiation recprocessed by 
+the Dust Torus. 
+
+Note the formula has a factor 2 with respect to Eq. 91 in the paper.
+The factor 2 correction should actually be applied to the emissivity in Eq. 90, 
+that is in turn used to compute :math:`u`. The distance of the blob from the reprocessing material is simply 
+
+.. math::
+    x^2 = R_{\rm dt}^2 + r^2.
+
+**Galaxy Frame**
+
+.. math::
+    u(r) &= \int_{0}^{\infty}\diff\epsilon\;
+            \int_{0}^{2\pi}\diff\phi\;
+            \int_{-1}^{1}\diff\mu\;
+            \frac{\xi_{\rm dt} L_{\rm disk}}{8 \pi^2 c} 
+            \delta(\mu - r/x) \delta(\epsilon - 2.7 \Theta) \\
+         &= \boxed{\frac{\xi_{\rm dt} L_{\rm disk}}{4 \pi c x^2}.}
+    :label: torus_stat
+
+This can be straightforwardly reduced to :eq:`point_source_stat` for 
+:math:`r \gg R_{\rm dt}` (in which case :math:`x \rightarrow r`) with :math:`L_0 = \xi_{\rm dt} L_{\rm disk}`.
+
+**Comoving Frame**
+
+.. math::
+    u'(r) &= \int_{0}^{\infty}\diff\epsilon'\;
+             \int_{0}^{2\pi}\diff\phi'\;
+             \int_{-1}^{1}\diff\mu'\; 
+             \frac{\xi_{\rm dt} L_{\rm disk}}{(4\pi)^2 c x^2} 
+             \delta(\mu - r/x) \delta(\epsilon - 2.7 \Theta)
+             \frac{1}{\utransform} \\
+          &= 2\pi \int_{0}^{\infty} \frac{\diff \epsilon}{\Gamma (1 + \Beta\mu')}\;
+             \int_{-1}^{1}\frac{\diff\mu}{\Gamma^2 (1 - \Beta\mu)^2}\;
+             \frac{\xi_{\rm dt} L_{\rm disk}}{(4\pi)^2 c x^2} 
+             \delta(\mu - r/x) \delta(\epsilon - 2.7 \Theta)
+             \frac{1}{\utransform} \\
+          &= \frac{\xi_{\rm dt} L_{\rm disk}}{8 \pi c}
+             \int_{-1}^{1} \frac{\diff\mu}{\Gamma^2 (1 - \Beta\mu)^2 \Gamma^4 (1 + \Beta\mu')^4}
+             \delta(\mu - r/x), \\
+
+as we have seen for the BLR case, using the delta condition 
+:math:`\mu = r/x \Rightarrow \mu' = \frac{r/x - \Beta}{1 - \Beta r/x}` and it 
+follows that :math:`1 + \Beta\mu' = \frac{1}{\Gamma^2 (1 - \Beta r/x)}`. 
+Follows that
+
+.. math::
+    u'(r) = \frac{\xi_{\rm dt} L_{\rm disk}}{4 \pi c}
+            \frac{\Gamma^8 (1 - \Beta\,r/x)^4}{\Gamma^6 (1 - \Beta\,r/x)^2} 
+          = \boxed{\Gamma^2 (1 - \Beta\,r/x)^2 \frac{\xi_{\rm dt} L_{\rm disk}}{4 \pi c}.}
+    :label: torus_com
+
+In the limit of large distances :math:`r/x \rightarrow 1`, if we multiply and 
+divide by :math:`(1 + \Beta)^2`, we reobtain :eq:`point_source_com`
+with :math:`L_0 = \xi_{\rm dt} L_{\rm disk}`.
