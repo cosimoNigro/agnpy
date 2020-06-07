@@ -1,6 +1,7 @@
 # agnpy
-
-<img width="50%" src="docs/_static/logo.png">
+<p align="center">
+  <img width="60%" src="docs/_static/logo.png">
+</p>
 
 Modelling Active Galactic Nuclei radiative processes with python.
 
