@@ -1,7 +1,7 @@
 import numpy as np
-from astropy.constants import h, c, m_e, sigma_T
+from astropy.constants import h, c, m_e, sigma_T, G
 import astropy.units as u
-from .targets import CMB, SSDisk, SphericalShellBLR, RingDustTorus
+from .targets import CMB, PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
@@ -335,6 +335,51 @@ class ExternalCompton:
         sed = prefactor_num / prefactor_denom * integral_phi
         return sed.to("erg cm-2 s-1")
 
+    def _sed_flux_point_like(self, nu):
+        """SED flux for EC on a point like source behind the jet
+        
+        Parameters
+        ----------
+        nu : `~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed, **note** these are 
+            observed frequencies (observer frame).
+        """
+        # define the dimensionless energy
+        epsilon_s = nu.to("", equivalencies=epsilon_equivalency)
+        # transform to BH frame
+        epsilon_s *= 1 + self.blob.z
+        # for multidimensional integration
+        # axis 0: gamma
+        # axis 3: epsilon_s
+        # arrays starting with _ are multidimensional and used for integration
+        _gamma = np.reshape(self.gamma, (self.gamma.size, 1))
+        _N_e = np.reshape(self.transformed_N_e, (self.transformed_N_e.size, 1))
+        _epsilon_s = np.reshape(epsilon_s, (1, epsilon_s.size))
+        # define integrating function
+        # notice once the value of mu = 1, phi can assume any value, we put 0
+        # convenience
+        _kernel = compton_kernel(
+            _gamma, _epsilon_s, self.target.epsilon_0, self.blob.mu_s, 1, 0
+        )
+        _integrand = np.power(_gamma, -2) * _N_e * _kernel
+        integral_gamma = np.trapz(_integrand, self.gamma, axis=0)
+        prefactor_num = (
+            3
+            * sigma_T
+            * self.target.L_0
+            * np.power(epsilon_s, 2)
+            * np.power(self.blob.delta_D, 3)
+        )
+        prefactor_denom = (
+            np.power(2, 7)
+            * np.power(np.pi, 2)
+            * np.power(self.blob.d_L, 2)
+            * np.power(self.r, 2)
+            * np.power(self.target.epsilon_0, 2)
+        )
+        sed = prefactor_num / prefactor_denom * integral_gamma
+        return sed.to("erg cm-2 s-1")
+
     def _sed_flux_disk(self, nu):
         """SED flux for EC on SS Disk
 
@@ -367,8 +412,8 @@ class ExternalCompton:
             _gamma, _epsilon_s, _epsilon, self.blob.mu_s, _mu, _phi
         )
         _integrand_mu_num = self.target.phi_disk_mu(_mu, r_tilde)
-        _integrand_mu_denum = np.power(np.power(_mu, -2) - 1, 3 / 2) * np.power(
-            _epsilon, 2
+        _integrand_mu_denum = (
+            np.power(_epsilon, 2) * _mu * np.power(np.power(_mu, -2) - 1, 3 / 2)
         )
         _integrand = (
             _integrand_mu_num
@@ -383,18 +428,17 @@ class ExternalCompton:
         prefactor_num = (
             9
             * sigma_T
+            * G
+            * self.target.M_BH
+            * self.target.m_dot
             * np.power(epsilon_s, 2)
-            * self.target.l_Edd
-            * self.target.L_Edd
             * np.power(self.blob.delta_D, 3)
         )
         prefactor_denom = (
             np.power(2, 9)
             * np.power(np.pi, 3)
             * np.power(self.blob.d_L, 2)
-            * np.power(self.target.R_g, 2)
-            * self.target.eta
-            * np.power(r_tilde, 3)
+            * np.power(self.r, 3)
         )
         sed = prefactor_num / prefactor_denom * integral_phi
         return sed.to("erg cm-2 s-1")
@@ -436,14 +480,14 @@ class ExternalCompton:
         prefactor_num = (
             3
             * sigma_T
+            * self.target.xi_line
+            * self.target.L_disk
             * np.power(epsilon_s, 2)
             * np.power(self.blob.delta_D, 3)
-            * self.target.L_disk
-            * self.target.xi_line
         )
         prefactor_denom = (
-            8
-            * np.power(4 * np.pi, 3)
+            np.power(2, 9)
+            * np.power(np.pi, 3)
             * np.power(self.blob.d_L, 2)
             * np.power(self.target.epsilon_line, 2)
         )
@@ -485,17 +529,17 @@ class ExternalCompton:
         prefactor_num = (
             3
             * sigma_T
+            * self.target.xi_dt
+            * self.target.L_disk
             * np.power(epsilon_s, 2)
             * np.power(self.blob.delta_D, 3)
-            * self.target.L_disk
-            * self.target.xi_dt
         )
         prefactor_denom = (
-            8
-            * np.power(4 * np.pi, 3)
+            np.power(2, 8)
+            * np.power(np.pi, 3)
             * np.power(self.blob.d_L, 2)
-            * np.power(self.target.epsilon_dt, 2)
             * np.power(x_re, 2)
+            * np.power(self.target.epsilon_dt, 2)
         )
         sed = prefactor_num / prefactor_denom * integral_phi
         return sed.to("erg cm-2 s-1")
@@ -511,6 +555,8 @@ class ExternalCompton:
         """
         if isinstance(self.target, CMB):
             return self._sed_flux_cmb(nu)
+        if isinstance(self.target, PointSourceBehindJet):
+            return self._sed_flux_point_like(nu)
         if isinstance(self.target, SSDisk):
             return self._sed_flux_disk(nu)
         if isinstance(self.target, SphericalShellBLR):

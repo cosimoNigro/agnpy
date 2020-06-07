@@ -262,7 +262,7 @@ Eq. :eq:`phi_R` and :eq:`epsilon_R` as :math:`\varphi(\mu; r)` and
 Both these equations cannot be simplified analytically, we can check numerically
 - through the functions implemented in `agnpy` - if their limit for large values of 
 :math:`r` reduces to the case of point source behind the jet, i.e. Eq. 
-:eq:`point_source_com` and :eq:`point_source_stat`.
+:eq:`point_source_stat` and :eq:`point_source_com`.
 Check the `tutorial notebook on energy densities <tutorials/energy_densities.html>`_.
 
 
@@ -309,7 +309,7 @@ the radius of the reprocessing material with the one of the BLR :math:`R_{\rm li
     :label: blr_stat
 
 Let us examine if for large distances (:math:`r \gg R_{\rm li}`) Eq. :eq:`blr_stat` 
-:math:`\rightarrow` :eq:`point_source_stat`, i.e. if the BLR appears as a point 
+:math:`\rightarrow` Eq. :eq:`point_source_stat`, i.e. if the BLR appears as a point 
 source behind the jet. Since :math:`x \xrightarrow[r \gg R_{\rm li}]{} r`, we have
 
 .. math::
@@ -353,7 +353,7 @@ therefore
     :label: blr_com
 
 If the calculation was done correctly, in the limit of large distances (:math:`r \gg R_{\rm li}`)
-:eq:`blr_com` :math:`\rightarrow` :eq:`point_source_com`, i.e. the BLR 
+Eq. :eq:`blr_com` :math:`\rightarrow` Eq. :eq:`point_source_com`, i.e. the BLR 
 should appear as a point source behind the jet (also in the comoving frame).
 For :math:`r \gg R_{\rm li}`, :math:`x^2 \rightarrow r^2` and 
 :math:`\mu_* \rightarrow 1`, so
@@ -366,7 +366,7 @@ For :math:`r \gg R_{\rm li}`, :math:`x^2 \rightarrow r^2` and
             \frac{\xi_{\rm li} L_{\rm disk}}{4 \pi c r^2}.
 
 where in the penultimate equality we have multiplied and divided by :math:`(1 + \Beta)^2`.
-We have reobtained :eq:`point_source_com` with :math:`L_0 = \xi_{\rm li} L_{\rm disk}`.
+We have reobtained Eq. :eq:`point_source_com` with :math:`L_0 = \xi_{\rm li} L_{\rm disk}`.
 
 
 Ring Dust Torus
@@ -402,7 +402,7 @@ that is in turn used to compute :math:`u`. The distance of the blob from the rep
          &= \boxed{\frac{\xi_{\rm dt} L_{\rm disk}}{4 \pi c x^2}.}
     :label: torus_stat
 
-This can be straightforwardly reduced to :eq:`point_source_stat` for 
+This can be straightforwardly reduced to Eq. :eq:`point_source_stat` for 
 :math:`r \gg R_{\rm dt}` (in which case :math:`x \rightarrow r`) with :math:`L_0 = \xi_{\rm dt} L_{\rm disk}`.
 
 **Comoving Frame**
@@ -435,7 +435,7 @@ Follows that
     :label: torus_com
 
 In the limit of large distances :math:`r/x \rightarrow 1`, if we multiply and 
-divide by :math:`(1 + \Beta)^2`, we reobtain :eq:`point_source_com`
+divide by :math:`(1 + \Beta)^2`, we reobtain Eq. :eq:`point_source_com`
 with :math:`L_0 = \xi_{\rm dt} L_{\rm disk}`.
 
 
@@ -471,9 +471,9 @@ the Doppler factor of the blob. The extreme of integration on the target energy
 are imposed by kinematics limits
 
 .. math::
-    \epsilon_{\rm high} &= \frac{2 \epsilon_s}{1 - \cos \psi} \\
+    \epsilon_{\rm high} &= \frac{2 \epsilon_s}{1 - \cos \psi}, \\
        \gamma_{\rm low} &= \frac{\epsilon_s}{2} 
-       \left[ 1 + \sqrt{1 + \frac{2}{\epsilon \epsilon_s (1 - \cos \psi)}} \right]
+       \left[ 1 + \sqrt{1 + \frac{2}{\epsilon \epsilon_s (1 - \cos \psi)}} \right],
 
 with :math:`\cos\psi` the angle between the direction of the incident photon 
 and the electron
@@ -533,15 +533,15 @@ Plugging Eq. :eq:`u_ps_behind_jet` in Eq. :eq:`ec_sed`
                                \delta(\epsilon - \epsilon_0) \cdot \\
                             &  \cdot \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \, 
                                \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C \\
-                            &= \boxed{\frac{3}{2^7 \pi^2} \frac{\sigma_T L_0}{d_L^2 r^2}  
+                            &= \boxed{\frac{3}{2^7 \pi^3} \frac{\sigma_T L_0}{d_L^2 r^2}  
                                \left( \frac{\epsilon_s}{\epsilon_0} \right)^2 \delta_D^3 
                                \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \, 
                                \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C.}
     :label: ec_point_source
 
-notice that the delta on :math:`\mu` removes also the dependency on :math:`\phi`.
-The latter is contained in :math:`\cos \psi` within the integration kernel which 
-reduces to :math:`\cos\psi = \mu_s` for :math:`\mu=1`.
+notice that the delta on :math:`\mu` removes also the dependency on :math:`\phi` 
+in :math:`\cos \psi` within the integration kernel which reduces to 
+:math:`\cos\psi = \mu_s` for :math:`\mu=1`.
 
 Shakura Sunyaev Disk
 --------------------
@@ -556,7 +556,7 @@ Plugging Eq. :eq:`u_ss_disk` in Eq. :eq:`ec_sed`
                                \varphi(\mu; r)\,\delta(\epsilon - \epsilon_0(\mu; r)) \frac{1}{\epsilon^2} \cdot \\
                             &  \cdot \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \, 
                                \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C \\
-                            &= \boxed{\frac{3^2}{2^9 \pi^2}
+                            &= \boxed{\frac{3^2}{2^9 \pi^3}
                                \frac{\sigma_T G M \dot{m}}{d_L^2 r^3} 
                                \epsilon_s^2 \delta_D^3
                                \int_0^{2 \pi} \diff\phi \,
@@ -593,7 +593,7 @@ Plugging Eq. :eq:`u_blr` in Eq. :eq:`ec_sed`
                             &  \cdot \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \, 
                                \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C \\
                            &=  \boxed{\frac{3}{2^9 \pi^3} 
-                               \frac{\xi_{\rm li} L_{\rm disk} \sigma_T}{d_L^2}
+                               \frac{\sigma_T \xi_{\rm li} L_{\rm disk}}{d_L^2}
                                \left( \frac{\epsilon_s}{\epsilon_{\rm li}} \right)^2
                                \delta_D^3 
                                \int_0^{2 \pi} \diff\phi \,
@@ -623,7 +623,7 @@ Plugging Eq. :eq:`u_dt` in Eq. :eq:`ec_sed`
                             &  \cdot \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \,
                                \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C \\
                            &=  \boxed{\frac{3}{2^8 \pi^3} 
-                               \frac{\xi_{\rm dt} L_{\rm disk} \sigma_T}{d_L^2 x^2}
+                               \frac{\sigma_T \xi_{\rm dt} L_{\rm disk}}{d_L^2 x^2}
                                \left( \frac{\epsilon_s}{\epsilon_{\rm dt}} \right)^2
                                \delta_D^3 
                                \int_0^{2 \pi} \diff\phi \,
