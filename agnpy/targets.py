@@ -106,7 +106,7 @@ class CMB:
             comvoing with the blob
         """
         if blob:
-            return u_0 * np.power(blob.Gamma, 2) * (1 + np.power(blob.Beta, 2) / 3)
+            return self.u_0 * np.power(blob.Gamma, 2) * (1 + np.power(blob.Beta, 2) / 3)
         else:
             return self.u_0
 
