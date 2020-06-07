@@ -1,4 +1,7 @@
 # agnpy
+
+<img width="50%" src="docs/_static/logo.png">
+
 Modelling Active Galactic Nuclei radiative processes with python.
 
 ## descritpion

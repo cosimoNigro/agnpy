@@ -22,7 +22,7 @@ copyright = "2019, Cosimo Nigro"
 author = "Cosimo Nigro"
 
 # The full version, including alpha/beta/rc tags
-release = "0.0.5"
+release = "0.0.6"
 
 
 # -- General configuration ---------------------------------------------------
@@ -36,6 +36,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
     "sphinx.ext.extlinks",
+    "sphinx.ext.mathjax",
     "nbsphinx",
 ]
 # Add any paths that contain templates here, relative to this directory.
@@ -46,6 +47,7 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+numfig = True
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -64,7 +66,19 @@ master_doc = "index"
 
 # dictionary with external packages references
 intersphinx_mapping = {
-    "numpy": ("https://numpy.org", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
     "astropy": ("http://docs.astropy.org/en/latest/", None),
     "matplotlib": ("https://matplotlib.org", None),
+}
+
+# latex support
+mathjax_config = {
+    "TeX": {
+        "Macros": {
+            "Beta": r"{\mathcal{B}}",
+            "uunits": r"{{\rm erg}\,{\rm cm}^{-3}}",
+            "diff": r"{\mathrm{d}}",
+            "utransform": r"{\Gamma^3 (1 + \Beta \mu')^3}",
+        }
+    }
 }

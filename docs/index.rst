@@ -49,10 +49,12 @@ Overview
    emission_regions
    synchrotron
    targets
+   tutorials/energy_densities.ipynb
    compton
-   absorption
    tutorials/synchrotron_self_compton.ipynb
    tutorials/external_compton.ipynb
+   absorption
+   calc_u_sed
    bibliography
    modules
 

@@ -168,18 +168,18 @@ class Blob:
     def __str__(self):
         """printable summary of the blob"""
         return (
-                "* spherical emission region\n"
-                + f" - R_b (radius of the blob): {self.R_b.cgs:.2e}\n"
-                + f" - V_b (volume of the blob): {self.V_b.cgs:.2e}\n"
-                + f" - z (source redshift): {self.z:.2f}\n"
-                + f" - d_L (source luminosity distance):{self.d_L.cgs:.2e}\n"
-                + f" - delta_D (blob Doppler factor): {self.delta_D:.2e}\n"
-                + f" - Gamma (blob Lorentz factor): {self.Gamma:.2e}\n"
-                + f" - Beta (blob relativistic velocity): {self.Beta:.2e}\n"
-                + f" - theta_s (jet viewing angle): {self.theta_s:.2e}\n"
-                + f" - B (magnetic field tangled to the jet): {self.B:.2e}\n"
-                + str(self.n_e)
-            )
+            "* spherical emission region\n"
+            + f" - R_b (radius of the blob): {self.R_b.cgs:.2e}\n"
+            + f" - V_b (volume of the blob): {self.V_b.cgs:.2e}\n"
+            + f" - z (source redshift): {self.z:.2f}\n"
+            + f" - d_L (source luminosity distance):{self.d_L.cgs:.2e}\n"
+            + f" - delta_D (blob Doppler factor): {self.delta_D:.2e}\n"
+            + f" - Gamma (blob Lorentz factor): {self.Gamma:.2e}\n"
+            + f" - Beta (blob relativistic velocity): {self.Beta:.2e}\n"
+            + f" - theta_s (jet viewing angle): {self.theta_s:.2e}\n"
+            + f" - B (magnetic field tangled to the jet): {self.B:.2e}\n"
+            + str(self.n_e)
+        )
 
     def set_delta_D(self, Gamma, theta_s):
         """set the viewing angle and the Lorentz factor of the outflow to
@@ -321,9 +321,7 @@ class Blob:
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} 
             \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{6 \pi \xi e}{\sigma_T B}}
         """
-        return np.sqrt(6 * np.pi * self.xi * e / (sigma_T * self.B_cgs)).to_value(
-                ""
-            )
+        return np.sqrt(6 * np.pi * self.xi * e / (sigma_T * self.B_cgs)).to_value("")
 
     @property
     def gamma_max_SSC(self):
@@ -338,8 +336,8 @@ class Blob:
             \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{3 \xi e B }{\sigma_T U_SSC}}
         """
         return np.sqrt(
-                3 * self.xi * e * self.B_cgs / (4 * sigma_T * self.u_ph_synch)
-            ).to_value("")
+            3 * self.xi * e * self.B_cgs / (4 * sigma_T * self.u_ph_synch)
+        ).to_value("")
 
     def gamma_max_EC_DT(self, dt, r=0 * u.cm):
         r"""Simple estimation of maximum Lorentz factor of electrons comparing the acceleration time scale 
@@ -350,8 +348,8 @@ class Blob:
             \gamma_{\mathrm{max}} = \sqrt{\frac{3 \xi e B }{ \sigma_T U'_\mathrm{ext}}} 
         """
         return np.sqrt(
-                3 * self.xi * e * self.B_cgs / (4 * sigma_T * dt.u_ph(r, self))
-            ).to_value("")
+            3 * self.xi * e * self.B_cgs / (4 * sigma_T * dt.u_ph(r, self))
+        ).to_value("")
 
     @property
     def gamma_break_synch(self):
@@ -453,11 +451,11 @@ class Blob:
         ax = plt.gca() if ax is None else ax
 
         ax.loglog(self.gamma, np.power(self.gamma, gamma_power) * self.n_e(self.gamma))
-        ax.xlabel(r"$\gamma$")
+        ax.set_xlabel(r"$\gamma$")
         if gamma_power == 0:
-            ax.ylabel(r"$n_e(\gamma)\,/\,{\rm cm}^{-3}$")
+            ax.set_ylabel(r"$n_e(\gamma)\,/\,{\rm cm}^{-3}$")
         else:
-            ax.ylabel(
+            ax.set_ylabel(
                 r"$\gamma^{"
                 + str(gamma_power)
                 + r"}$"

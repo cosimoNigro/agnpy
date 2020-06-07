@@ -21,7 +21,12 @@ Bibliography
 .. [Tavecchio1998] `Tavecchio et al. (1998) <https://ui.adsabs.harvard.edu/#abs/1998ApJ...509..608T/abstract>`_,
    "Constraints on the Physical Parameters of TeV Blazars";
 
-.. [Shakura1973] `Shakura, Sunyaev (1973) <https://ui.adsabs.harvard.edu/abs/1973A%26A....24..337S/abstract>`_,
+.. [Shakura1973] `Shakuraa and Sunyaev (1973) <https://ui.adsabs.harvard.edu/abs/1973A%26A....24..337S/abstract>`_,
    "Black holes in binary systems. Observational appearance.";
 
+.. [Dermer2002] `Dermer and Schlickeiser (2002) <https://ui.adsabs.harvard.edu/abs/2002ApJ...575..667D/abstract>`_,
+   "Transformation Properties of External Radiation Fields, Energy-Loss Rates and Scattered Spectra, and a Model for Blazar Variability";
+
+.. [Dermer1994] `Dermer and Schlickeiser (1994) <https://ui.adsabs.harvard.edu/abs/1994ApJS...90..945D/abstract>`_,
+   "On the Location of the Acceleration and Emission Sites in Gamma-Ray Blazars";
 
