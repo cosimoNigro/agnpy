@@ -8,11 +8,17 @@ They also allow, in the case of the accretion disk and dust torus, to compute th
 
 The following objects are implemented:
 
+* :class:`~agnpy.targets.CMB`, representing the Cosmic Microwave Background;
+
+* :class:`~agnpy.targets.PointSourceBehindJet`, representing a monochromatic point source behind the jet. 
+  This is mostly used to crosscheck that the energy densities and External Compton SEDs of the other targets reduce to
+  this simplified case for large enough distances;
+
 * :class:`~agnpy.targets.SSDisk`, representing a [Shakura1973]_ (i.e. a geometrically thin, optically thick) accretion disk;
 
 * :class:`~agnpy.targets.SphericalShellBLR`, representing the Broad Line Region as an infinitesimally thin spherical shell, on the lines of [Finke2016]_;
 
-* :class:`~agnpy.targets.SphericalShellBLR`, representing the Dust Torus as an infintesimally thin ring, see treatment of [Finke2016]_.
+* :class:`~agnpy.targets.RingDustTorus`, representing the Dust Torus as an infintesimally thin ring, see treatment of [Finke2016]_.
 
 Shakura Sunyaev disk
 --------------------
@@ -153,6 +159,11 @@ and the redshift of the galaxy have to be specified.
     :width: 500px
     :align: center
 
+
+Energy densities
+----------------
+`agnpy` allows also to compute the energy densities produced by the photon targets, 
+check the `tutorial notebook on energy densities <tutorials/energy_densities.html>`_.
 
 API
 ---

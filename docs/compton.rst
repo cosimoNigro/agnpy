@@ -139,8 +139,9 @@ let us plot the resulting SED:
     :width: 500px
     :align: center
 
+You can use any object in the :py:mod:`~agnpy.targets` module as target for external Compton.
 For more examples of Inverse Compton radiation and reproduction of literature results, 
-check the external compton tutorial.
+check the `tutorial notebook on external Compton <tutorials/external_compton.html>`_.
 
 
 API
