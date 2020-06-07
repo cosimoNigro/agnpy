@@ -126,6 +126,7 @@ class PointSourceBehindJet:
         self.name = "Monochromatic Point Source Behind the Jet"
         self.L_0 = L_0
         self.epsilon_0 = epsilon_0
+        self.u_0 = (self.L_0 / (4 * np.pi * c * np.power(r, 2))).to("erg cm-3")
 
     def u(self, r, blob=None):
         """integral energy density of the point source at distance r along the 
@@ -139,11 +140,10 @@ class PointSourceBehindJet:
             if provided, the energy density is computed in a reference frame 
             comvoing with the blob
         """
-        u_0 = (self.L_0 / (4 * np.pi * c * np.power(r, 2))).to("erg cm-3")
         if blob:
-            return u_0 / (np.power(blob.Gamma, 2) * np.power(1 + blob.Beta, 2))
+            return self.u_0 / (np.power(blob.Gamma, 2) * np.power(1 + blob.Beta, 2))
         else:
-            return u_0
+            return self.u_0
 
 
 class SSDisk:

@@ -72,13 +72,13 @@ intersphinx_mapping = {
 }
 
 # latex support
-mathjax_config = {                  
-    "TeX": {                        
-        "Macros": {                 
-            "Beta": r"{\mathcal{B}}",       
+mathjax_config = {
+    "TeX": {
+        "Macros": {
+            "Beta": r"{\mathcal{B}}",
             "uunits": r"{{\rm erg}\,{\rm cm}^{-3}}",
             "diff": r"{\mathrm{d}}",
             "utransform": r"{\Gamma^3 (1 + \Beta \mu')^3}",
-            }                       
-        }                           
-    }                               
+        }
+    }
+}

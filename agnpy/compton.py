@@ -1,7 +1,7 @@
 import numpy as np
 from astropy.constants import h, c, m_e, sigma_T
 import astropy.units as u
-from .targets import SSDisk, SphericalShellBLR, RingDustTorus
+from .targets import CMB, SSDisk, SphericalShellBLR, RingDustTorus
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
@@ -11,7 +11,7 @@ epsilon_equivalency = [
 ]
 
 
-__all__ = ["SynchrotronSelfCompton", "ExternalCompton"]
+__all__ = ["SynchrotronSelfCompton", "ExternalCompton", "cos_psi"]
 
 
 def F_c(q, gamma_e):
@@ -261,7 +261,7 @@ class ExternalCompton:
         distance of the blob from the Black Hole (i.e. from the target photons)
     """
 
-    def __init__(self, blob, target, r):
+    def __init__(self, blob, target, r=None):
         self.blob = blob
         # we integrate on a larger grid to account for the transformation
         # of the electron density in the reference frame of the BH
@@ -286,13 +286,57 @@ class ExternalCompton:
         self.phi_size = phi_size
         self.phi = np.linspace(0, 2 * np.pi, self.phi_size)
 
-    def _sed_flux_disk(self, nu):
-        """EC on SS Disk flux SED:
+    def _sed_flux_cmb(self, nu):
+        """SED flux for EC on CMB
         
-        .. math::
-            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
+        Parameters
+        ----------
+        nu : `~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed, **note** these are 
+            observed frequencies (observer frame).
+        """
+        # define the dimensionless energy
+        epsilon_s = nu.to("", equivalencies=epsilon_equivalency)
+        # transform to BH frame
+        epsilon_s *= 1 + self.blob.z
+        # for multidimensional integration
+        # axis 0: gamma
+        # axis 1: mu
+        # axis 2: phi
+        # axis 3: epsilon_s
+        # arrays starting with _ are multidimensional and used for integration
+        _gamma = np.reshape(self.gamma, (self.gamma.size, 1, 1, 1))
+        _N_e = np.reshape(self.transformed_N_e, (self.transformed_N_e.size, 1, 1, 1))
+        _mu = np.reshape(self.mu, (1, self.mu.size, 1, 1))
+        _phi = np.reshape(self.phi, (1, 1, self.phi.size, 1))
+        _epsilon_s = np.reshape(epsilon_s, (1, 1, 1, epsilon_s.size))
+        # define integrating function
+        _kernel = compton_kernel(
+            _gamma, _epsilon_s, self.target.epsilon_0, self.blob.mu_s, _mu, _phi
+        )
+        _integrand = np.power(_gamma, -2) * _N_e * _kernel
+        integral_gamma = np.trapz(_integrand, self.gamma, axis=0)
+        integral_mu = np.trapz(integral_gamma, self.mu, axis=0)
+        integral_phi = np.trapz(integral_mu, self.phi, axis=0)
+        prefactor_num = (
+            3
+            * c
+            * sigma_T
+            * self.target.u_0
+            * np.power(epsilon_s, 2)
+            * np.power(self.blob.delta_D, 3)
+        )
+        prefactor_denom = (
+            np.power(2, 7)
+            * np.power(np.pi, 2)
+            * np.power(self.blob.d_L, 2)
+            * np.power(self.target.epsilon_0, 2)
+        )
+        sed = prefactor_num / prefactor_denom * integral_phi
+        return sed.to("erg cm-2 s-1")
 
-        Eq. 70 in [Dermer2009]_.
+    def _sed_flux_disk(self, nu):
+        """SED flux for EC on SS Disk
 
         Parameters
         ----------
@@ -356,12 +400,7 @@ class ExternalCompton:
         return sed.to("erg cm-2 s-1")
 
     def _sed_flux_shell_blr(self, nu):
-        """EC on BLR flux SED:
-        
-        .. math::
-            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
-
-        Eq. 80 in [Finke2016]_ plugged in Eq. (1).
+        """SED flux for EC on BLR
 
         Parameters
         ----------
@@ -412,12 +451,7 @@ class ExternalCompton:
         return sed.to("erg cm-2 s-1")
 
     def _sed_flux_ring_torus(self, nu):
-        """EC on Dust Torus flux SED:
-        
-        .. math::
-            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
-
-        Eq. 70 in [Dermer2009]_.
+        """SED flux for EC on DT
 
         Parameters
         ----------
@@ -467,10 +501,7 @@ class ExternalCompton:
         return sed.to("erg cm-2 s-1")
 
     def sed_flux(self, nu):
-        """EC flux SED:
-
-        .. math::
-            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
+        """flux SED for EC
 
         Parameters
         ----------
@@ -478,6 +509,8 @@ class ExternalCompton:
             array of frequencies, in Hz, to compute the sed, **note** these are 
             observed frequencies (observer frame).
         """
+        if isinstance(self.target, CMB):
+            return self._sed_flux_cmb(nu)
         if isinstance(self.target, SSDisk):
             return self._sed_flux_disk(nu)
         if isinstance(self.target, SphericalShellBLR):

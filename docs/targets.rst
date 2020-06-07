@@ -153,28 +153,11 @@ and the redshift of the galaxy have to be specified.
     :width: 500px
     :align: center
 
-Radiation density
------------------
-In order to consider the density of target photons provided to the blob electrons for inverse Compton scattering,
-it is possible to plot the denisty of radiation as a function of the coordinate along
-the jet axis :math:`r`. As an example for the BLR:
-
-.. code-block:: python
-	
-	r = np.logspace(14, 20, 100) * u.cm
-	u_ph_blr = blr.u_ph(r)
-	plt.loglog(r, u_ph_blr)
-	plt.xlabel(r"$r\,/\,\mathrm{cm}$")
-	plt.ylabel(r"$u_{\mathrm{ph}}\,/\,(\mathrm{erg}\,\mathrm{cm}^{-3})$")
-	plt.show() 
-
-.. image:: _static/u_ph_blr.png
-    :width: 500px
-    :align: center
 
 API
 ---
 
 .. automodule:: agnpy.targets
    :noindex:
-   :members: SSDisk, SphericalShellBLR, RingDustTorus 
+   :members: CMB, PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
+   
