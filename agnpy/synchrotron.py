@@ -13,7 +13,7 @@ epsilon_equivalency = [
 ]
 
 
-__all__ = ["R", "U_B", "Synchrotron"]
+__all__ = ["R", "U_B", "nu_synch_peak", "Synchrotron"]
 
 
 def R(x):
@@ -32,9 +32,16 @@ def U_B(B):
     return (np.power(B, 2) / (8 * np.pi)).to("erg cm-3")
 
 
-def nu_B(B):
-    """:math:`\\nu_B` Eq. 7.19 in [DermerMenon2009]_"""
-    return (e * B / (2 * np.pi * m_e * c)).to("Hz")
+def nu_synch_peak(B, gamma):
+    """observed peak frequency for monoenergetic electrons 
+    Eq. 7.19 in [DermerMenon2009]_"""
+    nu_peak = (e * B / (2 * np.pi * m_e * c)) * np.power(gamma, 2)
+    return nu_peak.to("Hz")
+
+
+def epsilon_B(B):
+    r""":math:`\epsilon_B`, Eq. 7.21 [DermerMenon2009]_"""
+    return (B / B_cr).to_value("")
 
 
 class Synchrotron:
@@ -56,7 +63,6 @@ class Synchrotron:
     def __init__(self, blob, ssa=False):
         self.blob = blob
         self.U_B = U_B(self.blob.B_cgs)
-        self.nu_B = nu_B(self.blob.B_cgs)
         self.epsilon_B = (self.blob.B / B_cr).to_value("")
         self.ssa = ssa
 
@@ -193,6 +199,23 @@ class Synchrotron:
         )
         sed = prefactor * self.com_sed_emissivity(epsilon_prime)
         return sed.to("erg cm-2 s-1")
+
+    def sed_flux_delta_approx(self, nu):
+        """synchrotron flux SED using the delta approximation for the synchrotron
+        radiation Eq. 7.70 [DermerMenon2009]_"""
+        epsilon = nu.to("", equivalencies=epsilon_equivalency)
+        # correct epsilon to the jet comoving frame
+        epsilon_prime = (1 + self.blob.z) * epsilon / self.blob.delta_D
+        gamma_s = np.sqrt(epsilon_prime / epsilon_B(self.blob.B))
+        prefactor = (
+            np.power(self.blob.delta_D, 4)
+            / (6 * np.pi * np.power(self.blob.d_L, 2))
+            * c
+            * sigma_T
+            * self.blob.U_B
+        )
+        value = prefactor * np.power(gamma_s, 3) * self.blob.N_e(gamma_s)
+        return value.to("erg cm-2 s-1")
 
     def sed_peak_flux(self, nu):
         """provided a grid of frequencies nu, returns the peak flux of the SED
