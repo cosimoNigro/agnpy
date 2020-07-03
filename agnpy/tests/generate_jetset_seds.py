@@ -20,12 +20,16 @@ jet.set_gamma_grid_size(1000)
 jet.nu_min = 1e8
 jet.nu_max = 1e24
 jet.nu_size = 50
-import IPython; IPython.embed()
-# deactivate SSA
+
+# fetch and print unabsorbed and self-absorbed synchrotron points
 jet.spectral_components.Sync.state = "on"
 jet.eval()
+synch_sed = jet.get_spectral_component_by_name("Sync").get_SED_points()[1]
+print("jetset unabsorbed synchrotron SED spectral points")
+print(synch_sed)
 
-# fetch and print synchrotron points
-sed_synch = jet.get_spectral_component_by_name("Sync").get_SED_points()[1]
-print("jetset synchrotron SED spectral points")
-print(sed_synch)
+jet.spectral_components.Sync.state = "self-abs"
+jet.eval()
+synch_ssa_sed = jet.get_spectral_component_by_name("Sync").get_SED_points()[1]
+print("jetset unabsorbed synchrotron SED spectral points")
+print(synch_ssa_sed)

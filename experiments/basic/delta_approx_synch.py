@@ -1,5 +1,6 @@
 # test delta approximation for the synchrotron SED
 import sys
+
 sys.path.append("../../")
 import astropy.units as u
 import numpy as np
@@ -13,7 +14,13 @@ spectrum_norm = 1e48 * u.Unit("erg")
 # define the spectral function through a dictionary
 spectrum_dict = {
     "type": "BrokenPowerLaw",
-    "parameters": {"p1": 2.5, "p2":3.5, "gamma_b":1e4, "gamma_min": 1e2, "gamma_max": 1e7}
+    "parameters": {
+        "p1": 2.5,
+        "p2": 3.5,
+        "gamma_b": 1e4,
+        "gamma_min": 1e2,
+        "gamma_max": 1e7,
+    },
 }
 R_b = 1e16 * u.cm
 B = 1 * u.G
@@ -32,21 +39,21 @@ sed_delta_approx = synch.sed_flux_delta_approx(nu)
 y = blob.B.value * blob.delta_D
 k_eq = (blob.u_e / blob.U_B).to_value("")
 sed_param = synch_sed_param_bpl(
-    nu.value, 
-    y, 
-    k_eq, 
-    blob.n_e.p1, 
-    blob.n_e.p2, 
-    blob.n_e.gamma_b, 
-    blob.n_e.gamma_min, 
-    blob.n_e.gamma_max, 
-    blob.d_L.cgs.value, 
-    blob.R_b.cgs.value, 
-    blob.z
+    nu.value,
+    y,
+    k_eq,
+    blob.n_e.p1,
+    blob.n_e.p2,
+    blob.n_e.gamma_b,
+    blob.n_e.gamma_min,
+    blob.n_e.gamma_max,
+    blob.d_L.cgs.value,
+    blob.R_b.cgs.value,
+    blob.z,
 )
 
 plt.loglog(nu, sed, ls="-", label="numerical integration")
-plt.loglog(nu, sed_delta_approx, ls="--", label=r"$\delta$" +  "-function approx.")
+plt.loglog(nu, sed_delta_approx, ls="--", label=r"$\delta$" + "-function approx.")
 plt.loglog(nu, sed_param, ls=":", label="parametrisation in " + r"$(y,\,k_{\rm eq})$")
 
 plt.xlabel(r"$\nu\,/\,{\rm Hz}$")
