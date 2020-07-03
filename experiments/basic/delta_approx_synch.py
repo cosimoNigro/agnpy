@@ -30,16 +30,26 @@ sed = synch.sed_flux(nu)
 sed_delta_approx = synch.sed_flux_delta_approx(nu)
 # check that the synchrotron parameterisation work
 y = blob.B.value * blob.delta_D
+k_eq = (blob.u_e / blob.U_B).to_value("")
 sed_param = synch_sed_param_bpl(
-    nu, y, k_eq, p1, p2, gamma_b, gamma_min, gamma_max, d_L, R_b, z
+    nu.value, 
+    y, 
+    k_eq, 
+    blob.n_e.p1, 
+    blob.n_e.p2, 
+    blob.n_e.gamma_b, 
+    blob.n_e.gamma_min, 
+    blob.n_e.gamma_max, 
+    blob.d_L.cgs.value, 
+    blob.R_b.cgs.value, 
+    blob.z
 )
 
-#sed_peak_nu = synch.sed_peak_nu(nu)
-#nu_synch_mono = nu_synch_peak(blob.B_cgs, spectrum_dict["parameters"]["gamma_b"])
+plt.loglog(nu, sed, ls="-", label="numerical integration")
+plt.loglog(nu, sed_delta_approx, ls="--", label=r"$\delta$" +  "-function approx.")
+plt.loglog(nu, sed_param, ls=":", label="parametrisation in " + r"$(y,\,k_{\rm eq})$")
 
-plt.loglog(nu, sed, ls="-")
-plt.loglog(nu, sed_delta_approx, ls="--")
-plt.loglog(nu, sed_param, ls=":")
-#plt.axvline(sed_peak_nu.to_value("Hz"), ls="--", color="k")
-#plt.axvline(nu_synch_mono.to_value("Hz"), ls="--", color="dimgray")
+plt.xlabel(r"$\nu\,/\,{\rm Hz}$")
+plt.ylabel(r"$\nu F_{\nu}\,/\,({\rm erg}\,{\rm cm}^{-2}\,{\rm s}^{-1})$")
+plt.legend()
 plt.show()

@@ -73,7 +73,7 @@ def synch_sed_param_bpl(
         * np.power(d_L, 2)
         * m_e.cgs.value
         * c.cgs.value
-        * denum
+        * bpl_integral
     )
     return prefactor_num / prefactor_denum * np.power(gamma_s, 3) * N_e
 
