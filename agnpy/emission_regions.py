@@ -17,7 +17,7 @@ __all__ = ["Blob"]
 
 
 class Blob:
-    """Simple spherical emission region.
+    r"""Simple spherical emission region.
 
     **Note:** all these quantities are defined in the comoving frame so they are actually
     primed quantities, when referring the notation in [DermerMenon2009]_.
@@ -35,10 +35,10 @@ class Blob:
     B : :class:`~astropy.units.Quantity`
         magnetic field in the blob (Gauss)
     xi : float
-        acceleration coefficient :math:`\\xi` for first-order Fermi acceleration
-        :math:`(\mathrm{d}E/\mathrm{d}t \\propto v \\approx c)`
+        acceleration coefficient :math:`\xi` for first-order Fermi acceleration
+        :math:`(\mathrm{d}E/\mathrm{d}t \propto v \approx c)`
         used to compute limits on the maximum Lorentz factor via
-        :math:`(\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} = \\xi c E / R_L`
+        :math:`(\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} = \xi c E / R_L`
 
     spectrum_norm : :class:`~astropy.units.Quantity`
         normalisation of the electron spectra, by default can be, following 
@@ -121,7 +121,7 @@ class Blob:
         self.set_n_e(self.spectrum_norm, self.spectrum_dict, self.spectrum_norm_type)
 
     def set_n_e(self, spectrum_norm, spectrum_dict, spectrum_norm_type):
-        """set the spectrum :math:`n_e` for the blob"""
+        r"""set the spectrum :math:`n_e` for the blob"""
         model_dict = {
             "PowerLaw": spectra.PowerLaw,
             "BrokenPowerLaw": spectra.BrokenPowerLaw,
@@ -211,52 +211,68 @@ class Blob:
         self.gamma_to_integrate = np.logspace(1, 9, self.gamma_size)
 
     def N_e(self, gamma):
-        """number of electrons as a function of the Lorentz factor, 
+        r"""number of electrons as a function of the Lorentz factor, 
         :math:`N_e(\gamma') = V_b\,n_e(\gamma')`"""
         return self.V_b * self.n_e(gamma)
 
     @property
     def n_e_tot(self):
-        """total electrons density
+        r"""total electrons density
 
         .. math::
-            n_{e,\,tot} = \int^{\gamma'_{max}}_{\gamma'_{min}} \mathrm{d}\gamma' n_e(\gamma')
+            n_{e,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' n_e(\gamma')
         """
         return np.trapz(self.n_e(self.gamma), self.gamma)
 
     @property
     def N_e_tot(self):
-        """total number of electrons
+        r"""total number of electrons
 
         .. math::
-            N_{e,\,tot} = \int^{\gamma'_{max}}_{\gamma'_{min}} \mathrm{d}\gamma' N_e(\gamma')
+            N_{e,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' N_e(\gamma')
         """
         return np.trapz(self.N_e(self.gamma), self.gamma)
 
     @property
     def u_e(self):
-        """total electrons energy density
+        r"""total energy density in non-thermal electrons
 
         .. math::
-            u_{e} = m_e c^2\,\int^{\gamma'_{max}}_{\gamma'_{min}} \mathrm{d}\gamma' \gamma' n_e(\gamma')
+            u_{e} = m_e c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' \gamma' n_e(\gamma')
         """
         return mec2 * np.trapz(self.gamma * self.n_e(self.gamma), self.gamma)
 
     @property
     def W_e(self):
-        """total energy in non-thermal electrons
+        r"""total energy in non-thermal electrons
 
         .. math::
-            W_{e} = m_e c^2\,\int^{\gamma'_{max}}_{\gamma'_{min}} \mathrm{d}\gamma' \gamma' N_e(\gamma')
+            W_{e} = m_e c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm}\gamma' \gamma' N_e(\gamma')
         """
         return mec2 * np.trapz(self.gamma * self.N_e(self.gamma), self.gamma)
 
     @property
-    def P_jet_e(self):
-        """jet power in electrons
+    def U_B(self):
+        r"""energy density of magnetic field
 
         .. math::
-            P_{jet,\,e} = 2 \pi R_b^2 \\beta \Gamma^2 c u_e
+            U_B = B^2 / (8 \pi)
+        """
+        U_B = np.power(self.B_cgs, 2) / (8 * np.pi)
+        return U_B.to("erg cm-3")
+
+    @property
+    def k_eq(self):
+        """equipartition parameter: ratio between totoal electron energy density  
+        magnetic field energy density, Eq. 7.75 of [DermerMenon2009]_"""
+        return (self.u_e / self.U_B).to_value("")
+
+    @property
+    def P_jet_e(self):
+        r"""jet power in electrons
+
+        .. math::
+            P_{jet,\,e} = 2 \pi R_b^2 \beta \Gamma^2 c u_e
         """
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
@@ -265,10 +281,10 @@ class Blob:
 
     @property
     def P_jet_B(self):
-        """jet power in magnetic field
+        r"""jet power in magnetic field
 
         .. math::
-            P_{jet,\,B} = 2 \pi R_b^2 \\beta \Gamma^2 c \\frac{B^2}{8\pi}
+            P_{jet,\,B} = 2 \pi R_b^2 beta \Gamma^2 c \frac{B^2}{8\pi}
         """
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
@@ -277,20 +293,20 @@ class Blob:
 
     @property
     def gamma_max_larmor(self):
-        """maximum Lorentz factor of electrons that have their Larmour radius 
+        r"""maximum Lorentz factor of electrons that have their Larmour radius 
         smaller than the blob radius: :math:`R_L < R_b`. 
         The Larmor frequency and radius in Gaussian units read
 
         .. math::
 
-            \\omega_L &= \\frac{eB}{\gamma m_e c} \\\\
-            R_L &= \\frac{v}{\omega_L} = \\frac{\gamma m_e v c}{e B} \\approx \\frac{\gamma m_e c^2}{e B}
+            \omega_L &= \frac{eB}{\gamma m_e c} \\
+            R_L &= \frac{v}{\omega_L} = \frac{\gamma m_e v c}{e B} \approx \frac{\gamma m_e c^2}{e B}
 
         therefore
 
         .. math::
 
-            R_L < R_b \Rightarrow \gamma_{\mathrm{max}} < \\frac{R_b e B}{m_e c^2}
+            R_L < R_b \Rightarrow \gamma_{\mathrm{max}} < \frac{R_b e B}{m_e c^2}
         """
         return (self.R_b * e * self.B_cgs / mec2).to_value("")
 
@@ -302,9 +318,9 @@ class Blob:
 
         .. math::
 
-            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= \xi c E / R_L \\\\
-            T_{\mathrm{acc}} &= E \,/\,(\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} = R_L / (\xi c) \\\\
-            T_{\mathrm{bal}} &= R_b / c \\\\
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= \xi c E / R_L \\
+            T_{\mathrm{acc}} &= E \,/\,(\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} = R_L / (\xi c) \\
+            T_{\mathrm{bal}} &= R_b / c \\
             T_{\mathrm{acc}} &< T_{\mathrm{bal}} 
             \Rightarrow \gamma_{\mathrm{max}} < \frac{\xi  R_b e B}{m_e c^2} 
         """
@@ -316,8 +332,8 @@ class Blob:
         comparing the acceleration time scale with the synchrotron energy loss
 
         .. math::
-            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= \xi c E / R_L \\\\
-            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} &= 4 / 3 \sigma_T c U_B \gamma^2 \\\\
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= \xi c E / R_L \\
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} &= 4 / 3 \sigma_T c U_B \gamma^2 \\
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} 
             \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{6 \pi \xi e}{\sigma_T B}}
         """
@@ -330,8 +346,8 @@ class Blob:
         WARNING: the highest energy electrons will most often scatter in Klein-Nishina range instead
 
         .. math::
-            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= \xi c E / R_L \\\\
-            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{SSC}} &= 4 / 3 \sigma_T c U_{\mathrm{synch}} \gamma^2 \\\\
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= \xi c E / R_L \\
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{SSC}} &= 4 / 3 \sigma_T c U_{\mathrm{synch}} \gamma^2 \\
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= (\mathrm{d}E/\mathrm{d}t)_{\mathrm{SSC}} 
             \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{3 \xi e B }{\sigma_T U_SSC}}
         """
@@ -359,8 +375,8 @@ class Blob:
         .. math::
 
             T_{\mathrm{synch}} &= E\,/\,(\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} 
-            =  3 m_e c^2 / (4 \sigma_T U_B \gamma) \\\\
-            T_{\mathrm{bal}} &= R_b / c \\\\
+            =  3 m_e c^2 / (4 \sigma_T U_B \gamma) \\
+            T_{\mathrm{bal}} &= R_b / c \\
             T_{\mathrm{synch}} &= T_{\mathrm{bal}} \Rightarrow \gamma_b = 6 \pi m_e c^2 / \sigma_T B^2 R_b 
         """
         gamma_max = (
@@ -378,8 +394,8 @@ class Blob:
 
         .. math::
             T_{\mathrm{SSC}} &= E\,/\,(\mathrm{d}E/\mathrm{d}t)_{\mathrm{SSC}} 
-            =  3 m_e c^2 / (4 \sigma_T U_{\mathrm{SSC}} \gamma) \\\\
-            T_{\mathrm{bal}} &= R_b / c \\\\
+            =  3 m_e c^2 / (4 \sigma_T U_{\mathrm{SSC}} \gamma) \\
+            T_{\mathrm{bal}} &= R_b / c \\
             T_{\mathrm{SSC}} &= T_{\mathrm{bal}} \Rightarrow \gamma_b = 3  m_e c^2 / 4 \sigma_T U_{\mathrm{SSC}} R_b 
         """
         return (3 * mec2 / (4 * sigma_T * self.u_ph_synch * self.R_b)).to("").value
@@ -396,18 +412,8 @@ class Blob:
         return (3 * mec2 / (4 * sigma_T * dt.u_ph(r, self) * self.R_b)).to("").value
 
     @property
-    def U_B(self):
-        r"""Energy density of magnetic field
-
-        .. math::
-            U_B = B^2 / (8 \pi)
-        """
-        U_B = np.power(self.B_cgs, 2) / (8 * np.pi)
-        return U_B.to("erg cm-3")
-
-    @property
     def u_ph_synch(self):
-        """energy density of the synchrotron photons energy losses are:
+        r"""energy density of the synchrotron photons energy losses are:
 
         .. math::        
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} = 4 / 3 \sigma_T c U_B \gamma^2 

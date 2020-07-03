@@ -1,3 +1,4 @@
+# tests on targets module
 import numpy as np
 import astropy.units as u
 from astropy.constants import e, c, m_e, M_sun, G, sigma_sb
