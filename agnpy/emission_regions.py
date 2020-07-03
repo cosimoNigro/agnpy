@@ -235,7 +235,7 @@ class Blob:
 
     @property
     def u_e(self):
-        r"""total electrons energy density
+        r"""total energy density in non-thermal electrons
 
         .. math::
             u_{e} = m_e c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' \gamma' n_e(\gamma')
@@ -250,6 +250,22 @@ class Blob:
             W_{e} = m_e c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm}\gamma' \gamma' N_e(\gamma')
         """
         return mec2 * np.trapz(self.gamma * self.N_e(self.gamma), self.gamma)
+
+    @property
+    def U_B(self):
+        r"""energy density of magnetic field
+
+        .. math::
+            U_B = B^2 / (8 \pi)
+        """
+        U_B = np.power(self.B_cgs, 2) / (8 * np.pi)
+        return U_B.to("erg cm-3")
+
+    @property
+    def k_eq(self):
+        """equipartition parameter: ratio between totoal electron energy density  
+        magnetic field energy density, Eq. 7.75 of [DermerMenon2009]_"""
+        return (self.u_e / self.U_B).to_value("")
 
     @property
     def P_jet_e(self):
@@ -394,16 +410,6 @@ class Blob:
         """
         #        u_ext=np.power(self.Gamma,2) * np.power(1-mu*self.Beta,2) * dt.xi_dt*dt.L_disk/(4*np.pi*np.power(d,2) * c)
         return (3 * mec2 / (4 * sigma_T * dt.u_ph(r, self) * self.R_b)).to("").value
-
-    @property
-    def U_B(self):
-        r"""Energy density of magnetic field
-
-        .. math::
-            U_B = B^2 / (8 \pi)
-        """
-        U_B = np.power(self.B_cgs, 2) / (8 * np.pi)
-        return U_B.to("erg cm-3")
 
     @property
     def u_ph_synch(self):

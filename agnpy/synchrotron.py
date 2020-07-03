@@ -1,7 +1,7 @@
 import numpy as np
 from astropy.constants import h, e, c, m_e, sigma_T
 import astropy.units as u
-
+from .spectra import _broken_power_law
 
 e = e.gauss
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
@@ -13,7 +13,13 @@ epsilon_equivalency = [
 ]
 
 
-__all__ = ["R", "U_B", "nu_synch_peak", "Synchrotron"]
+__all__ = [
+    "R",
+    "U_B",
+    "nu_synch_peak",
+    "Synchrotron",
+    "synch_sed_param_bpl",
+]
 
 
 def R(x):
@@ -28,7 +34,7 @@ def R(x):
 
 
 def U_B(B):
-    """:math:`U_B` Eq. 7.14 in [DermerMenon2009]_"""
+    r""":math:`U_B` Eq. 7.14 in [DermerMenon2009]_"""
     return (np.power(B, 2) / (8 * np.pi)).to("erg cm-3")
 
 
@@ -42,6 +48,33 @@ def nu_synch_peak(B, gamma):
 def epsilon_B(B):
     r""":math:`\epsilon_B`, Eq. 7.21 [DermerMenon2009]_"""
     return (B / B_cr).to_value("")
+
+
+def synch_sed_param_bpl(nu, gamma_min, gamma_max, gamma_b, p1, p2, y, k_eq, z, delta_L):
+    """fast function (no units) providing a parametric fit based on the delta 
+    function approximation parameterisation:
+    y = gamma * delta_D
+    k_eq = W'_e / U_B
+    z and delta_L are repeated to avoid to invoke astropy's distance
+    """
+    epsilon = h.cgs.value * nu / mec2.value
+    gamma_s = np.sqrt(epsilon * (1 + z) * B_cr.value / y)
+    N_e = _broken_power_law(gamma_s, p1, p2, gamma_b, gamma_min, gamma_max)
+    denum_factor = np.power(gamma_b, 2) * (
+        (1 - np.power(gamma_min / gamma_b, 2 - p1)) / (2 - p1)
+        + (np.power(gamma_max / gamma_b, 2 - p2) - 1) / (2 - p2)
+    )
+    prefactor_num = np.power(y, 4) * sigma_T.cgs.value * k_eq
+    prefactor_denum = (
+        3
+        * np.power(2, 7)
+        * np.power(np.pi, 3)
+        * np.power(d_L, 2)
+        * m_e.cgs.value
+        * c.cgs.value
+        * denum
+    )
+    return prefactor_num / prefactor_denum * np.power(gamma_s, 3) * N_e
 
 
 class Synchrotron:
@@ -67,7 +100,7 @@ class Synchrotron:
         self.ssa = ssa
 
     def k_epsilon(self, epsilon):
-        """SSA absorption factor Eq. 7.142 in [DermerMenon2009]_.
+        r"""SSA absorption factor Eq. 7.142 in [DermerMenon2009]_.
         The part of the integrand that is dependent on :math:`\gamma` is 
         computed analytically in each of the :class:`~agnpy.spectra` classes."""
         gamma = self.blob.gamma
@@ -104,7 +137,7 @@ class Synchrotron:
         return attenuation
 
     def com_sed_emissivity(self, epsilon):
-        """Synchrotron  emissivity:
+        r"""Synchrotron  emissivity:
 
         .. math::
             \epsilon'\,J'_{\mathrm{syn}}(\epsilon')\,[\mathrm{erg}\,\mathrm{s}^{-1}]
@@ -122,7 +155,7 @@ class Synchrotron:
         ----------
         epsilon : :class:`~numpy.ndarray`
             array of dimensionless energies (in electron rest mass units) 
-            to compute the sed, :math:`\epsilon = h\\nu / (m_e c^2)`
+            to compute the sed, :math:`\epsilon = h \nu / (m_e c^2)`
 
         Returns
         -------
@@ -150,10 +183,10 @@ class Synchrotron:
         return emissivity.to("erg s-1")
 
     def sed_luminosity(self, nu):
-        """Synchrotron luminosity SED: 
+        r"""Synchrotron luminosity SED: 
 
         .. math::
-            \\nu L_{\\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]
+            \nu L_{\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]
 
         Parameters
         ----------
@@ -173,10 +206,10 @@ class Synchrotron:
         return prefactor * self.com_sed_emissivity(epsilon_prime)
 
     def sed_flux(self, nu):
-        """Synchrotron flux SED:
+        r"""Synchrotron flux SED:
 
         .. math::
-            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
+            \nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
 
         Eq. 21 in [Finke2008]_.
 

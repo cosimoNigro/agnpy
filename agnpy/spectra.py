@@ -1,9 +1,9 @@
 import numpy as np
 import astropy.units as u
-import astropy.constants as const
+from astropy.constants import m_e
 
 
-MEC2 = (const.m_e * const.c * const.c).cgs
+mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 
 
 __all__ = ["PowerLaw", "BrokenPowerLaw", "BrokenPowerLaw2"]
@@ -19,6 +19,22 @@ def _power_law(gamma, p, gamma_min, gamma_max):
     return pwl
 
 
+def _power_law_integral(p, gamma_min, gamma_max):
+    """analytical integral of the simple power law"""
+    if np.isclose(p, 1.0):
+        return np.log(gamma_max / gamma_min)
+    else:
+        return (np.power(gamma_max, 1 - p) - np.power(gamma_min, 1 - p)) / (1 - p)
+
+
+def _power_law_times_gamma_integral(p, gamma_min, gamma_max):
+    """analytical integral of the simple power law multiplied by gamma"""
+    if np.isclose(p, 2.0):
+        return np.log(gamma_max / gamma_min)
+    else:
+        return (np.power(gamma_max, 2 - p) - np.power(gamma_min, 2 - p)) / (2 - p)
+
+
 def _power_law_ssa_integrand(gamma, p, gamma_min, gamma_max):
     """analytical form of the SSA integrand"""
     pwl = np.power(gamma, -p - 1)
@@ -28,7 +44,7 @@ def _power_law_ssa_integrand(gamma, p, gamma_min, gamma_max):
 
 
 def _broken_power_law(gamma, p1, p2, gamma_b, gamma_min, gamma_max):
-    """power law with two spectral indices"""
+    """power law with two spectral indexes"""
     pwl = np.power(gamma / gamma_b, -p1)
     # compute power law with the second spectral index
     p2_condition = gamma > gamma_b
@@ -37,6 +53,41 @@ def _broken_power_law(gamma, p1, p2, gamma_b, gamma_min, gamma_max):
     null_condition = (gamma_min <= gamma) * (gamma <= gamma_max)
     pwl[~null_condition] = 0
     return pwl
+
+
+def _broken_power_law_integral(p1, p2, gamma_b, gamma_min, gamma_max):
+    """analytical integral of the power law with two spectral indexes"""
+    if np.allclose(p1, 1.0):
+        term_1 = gamma_b * np.log(gamma_b / gamma_min)
+    else:
+        term_1 = gamma_b * (1 - np.power(gamma_min / gamma_b, 1 - p1)) / (1 - p1)
+    if np.allclose(p2, 1.0):
+        term_2 = gamma_b * np.log(gamma_max / gamma_b)
+    else:
+        term_2 = gamma_b * (np.power(gamma_max / gamma_b, 1 - p2) - 1) / (1 - p2)
+    return term_1 + term_2
+
+
+def _broken_power_law_times_gamma_integral(p1, p2, gamma_b, gamma_min, gamma_max):
+    """analytical integral of the power law with two spectral indexes multiplied 
+    by gamma"""
+    if np.allclose(p1, 2.0):
+        term_1 = gamma_b * np.log(gamma_b / gamma_min)
+    else:
+        term_1 = (
+            np.power(gamma_b, 2)
+            * (1 - np.power(gamma_min / gamma_b, 2 - p1))
+            / (2 - p1)
+        )
+    if np.allclose(p2, 2.0):
+        term_2 = gamma_b * np.log(gamma_max / gamma_b)
+    else:
+        term_2 = (
+            np.power(gamma_b, 2)
+            * (np.power(gamma_max / gamma_b, 2 - p2) - 1)
+            / (2 - p2)
+        )
+    return term_1 + term_2
 
 
 def _broken_power_law_ssa_integrand(gamma, p1, p2, gamma_b, gamma_min, gamma_max):
@@ -63,6 +114,22 @@ def _broken_power_law_2(gamma, p1, p2, gamma_b, gamma_min, gamma_max):
     null_condition = (gamma_min <= gamma) * (gamma <= gamma_max)
     pwl[~null_condition] = 0
     return pwl
+
+
+def _broken_power_law_2_integral(p1, p2, gamma_b, gamma_min, gamma_max):
+    """analytical integral of Tavecchio's broken power law"""
+    term_1 = _power_law_integral(p1, gamma_min, gamma_b)
+    term_2 = np.power(gamma_b, p2 - p1) * _power_law_integral(p2, gamma_b, gamma_max)
+    return term_1 + term_2
+
+
+def _broken_power_law_2_times_gamma_integral(p1, p2, gamma_b, gamma_min, gamma_max):
+    """analytical integral of Tavecchio's broken power law multiplied by gamma"""
+    term_1 = _power_law_times_gamma_integral(p1, gamma_min, gamma_b)
+    term_2 = np.power(gamma_b, p2 - p1) * _power_law_times_gamma_integral(
+        p2, gamma_b, gamma_max
+    )
+    return term_1 + term_2
 
 
 def _broken_power_law_2_ssa_integrand(gamma, p1, p2, gamma_b, gamma_min, gamma_max):
@@ -118,30 +185,18 @@ class PowerLaw:
         )
 
     @classmethod
+    def from_normalised_density(cls, n_e_tot, p, gamma_min, gamma_max):
+        r"""sets the normalisation :math:`k_e` from the total particle density 
+        :math:`n_{e,\,tot}`"""
+        k_e = n_e_tot / _power_law_integral(p, gamma_min, gamma_max)
+        return cls(k_e.to("cm-3"), p, gamma_min, gamma_max)
+
+    @classmethod
     def from_normalised_u_e(cls, u_e, p, gamma_min, gamma_max):
         r"""sets the normalisation :math:`k_e` from the total energy density 
         :math:`u_e`, Eq. 6.64 in [DermerMenon2009]_"""
-        # avoid and exact value of 2 for the index that will make the analytical
-        # simplification diverge
-        if np.isclose(p, 2.0):
-            p += 1e-3
-        k_e_num = (p - 2) * u_e
-        k_e_denum = MEC2 * (np.power(gamma_min, 2 - p) - np.power(gamma_max, 2 - p))
-        k_e = (k_e_num / k_e_denum).to("cm-3")
-        return cls(k_e, p, gamma_min, gamma_max)
-
-    @classmethod
-    def from_normalised_density(cls, norm, p, gamma_min, gamma_max):
-        r"""sets the normalisation :math:`k_e` from the total particle density 
-        :math:`n_{e,\,tot}`"""
-        # avoid and exact value of 1 for the index that will make the analytical
-        # simplification diverge
-        if np.isclose(p, 1.0):
-            p += 1e-3
-        k_e_num = (p - 1) * norm
-        k_e_denum = np.power(gamma_min, 1 - p) - np.power(gamma_max, 1 - p)
-        k_e = (k_e_num / k_e_denum).to("cm-3")
-        return cls(k_e, p, gamma_min, gamma_max)
+        k_e = u_e / (mec2 * _power_law_times_gamma_integral(p, gamma_min, gamma_max))
+        return cls(k_e.to("cm-3"), p, gamma_min, gamma_max)
 
     @classmethod
     def from_norm_at_gamma_1(cls, norm, p, gamma_min, gamma_max):
@@ -216,35 +271,25 @@ class BrokenPowerLaw:
         )
 
     @classmethod
+    def from_normalised_density(cls, n_e_tot, p1, p2, gamma_b, gamma_min, gamma_max):
+        r"""sets the normalisation :math:`k_e` from the total particle density 
+        :math:`n_{e,\,tot}`"""
+        k_e = n_e_tot / _broken_power_law_integral(
+            p1, p2, gamma_b, gamma_min, gamma_max
+        )
+        return cls(k_e.to("cm-3"), p1, p2, gamma_b, gamma_min, gamma_max)
+
+    @classmethod
     def from_normalised_u_e(cls, u_e, p1, p2, gamma_b, gamma_min, gamma_max):
         r"""sets the normalisation :math:`k_e` from the total energy density 
         :math:`u_e`, Eq. 6.64 in [DermerMenon2009]_"""
-        if np.isclose(p1, 2.0):
-            p1 += 1e-3
-        if np.isclose(p2, 2.0):
-            p2 += 1e-3
-        denum_prefactor = MEC2 * np.power(gamma_b, 2)
-        denum_term_1 = (1 - np.power(gamma_min / gamma_b, 2 - p1)) / (2 - p1)
-        denum_term_2 = (np.power(gamma_max / gamma_b, 2 - p2) - 1) / (2 - p2)
-        k_e = (u_e / (denum_prefactor * (denum_term_1 + denum_term_2))).to("cm-3")
-        return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
-
-    @classmethod
-    def from_normalised_density(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
-        r"""sets the normalisation :math:`k_e` from the total particle density 
-        :math:`n_{e,\,tot}`"""
-        if np.isclose(p1, 1.0):
-            p1 += 1e-3
-        if np.isclose(p2, 1.0):
-            p2 += 1e-3
-        k_e_denum_1 = (gamma_min * np.power(gamma_min / gamma_b, -p1) - gamma_b) / (
-            p1 - 1
+        k_e = u_e / (
+            mec2
+            * _broken_power_law_times_gamma_integral(
+                p1, p2, gamma_b, gamma_min, gamma_max
+            )
         )
-        k_e_denum_2 = (gamma_b - gamma_max * np.power(gamma_max / gamma_b, -p2)) / (
-            p2 - 1
-        )
-        k_e = (norm / (k_e_denum_1 + k_e_denum_2)).to("cm-3")
-        return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
+        return cls(k_e.to("cm-3"), p1, p2, gamma_b, gamma_min, gamma_max)
 
     @classmethod
     def from_norm_at_gamma_1(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
@@ -323,42 +368,25 @@ class BrokenPowerLaw2:
         )
 
     @classmethod
+    def from_normalised_density(cls, n_e_tot, p1, p2, gamma_b, gamma_min, gamma_max):
+        r"""sets the normalisation :math:`k_e` from the total particle density 
+        :math:`n_{e,\,tot}`"""
+        k_e = n_e_tot / _broken_power_law_2_integral(
+            p1, p2, gamma_b, gamma_min, gamma_max
+        )
+        return cls(k_e.to("cm-3"), p1, p2, gamma_b, gamma_min, gamma_max)
+
+    @classmethod
     def from_normalised_u_e(cls, u_e, p1, p2, gamma_b, gamma_min, gamma_max):
         r"""sets the normalisation :math:`k_e` from the total energy density 
         :math:`u_e`, Eq. 6.64 in [DermerMenon2009]_"""
-        if np.isclose(p1, 2.0):
-            p1 += 1e-3
-        if np.isclose(p2, 2.0):
-            p2 += 1e-3
-        k_e_denum_1 = (np.power(gamma_b, 2 - p1) - np.power(gamma_min, 2 - p1)) / (
-            2 - p1
+        k_e = u_e / (
+            mec2
+            * _broken_power_law_2_times_gamma_integral(
+                p1, p2, gamma_b, gamma_min, gamma_max
+            )
         )
-        k_e_denum_2 = (
-            np.power(gamma_b, p2 - p1)
-            * (np.power(gamma_max, 2 - p2) - np.power(gamma_b, 2 - p2))
-            / (2 - p2)
-        )
-        k_e = (u_e / (MEC2 * (k_e_denum_1 + k_e_denum_2))).to("cm-3")
-        return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
-
-    @classmethod
-    def from_normalised_density(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
-        r"""sets the normalisation :math:`k_e` from the total particle density 
-        :math:`n_{e,\,tot}`"""
-        if np.isclose(p1, 1.0):
-            p1 += 1e-3
-        if np.isclose(p2, 1.0):
-            p2 += 1e-3
-        k_e_denum_1 = (np.power(gamma_b, 1 - p1) - np.power(gamma_min, 1 - p1)) / (
-            1 - p1
-        )
-        k_e_denum_2 = (
-            np.power(gamma_b, p2 - p1)
-            * (np.power(gamma_max, 1 - p2) - np.power(gamma_b, 1 - p2))
-            / (1 - p2)
-        )
-        k_e = (norm / (k_e_denum_1 + k_e_denum_2)).to("cm-3")
-        return cls(k_e, p1, p2, gamma_b, gamma_min, gamma_max)
+        return cls(k_e.to("cm-3"), p1, p2, gamma_b, gamma_min, gamma_max)
 
     @classmethod
     def from_norm_at_gamma_1(cls, norm, p1, p2, gamma_b, gamma_min, gamma_max):
