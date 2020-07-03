@@ -1,7 +1,7 @@
 import numpy as np
 from astropy.constants import h, e, c, m_e, sigma_T
 import astropy.units as u
-from .spectra import _broken_power_law
+from .spectra import _broken_power_law, _broken_power_law_times_gamma_integral
 
 e = e.gauss
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
@@ -50,25 +50,26 @@ def epsilon_B(B):
     return (B / B_cr).to_value("")
 
 
-def synch_sed_param_bpl(nu, gamma_min, gamma_max, gamma_b, p1, p2, y, k_eq, z, delta_L):
+def synch_sed_param_bpl(
+    nu, y, k_eq, p1, p2, gamma_b, gamma_min, gamma_max, d_L, R_b, z
+):
     """fast function (no units) providing a parametric fit based on the delta 
     function approximation parameterisation:
     y = gamma * delta_D
-    k_eq = W'_e / U_B
-    z and delta_L are repeated to avoid to invoke astropy's distance
+    k_eq = u'_e / U_B
+    z and d_L are repeated to avoid to invoke astropy's distance
     """
     epsilon = h.cgs.value * nu / mec2.value
     gamma_s = np.sqrt(epsilon * (1 + z) * B_cr.value / y)
     N_e = _broken_power_law(gamma_s, p1, p2, gamma_b, gamma_min, gamma_max)
-    denum_factor = np.power(gamma_b, 2) * (
-        (1 - np.power(gamma_min / gamma_b, 2 - p1)) / (2 - p1)
-        + (np.power(gamma_max / gamma_b, 2 - p2) - 1) / (2 - p2)
+    bpl_integral = _broken_power_law_times_gamma_integral(
+        p1, p2, gamma_b, gamma_min, gamma_max
     )
-    prefactor_num = np.power(y, 4) * sigma_T.cgs.value * k_eq
+    prefactor_num = np.power(y, 4) * sigma_T.cgs.value * np.power(R_b, 3) * k_eq
     prefactor_denum = (
-        3
-        * np.power(2, 7)
-        * np.power(np.pi, 3)
+        np.power(3, 2)
+        * np.power(2, 5)
+        * np.power(np.pi, 2)
         * np.power(d_L, 2)
         * m_e.cgs.value
         * c.cgs.value

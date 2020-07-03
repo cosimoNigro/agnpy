@@ -31,16 +31,7 @@ sed_delta_approx = synch.sed_flux_delta_approx(nu)
 # check that the synchrotron parameterisation work
 y = blob.B.value * blob.delta_D
 sed_param = synch_sed_param_bpl(
-    nu.value, 
-    spectrum_dict["parameters"]["gamma_min"], 
-    spectrum_dict["parameters"]["gamma_max"], 
-    spectrum_dict["parameters"]["gamma_b"], 
-    spectrum_dict["parameters"]["p1"], 
-    spectrum_dict["parameters"]["p2"], 
-    y, 
-    blob.k_eq, 
-    blob.z, 
-    blob.d_L.value
+    nu, y, k_eq, p1, p2, gamma_b, gamma_min, gamma_max, d_L, R_b, z
 )
 
 #sed_peak_nu = synch.sed_peak_nu(nu)
