@@ -1,4 +1,4 @@
-# tests on spectra and emission region
+# tests on spectra and emission region modules
 import numpy as np
 import astropy.units as u
 from astropy.constants import e, c, m_e

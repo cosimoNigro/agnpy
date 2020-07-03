@@ -15,7 +15,6 @@ epsilon_equivalency = [
 
 __all__ = [
     "R",
-    "U_B",
     "nu_synch_peak",
     "Synchrotron",
     "synch_sed_param_bpl",
@@ -31,11 +30,6 @@ def R(x):
     term_2_num = 1 + 2.21 * np.power(x, 2 / 3) + 0.347 * np.power(x, 4 / 3)
     term_2_denom = 1 + 1.353 * np.power(x, 2 / 3) + 0.217 * np.power(x, 4 / 3)
     return term_1_num / term_1_denom * term_2_num / term_2_denom * np.exp(-x)
-
-
-def U_B(B):
-    r""":math:`U_B` Eq. 7.14 in [DermerMenon2009]_"""
-    return (np.power(B, 2) / (8 * np.pi)).to("erg cm-3")
 
 
 def nu_synch_peak(B, gamma):
@@ -96,7 +90,6 @@ class Synchrotron:
 
     def __init__(self, blob, ssa=False):
         self.blob = blob
-        self.U_B = U_B(self.blob.B_cgs)
         self.epsilon_B = (self.blob.B / B_cr).to_value("")
         self.ssa = ssa
 
