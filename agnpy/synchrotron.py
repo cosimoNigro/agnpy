@@ -118,8 +118,12 @@ class Synchrotron:
         return (prefactor_P_syn * prefactor_k_epsilon * integral).to("cm-1")
 
     def tau_ssa(self, epsilon):
-        """SSA opacity, Eq. before 7.122 in [DermerMenon2009]_"""
-        return (2 * self.k_epsilon(epsilon) * self.blob.R_b).to_value("")
+        """SSA opacity, Eq. before 7.122 in [DermerMenon2009]_
+        since we will have formulas dividing by tau, avoid 0 or very small 
+        float values, replacing them with 1e-99"""
+        tau = (2 * self.k_epsilon(epsilon) * self.blob.R_b).to_value("")
+        tau[tau < 1e-99] = 1e-99
+        return tau
 
     def attenuation_ssa(self, epsilon):
         """SSA attenuation, Eq. 7.122 in [DermerMenon2009]_"""

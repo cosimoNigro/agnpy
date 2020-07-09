@@ -59,14 +59,33 @@ sampled_ssc_table = np.loadtxt(sampled_ssc_string, delimiter=",")
 sampled_ssc_nu = sampled_ssc_table[:, 0]
 sampled_ssc_sed = sampled_ssc_table[:, 1]
 
+synch = Synchrotron(PWL_BLOB)
+ssc = SynchrotronSelfCompton(PWL_BLOB, synch)
+# compute the SED as the same frequency at whcih the SED was sampled
+agnpy_ssc_sed = ssc.sed_flux(sampled_ssc_nu * u.Hz).value
+
+import matplotlib.pyplot as plt
+
+plt.loglog(sampled_ssc_nu, agnpy_ssc_sed, ls="-", label="sampled")
+plt.loglog(sampled_ssc_nu, sampled_ssc_sed, ls="--", label="agnpy")
+plt.legend()
+plt.show()
+
 
 class TestSynchrotronSelfCompton:
     """class grouping all tests related to the Synchrotron Slef Compton class"""
 
     def test_ssc_sed(self):
-        """test agnpy synchrotron SED against the one in Figure 7.4 of Dermer Menon"""
+        """test agnpy SSC SED against the one in Figure 7.4 of Dermer Menon"""
         synch = Synchrotron(PWL_BLOB)
         ssc = SynchrotronSelfCompton(PWL_BLOB, synch)
         # compute the SED as the same frequency at whcih the SED was sampled
         agnpy_ssc_sed = ssc.sed_flux(sampled_ssc_nu * u.Hz).value
         assert np.allclose(agnpy_ssc_sed, sampled_ssc_sed)
+
+
+class TestExternalCompton:
+    """class grouping all tests related to the External Compton class"""
+
+    def test_ec_dt_sed(self):
+        pass
