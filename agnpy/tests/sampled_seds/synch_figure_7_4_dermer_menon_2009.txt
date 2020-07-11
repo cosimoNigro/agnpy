@@ -1,5 +1,5 @@
-# the following points are taken with webplotdigitizer from Figure 7.4
-# of Dermer and Menon 2009
+# the following points are taken with webplotdigitizer from 
+# the synchrotron SED in Figure 7.4 of Dermer and Menon 2009
 # nu / Hz | nuFnu / erg cm-2 s-1           
 19281002208.06707, 1.0517919063817168e-12
 31081114937.37773, 1.8893646675076006e-12

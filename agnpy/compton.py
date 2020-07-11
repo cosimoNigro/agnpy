@@ -147,7 +147,7 @@ class SynchrotronSelfCompton:
         )
 
     def com_sed_emissivity(self, epsilon):
-        """SSC  emissivity: 
+        r"""SSC  emissivity: 
 
         .. math::
             \epsilon'\,J'_{\mathrm{SSC}}(\epsilon')\,[\mathrm{erg}\,\mathrm{s}^{-1}]
@@ -196,10 +196,10 @@ class SynchrotronSelfCompton:
         return emissivity.to("erg s-1")
 
     def sed_luminosity(self, nu):
-        """SSC luminosity SED: 
+        r"""SSC luminosity SED: 
 
         .. math::
-            \\nu L_{\\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]
+            \nu L_{\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]
 
         Parameters
         ----------
@@ -214,10 +214,10 @@ class SynchrotronSelfCompton:
         return prefactor * self.com_sed_emissivity(epsilon_prime)
 
     def sed_flux(self, nu):
-        """SSC flux SED:
+        r"""SSC flux SED:
         
         .. math::
-            \\nu F_{\\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
+            \nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
         
         Eq. 15 in [Finke2008]_
 

@@ -5,19 +5,31 @@ from astropy.constants import m_e, c, h
 from astropy.coordinates import Distance
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron, nu_synch_peak, epsilon_B, synch_sed_param_bpl
+import matplotlib.pyplot as plt
 from pathlib import Path
 import pytest
-import matplotlib.pyplot as plt
 
-
-tests_dir = Path(__file__).parent
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 epsilon_equivalency = [
     (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
 ]
-# global blob, same parameters as the one defined to produce Figure 7.4 of
-# Dermer Menon 2009
+tests_dir = Path(__file__).parent
+
+
+def make_sed_comparison_plot(nu, reference_sed, agnpy_sed, fig_title, fig_name):
+    """make a SED comparison plot for visual inspection"""
+    fig, ax = plt.subplots()
+    ax.loglog(nu, reference_sed, marker=".", ls="-", lw=1.5, label="reference")
+    ax.loglog(nu, agnpy_sed, marker=".", ls="--", lw=1.5, label="agnpy")
+    ax.legend()
+    ax.set_xlabel(r"$\nu\,/\,{\rm Hz}$")
+    ax.set_ylabel(r"$\nu F_{\nu}\,/\,({\rm erg}\,{\rm cm}^{-2}\,{\rm s}^{-1})$")
+    ax.set_title(fig_title)
+    fig.savefig(f"{tests_dir}/crosscheck_figures/{fig_name}.png")
+
+
+# global PWL blob, same parameters of Figure 7.4 in Dermer Menon 2009
 SPECTRUM_NORM = 1e48 * u.Unit("erg")
 PWL_DICT = {
     "type": "PowerLaw",
@@ -30,9 +42,8 @@ DELTA_D = 10
 GAMMA = 10
 PWL_BLOB = Blob(R_B, Z, DELTA_D, GAMMA, B, SPECTRUM_NORM, PWL_DICT)
 
-# blob with brokn power law of electrons, to test the parametrisation of the
+# global blob with BPL law of electrons, to test the parametrisation of the
 # delta function approximation
-# set the spectrum normalisation (total energy in electrons in this case)
 BPL_DICT = {
     "type": "BrokenPowerLaw",
     "parameters": {
@@ -53,7 +64,7 @@ class TestSynchrotron:
         """test agnpy synchrotron SED against the one sampled from Figure
         7.4 of Dermer Menon 2009"""
         sampled_synch_sed_table = np.loadtxt(
-            f"{tests_dir}/sampled_seds/figure_7_4_dermer_menon_2009.txt",
+            f"{tests_dir}/sampled_seds/synch_figure_7_4_dermer_menon_2009.txt",
             delimiter=",",
             comments="#",
         )
@@ -62,6 +73,14 @@ class TestSynchrotron:
         synch = Synchrotron(PWL_BLOB)
         # recompute the SED at the same ordinates where the figure was sampled
         agnpy_synch_sed = synch.sed_flux(sampled_synch_nu)
+        # sed comparison plot
+        make_sed_comparison_plot(
+            sampled_synch_nu,
+            sampled_synch_sed,
+            agnpy_synch_sed,
+            "Synchrotron",
+            "synch_comparison_figure_7_4_dermer_menon_2009",
+        )
         deviation = np.abs(1 - agnpy_synch_sed.value / sampled_synch_sed.value)
         # requires that the SED points deviate less than 20 % from the figure
         assert np.all(deviation < 0.15)
