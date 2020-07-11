@@ -1,12 +1,15 @@
 import numpy as np
-from astropy.constants import h, e, c, m_e, sigma_T
 import astropy.units as u
+from astropy.constants import h, e, c, m_e, sigma_T
 from .spectra import _broken_power_law, _broken_power_law_times_gamma_integral
 
 e = e.gauss
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 B_cr = 4.414e13 * u.G  # critical magnetic field
 lambda_c = (h / (m_e * c)).to("cm")  # Compton wavelength
+# equivalency for decomposing Gauss in Gaussian-cgs units (not available in astropy)
+Gauss_cgs_unit = "cm(-1/2) g(1/2) s-1"
+Gauss_cgs_equivalency = [(u.G, u.Unit(Gauss_cgs_unit), lambda x: x, lambda x: x)]
 # equivalency to transform frequencies to energies in electron rest mass units
 epsilon_equivalency = [
     (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
@@ -35,6 +38,7 @@ def R(x):
 def nu_synch_peak(B, gamma):
     """observed peak frequency for monoenergetic electrons 
     Eq. 7.19 in [DermerMenon2009]_"""
+    B = B.to(Gauss_cgs_unit, equivalencies=Gauss_cgs_equivalency)
     nu_peak = (e * B / (2 * np.pi * m_e * c)) * np.power(gamma, 2)
     return nu_peak.to("Hz")
 
