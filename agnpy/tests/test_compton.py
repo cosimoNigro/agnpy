@@ -18,13 +18,32 @@ tests_dir = Path(__file__).parent
 
 def make_sed_comparison_plot(nu, reference_sed, agnpy_sed, fig_title, fig_name):
     """make a SED comparison plot for visual inspection"""
-    fig, ax = plt.subplots()
-    ax.loglog(nu, reference_sed, marker=".", ls="-", lw=1.5, label="reference")
-    ax.loglog(nu, agnpy_sed, marker=".", ls="--", lw=1.5, label="agnpy")
-    ax.legend()
-    ax.set_xlabel(r"$\nu\,/\,{\rm Hz}$")
-    ax.set_ylabel(r"$\nu F_{\nu}\,/\,({\rm erg}\,{\rm cm}^{-2}\,{\rm s}^{-1})$")
-    ax.set_title(fig_title)
+    fig, ax = plt.subplots(
+        2, sharex=True, gridspec_kw={"height_ratios": [2, 1]}, figsize=(8, 6)
+    )
+    # plot the SEDs in the upper panel
+    ax[0].loglog(nu, reference_sed, marker=".", ls="-", lw=1.5, label="reference")
+    ax[0].loglog(nu, agnpy_sed, marker=".", ls="--", lw=1.5, label="agnpy")
+    ax[0].legend()
+    ax[0].set_xlabel(r"$\nu\,/\,{\rm Hz}$")
+    ax[0].set_ylabel(r"$\nu F_{\nu}\,/\,({\rm erg}\,{\rm cm}^{-2}\,{\rm s}^{-1})$")
+    ax[0].set_title(fig_title)
+    # plot the deviation in the bottom panel
+    deviation = 1 - agnpy_sed / reference_sed
+    ax[1].semilogx(
+        nu,
+        deviation,
+        lw=1.5,
+        label=r"$1 - \nu F_{\nu, \rm agnpy} \, / \,\nu F_{\nu, \rm reference}$",
+    )
+    ax[1].legend(loc=2)
+    ax[1].axhline(0, ls="-", lw=1.5, color="dimgray")
+    ax[1].axhline(0.2, ls="--", lw=1.5, color="dimgray")
+    ax[1].axhline(-0.2, ls="--", lw=1.5, color="dimgray")
+    ax[1].axhline(0.3, ls=":", lw=1.5, color="dimgray")
+    ax[1].axhline(-0.3, ls=":", lw=1.5, color="dimgray")
+    ax[1].set_ylim([-0.5, 0.5])
+    ax[1].set_xlabel(r"$\nu / Hz$")
     fig.savefig(f"{tests_dir}/crosscheck_figures/{fig_name}.png")
 
 
@@ -127,8 +146,9 @@ class TestExternalCompton:
             "External Compton on Shakura Sunyaev Disk",
             "ec_disk_comparison_figure_8_finke_2016",
         )
-        # requires that the SED points deviate less than 20 % from the figure
-        assert True
+        # requires that the SED points deviate less than 40% from the figure
+        deviation = np.abs(1 - agnpy_ec_disk_sed.value / sampled_ec_disk_sed.value)
+        assert np.all(deviation < 0.4)
 
     def test_ec_blr_reference_sed(self):
         """test agnpy SED for EC on BLR against the one in Figure 10 of Finke 2016"""
@@ -156,8 +176,9 @@ class TestExternalCompton:
             "External Compton on Spherical Shell Broad Line Region",
             "ec_blr_comparison_figure_10_finke_2016",
         )
-        # requires that the SED points deviate less than 20 % from the figure
-        assert True
+        # requires that the SED points deviate less than 30% from the figure
+        deviation = np.abs(1 - agnpy_ec_blr_sed.value / sampled_ec_blr_sed.value)
+        assert np.all(deviation < 0.3)
 
     def test_ec_dt_reference_sed(self):
         """test agnpy SED for EC on DT against the one in Figure 11 of Finke 2016"""
@@ -177,7 +198,7 @@ class TestExternalCompton:
         csi_dt = 0.1
         dt = RingDustTorus(L_disk, csi_dt, T_dt)
         # recompute the SED at the same ordinates where the figure was sampled
-        ec_dt = ExternalCompton(BPL_BLOB, dt, r=1e19 * u.cm)
+        ec_dt = ExternalCompton(BPL_BLOB, dt, r=1e20 * u.cm)
         agnpy_ec_dt_sed = ec_dt.sed_flux(sampled_ec_dt_nu)
         # sed comparison plot
         make_sed_comparison_plot(
@@ -187,5 +208,6 @@ class TestExternalCompton:
             "External Compton on Ring Dust Torus",
             "ec_dt_comparison_figure_11_finke_2016",
         )
-        # requires that the SED points deviate less than 20 % from the figure
-        assert True
+        # requires that the SED points deviate less than 30% from the figure
+        deviation = np.abs(1 - agnpy_ec_dt_sed.value / sampled_ec_dt_sed.value)
+        assert np.all(deviation < 0.3)
