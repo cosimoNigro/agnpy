@@ -141,9 +141,9 @@ class PointSourceBehindJet:
         """
         u_0 = (self.L_0 / (4 * np.pi * c * np.power(r, 2))).to("erg cm-3")
         if blob:
-            return self.u_0 / (np.power(blob.Gamma, 2) * np.power(1 + blob.Beta, 2))
+            return u_0 / (np.power(blob.Gamma, 2) * np.power(1 + blob.Beta, 2))
         else:
-            return self.u_0
+            return u_0
 
 
 class SSDisk:

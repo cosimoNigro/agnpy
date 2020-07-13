@@ -2,10 +2,9 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import e, c, m_e, M_sun, G, sigma_sb
-from agnpy.targets import SSDisk
+from agnpy.targets import CMB, SSDisk
 import pytest
 
-# global quantities defining the test disk
 M_BH = 1.2 * 1e9 * M_sun
 L_DISK = 1.512 * 1e46 * u.Unit("erg s-1")
 ETA = 1 / 12
@@ -23,10 +22,10 @@ M_DOT = 2.019 * 1e26 * u.Unit("g s-1")
 
 RTOL = 1e-2
 
-
 class TestDisk:
     """class grouping all the tests related to the SSDisk target"""
-
+    
+    # global quantities defining the test disk
     def test_L_Edd(self):
         assert u.allclose(DISK.L_Edd, L_EDD, rtol=RTOL)
 
