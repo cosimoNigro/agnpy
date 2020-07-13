@@ -5,7 +5,7 @@ from astropy.constants import m_e, c, M_sun
 from astropy.coordinates import Distance
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron
-from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
+from agnpy.targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
 from agnpy.compton import SynchrotronSelfCompton, ExternalCompton
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -34,7 +34,7 @@ def make_sed_comparison_plot(nu, reference_sed, agnpy_sed, fig_title, fig_name):
         nu,
         deviation,
         lw=1.5,
-        label=r"$1 - \nu F_{\nu, \rm agnpy} \, / \,\nu F_{\nu, \rm reference}$",
+        label=r"$|1 - \nu F_{\nu, \rm agnpy} \, / \,\nu F_{\nu, \rm reference}|$",
     )
     ax[1].legend(loc=2)
     ax[1].axhline(0, ls="-", lw=1.5, color="dimgray")
@@ -111,8 +111,9 @@ class TestSynchrotronSelfCompton:
             "ssc_comparison_figure_7_4_dermer_menon_2009",
         )
         # requires that the SED points deviate less than 15% from the figure
-        deviation = np.abs(1 - agnpy_ssc_sed.value / sampled_ssc_sed.value)
-        assert np.all(deviation < 0.15)
+        assert u.allclose(
+            agnpy_ssc_sed, sampled_ssc_sed, atol=0 * u.Unit("erg cm-2 s-1"), rtol=0.15
+        )
 
 
 class TestExternalCompton:
@@ -147,8 +148,12 @@ class TestExternalCompton:
             "ec_disk_comparison_figure_8_finke_2016",
         )
         # requires that the SED points deviate less than 40% from the figure
-        deviation = np.abs(1 - agnpy_ec_disk_sed.value / sampled_ec_disk_sed.value)
-        assert np.all(deviation < 0.4)
+        assert u.allclose(
+            agnpy_ec_disk_sed,
+            sampled_ec_disk_sed,
+            atol=0 * u.Unit("erg cm-2 s-1"),
+            rtol=0.4,
+        )
 
     def test_ec_blr_reference_sed(self):
         """test agnpy SED for EC on BLR against the one in Figure 10 of Finke 2016"""
@@ -177,8 +182,12 @@ class TestExternalCompton:
             "ec_blr_comparison_figure_10_finke_2016",
         )
         # requires that the SED points deviate less than 30% from the figure
-        deviation = np.abs(1 - agnpy_ec_blr_sed.value / sampled_ec_blr_sed.value)
-        assert np.all(deviation < 0.3)
+        assert u.allclose(
+            agnpy_ec_blr_sed,
+            sampled_ec_blr_sed,
+            atol=0 * u.Unit("erg cm-2 s-1"),
+            rtol=0.3,
+        )
 
     def test_ec_dt_reference_sed(self):
         """test agnpy SED for EC on DT against the one in Figure 11 of Finke 2016"""
@@ -209,5 +218,53 @@ class TestExternalCompton:
             "ec_dt_comparison_figure_11_finke_2016",
         )
         # requires that the SED points deviate less than 30% from the figure
-        deviation = np.abs(1 - agnpy_ec_dt_sed.value / sampled_ec_dt_sed.value)
-        assert np.all(deviation < 0.3)
+        assert u.allclose(
+            agnpy_ec_dt_sed,
+            sampled_ec_dt_sed,
+            atol=0 * u.Unit("erg cm-2 s-1"),
+            rtol=0.3,
+        )
+
+    def test_ec_blr_vs_point_source(self):
+        """check if in the limit of large distances the EC on the BLR tends to
+        the one of a point-like source approximating it"""
+        # broad line region
+        L_disk = 2 * 1e46 * u.Unit("erg s-1")
+        xi_line = 0.024
+        R_line = 1e17 * u.cm
+        blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
+        # point like source approximating the blr
+        ps_blr = PointSourceBehindJet(blr.xi_line * L_disk, blr.epsilon_line)
+        # external Compton
+        ec_blr = ExternalCompton(BPL_BLOB, blr, r=1e22 * u.cm)
+        ec_ps_blr = ExternalCompton(BPL_BLOB, ps_blr, r=1e22 * u.cm)
+        # seds
+        nu = np.logspace(15, 28) * u.Hz
+        ec_blr_sed = ec_blr.sed_flux(nu)
+        ec_ps_blr_sed = ec_ps_blr.sed_flux(nu)
+        # requires a 20% deviation from the two SED points
+        assert u.allclose(
+            ec_blr_sed, ec_ps_blr_sed, atol=0 * u.Unit("erg cm-2 s-1"), rtol=0.2
+        )
+
+    def test_ec_dt_vs_point_source(self):
+        """check if in the limit of large distances the EC on the DT tends to
+        the one of a point-like source approximating it"""
+        # dust torus
+        L_disk = 2 * 1e46 * u.Unit("erg s-1")
+        T_dt = 1e3 * u.K
+        csi_dt = 0.1
+        dt = RingDustTorus(L_disk, csi_dt, T_dt)
+        # point like source approximating the dt
+        ps_dt = PointSourceBehindJet(dt.xi_dt * L_disk, dt.epsilon_dt)
+        # external Compton
+        ec_dt = ExternalCompton(BPL_BLOB, dt, r=1e22 * u.cm)
+        ec_ps_dt = ExternalCompton(BPL_BLOB, ps_dt, r=1e22 * u.cm)
+        # seds
+        nu = np.logspace(15, 28) * u.Hz
+        ec_dt_sed = ec_dt.sed_flux(nu)
+        ec_ps_dt_sed = ec_ps_dt.sed_flux(nu)
+        # requires a 20% deviation from the two SED points
+        assert u.allclose(
+            ec_dt_sed, ec_ps_dt_sed, atol=0 * u.Unit("erg cm-2 s-1"), rtol=0.2
+        )

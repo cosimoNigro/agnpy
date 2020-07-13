@@ -100,9 +100,13 @@ class TestSynchrotron:
             "Synchrotron",
             "synch_comparison_figure_7_4_dermer_menon_2009",
         )
-        deviation = np.abs(1 - agnpy_synch_sed.value / sampled_synch_sed.value)
-        # requires that the SED points deviate less than 20 % from the figure
-        assert np.all(deviation < 0.15)
+        # requires that the SED points deviate less than 15% from the figure
+        assert u.allclose(
+            agnpy_synch_sed,
+            sampled_synch_sed,
+            atol=0 * u.Unit("erg cm-2 s-1"),
+            rtol=0.15,
+        )
 
     def test_ssa_sed(self):
         """test this version SSA SED against the one generated with version 0.0.6"""
@@ -115,7 +119,9 @@ class TestSynchrotron:
         sampled_ssa_sed = sampled_ssa_sed_table[:, 1] * u.Unit("erg cm-2 s-1")
         ssa = Synchrotron(PWL_BLOB, ssa=True)
         agnpy_ssa_sed = ssa.sed_flux(sampled_ssa_nu)
-        assert np.allclose(agnpy_ssa_sed.value, sampled_ssa_sed.value, atol=0)
+        assert u.allclose(
+            agnpy_ssa_sed, sampled_ssa_sed, atol=0 * u.Unit("erg cm-2 s-1"),
+        )
 
     def test_nu_synch_peak(self):
         gamma = 100
