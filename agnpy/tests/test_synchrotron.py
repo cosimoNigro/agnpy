@@ -1,19 +1,58 @@
 # test on synchrotron module
 import numpy as np
 import astropy.units as u
-from astropy.constants import m_e, c
+from astropy.constants import m_e, c, h
 from astropy.coordinates import Distance
 from agnpy.emission_regions import Blob
-from agnpy.synchrotron import Synchrotron
+from agnpy.synchrotron import Synchrotron, nu_synch_peak, epsilon_B, synch_sed_param_bpl
+import matplotlib.pyplot as plt
+from pathlib import Path
 import pytest
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
-# global blob
+epsilon_equivalency = [
+    (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
+]
+tests_dir = Path(__file__).parent
+
+
+def make_sed_comparison_plot(nu, reference_sed, agnpy_sed, fig_title, fig_name):
+    """make a SED comparison plot for visual inspection"""
+    fig, ax = plt.subplots(
+        2, sharex=True, gridspec_kw={"height_ratios": [2, 1]}, figsize=(8, 6)
+    )
+    # plot the SEDs in the upper panel
+    ax[0].loglog(nu, reference_sed, marker=".", ls="-", lw=1.5, label="reference")
+    ax[0].loglog(nu, agnpy_sed, marker=".", ls="--", lw=1.5, label="agnpy")
+    ax[0].legend()
+    ax[0].set_xlabel(r"$\nu\,/\,{\rm Hz}$")
+    ax[0].set_ylabel(r"$\nu F_{\nu}\,/\,({\rm erg}\,{\rm cm}^{-2}\,{\rm s}^{-1})$")
+    ax[0].set_title(fig_title)
+    # plot the deviation in the bottom panel
+    deviation = 1 - agnpy_sed / reference_sed
+    ax[1].semilogx(
+        nu,
+        deviation,
+        lw=1.5,
+        label=r"$1 - \nu F_{\nu, \rm agnpy} \, / \,\nu F_{\nu, \rm reference}$",
+    )
+    ax[1].legend(loc=2)
+    ax[1].axhline(0, ls="-", lw=1.5, color="dimgray")
+    ax[1].axhline(0.2, ls="--", lw=1.5, color="dimgray")
+    ax[1].axhline(-0.2, ls="--", lw=1.5, color="dimgray")
+    ax[1].axhline(0.3, ls=":", lw=1.5, color="dimgray")
+    ax[1].axhline(-0.3, ls=":", lw=1.5, color="dimgray")
+    ax[1].set_ylim([-0.5, 0.5])
+    ax[1].set_xlabel(r"$\nu / Hz$")
+    fig.savefig(f"{tests_dir}/crosscheck_figures/{fig_name}.png")
+
+
+# global PWL blob, same parameters of Figure 7.4 in Dermer Menon 2009
 SPECTRUM_NORM = 1e48 * u.Unit("erg")
 PWL_DICT = {
     "type": "PowerLaw",
-    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7},
+    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e5},
 }
 R_B = 1e16 * u.cm
 B = 1 * u.G
@@ -22,433 +61,97 @@ DELTA_D = 10
 GAMMA = 10
 PWL_BLOB = Blob(R_B, Z, DELTA_D, GAMMA, B, SPECTRUM_NORM, PWL_DICT)
 
-# global frequency grid
-NU = np.logspace(8, 24, 200) * u.Hz
-
-# synchrotron SED computed by jetset with the same blob parameters, at the same
-# frequencies
-jetset_synch_sed = np.asarray(
-    [
-        4.37784282e-016,
-        5.59467894e-016,
-        7.14938874e-016,
-        9.13565528e-016,
-        1.16731317e-015,
-        1.49142359e-015,
-        1.90541863e-015,
-        2.43405329e-015,
-        3.10917909e-015,
-        3.97090678e-015,
-        5.07121506e-015,
-        6.47488351e-015,
-        8.26677626e-015,
-        1.05510400e-014,
-        1.34663522e-014,
-        1.71790898e-014,
-        2.19154469e-014,
-        2.79411243e-014,
-        3.56223285e-014,
-        4.53830132e-014,
-        5.78119322e-014,
-        7.35826334e-014,
-        9.36346123e-014,
-        1.19032023e-013,
-        1.51257824e-013,
-        1.91982865e-013,
-        2.43510538e-013,
-        3.08447283e-013,
-        3.90284255e-013,
-        4.93063390e-013,
-        6.21874364e-013,
-        7.82963310e-013,
-        9.83274976e-013,
-        1.23248442e-012,
-        1.53892527e-012,
-        1.91778822e-012,
-        2.37621441e-012,
-        2.93880445e-012,
-        3.60378579e-012,
-        4.41305350e-012,
-        5.33729917e-012,
-        6.45221844e-012,
-        7.66248698e-012,
-        9.09977045e-012,
-        1.05691170e-011,
-        1.22607482e-011,
-        1.38716832e-011,
-        1.56363851e-011,
-        1.71796710e-011,
-        1.87507048e-011,
-        2.00135627e-011,
-        2.11749909e-011,
-        2.20735542e-011,
-        2.28199507e-011,
-        2.34399762e-011,
-        2.39574952e-011,
-        2.44499389e-011,
-        2.49134919e-011,
-        2.53821916e-011,
-        2.58544020e-011,
-        2.63352919e-011,
-        2.68249128e-011,
-        2.73236335e-011,
-        2.78316173e-011,
-        2.83490437e-011,
-        2.88760828e-011,
-        2.94129215e-011,
-        2.99597526e-011,
-        3.05167503e-011,
-        3.10841091e-011,
-        3.16620160e-011,
-        3.22506460e-011,
-        3.28502181e-011,
-        3.34609457e-011,
-        3.40830287e-011,
-        3.47166894e-011,
-        3.53621341e-011,
-        3.60195651e-011,
-        3.66892134e-011,
-        3.73713087e-011,
-        3.80660835e-011,
-        3.87737852e-011,
-        3.94946520e-011,
-        4.02289208e-011,
-        4.09768407e-011,
-        4.17386557e-011,
-        4.25146199e-011,
-        4.33050153e-011,
-        4.41101158e-011,
-        4.49301888e-011,
-        4.57655216e-011,
-        4.66163789e-011,
-        4.74830290e-011,
-        4.83657914e-011,
-        4.92649686e-011,
-        5.01808633e-011,
-        5.11138090e-011,
-        5.20640997e-011,
-        5.30320470e-011,
-        5.40179892e-011,
-        5.50222406e-011,
-        5.60451591e-011,
-        5.70871129e-011,
-        5.81484425e-011,
-        5.92295136e-011,
-        6.03306874e-011,
-        6.14523043e-011,
-        6.25947571e-011,
-        6.37584527e-011,
-        6.49437855e-011,
-        6.61511649e-011,
-        6.73810015e-011,
-        6.86336831e-011,
-        6.99096258e-011,
-        7.12092733e-011,
-        7.25330504e-011,
-        7.38814323e-011,
-        7.52548688e-011,
-        7.66538234e-011,
-        7.80787241e-011,
-        7.95300909e-011,
-        8.10082667e-011,
-        8.25139093e-011,
-        8.40473390e-011,
-        8.56092659e-011,
-        8.71998877e-011,
-        8.88200487e-011,
-        9.04697062e-011,
-        9.21499202e-011,
-        9.38604846e-011,
-        9.56025916e-011,
-        9.73757904e-011,
-        9.91814066e-011,
-        1.01018608e-010,
-        1.02888810e-010,
-        1.04790839e-010,
-        1.06725928e-010,
-        1.08692810e-010,
-        1.10691908e-010,
-        1.12722257e-010,
-        1.14782158e-010,
-        1.16872213e-010,
-        1.18985889e-010,
-        1.21128259e-010,
-        1.23282824e-010,
-        1.25464565e-010,
-        1.27637264e-010,
-        1.29836650e-010,
-        1.31988846e-010,
-        1.34170744e-010,
-        1.36239030e-010,
-        1.38339199e-010,
-        1.40231101e-010,
-        1.42139333e-010,
-        1.43721221e-010,
-        1.45274795e-010,
-        1.46339729e-010,
-        1.47292546e-010,
-        1.47545292e-010,
-        1.47540794e-010,
-        1.46581372e-010,
-        1.45132572e-010,
-        1.42461451e-010,
-        1.38963748e-010,
-        1.34039949e-010,
-        1.27862428e-010,
-        1.20259433e-010,
-        1.10975082e-010,
-        1.00671266e-010,
-        8.84590602e-011,
-        7.62183104e-011,
-        6.23205442e-011,
-        4.99150595e-011,
-        3.67279629e-011,
-        2.65324088e-011,
-        1.67323190e-011,
-        1.04512720e-011,
-        5.26091977e-012,
-        2.64822090e-012,
-        9.69788248e-013,
-        3.51175527e-013,
-        8.28644309e-014,
-        1.85375119e-014,
-        2.33903906e-015,
-        2.58629762e-016,
-        1.33842944e-017,
-        5.27506764e-019,
-        7.67872513e-021,
-        6.68105359e-023,
-        1.60161134e-025,
-        1.52514601e-028,
-        2.82068819e-032,
-        1.05358687e-036,
-        1.00000000e-120,
-        1.00000000e-120,
-        1.00000000e-120,
-        1.00000000e-120,
-        1.00000000e-120,
-        1.00000000e-120,
-        1.00000000e-120,
-    ]
-)
-
-jetset_synch_ssa_sed = np.asarray(
-    [
-        2.00919079e-022,
-        3.49171071e-022,
-        6.06816994e-022,
-        1.05458068e-021,
-        1.83275537e-021,
-        3.18517320e-021,
-        5.53559560e-021,
-        9.62058113e-021,
-        1.67201818e-020,
-        2.90595480e-020,
-        5.05055598e-020,
-        8.77811467e-020,
-        1.52568585e-019,
-        2.65183009e-019,
-        4.60921299e-019,
-        8.01182721e-019,
-        1.39263200e-018,
-        2.42086844e-018,
-        4.20831049e-018,
-        7.31611850e-018,
-        1.27191835e-017,
-        2.21147329e-017,
-        3.84517204e-017,
-        6.68656103e-017,
-        1.16281606e-016,
-        2.02247304e-016,
-        3.51795707e-016,
-        6.12031628e-016,
-        1.06491827e-015,
-        1.85330550e-015,
-        3.22605481e-015,
-        5.61688714e-015,
-        9.78281263e-015,
-        1.70424267e-014,
-        2.97030055e-014,
-        5.17764954e-014,
-        9.02922086e-014,
-        1.57428109e-013,
-        2.74232282e-013,
-        4.77146759e-013,
-        8.21714630e-013,
-        1.41319952e-012,
-        2.30368845e-012,
-        3.75529458e-012,
-        5.46094345e-012,
-        7.89165432e-012,
-        1.01747676e-011,
-        1.28992053e-011,
-        1.51304606e-011,
-        1.73948350e-011,
-        1.91098735e-011,
-        2.06227364e-011,
-        2.17425782e-011,
-        2.26263655e-011,
-        2.33337689e-011,
-        2.38958733e-011,
-        2.44181521e-011,
-        2.48947747e-011,
-        2.53728869e-011,
-        2.58487929e-011,
-        2.63325637e-011,
-        2.68232396e-011,
-        2.73228434e-011,
-        2.78311226e-011,
-        2.83488138e-011,
-        2.88759363e-011,
-        2.94128547e-011,
-        2.99597093e-011,
-        3.05167309e-011,
-        3.10840963e-011,
-        3.16620101e-011,
-        3.22506422e-011,
-        3.28502163e-011,
-        3.34609446e-011,
-        3.40830282e-011,
-        3.47166891e-011,
-        3.53621339e-011,
-        3.60195650e-011,
-        3.66892133e-011,
-        3.73713086e-011,
-        3.80660834e-011,
-        3.87737852e-011,
-        3.94946520e-011,
-        4.02289208e-011,
-        4.09768407e-011,
-        4.17386557e-011,
-        4.25146199e-011,
-        4.33050153e-011,
-        4.41101158e-011,
-        4.49301888e-011,
-        4.57655216e-011,
-        4.66163789e-011,
-        4.74830290e-011,
-        4.83657914e-011,
-        4.92649686e-011,
-        5.01808633e-011,
-        5.11138090e-011,
-        5.20640997e-011,
-        5.30320470e-011,
-        5.40179892e-011,
-        5.50222406e-011,
-        5.60451591e-011,
-        5.70871129e-011,
-        5.81484425e-011,
-        5.92295136e-011,
-        6.03306874e-011,
-        6.14523043e-011,
-        6.25947571e-011,
-        6.37584527e-011,
-        6.49437855e-011,
-        6.61511649e-011,
-        6.73810015e-011,
-        6.86336831e-011,
-        6.99096258e-011,
-        7.12092733e-011,
-        7.25330504e-011,
-        7.38814323e-011,
-        7.52548688e-011,
-        7.66538234e-011,
-        7.80787241e-011,
-        7.95300909e-011,
-        8.10082667e-011,
-        8.25139093e-011,
-        8.40473390e-011,
-        8.56092659e-011,
-        8.71998877e-011,
-        8.88200487e-011,
-        9.04697062e-011,
-        9.21499202e-011,
-        9.38604846e-011,
-        9.56025916e-011,
-        9.73757904e-011,
-        9.91814066e-011,
-        1.01018608e-010,
-        1.02888810e-010,
-        1.04790839e-010,
-        1.06725928e-010,
-        1.08692810e-010,
-        1.10691908e-010,
-        1.12722257e-010,
-        1.14782158e-010,
-        1.16872213e-010,
-        1.18985889e-010,
-        1.21128259e-010,
-        1.23282824e-010,
-        1.25464565e-010,
-        1.27637264e-010,
-        1.29836650e-010,
-        1.31988846e-010,
-        1.34170744e-010,
-        1.36239030e-010,
-        1.38339199e-010,
-        1.40231101e-010,
-        1.42139333e-010,
-        1.43721221e-010,
-        1.45274795e-010,
-        1.46339729e-010,
-        1.47292546e-010,
-        1.47545292e-010,
-        1.47540794e-010,
-        1.46581372e-010,
-        1.45132572e-010,
-        1.42461451e-010,
-        1.38963748e-010,
-        1.34039949e-010,
-        1.27862428e-010,
-        1.20259433e-010,
-        1.10975082e-010,
-        1.00671266e-010,
-        8.84590602e-011,
-        7.62183104e-011,
-        6.23205442e-011,
-        4.99150595e-011,
-        3.67279629e-011,
-        2.65324088e-011,
-        1.67323190e-011,
-        1.04512720e-011,
-        5.26091977e-012,
-        2.64822090e-012,
-        9.69788248e-013,
-        3.51175527e-013,
-        8.28644309e-014,
-        1.85375119e-014,
-        2.33903906e-015,
-        2.58629762e-016,
-        1.33842944e-017,
-        5.27506764e-019,
-        7.67872513e-021,
-        6.68105359e-023,
-        1.60161134e-025,
-        1.52514601e-028,
-        2.82068819e-032,
-        1.05358687e-036,
-        1.00000000e-120,
-        1.00000000e-120,
-        1.00000000e-120,
-        1.00000000e-120,
-        1.00000000e-120,
-        1.00000000e-120,
-        1.00000000e-120,
-    ]
-)
+# global blob with BPL law of electrons, to test the parametrisation of the
+# delta function approximation
+BPL_DICT = {
+    "type": "BrokenPowerLaw",
+    "parameters": {
+        "p1": 2.5,
+        "p2": 3.5,
+        "gamma_b": 1e4,
+        "gamma_min": 1e2,
+        "gamma_max": 1e7,
+    },
+}
+BPL_BLOB = Blob(R_B, Z, DELTA_D, GAMMA, B, SPECTRUM_NORM, BPL_DICT)
 
 
 class TestSynchrotron:
     """class grouping all tests related to the Synchrotron class"""
 
-    def test_jetset_synch_sed(self):
-        """test agnpy synchrotron SED against jetset one"""
+    def test_synch_reference_sed(self):
+        """test agnpy synchrotron SED against the one sampled from Figure
+        7.4 of Dermer Menon 2009"""
+        sampled_synch_sed_table = np.loadtxt(
+            f"{tests_dir}/sampled_seds/synch_figure_7_4_dermer_menon_2009.txt",
+            delimiter=",",
+            comments="#",
+        )
+        sampled_synch_nu = sampled_synch_sed_table[:, 0] * u.Hz
+        sampled_synch_sed = sampled_synch_sed_table[:, 1] * u.Unit("erg cm-2 s-1")
         synch = Synchrotron(PWL_BLOB)
-        agnpy_synch_sed = synch.sed_flux(NU).value
-        assert np.allclose(agnpy_synch_sed, jetset_synch_sed)
+        # recompute the SED at the same ordinates where the figure was sampled
+        agnpy_synch_sed = synch.sed_flux(sampled_synch_nu)
+        # sed comparison plot
+        make_sed_comparison_plot(
+            sampled_synch_nu,
+            sampled_synch_sed,
+            agnpy_synch_sed,
+            "Synchrotron",
+            "synch_comparison_figure_7_4_dermer_menon_2009",
+        )
+        # requires that the SED points deviate less than 15% from the figure
+        assert u.allclose(
+            agnpy_synch_sed,
+            sampled_synch_sed,
+            atol=0 * u.Unit("erg cm-2 s-1"),
+            rtol=0.15,
+        )
 
-    def test_jetset_synch_ssa_sed(self):
-        """test agnpy synchrotron SED against jetset one, considering SSA"""
-        synch_ssa = Synchrotron(PWL_BLOB, ssa=True)
-        agnpy_synch_ssa_sed = synch_ssa.sed_flux(NU).value
-        assert np.allclose(agnpy_synch_ssa_sed, jetset_synch_ssa_sed)
+    def test_ssa_sed(self):
+        """test this version SSA SED against the one generated with version 0.0.6"""
+        sampled_ssa_sed_table = np.loadtxt(
+            f"{tests_dir}/sampled_seds/ssa_sed_agnpy_v0_0_6.txt",
+            delimiter=",",
+            comments="#",
+        )
+        sampled_ssa_nu = sampled_ssa_sed_table[:, 0] * u.Hz
+        sampled_ssa_sed = sampled_ssa_sed_table[:, 1] * u.Unit("erg cm-2 s-1")
+        ssa = Synchrotron(PWL_BLOB, ssa=True)
+        agnpy_ssa_sed = ssa.sed_flux(sampled_ssa_nu)
+        assert u.allclose(
+            agnpy_ssa_sed, sampled_ssa_sed, atol=0 * u.Unit("erg cm-2 s-1"),
+        )
+
+    def test_nu_synch_peak(self):
+        gamma = 100
+        nu_synch = nu_synch_peak(B, gamma).to_value("Hz")
+        assert np.isclose(nu_synch, 27992489872.33304, atol=0)
+
+    def test_epsilon_B(self):
+        assert np.isclose(epsilon_B(B), 2.2655188038060715e-14, atol=0)
+
+    def test_synch_sed_param_bpl(self):
+        """check that the parametrised delta-function approximation for the
+        synchrotron radiation gives exactly the same result of the full formula 
+        from which it was derived"""
+        nu = np.logspace(8, 23) * u.Hz
+        synch = Synchrotron(BPL_BLOB)
+        sed_delta_approx = synch.sed_flux_delta_approx(nu)
+        # check that the synchrotron parameterisation work
+        y = BPL_BLOB.B.value * BPL_BLOB.delta_D
+        k_eq = (BPL_BLOB.u_e / BPL_BLOB.U_B).to_value("")
+        sed_param = synch_sed_param_bpl(
+            nu.value,
+            y,
+            k_eq,
+            BPL_BLOB.n_e.p1,
+            BPL_BLOB.n_e.p2,
+            BPL_BLOB.n_e.gamma_b,
+            BPL_BLOB.n_e.gamma_min,
+            BPL_BLOB.n_e.gamma_max,
+            BPL_BLOB.d_L.cgs.value,
+            BPL_BLOB.R_b.cgs.value,
+            BPL_BLOB.z,
+        )
+        assert np.allclose(sed_param, sed_delta_approx.value, atol=0, rtol=1e-2)

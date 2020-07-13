@@ -72,7 +72,7 @@ def _broken_power_law_times_gamma_integral(p1, p2, gamma_b, gamma_min, gamma_max
     """analytical integral of the power law with two spectral indexes multiplied 
     by gamma"""
     if np.allclose(p1, 2.0):
-        term_1 = gamma_b * np.log(gamma_b / gamma_min)
+        term_1 = np.power(gamma_b, 2) * np.log(gamma_b / gamma_min)
     else:
         term_1 = (
             np.power(gamma_b, 2)
@@ -80,7 +80,7 @@ def _broken_power_law_times_gamma_integral(p1, p2, gamma_b, gamma_min, gamma_max
             / (2 - p1)
         )
     if np.allclose(p2, 2.0):
-        term_2 = gamma_b * np.log(gamma_max / gamma_b)
+        term_2 = np.power(gamma_b, 2) * np.log(gamma_max / gamma_b)
     else:
         term_2 = (
             np.power(gamma_b, 2)
