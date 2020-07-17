@@ -4,18 +4,11 @@ import astropy.units as u
 from astropy.coordinates import Distance
 from astropy.constants import e, c, m_e, M_sun, G, sigma_sb
 from agnpy.emission_regions import Blob
-from agnpy.targets import CMB, PointSourceBehindJet, SSDisk
+from agnpy.targets import CMB, PointSourceBehindJet, SSDisk, SphericalShellBLR
 import pytest
 
-# global CMB at z = 1
-CMB_Z_1 = CMB(z=1)
-
-# global PointSourceBehindJet
-PS = PointSourceBehindJet(1e46 * u.Unit("erg s-1"), 1e-5)
-R_PS = np.asarray([1e18, 1e19, 1e20]) * u.cm
-
 # global PWL blob, used to compute energy densities of targets
-# in the reference frame comoving with the blob
+# in the reference frame comoving with it
 SPECTRUM_NORM = 1e48 * u.Unit("erg")
 PWL_DICT = {
     "type": "PowerLaw",
@@ -27,6 +20,13 @@ Z = Distance(1e27, unit=u.cm).z
 DELTA_D = 10
 GAMMA = 10
 PWL_BLOB = Blob(R_B, Z, DELTA_D, GAMMA, B, SPECTRUM_NORM, PWL_DICT)
+
+# global CMB at z = 1
+CMB_Z_1 = CMB(z=1)
+
+# global PointSourceBehindJet
+PS = PointSourceBehindJet(1e46 * u.Unit("erg s-1"), 1e-5)
+R_PS = np.asarray([1e18, 1e19, 1e20]) * u.cm
 
 # global disk
 M_BH = 1.2 * 1e9 * M_sun
@@ -41,6 +41,10 @@ DISK = SSDisk(M_BH, L_DISK, ETA, R_IN, R_OUT)
 # useful for checks
 L_EDD = 15.12 * 1e46 * u.Unit("erg s-1")
 M_DOT = 2.019 * 1e26 * u.Unit("g s-1")
+
+# global SphericalShellBLR
+BLR = SphericalShellBLR(L_DISK, 0.1, "Lyalpha", 1e17 * u.cm)
+R_BLR = np.logspace(16, 20, 10) * u.cm
 
 
 class TestCMB:
@@ -87,7 +91,7 @@ class TestPointSourceBehindJet:
         )
 
 
-class TestDisk:
+class TestSSDisk:
     """class grouping all the tests related to the SSDisk target"""
 
     # global quantities defining the test disk
@@ -162,3 +166,84 @@ class TestDisk:
         R_tilde = 10
         epsilon = DISK.epsilon(R_tilde)
         assert np.isclose(epsilon, 2.7 * DISK.Theta(R_tilde), atol=0, rtol=1e-2)
+
+
+class TestSphericalShellBLR:
+    """class grouping all the tests related to the SphericalShellBLR target"""
+
+    @pytest.mark.parametrize(
+        "line, lambda_line",
+        [
+            ("Lyalpha", 1215.67 * u.Angstrom),
+            ("Lybeta", 1025.72 * u.Angstrom),
+            ("Halpha", 6564.61 * u.Angstrom),
+            ("Hbeta", 4862.68 * u.Angstrom),
+        ],
+    )
+    def test_line_dict(self, line, lambda_line):
+        """test correct loading of some of the emission line"""
+        blr = SphericalShellBLR(1e46 * u.Unit("erg s-1"), 0.1, line, 1e17)
+        assert u.isclose(blr.lambda_line, lambda_line, atol=0 * u.Angstrom)
+
+    def test_u(self):
+        """test u in the stationary reference frame"""
+        assert u.allclose(
+            [
+                4.02698710e-01,
+                4.12267268e-01,
+                5.49297935e-01,
+                9.36951182e-02,
+                1.12734943e-02,
+                1.44410780e-03,
+                1.86318218e-04,
+                2.40606696e-05,
+                3.10750072e-06,
+                4.01348246e-07,
+            ]
+            * u.Unit("erg / cm3"),
+            BLR.u(R_BLR),
+            atol=0 * u.Unit("erg / cm3"),
+        )
+
+    def test_u_blr_vs_point_source(self):
+        """test that for large enough distances the energy density of the 
+        BLR tends to the one of a point like source approximating it"""
+        # point source with the same luminosity as the BLR
+        ps_blr = PointSourceBehindJet(BLR.xi_line * BLR.L_disk, BLR.epsilon_line)
+        # r >> R_line
+        r = np.logspace(18, 22, 10) * u.cm
+        assert u.allclose(BLR.u(r), ps_blr.u(r), atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
+
+    def test_u_comoving(self):
+        """test u in the reference frame comoving with the blob"""
+        assert u.allclose(
+            [
+                1.35145224e01,
+                1.39362806e01,
+                1.98574615e01,
+                7.22733332e-02,
+                2.50276530e-04,
+                5.60160671e-06,
+                4.97415343e-07,
+                6.09348663e-08,
+                7.81583912e-09,
+                1.00855244e-09,
+            ]
+            * u.Unit("erg / cm3"),
+            BLR.u(R_BLR, PWL_BLOB),
+            atol=0 * u.Unit("erg / cm3"),
+        )
+
+    def test_u_blr_vs_point_source(self):
+        """test that for large enough distances the energy density of the 
+        BLR tends to the one of a point like source approximating it"""
+        # point source with the same luminosity as the BLR
+        ps_blr = PointSourceBehindJet(BLR.xi_line * BLR.L_disk, BLR.epsilon_line)
+        # r >> R_line
+        r = np.logspace(19, 23, 10) * u.cm
+        assert u.allclose(
+            BLR.u(r, PWL_BLOB), 
+            ps_blr.u(r, PWL_BLOB), 
+            atol=0 * u.Unit("erg cm-3"), 
+            rtol=1e-1
+        )
