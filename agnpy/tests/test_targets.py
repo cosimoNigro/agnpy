@@ -4,7 +4,13 @@ import astropy.units as u
 from astropy.coordinates import Distance
 from astropy.constants import e, c, m_e, M_sun, G, sigma_sb
 from agnpy.emission_regions import Blob
-from agnpy.targets import CMB, PointSourceBehindJet, SSDisk, SphericalShellBLR
+from agnpy.targets import (
+    CMB,
+    PointSourceBehindJet,
+    SSDisk,
+    SphericalShellBLR,
+    RingDustTorus,
+)
 import pytest
 
 # global PWL blob, used to compute energy densities of targets
@@ -26,7 +32,6 @@ CMB_Z_1 = CMB(z=1)
 
 # global PointSourceBehindJet
 PS = PointSourceBehindJet(1e46 * u.Unit("erg s-1"), 1e-5)
-R_PS = np.asarray([1e18, 1e19, 1e20]) * u.cm
 
 # global disk
 M_BH = 1.2 * 1e9 * M_sun
@@ -44,7 +49,9 @@ M_DOT = 2.019 * 1e26 * u.Unit("g s-1")
 
 # global SphericalShellBLR
 BLR = SphericalShellBLR(L_DISK, 0.1, "Lyalpha", 1e17 * u.cm)
-R_BLR = np.logspace(16, 20, 10) * u.cm
+
+# dust torus definition
+DT = RingDustTorus(L_DISK, 0.1, 1000 * u.K)
 
 
 class TestCMB:
@@ -74,18 +81,20 @@ class TestPointSourceBehindJet:
 
     def test_u(self):
         """test u in the stationary reference frame"""
+        r = np.asarray([1e18, 1e19, 1e20]) * u.cm
         assert u.allclose(
             [2.65441873e-02, 2.65441873e-04, 2.65441873e-06] * u.Unit("erg / cm3"),
-            PS.u(R_PS),
+            PS.u(r),
             atol=0 * u.Unit("erg / cm3"),
             rtol=1e-3,
         )
 
     def test_u_comoving(self):
         """test u in the reference frame comoving with the blob"""
+        r = np.asarray([1e18, 1e19, 1e20]) * u.cm
         assert u.allclose(
             [6.6693519e-05, 6.6693519e-07, 6.6693519e-09] * u.Unit("erg / cm3"),
-            PS.u(R_PS, PWL_BLOB),
+            PS.u(r, PWL_BLOB),
             atol=0 * u.Unit("erg / cm3"),
             rtol=1e-3,
         )
@@ -187,6 +196,7 @@ class TestSphericalShellBLR:
 
     def test_u(self):
         """test u in the stationary reference frame"""
+        r = np.logspace(16, 20, 10) * u.cm
         assert u.allclose(
             [
                 4.02698710e-01,
@@ -201,7 +211,7 @@ class TestSphericalShellBLR:
                 4.01348246e-07,
             ]
             * u.Unit("erg / cm3"),
-            BLR.u(R_BLR),
+            BLR.u(r),
             atol=0 * u.Unit("erg / cm3"),
         )
 
@@ -211,11 +221,12 @@ class TestSphericalShellBLR:
         # point source with the same luminosity as the BLR
         ps_blr = PointSourceBehindJet(BLR.xi_line * BLR.L_disk, BLR.epsilon_line)
         # r >> R_line
-        r = np.logspace(18, 22, 10) * u.cm
+        r = np.logspace(19, 23, 10) * u.cm
         assert u.allclose(BLR.u(r), ps_blr.u(r), atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
     def test_u_comoving(self):
         """test u in the reference frame comoving with the blob"""
+        r = np.logspace(16, 20, 10) * u.cm
         assert u.allclose(
             [
                 1.35145224e01,
@@ -230,11 +241,11 @@ class TestSphericalShellBLR:
                 1.00855244e-09,
             ]
             * u.Unit("erg / cm3"),
-            BLR.u(R_BLR, PWL_BLOB),
+            BLR.u(r, PWL_BLOB),
             atol=0 * u.Unit("erg / cm3"),
         )
 
-    def test_u_blr_vs_point_source(self):
+    def test_u_blr_vs_point_source_comoving(self):
         """test that for large enough distances the energy density of the 
         BLR tends to the one of a point like source approximating it"""
         # point source with the same luminosity as the BLR
@@ -242,8 +253,87 @@ class TestSphericalShellBLR:
         # r >> R_line
         r = np.logspace(19, 23, 10) * u.cm
         assert u.allclose(
-            BLR.u(r, PWL_BLOB), 
-            ps_blr.u(r, PWL_BLOB), 
-            atol=0 * u.Unit("erg cm-3"), 
-            rtol=1e-1
+            BLR.u(r, PWL_BLOB),
+            ps_blr.u(r, PWL_BLOB),
+            atol=0 * u.Unit("erg cm-3"),
+            rtol=1e-1,
+        )
+
+
+class TestRingDustTorus:
+    """class grouping all the tests related to the RingDustTorus target"""
+
+    def test_sublimation_radius(self):
+        assert u.allclose(DT.R_dt, 1.361 * 1e19 * u.cm, atol=0 * u.cm, rtol=1e-3)
+
+    def test_setting_radius(self):
+        """check that, when passed manually, the radius is correctly set"""
+        dt = RingDustTorus(L_DISK, 0.1, 1e3 * u.K, 1e19 * u.cm)
+        assert u.allclose(dt.R_dt, 1e19 * u.cm, atol=0 * u.cm)
+
+    def test_u(self):
+        """test u in the stationary reference frame"""
+        r = np.logspace(17, 23, 10) * u.cm
+        assert u.allclose(
+            [
+                2.16675545e-05,
+                2.16435491e-05,
+                2.11389842e-05,
+                1.40715277e-05,
+                1.71541601e-06,
+                8.61241559e-08,
+                4.01273788e-09,
+                1.86287690e-10,
+                8.64677950e-12,
+                4.01348104e-13,
+            ]
+            * u.Unit("erg / cm3"),
+            DT.u(r),
+            atol=0 * u.Unit("erg / cm3"),
+        )
+
+    def test_u_dt_vs_point_source(self):
+        """test that in the stationary reference frame, for large enough 
+        distances, the energy density of the DT tends to the one of a point like 
+        source approximating it"""
+        # point source with the same luminosity as the DT
+        ps_dt = PointSourceBehindJet(DT.xi_dt * DT.L_disk, DT.epsilon_dt)
+        # r >> R_dt
+        r = np.logspace(21, 24, 10) * u.cm
+        assert u.allclose(DT.u(r), ps_dt.u(r), atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
+
+    def test_u_comoving(self):
+        """test u in the reference frame comoving with the blob"""
+        r = np.logspace(17, 23, 10) * u.cm
+        assert u.allclose(
+            [
+                2.13519004e-03,
+                2.02003750e-03,
+                1.50733234e-03,
+                2.37521472e-04,
+                3.50603715e-07,
+                4.21027697e-10,
+                1.04563603e-11,
+                4.68861573e-13,
+                2.17274347e-14,
+                1.00842240e-15,
+            ]
+            * u.Unit("erg / cm3"),
+            DT.u(r, PWL_BLOB),
+            atol=0 * u.Unit("erg / cm3"),
+        )
+
+    def test_u_dt_vs_point_source_comoving(self):
+        """test that in the reference frame comoving with the Blob, for large 
+        enough distances, the energy density of the DT tends to the one of 
+        a point like source approximating it"""
+        # point source with the same luminosity as the DT
+        ps_dt = PointSourceBehindJet(DT.xi_dt * DT.L_disk, DT.epsilon_dt)
+        # r >> R_line
+        r = np.logspace(21, 24, 10) * u.cm
+        assert u.allclose(
+            DT.u(r, PWL_BLOB),
+            ps_dt.u(r, PWL_BLOB),
+            atol=0 * u.Unit("erg cm-3"),
+            rtol=1e-1,
         )
