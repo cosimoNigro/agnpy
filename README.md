@@ -29,6 +29,10 @@ The code is available in the [python package index](https://pypi.org/project/agn
 pip install agnpy
 ```
 
+## tests
+A test suite is available in [`agnpy/tests`](https://github.com/cosimoNigro/agnpy/tree/master/agnpy/tests), to run it just type
+`pytest` in the main directory.
+
 ## shields
 ![](https://github.com/cosimoNigro/agnpy/workflows/CI%20test/badge.svg)
 
