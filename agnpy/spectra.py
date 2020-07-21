@@ -1,46 +1,13 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import m_e
+from astropy.modeling.powerlaws import PowerLaw1D
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 
 
 __all__ = ["PowerLaw", "BrokenPowerLaw", "BrokenPowerLaw2"]
-
-
-# the following functions describe the dependency on the Lorentz factor
-# of the electron distributions, they do not depend on units
-def _power_law(gamma, p, gamma_min, gamma_max):
-    """simple power law"""
-    pwl = np.power(gamma, -p)
-    null_condition = (gamma_min <= gamma) * (gamma <= gamma_max)
-    pwl[~null_condition] = 0
-    return pwl
-
-
-def _power_law_integral(p, gamma_min, gamma_max):
-    """analytical integral of the simple power law"""
-    if np.isclose(p, 1.0):
-        return np.log(gamma_max / gamma_min)
-    else:
-        return (np.power(gamma_max, 1 - p) - np.power(gamma_min, 1 - p)) / (1 - p)
-
-
-def _power_law_times_gamma_integral(p, gamma_min, gamma_max):
-    """analytical integral of the simple power law multiplied by gamma"""
-    if np.isclose(p, 2.0):
-        return np.log(gamma_max / gamma_min)
-    else:
-        return (np.power(gamma_max, 2 - p) - np.power(gamma_min, 2 - p)) / (2 - p)
-
-
-def _power_law_ssa_integrand(gamma, p, gamma_min, gamma_max):
-    """analytical form of the SSA integrand"""
-    pwl = np.power(gamma, -p - 1)
-    null_condition = (gamma_min <= gamma) * (gamma <= gamma_max)
-    pwl[~null_condition] = 0
-    return (-p - 2) * pwl
 
 
 def _broken_power_law(gamma, p1, p2, gamma_b, gamma_min, gamma_max):
@@ -165,14 +132,16 @@ class PowerLaw:
         maximum Lorentz factor of the electron distribution
     """
 
-    def __init__(self, k_e=1e-13 * u.Unit("cm-3"), p=2.0, gamma_min=10, gamma_max=1e5):
+    def __init__(self, k_e=1e-13 * u.Unit("cm-3"), p=2.0, gamma_min=1e2, gamma_max=1e6):
         self.k_e = k_e
         self.p = p
         self.gamma_min = gamma_min
         self.gamma_max = gamma_max
+        self.model = PowerLaw1D(amplitude=self.k_e, x_0=1, alpha=self.p)
+        self.model.bounding_box = (self.gamma_min, self.gamma_max)
 
     def __call__(self, gamma):
-        return self.k_e * _power_law(gamma, self.p, self.gamma_min, self.gamma_max)
+        return self.model(gamma, with_bounding_box=True, fill_value=0)
 
     def __str__(self):
         return (
@@ -184,18 +153,36 @@ class PowerLaw:
             + f" - gamma_max: {self.gamma_max:.2e}\n"
         )
 
+    @staticmethod
+    def _power_law_integral(p, gamma_min, gamma_max):
+        """analytical integral of the power law function"""
+        if np.isclose(p, 1.0):
+            return np.log(gamma_max / gamma_min)
+        else:
+            return (np.power(gamma_max, 1 - p) - np.power(gamma_min, 1 - p)) / (1 - p)
+
+    @staticmethod
+    def _power_law_times_gamma_integral(p, gamma_min, gamma_max):
+        """analytical integral of the power law function multiplied by gamma"""
+        if np.isclose(p, 2.0):
+            return np.log(gamma_max / gamma_min)
+        else:
+            return (np.power(gamma_max, 2 - p) - np.power(gamma_min, 2 - p)) / (2 - p)
+
     @classmethod
     def from_normalised_density(cls, n_e_tot, p, gamma_min, gamma_max):
         r"""sets the normalisation :math:`k_e` from the total particle density 
         :math:`n_{e,\,tot}`"""
-        k_e = n_e_tot / _power_law_integral(p, gamma_min, gamma_max)
+        k_e = n_e_tot / cls._power_law_integral(p, gamma_min, gamma_max)
         return cls(k_e.to("cm-3"), p, gamma_min, gamma_max)
 
     @classmethod
     def from_normalised_u_e(cls, u_e, p, gamma_min, gamma_max):
         r"""sets the normalisation :math:`k_e` from the total energy density 
         :math:`u_e`, Eq. 6.64 in [DermerMenon2009]_"""
-        k_e = u_e / (mec2 * _power_law_times_gamma_integral(p, gamma_min, gamma_max))
+        k_e = u_e / (
+            mec2 * cls._power_law_times_gamma_integral(p, gamma_min, gamma_max)
+        )
         return cls(k_e.to("cm-3"), p, gamma_min, gamma_max)
 
     @classmethod
@@ -206,9 +193,10 @@ class PowerLaw:
     def SSA_integrand(self, gamma):
         r"""(analytical) integrand for the synchrotron self-absorption:
         :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`"""
-        return self.k_e * _power_law_ssa_integrand(
-            gamma, self.p, self.gamma_min, self.gamma_max
-        )
+        pwl = (-self.p - 2) * np.power(gamma, -self.p - 1)
+        condition = (self.gamma_min <= gamma) * (gamma <= self.gamma_max)
+        pwl[~condition] = 0
+        return self.k_e * pwl
 
 
 class BrokenPowerLaw:
