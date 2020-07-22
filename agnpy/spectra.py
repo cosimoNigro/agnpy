@@ -1,7 +1,7 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import m_e
-from astropy.modeling.powerlaws import PowerLaw1D
+from astropy.modeling import Parameter, Fittable1DModel
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
@@ -113,8 +113,8 @@ def _broken_power_law_2_ssa_integrand(gamma, p1, p2, gamma_b, gamma_min, gamma_m
     return pwl
 
 
-class PowerLaw:
-    r"""Class for power-law particle spectrum. 
+class PowerLaw(Fittable1DModel):
+    r"""Class for power-law particle spectrum. Built on astropy Fittable1DModel
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
@@ -131,26 +131,26 @@ class PowerLaw:
     gamma_max : float
         maximum Lorentz factor of the electron distribution
     """
+    k_e = Parameter(default=1e-13 * u.Unit("cm-3"), min=0 * u.Unit("cm-3"))
+    p = Parameter(default=2.0, min=0)
+    gamma_min = Parameter(default=1e2)
+    gamma_max = Parameter(default=1e6)
 
-    def __init__(self, k_e=1e-13 * u.Unit("cm-3"), p=2.0, gamma_min=1e2, gamma_max=1e6):
-        self.k_e = k_e
-        self.p = p
-        self.gamma_min = gamma_min
-        self.gamma_max = gamma_max
-        self.model = PowerLaw1D(amplitude=self.k_e, x_0=1, alpha=self.p)
-        self.model.bounding_box = (self.gamma_min, self.gamma_max)
+    def bounding_box(self):
+        return (self.gamma_min, self.gamma_max)
 
-    def __call__(self, gamma):
-        return self.model(gamma, with_bounding_box=True, fill_value=0)
+    @staticmethod
+    def evaluate(gamma, k_e, p, gamma_min, gamma_max):
+        return k_e * gamma ** (-p)
 
     def __str__(self):
         return (
             f"* electron spectrum\n"
             + f" - power law\n"
-            + f" - k_e: {self.k_e:.2e}\n"
-            + f" - p: {self.p:.2f}\n"
-            + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}\n"
+            + f" - k_e: {self.k_e.value * self.k_e.unit:.2e}\n"
+            + f" - p: {self.p.value:.2f}\n"
+            + f" - gamma_min: {self.gamma_min.value:.2e}\n"
+            + f" - gamma_max: {self.gamma_max.value:.2e}\n"
         )
 
     @staticmethod
@@ -159,7 +159,7 @@ class PowerLaw:
         if np.isclose(p, 1.0):
             return np.log(gamma_max / gamma_min)
         else:
-            return (np.power(gamma_max, 1 - p) - np.power(gamma_min, 1 - p)) / (1 - p)
+            return (gamma_max ** (1 - p) - gamma_min ** (1 - p)) / (1 - p)
 
     @staticmethod
     def _power_law_times_gamma_integral(p, gamma_min, gamma_max):
@@ -167,7 +167,7 @@ class PowerLaw:
         if np.isclose(p, 2.0):
             return np.log(gamma_max / gamma_min)
         else:
-            return (np.power(gamma_max, 2 - p) - np.power(gamma_min, 2 - p)) / (2 - p)
+            return (gamma_max ** (2 - p) - gamma_min ** (2 - p)) / (2 - p)
 
     @classmethod
     def from_normalised_density(cls, n_e_tot, p, gamma_min, gamma_max):
