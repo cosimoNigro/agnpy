@@ -14,7 +14,7 @@ Notation and basic formulas are borrowed from [DermerMenon2009]_ which constitut
 
 Implementation
 ..............
-The numerical operations are delegated to `numpy arrays <https://numpy.org>`_, all the physical quantities computed are casted as `astropy Quantities <https://docs.astropy.org/en/stable/units/>`_. 
+The numerical operations are delegated to `numpy arrays <https://numpy.org>`_, all the physical quantities computed are casted as `astropy Quantities <https://docs.astropy.org/en/stable/units/>`_.
 
 License
 -------
@@ -22,11 +22,17 @@ The code is licensed under `GNU General Public License v3.0 <https://www.gnu.org
 
 Installation
 ------------
-The code is available in the `python package index <https://pypi.org/project/agnpy/>`_ and can be installed via `pip
+The code is available in the `python package index <https://pypi.org/project/agnpy/>`_ and can be installed via ``pip``
 
 .. code-block:: bash
 
     pip install agnpy
+
+The code can also be installed with ``conda``
+
+.. code-block:: bash
+
+    conda install -c conda-forge agnpy
 
 Dependencies
 ------------

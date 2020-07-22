@@ -29,6 +29,12 @@ The code is available in the [python package index](https://pypi.org/project/agn
 pip install agnpy
 ```
 
+The code can also be installed using `conda`
+
+```bash
+conda install -c conda-forge agnpy
+```
+
 ## tests
 A test suite is available in [`agnpy/tests`](https://github.com/cosimoNigro/agnpy/tree/master/agnpy/tests), to run it just type
 `pytest` in the main directory.
