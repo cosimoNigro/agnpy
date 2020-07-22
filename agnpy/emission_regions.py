@@ -125,7 +125,6 @@ class Blob:
         model_dict = {
             "PowerLaw": spectra.PowerLaw,
             "BrokenPowerLaw": spectra.BrokenPowerLaw,
-            "BrokenPowerLaw2": spectra.BrokenPowerLaw2,
         }
         spectrum_type = spectrum_dict["type"]
 

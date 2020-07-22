@@ -1,7 +1,6 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import h, e, c, m_e, sigma_T
-from .spectra import _broken_power_law, _broken_power_law_times_gamma_integral
 
 e = e.gauss
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
@@ -20,7 +19,6 @@ __all__ = [
     "R",
     "nu_synch_peak",
     "Synchrotron",
-    "synch_sed_param_bpl",
 ]
 
 
@@ -48,15 +46,15 @@ def epsilon_B(B):
     return (B / B_cr).to_value("")
 
 
+"""
 def synch_sed_param_bpl(
     nu, y, k_eq, p1, p2, gamma_b, gamma_min, gamma_max, d_L, R_b, z
 ):
-    """fast function (no units) providing a parametric fit based on the delta 
-    function approximation parameterisation:
-    y = gamma * delta_D
-    k_eq = u'_e / U_B
-    z and d_L are repeated to avoid to invoke astropy's distance
-    """
+    # fast function (no units) providing a parametric fit based on the delta 
+    # function approximation parameterisation:
+    # y = gamma * delta_D
+    # k_eq = u'_e / U_B
+    # z and d_L are repeated to avoid to invoke astropy's distance
     epsilon = h.cgs.value * nu / mec2.value
     gamma_s = np.sqrt(epsilon * (1 + z) * B_cr.value / y)
     N_e = _broken_power_law(gamma_s, p1, p2, gamma_b, gamma_min, gamma_max)
@@ -74,6 +72,7 @@ def synch_sed_param_bpl(
         * bpl_integral
     )
     return prefactor_num / prefactor_denum * np.power(gamma_s, 3) * N_e
+"""
 
 
 class Synchrotron:
