@@ -24,7 +24,7 @@ bpwl_test = BrokenPowerLaw(
 # global LogParabola
 q_test = 0.2
 gamma_0_test = 1e4
-bpwl_test = LogParabola(
+lp_test = LogParabola(
     k_e_test, p_test, q_test, gamma_0_test, gamma_min_test, gamma_max_test
 )
 
@@ -83,7 +83,7 @@ def broken_power_law_times_gamma_integral(k_e, p1, p2, gamma_b, gamma_min, gamma
 
 
 class TestPowerLaw:
-    """class grouping all tests related to the PowerLaw spectrum"""
+    """class grouping all tests related to the BrokenPowerLaw spectrum"""
 
     def test_call(self):
         """assert that outside the bounding box the function returns 0"""
@@ -127,7 +127,10 @@ class TestPowerLaw:
         density"""
         n_e_tot = 1e-5 * u.Unit("cm-3")
         pwl = PowerLaw.from_normalised_density(
-            n_e_tot=n_e_tot, p=p_test, gamma_min=gamma_min_test, gamma_max=gamma_max_test
+            n_e_tot=n_e_tot,
+            p=p_test,
+            gamma_min=gamma_min_test,
+            gamma_max=gamma_max_test,
         )
         # calculate n_e_tot
         n_e_tot_calc = pwl.integral(
@@ -159,7 +162,7 @@ class TestPowerLaw:
 
 
 class TestBrokenPowerLaw:
-    """class grouping all tests related to the PowerLaw spectrum"""
+    """class grouping all tests related to the BrokenPowerLaw spectrum"""
 
     def test_call(self):
         """assert that outside the bounding box the function returns 0"""
@@ -170,10 +173,10 @@ class TestBrokenPowerLaw:
         assert not np.all(values[~condition])
 
     @pytest.mark.parametrize("p1", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
-    @pytest.mark.parametrize("p2", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
+    @pytest.mark.parametrize("p2", [0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
     @pytest.mark.parametrize("gamma_b", [1e2, 1e3, 1e4])
     def test_broken_power_law_integral(self, p1, p2, gamma_b):
-        """test the integration of the broken power law for different spectral 
+        """test the integration of the log parabola for different spectral 
         indexes and breaks"""
         bpwl = BrokenPowerLaw(k_e_test, p1, p2, gamma_b, gamma_min_test, gamma_max_test)
         numerical_integral = bpwl.integral(
@@ -252,3 +255,67 @@ class TestBrokenPowerLaw:
             gamma_max=gamma_max_test,
         )
         assert u.isclose(norm, bpwl(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+
+
+class TestLogParabola:
+    """class grouping all tests related to the PowerLaw spectrum
+    the analytical integral is non-trivial so we ignore the comparison with the 
+    analytical integral"""
+
+    def test_call(self):
+        """assert that outside the bounding box the function returns 0"""
+        gamma = np.logspace(0, 8)
+        values = lp_test(gamma).value
+        condition = (gamma_min_test <= gamma) * (gamma <= gamma_max_test)
+        # check that outside the boundaries values are all 0
+        assert not np.all(values[~condition])
+
+    def test_from_normalised_density(self):
+        """test the intialisation of the log parabola from the total particle 
+        density"""
+        n_e_tot = 1e-5 * u.Unit("cm-3")
+        lp = LogParabola.from_normalised_density(
+            n_e_tot=n_e_tot,
+            p=p_test,
+            q=q_test,
+            gamma_0=gamma_0_test,
+            gamma_min=gamma_min_test,
+            gamma_max=gamma_max_test,
+        )
+        # calculate n_e_tot
+        n_e_tot_calc = lp.integral(
+            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=0
+        )
+        assert u.isclose(n_e_tot, n_e_tot_calc, atol=0 * u.Unit("cm-3"), rtol=1e-2)
+
+    def test_from_normalised_energy_density(self):
+        """test the intialisation of the powerlaw from the total particle 
+        energy density"""
+        u_e = 3e-4 * u.Unit("erg cm-3")
+        lp = LogParabola.from_normalised_energy_density(
+            u_e=u_e,
+            p=p_test,
+            q=q_test,
+            gamma_0=gamma_0_test,
+            gamma_min=gamma_min_test,
+            gamma_max=gamma_max_test,
+        )
+        # calculate u_e
+        u_e_calc = mec2 * lp.integral(
+            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=1
+        )
+        assert u.isclose(u_e, u_e_calc, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
+
+    def test_from_norm_at_gamma_1(self):
+        """test the intialisation of the powerlaw from the normalisation at 
+        gamma = 1"""
+        norm = 1e-13 * u.Unit("cm-3")
+        lp = LogParabola.from_norm_at_gamma_1(
+            norm=norm,
+            p=p_test,
+            q=q_test,
+            gamma_0=gamma_0_test,
+            gamma_min=1,
+            gamma_max=gamma_max_test,
+        )
+        assert u.isclose(norm, lp(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)

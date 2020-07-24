@@ -206,7 +206,7 @@ class BrokenPowerLaw(ElectronDistribution):
         )
 
 
-class LogParabola(Fittable1DModel):
+class LogParabola(ElectronDistribution):
     r"""Class for log-parabolic particle spectrum. Built on astropy Fittable1DModel
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
@@ -240,9 +240,7 @@ class LogParabola(Fittable1DModel):
         gamma_ratio = gamma / gamma_0
         index = -p - q * np.log10(gamma_ratio)
         return np.where(
-            (gamma_min <= gamma) * (gamma <= gamma_max),
-            k_e * gamma_ratio ** index,
-            0,
+            (gamma_min <= gamma) * (gamma <= gamma_max), k_e * gamma_ratio ** index, 0,
         )
 
     def __str__(self):
@@ -262,4 +260,3 @@ class LogParabola(Fittable1DModel):
         :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`"""
         prefactor = -(self.p + 2 * self.q * np.log10(gamma / self.gamma_0) + 2) / gamma
         return prefactor * self.__call__(gamma)
-        
