@@ -15,13 +15,13 @@ gamma_max_test = 1e6
 pwl_dict_test = {
     "type": "PowerLaw",
     "parameters": {
-        "p": p_test, 
-        "gamma_min": gamma_min_test, 
-        "gamma_max": gamma_max_test
+        "p": p_test,
+        "gamma_min": gamma_min_test,
+        "gamma_max": gamma_max_test,
     },
 }
 p1_test = 2.4
-p2_test = 3.4 
+p2_test = 3.4
 gamma_b_test = 1e2
 bpwl_dict_test = {
     "type": "BrokenPowerLaw",
@@ -29,8 +29,8 @@ bpwl_dict_test = {
         "p1": p1_test,
         "p2": p2_test,
         "gamma_b": gamma_b_test,
-        "gamma_min": gamma_min_test, 
-        "gamma_max": gamma_max_test
+        "gamma_min": gamma_min_test,
+        "gamma_max": gamma_max_test,
     },
 }
 # blob parameters
@@ -39,8 +39,24 @@ z_test = 0.1
 delta_D_test = 10
 Gamma_test = 10
 B_test = 0.1 * u.G
-pwl_blob_test = Blob(R_b_test, z_test, delta_D_test, Gamma_test, B_test, spectrum_norm_test, pwl_dict_test)
-bpwl_blob_test = Blob(R_b_test, z_test, delta_D_test, Gamma_test, B_test, spectrum_norm_test, bpwl_dict_test)
+pwl_blob_test = Blob(
+    R_b_test,
+    z_test,
+    delta_D_test,
+    Gamma_test,
+    B_test,
+    spectrum_norm_test,
+    pwl_dict_test,
+)
+bpwl_blob_test = Blob(
+    R_b_test,
+    z_test,
+    delta_D_test,
+    Gamma_test,
+    B_test,
+    spectrum_norm_test,
+    bpwl_dict_test,
+)
 # useful for checks
 Beta_test = 1 - 1 / np.power(Gamma_test, 2)
 V_b_test = 4 / 3 * np.pi * np.power(R_b_test, 3)
@@ -59,14 +75,20 @@ class TestBlob:
         """test if the integral norm in cm-3 is correctly set"""
         pwl_blob_test.set_n_e(spectrum_norm_test, pwl_dict_test, "integral")
         assert u.allclose(
-            pwl_blob_test.n_e_tot, spectrum_norm_test, atol=0 * u.Unit("cm-3"), rtol=1e-2
+            pwl_blob_test.n_e_tot,
+            spectrum_norm_test,
+            atol=0 * u.Unit("cm-3"),
+            rtol=1e-2,
         )
 
     def test_pwl_differential_norm_cm3(self):
         """test if the differential norm in cm-3 is correctly set"""
         pwl_blob_test.set_n_e(spectrum_norm_test, pwl_dict_test, "differential")
         assert u.allclose(
-            pwl_blob_test.n_e.k_e.quantity, spectrum_norm_test, atol=0 * u.Unit("cm-3"), rtol=1e-2
+            pwl_blob_test.n_e.k_e.quantity,
+            spectrum_norm_test,
+            atol=0 * u.Unit("cm-3"),
+            rtol=1e-2,
         )
 
     def test_pwl_gamma_1_norm_cm3(self):
@@ -82,10 +104,7 @@ class TestBlob:
         u_e = 3e-4 * u.Unit("erg cm-3")
         pwl_blob_test.set_n_e(u_e, pwl_dict_test, "integral")
         assert u.allclose(
-            pwl_blob_test.u_e,
-            u_e,
-            atol=0 * u.Unit("erg cm-3"),
-            rtol=1e-2,
+            pwl_blob_test.u_e, u_e, atol=0 * u.Unit("erg cm-3"), rtol=1e-2,
         )
 
     def test_pwl_integral_norm_erg(self):
@@ -100,21 +119,30 @@ class TestBlob:
         """test if the integral norm in cm-3 is correctly set"""
         bpwl_blob_test.set_n_e(spectrum_norm_test, bpwl_dict_test, "integral")
         assert u.allclose(
-            bpwl_blob_test.n_e_tot, spectrum_norm_test, atol=0 * u.Unit("cm-3"), rtol=1e-2
+            bpwl_blob_test.n_e_tot,
+            spectrum_norm_test,
+            atol=0 * u.Unit("cm-3"),
+            rtol=1e-2,
         )
 
     def test_bpl_differential_norm_cm3(self):
         """test if the differential norm in cm-3 is correctly set"""
         bpwl_blob_test.set_n_e(spectrum_norm_test, bpwl_dict_test, "differential")
         assert u.allclose(
-            bpwl_blob_test.n_e.k_e, spectrum_norm_test, atol=0 * u.Unit("cm-3"), rtol=1e-2
+            bpwl_blob_test.n_e.k_e,
+            spectrum_norm_test,
+            atol=0 * u.Unit("cm-3"),
+            rtol=1e-2,
         )
 
     def test_bpl_gamma_1_norm_cm3(self):
         """test if the norm at gamma = 1 in cm-3 is correctly set"""
         bpwl_blob_test.set_n_e(spectrum_norm_test, bpwl_dict_test, "gamma=1")
         assert u.allclose(
-            bpwl_blob_test.n_e(1), spectrum_norm_test, atol=0 * u.Unit("cm-3"), rtol=1e-2
+            bpwl_blob_test.n_e(1),
+            spectrum_norm_test,
+            atol=0 * u.Unit("cm-3"),
+            rtol=1e-2,
         )
 
     # - tests for integral normalisations in erg cm-3 and erg
@@ -123,10 +151,7 @@ class TestBlob:
         u_e = 3e-4 * u.Unit("erg cm-3")
         bpwl_blob_test.set_n_e(u_e, bpwl_dict_test, "integral")
         assert u.allclose(
-            bpwl_blob_test.u_e,
-            u_e,
-            atol=0 * u.Unit("erg cm-3"),
-            rtol=1e-2,
+            bpwl_blob_test.u_e, u_e, atol=0 * u.Unit("erg cm-3"), rtol=1e-2,
         )
 
     def test_bpl_integral_norm_erg(self):
@@ -173,19 +198,39 @@ class TestBlob:
         assert np.allclose(pwl_blob_test.U_B, U_B_expected, atol=0 * u.Unit("erg cm-3"))
 
     def test_P_jet_e(self):
-        u_e_expected = mec2 * spectrum_norm_test * np.log(gamma_max_test / gamma_min_test)
+        u_e_expected = (
+            mec2 * spectrum_norm_test * np.log(gamma_max_test / gamma_min_test)
+        )
         P_jet_e_expected = (
-            2 * np.pi * np.power(R_b_test, 2) * Beta_test * np.power(Gamma_test, 2) * c * u_e_expected
+            2
+            * np.pi
+            * np.power(R_b_test, 2)
+            * Beta_test
+            * np.power(Gamma_test, 2)
+            * c
+            * u_e_expected
         )
         assert u.allclose(
-            pwl_blob_test.P_jet_e, P_jet_e_expected, atol=0 * u.Unit("erg s-1"), rtol=1e-2
+            pwl_blob_test.P_jet_e,
+            P_jet_e_expected,
+            atol=0 * u.Unit("erg s-1"),
+            rtol=1e-2,
         )
 
     def test_P_jet_B(self):
         U_B_expected = np.power(B_test.value, 2) / (8 * np.pi) * u.Unit("erg cm-3")
         P_jet_B_expected = (
-            2 * np.pi * np.power(R_b_test, 2) * Beta_test * np.power(Gamma_test, 2) * c * U_B_expected
+            2
+            * np.pi
+            * np.power(R_b_test, 2)
+            * Beta_test
+            * np.power(Gamma_test, 2)
+            * c
+            * U_B_expected
         )
         assert u.allclose(
-            pwl_blob_test.P_jet_B, P_jet_B_expected, atol=0 * u.Unit("erg s-1"), rtol=1e-2
+            pwl_blob_test.P_jet_B,
+            P_jet_B_expected,
+            atol=0 * u.Unit("erg s-1"),
+            rtol=1e-2,
         )

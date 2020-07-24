@@ -16,11 +16,7 @@ epsilon_equivalency = [
 ]
 
 
-__all__ = [
-    "R",
-    "nu_synch_peak",
-    "Synchrotron"
-]
+__all__ = ["R", "nu_synch_peak", "Synchrotron"]
 
 
 def R(x):
