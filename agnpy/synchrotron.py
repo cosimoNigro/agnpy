@@ -1,7 +1,6 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import h, e, c, m_e, sigma_T
-from astropy.modeling import Fittable1DModel
 
 e = e.gauss
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
