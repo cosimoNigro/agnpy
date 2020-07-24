@@ -8,16 +8,24 @@ import pytest
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 # variables with _test are global and meant to be used in all tests
+# global PowerLaw
 k_e_test = 1e-13 * u.Unit("cm-3")
 p_test = 2.1
 gamma_min_test = 10
 gamma_max_test = 1e7
 pwl_test = PowerLaw(k_e_test, p_test, gamma_min_test, gamma_max_test)
+# global BrokenPowerLaw
 p1_test = 2.1
 p2_test = 3.1
 gamma_b_test = 1e3
 bpwl_test = BrokenPowerLaw(
     k_e_test, p1_test, p2_test, gamma_b_test, gamma_min_test, gamma_max_test
+)
+# global LogParabola
+q_test = 0.2
+gamma_0_test = 1e4
+bpwl_test = LogParabola(
+    k_e_test, p_test, q_test, gamma_0_test, gamma_min_test, gamma_max_test
 )
 
 
@@ -117,44 +125,35 @@ class TestPowerLaw:
     def test_from_normalised_density(self):
         """test the intialisation of the power law from the total particle 
         density"""
-        gamma_min = 1e2
-        gamma_max = 1e6
         n_e_tot = 1e-5 * u.Unit("cm-3")
-        p = 3.2
         pwl = PowerLaw.from_normalised_density(
-            n_e_tot=n_e_tot, p=p, gamma_min=gamma_min, gamma_max=gamma_max
+            n_e_tot=n_e_tot, p=p_test, gamma_min=gamma_min_test, gamma_max=gamma_max_test
         )
         # calculate n_e_tot
         n_e_tot_calc = pwl.integral(
-            gamma_low=gamma_min, gamma_up=gamma_max, gamma_power=0
+            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=0
         )
         assert u.isclose(n_e_tot, n_e_tot_calc, atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
     def test_from_normalised_energy_density(self):
         """test the intialisation of the power law from the total particle 
         energy density"""
-        gamma_min = 1e2
-        gamma_max = 1e6
         u_e = 3e-4 * u.Unit("erg cm-3")
-        p = 3.2
         pwl = PowerLaw.from_normalised_energy_density(
-            u_e=u_e, p=p, gamma_min=gamma_min, gamma_max=gamma_max
+            u_e=u_e, p=p_test, gamma_min=gamma_min_test, gamma_max=gamma_max_test
         )
         # calculate u_e
         u_e_calc = mec2 * pwl.integral(
-            gamma_low=gamma_min, gamma_up=gamma_max, gamma_power=1
+            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=1
         )
         assert u.isclose(u_e, u_e_calc, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
     def test_from_norm_at_gamma_1(self):
         """test the intialisation of the powerlaw from the normalisation at 
         gamma = 1"""
-        gamma_min = 1
-        gamma_max = 1e8
         norm = 1e-13 * u.Unit("cm-3")
-        p = 3.2
         pwl = PowerLaw.from_norm_at_gamma_1(
-            norm=norm, p=p, gamma_min=gamma_min, gamma_max=gamma_max
+            norm=norm, p=p_test, gamma_min=1, gamma_max=gamma_max_test
         )
         assert u.isclose(norm, pwl(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
@@ -207,64 +206,49 @@ class TestBrokenPowerLaw:
     def test_from_normalised_density(self):
         """test the intialisation of the broken power law from the total particle 
         density"""
-        gamma_min = 1e2
-        gamma_max = 1e6
         n_e_tot = 1e-5 * u.Unit("cm-3")
-        p1 = 2.2
-        p2 = 3.2
-        gamma_b = 1e4
         bpwl = BrokenPowerLaw.from_normalised_density(
             n_e_tot=n_e_tot,
-            p1=p1,
-            p2=p2,
-            gamma_b=gamma_b,
-            gamma_min=gamma_min,
-            gamma_max=gamma_max,
+            p1=p1_test,
+            p2=p2_test,
+            gamma_b=gamma_b_test,
+            gamma_min=gamma_min_test,
+            gamma_max=gamma_max_test,
         )
         # calculate n_e_tot
         n_e_tot_calc = bpwl.integral(
-            gamma_low=gamma_min, gamma_up=gamma_max, gamma_power=0
+            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=0
         )
         assert u.isclose(n_e_tot, n_e_tot_calc, atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
     def test_from_normalised_energy_density(self):
         """test the intialisation of the powerlaw from the total particle 
         energy density"""
-        gamma_min = 1e2
-        gamma_max = 1e6
         u_e = 3e-4 * u.Unit("erg cm-3")
-        p1 = 2.2
-        p2 = 3.2
-        gamma_b = 1e4
         bpwl = BrokenPowerLaw.from_normalised_energy_density(
             u_e=u_e,
-            p1=p1,
-            p2=p2,
-            gamma_b=gamma_b,
-            gamma_min=gamma_min,
-            gamma_max=gamma_max,
+            p1=p1_test,
+            p2=p2_test,
+            gamma_b=gamma_b_test,
+            gamma_min=gamma_min_test,
+            gamma_max=gamma_max_test,
         )
         # calculate u_e
         u_e_calc = mec2 * bpwl.integral(
-            gamma_low=gamma_min, gamma_up=gamma_max, gamma_power=1
+            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=1
         )
         assert u.isclose(u_e, u_e_calc, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
     def test_from_norm_at_gamma_1(self):
         """test the intialisation of the powerlaw from the normalisation at 
         gamma = 1"""
-        gamma_min = 1
-        gamma_max = 1e8
         norm = 1e-13 * u.Unit("cm-3")
-        p1 = 2.2
-        p2 = 3.2
-        gamma_b = 1e4
         bpwl = BrokenPowerLaw.from_norm_at_gamma_1(
             norm=norm,
-            p1=p1,
-            p2=p2,
-            gamma_b=gamma_b,
-            gamma_min=gamma_min,
-            gamma_max=gamma_max,
+            p1=p1_test,
+            p2=p2_test,
+            gamma_b=gamma_b_test,
+            gamma_min=1,
+            gamma_max=gamma_max_test,
         )
         assert u.isclose(norm, bpwl(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)

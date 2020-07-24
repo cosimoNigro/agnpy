@@ -223,23 +223,33 @@ class LogParabola(Fittable1DModel):
         spectral curvature, note it is positive by definition, will change sign in the function
     gamma_0 : float
         reference Lorentz factor
+    gamma_min : float
+        minimum Lorentz factor of the electron distribution
+    gamma_max : float
+        maximum Lorentz factor of the electron distribution
     """
     k_e = Parameter(default=1e-13 * u.Unit("cm-3"), min=1e-50 * u.Unit("cm-3"))
     p = Parameter(default=2.0, min=0, max=5)
     q = Parameter(default=0.1, min=0, max=5)
     gamma_0 = Parameter(default=1e3)
+    gamma_min = Parameter(default=10)
+    gamma_max = Parameter(default=1e7)
 
     @staticmethod
     def evaluate(gamma, k_e, p, q, gamma_0, gamma_min, gamma_max):
         gamma_ratio = gamma / gamma_0
         index = -p - q * np.log10(gamma_ratio)
-        return k_e * gamma_ratio ** index
+        return np.where(
+            (gamma_min <= gamma) * (gamma <= gamma_max),
+            k_e * gamma_ratio ** index,
+            0,
+        )
 
     def __str__(self):
         return (
             f"* electron spectrum\n"
             + f" - log parabola\n"
-            + f" - k_e: {self.k_e.value * self.k_e.unit:.2e}\n"
+            + f" - k_e: {self.k_e.quantity:.2e}\n"
             + f" - p: {self.p.value:.2f}\n"
             + f" - q: {self.q.value:.2f}\n"
             + f" - gamma_0: {self.gamma_0.value:.2e}\n"
@@ -252,3 +262,4 @@ class LogParabola(Fittable1DModel):
         :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`"""
         prefactor = -(self.p + 2 * self.q * np.log10(gamma / self.gamma_0) + 2) / gamma
         return prefactor * self.__call__(gamma)
+        
