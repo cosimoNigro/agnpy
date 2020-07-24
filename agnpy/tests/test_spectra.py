@@ -7,13 +7,21 @@ import pytest
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
-gamma_min = 10
-gamma_max = 1e7
-pwl = PowerLaw(k_e=1e-13 * u.Unit("cm-3"), p=2)
-pwl.set_bounding(gamma_min, gamma_max)
+# variables with _test are global and meant to be used in all tests
+k_e_test = 1e-13 * u.Unit("cm-3")
+p_test = 2.1
+gamma_min_test = 10
+gamma_max_test = 1e7
+pwl_test = PowerLaw(k_e_test, p_test, gamma_min_test, gamma_max_test)
+p1_test = 2.1
+p2_test = 3.1
+gamma_b_test = 1e3
+bpwl_test = BrokenPowerLaw(
+    k_e_test, p1_test, p2_test, gamma_b_test, gamma_min_test, gamma_max_test
+)
 
 
-def power_law_integral(gamma_min, gamma_max, k_e, p):
+def power_law_integral(k_e, p, gamma_min, gamma_max):
     """analytical integral of the power law"""
     if np.isclose(p, 1.0):
         integral = np.log(gamma_max / gamma_min)
@@ -22,7 +30,7 @@ def power_law_integral(gamma_min, gamma_max, k_e, p):
     return k_e * integral
 
 
-def power_law_times_gamma_integral(gamma_min, gamma_max, k_e, p):
+def power_law_times_gamma_integral(k_e, p, gamma_min, gamma_max):
     """analytical integral of the power law multiplied by gamma"""
     if np.isclose(p, 2.0):
         integral = np.log(gamma_max / gamma_min)
@@ -31,52 +39,232 @@ def power_law_times_gamma_integral(gamma_min, gamma_max, k_e, p):
     return k_e * integral
 
 
+def broken_power_law_integral(k_e, p1, p2, gamma_b, gamma_min, gamma_max):
+    """analytical integral of the power law with two spectral indexes"""
+    if np.allclose(p1, 1.0):
+        term_1 = gamma_b * np.log(gamma_b / gamma_min)
+    else:
+        term_1 = gamma_b * (1 - np.power(gamma_min / gamma_b, 1 - p1)) / (1 - p1)
+    if np.allclose(p2, 1.0):
+        term_2 = gamma_b * np.log(gamma_max / gamma_b)
+    else:
+        term_2 = gamma_b * (np.power(gamma_max / gamma_b, 1 - p2) - 1) / (1 - p2)
+    return k_e * (term_1 + term_2)
+
+
+def broken_power_law_times_gamma_integral(k_e, p1, p2, gamma_b, gamma_min, gamma_max):
+    """analytical integral of the power law with two spectral indexes multiplied 
+    by gamma"""
+    if np.allclose(p1, 2.0):
+        term_1 = np.power(gamma_b, 2) * np.log(gamma_b / gamma_min)
+    else:
+        term_1 = (
+            np.power(gamma_b, 2)
+            * (1 - np.power(gamma_min / gamma_b, 2 - p1))
+            / (2 - p1)
+        )
+    if np.allclose(p2, 2.0):
+        term_2 = np.power(gamma_b, 2) * np.log(gamma_max / gamma_b)
+    else:
+        term_2 = (
+            np.power(gamma_b, 2)
+            * (np.power(gamma_max / gamma_b, 2 - p2) - 1)
+            / (2 - p2)
+        )
+    return k_e * (term_1 + term_2)
+
+
 class TestPowerLaw:
     """class grouping all tests related to the PowerLaw spectrum"""
-
-    def test_set_bounding_box(self):
-        """test changing of the boundaries"""
-        new_gamma_min = 1e2
-        new_gamma_max = 1e6
-        pwl.set_bounding(new_gamma_min, new_gamma_max)
-        assert pwl.bounding_box == (new_gamma_min, new_gamma_max)
 
     def test_call(self):
         """assert that outside the bounding box the function returns 0"""
         gamma = np.logspace(0, 8)
-        values = pwl(gamma).value
-        condition = (gamma_min <= gamma) * (gamma <= gamma_max)
+        values = pwl_test(gamma).value
+        condition = (gamma_min_test <= gamma) * (gamma <= gamma_max_test)
         # check that outside the boundaries values are all 0
         assert not np.all(values[~condition])
 
-    @pytest.mark.parametrize("p", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5])
+    @pytest.mark.parametrize("p", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
     def test_power_law_integral(self, p):
-        """test the integration with different power law indexes"""
-        k_e = 1e-13 * u.Unit("cm-3")
-        gamma_min = 1e2
-        gamma_max = 1e6
-        numerical_integral = PowerLaw().integral(
-            gamma_min=gamma_min, gamma_max=gamma_max, gamma_power=0, k_e=k_e, p=p
+        """test the integration of the power law for different spectral indexes"""
+        pwl = PowerLaw(k_e_test, p, gamma_min_test, gamma_max_test)
+        numerical_integral = pwl.integral(
+            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=0
         )
         analytical_integral = power_law_integral(
-            gamma_min=gamma_min, gamma_max=gamma_max, k_e=k_e, p=p,
+            k_e_test, p, gamma_min_test, gamma_max_test
         )
         assert u.isclose(
             numerical_integral, analytical_integral, atol=0 * u.Unit("cm-3"), rtol=1e-2
         )
 
-    @pytest.mark.parametrize("p", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5])
+    @pytest.mark.parametrize("p", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
     def test_power_law_times_gamma_integral(self, p):
-        """test the integration with different power law indexes"""
-        k_e = 1e-13 * u.Unit("cm-3")
-        gamma_min = 1e2
-        gamma_max = 1e6
-        numerical_integral = PowerLaw().integral(
-            gamma_min=gamma_min, gamma_max=gamma_max, gamma_power=1, k_e=k_e, p=p
+        """test the integration of the power law times gamma for different 
+        spectral indexes"""
+        pwl = PowerLaw(k_e_test, p, gamma_min_test, gamma_max_test)
+        numerical_integral = pwl.integral(
+            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=1
         )
         analytical_integral = power_law_times_gamma_integral(
-            gamma_min=gamma_min, gamma_max=gamma_max, k_e=k_e, p=p,
+            k_e_test, p, gamma_min_test, gamma_max_test,
         )
         assert u.isclose(
             numerical_integral, analytical_integral, atol=0 * u.Unit("cm-3"), rtol=1e-2
         )
+
+    def test_from_normalised_density(self):
+        """test the intialisation of the power law from the total particle 
+        density"""
+        gamma_min = 1e2
+        gamma_max = 1e6
+        n_e_tot = 1e-5 * u.Unit("cm-3")
+        p = 3.2
+        pwl = PowerLaw.from_normalised_density(
+            n_e_tot=n_e_tot, p=p, gamma_min=gamma_min, gamma_max=gamma_max
+        )
+        # calculate n_e_tot
+        n_e_tot_calc = pwl.integral(
+            gamma_low=gamma_min, gamma_up=gamma_max, gamma_power=0
+        )
+        assert u.isclose(n_e_tot, n_e_tot_calc, atol=0 * u.Unit("cm-3"), rtol=1e-2)
+
+    def test_from_normalised_energy_density(self):
+        """test the intialisation of the power law from the total particle 
+        energy density"""
+        gamma_min = 1e2
+        gamma_max = 1e6
+        u_e = 3e-4 * u.Unit("erg cm-3")
+        p = 3.2
+        pwl = PowerLaw.from_normalised_energy_density(
+            u_e=u_e, p=p, gamma_min=gamma_min, gamma_max=gamma_max
+        )
+        # calculate u_e
+        u_e_calc = mec2 * pwl.integral(
+            gamma_low=gamma_min, gamma_up=gamma_max, gamma_power=1
+        )
+        assert u.isclose(u_e, u_e_calc, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
+
+    def test_from_norm_at_gamma_1(self):
+        """test the intialisation of the powerlaw from the normalisation at 
+        gamma = 1"""
+        gamma_min = 1
+        gamma_max = 1e8
+        norm = 1e-13 * u.Unit("cm-3")
+        p = 3.2
+        pwl = PowerLaw.from_norm_at_gamma_1(
+            norm=norm, p=p, gamma_min=gamma_min, gamma_max=gamma_max
+        )
+        assert u.isclose(norm, pwl(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+
+
+class TestBrokenPowerLaw:
+    """class grouping all tests related to the PowerLaw spectrum"""
+
+    def test_call(self):
+        """assert that outside the bounding box the function returns 0"""
+        gamma = np.logspace(0, 8)
+        values = bpwl_test(gamma).value
+        condition = (gamma_min_test <= gamma) * (gamma <= gamma_max_test)
+        # check that outside the boundaries values are all 0
+        assert not np.all(values[~condition])
+
+    @pytest.mark.parametrize("p1", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
+    @pytest.mark.parametrize("p2", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
+    @pytest.mark.parametrize("gamma_b", [1e2, 1e3, 1e4])
+    def test_broken_power_law_integral(self, p1, p2, gamma_b):
+        """test the integration of the broken power law for different spectral 
+        indexes and breaks"""
+        bpwl = BrokenPowerLaw(k_e_test, p1, p2, gamma_b, gamma_min_test, gamma_max_test)
+        numerical_integral = bpwl.integral(
+            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=0
+        )
+        analytical_integral = broken_power_law_integral(
+            k_e_test, p1, p2, gamma_b, gamma_min_test, gamma_max_test
+        )
+        assert u.isclose(
+            numerical_integral, analytical_integral, atol=0 * u.Unit("cm-3"), rtol=1e-2
+        )
+
+    @pytest.mark.parametrize("p1", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
+    @pytest.mark.parametrize("p2", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
+    @pytest.mark.parametrize("gamma_b", [1e2, 1e3, 1e4])
+    def test_broken_power_law_times_gamma_integral(self, p1, p2, gamma_b):
+        """test the integration of the broken power law times gamma for different 
+        spectral indexes and breaks"""
+        bpwl = BrokenPowerLaw(k_e_test, p1, p2, gamma_b, gamma_min_test, gamma_max_test)
+        numerical_integral = bpwl.integral(
+            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=1
+        )
+        analytical_integral = broken_power_law_times_gamma_integral(
+            k_e_test, p1, p2, gamma_b, gamma_min_test, gamma_max_test
+        )
+        assert u.isclose(
+            numerical_integral, analytical_integral, atol=0 * u.Unit("cm-3"), rtol=1e-2
+        )
+
+    def test_from_normalised_density(self):
+        """test the intialisation of the broken power law from the total particle 
+        density"""
+        gamma_min = 1e2
+        gamma_max = 1e6
+        n_e_tot = 1e-5 * u.Unit("cm-3")
+        p1 = 2.2
+        p2 = 3.2
+        gamma_b = 1e4
+        bpwl = BrokenPowerLaw.from_normalised_density(
+            n_e_tot=n_e_tot,
+            p1=p1,
+            p2=p2,
+            gamma_b=gamma_b,
+            gamma_min=gamma_min,
+            gamma_max=gamma_max,
+        )
+        # calculate n_e_tot
+        n_e_tot_calc = bpwl.integral(
+            gamma_low=gamma_min, gamma_up=gamma_max, gamma_power=0
+        )
+        assert u.isclose(n_e_tot, n_e_tot_calc, atol=0 * u.Unit("cm-3"), rtol=1e-2)
+
+    def test_from_normalised_energy_density(self):
+        """test the intialisation of the powerlaw from the total particle 
+        energy density"""
+        gamma_min = 1e2
+        gamma_max = 1e6
+        u_e = 3e-4 * u.Unit("erg cm-3")
+        p1 = 2.2
+        p2 = 3.2
+        gamma_b = 1e4
+        bpwl = BrokenPowerLaw.from_normalised_energy_density(
+            u_e=u_e,
+            p1=p1,
+            p2=p2,
+            gamma_b=gamma_b,
+            gamma_min=gamma_min,
+            gamma_max=gamma_max,
+        )
+        # calculate u_e
+        u_e_calc = mec2 * bpwl.integral(
+            gamma_low=gamma_min, gamma_up=gamma_max, gamma_power=1
+        )
+        assert u.isclose(u_e, u_e_calc, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
+
+    def test_from_norm_at_gamma_1(self):
+        """test the intialisation of the powerlaw from the normalisation at 
+        gamma = 1"""
+        gamma_min = 1
+        gamma_max = 1e8
+        norm = 1e-13 * u.Unit("cm-3")
+        p1 = 2.2
+        p2 = 3.2
+        gamma_b = 1e4
+        bpwl = BrokenPowerLaw.from_norm_at_gamma_1(
+            norm=norm,
+            p1=p1,
+            p2=p2,
+            gamma_b=gamma_b,
+            gamma_min=gamma_min,
+            gamma_max=gamma_max,
+        )
+        assert u.isclose(norm, bpwl(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
