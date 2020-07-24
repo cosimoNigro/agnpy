@@ -18,9 +18,6 @@ Bibliography
 .. [Finke2016] `Finke (2016) <https://ui.adsabs.harvard.edu/abs/2016ApJ...830...94F/abstract>`_,
    "External Compton Scattering in Blazar Jets and the Location of the Gamma-Ray Emitting Region";
 
-.. [Tavecchio1998] `Tavecchio et al. (1998) <https://ui.adsabs.harvard.edu/#abs/1998ApJ...509..608T/abstract>`_,
-   "Constraints on the Physical Parameters of TeV Blazars";
-
 .. [Shakura1973] `Shakuraa and Sunyaev (1973) <https://ui.adsabs.harvard.edu/abs/1973A%26A....24..337S/abstract>`_,
    "Black holes in binary systems. Observational appearance.";
 
