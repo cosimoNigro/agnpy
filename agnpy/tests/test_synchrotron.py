@@ -4,7 +4,7 @@ import astropy.units as u
 from astropy.constants import m_e, c, h
 from astropy.coordinates import Distance
 from agnpy.emission_regions import Blob
-from agnpy.synchrotron import Synchrotron, nu_synch_peak, epsilon_B, synch_sed_param_bpl
+from agnpy.synchrotron import Synchrotron, nu_synch_peak, epsilon_B
 import matplotlib.pyplot as plt
 from pathlib import Path
 import pytest
@@ -120,7 +120,7 @@ class TestSynchrotron:
         ssa = Synchrotron(PWL_BLOB, ssa=True)
         agnpy_ssa_sed = ssa.sed_flux(sampled_ssa_nu)
         assert u.allclose(
-            agnpy_ssa_sed, sampled_ssa_sed, atol=0 * u.Unit("erg cm-2 s-1"),
+            agnpy_ssa_sed, sampled_ssa_sed, atol=0 * u.Unit("erg cm-2 s-1"), rtol=1e-3
         )
 
     def test_nu_synch_peak(self):
@@ -130,28 +130,3 @@ class TestSynchrotron:
 
     def test_epsilon_B(self):
         assert np.isclose(epsilon_B(B), 2.2655188038060715e-14, atol=0)
-
-    def test_synch_sed_param_bpl(self):
-        """check that the parametrised delta-function approximation for the
-        synchrotron radiation gives exactly the same result of the full formula 
-        from which it was derived"""
-        nu = np.logspace(8, 23) * u.Hz
-        synch = Synchrotron(BPL_BLOB)
-        sed_delta_approx = synch.sed_flux_delta_approx(nu)
-        # check that the synchrotron parameterisation work
-        y = BPL_BLOB.B.value * BPL_BLOB.delta_D
-        k_eq = (BPL_BLOB.u_e / BPL_BLOB.U_B).to_value("")
-        sed_param = synch_sed_param_bpl(
-            nu.value,
-            y,
-            k_eq,
-            BPL_BLOB.n_e.p1,
-            BPL_BLOB.n_e.p2,
-            BPL_BLOB.n_e.gamma_b,
-            BPL_BLOB.n_e.gamma_min,
-            BPL_BLOB.n_e.gamma_max,
-            BPL_BLOB.d_L.cgs.value,
-            BPL_BLOB.R_b.cgs.value,
-            BPL_BLOB.z,
-        )
-        assert np.allclose(sed_param, sed_delta_approx.value, atol=0, rtol=1e-2)

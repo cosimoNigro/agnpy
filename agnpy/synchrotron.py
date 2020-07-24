@@ -1,6 +1,7 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import h, e, c, m_e, sigma_T
+from astropy.modeling import Fittable1DModel
 
 e = e.gauss
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
@@ -18,7 +19,7 @@ epsilon_equivalency = [
 __all__ = [
     "R",
     "nu_synch_peak",
-    "Synchrotron",
+    "Synchrotron"
 ]
 
 
@@ -44,35 +45,6 @@ def nu_synch_peak(B, gamma):
 def epsilon_B(B):
     r""":math:`\epsilon_B`, Eq. 7.21 [DermerMenon2009]_"""
     return (B / B_cr).to_value("")
-
-
-"""
-def synch_sed_param_bpl(
-    nu, y, k_eq, p1, p2, gamma_b, gamma_min, gamma_max, d_L, R_b, z
-):
-    # fast function (no units) providing a parametric fit based on the delta 
-    # function approximation parameterisation:
-    # y = gamma * delta_D
-    # k_eq = u'_e / U_B
-    # z and d_L are repeated to avoid to invoke astropy's distance
-    epsilon = h.cgs.value * nu / mec2.value
-    gamma_s = np.sqrt(epsilon * (1 + z) * B_cr.value / y)
-    N_e = _broken_power_law(gamma_s, p1, p2, gamma_b, gamma_min, gamma_max)
-    bpl_integral = _broken_power_law_times_gamma_integral(
-        p1, p2, gamma_b, gamma_min, gamma_max
-    )
-    prefactor_num = np.power(y, 4) * sigma_T.cgs.value * np.power(R_b, 3) * k_eq
-    prefactor_denum = (
-        np.power(3, 2)
-        * np.power(2, 5)
-        * np.power(np.pi, 2)
-        * np.power(d_L, 2)
-        * m_e.cgs.value
-        * c.cgs.value
-        * bpl_integral
-    )
-    return prefactor_num / prefactor_denum * np.power(gamma_s, 3) * N_e
-"""
 
 
 class Synchrotron:
