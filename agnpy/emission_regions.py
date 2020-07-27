@@ -144,17 +144,17 @@ class Blob:
         # cm-3 is the only one allowing more than one normalisation type
         if spectrum_norm.unit == u.Unit("cm-3"):
 
-            if spectrum_norm_type == "integral":
-                self.n_e = model.from_normalised_density(
-                    spectrum_norm, **spectrum_dict["parameters"]
-                )
-            elif spectrum_norm_type == "differential":
+            if spectrum_norm_type == "differential":
                 self.n_e = model(spectrum_norm, **spectrum_dict["parameters"])
             elif spectrum_norm_type == "gamma=1":
                 self.n_e = model.from_norm_at_gamma_1(
                     spectrum_norm, **spectrum_dict["parameters"]
                 )
 
+            elif spectrum_norm_type == "integral":
+                self.n_e = model.from_normalised_density(
+                    spectrum_norm, **spectrum_dict["parameters"]
+                )
         elif spectrum_norm.unit == u.Unit("erg cm-3"):
             self.n_e = model.from_normalised_energy_density(
                 spectrum_norm, **spectrum_dict["parameters"]
