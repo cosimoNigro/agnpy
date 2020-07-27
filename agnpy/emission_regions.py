@@ -3,7 +3,7 @@ import astropy.units as u
 from astropy.constants import e, c, m_e, sigma_T
 from astropy.coordinates import Distance
 import matplotlib.pyplot as plt
-from . import spectra
+from .spectra import PowerLaw, BrokenPowerLaw, LogParabola
 
 
 e = e.gauss
@@ -79,13 +79,16 @@ class Blob:
 
     def __init__(
         self,
-        R_b,
-        z,
-        delta_D,
-        Gamma,
-        B,
-        spectrum_norm,
-        spectrum_dict,
+        R_b=1e16 * u.cm,
+        z=0.1,
+        delta_D=10,
+        Gamma=10,
+        B=1 * u.G,
+        spectrum_norm=1e-13 * u.Unit("cm-3"),
+        spectrum_dict={
+            "type": "PowerLaw",
+            "parameters": {"p": 2.3, "gamma_min": 1e2, "gamma_max": 1e6},
+        },
         spectrum_norm_type="integral",
         xi=1.0,
         gamma_size=200,
@@ -123,11 +126,11 @@ class Blob:
     def set_n_e(self, spectrum_norm, spectrum_dict, spectrum_norm_type):
         r"""set the spectrum :math:`n_e` for the blob"""
         model_dict = {
-            "PowerLaw": spectra.PowerLaw,
-            "BrokenPowerLaw": spectra.BrokenPowerLaw,
-            "BrokenPowerLaw2": spectra.BrokenPowerLaw2,
+            "PowerLaw": PowerLaw,
+            "BrokenPowerLaw": BrokenPowerLaw,
+            "LogParabola": LogParabola,
         }
-        spectrum_type = spectrum_dict["type"]
+        model = model_dict[spectrum_dict["type"]]
 
         if spectrum_norm_type != "integral" and spectrum_norm.unit in (
             u.Unit("erg"),
@@ -141,27 +144,25 @@ class Blob:
         # cm-3 is the only one allowing more than one normalisation type
         if spectrum_norm.unit == u.Unit("cm-3"):
 
-            if spectrum_norm_type == "integral":
-                self.n_e = model_dict[spectrum_type].from_normalised_density(
-                    spectrum_norm, **spectrum_dict["parameters"]
-                )
-            elif spectrum_norm_type == "differential":
-                self.n_e = model_dict[spectrum_type](
-                    spectrum_norm, **spectrum_dict["parameters"]
-                )
+            if spectrum_norm_type == "differential":
+                self.n_e = model(spectrum_norm, **spectrum_dict["parameters"])
             elif spectrum_norm_type == "gamma=1":
-                self.n_e = model_dict[spectrum_type].from_norm_at_gamma_1(
+                self.n_e = model.from_norm_at_gamma_1(
                     spectrum_norm, **spectrum_dict["parameters"]
                 )
 
+            elif spectrum_norm_type == "integral":
+                self.n_e = model.from_normalised_density(
+                    spectrum_norm, **spectrum_dict["parameters"]
+                )
         elif spectrum_norm.unit == u.Unit("erg cm-3"):
-            self.n_e = model_dict[spectrum_type].from_normalised_u_e(
+            self.n_e = model.from_normalised_energy_density(
                 spectrum_norm, **spectrum_dict["parameters"]
             )
 
         elif spectrum_norm.unit == u.Unit("erg"):
             u_e = (spectrum_norm / self.V_b).to("erg cm-3")
-            self.n_e = model_dict[spectrum_type].from_normalised_u_e(
+            self.n_e = model.from_normalised_energy_density(
                 u_e, **spectrum_dict["parameters"]
             )
 
