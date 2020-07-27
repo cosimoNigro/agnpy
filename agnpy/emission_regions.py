@@ -79,13 +79,16 @@ class Blob:
 
     def __init__(
         self,
-        R_b,
-        z,
-        delta_D,
-        Gamma,
-        B,
-        spectrum_norm,
-        spectrum_dict,
+        R_b=1e16 * u.cm,
+        z=0.1,
+        delta_D=10,
+        Gamma=10,
+        B=1 * u.G,
+        spectrum_norm=1e-13 * u.Unit("cm-3"),
+        spectrum_dict={
+            "type": "PowerLaw",
+            "parameters": {"p": 2.3, "gamma_min": 1e2, "gamma_max": 1e6},
+        },
         spectrum_norm_type="integral",
         xi=1.0,
         gamma_size=200,

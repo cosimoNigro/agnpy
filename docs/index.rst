@@ -1,4 +1,4 @@
-.. image:: _static/logo.pdf
+.. image:: _static/logo.png
     :width: 400px
     :align: center
 

@@ -94,7 +94,7 @@ class ElectronDistribution(Fittable1DModel):
 
 
 class PowerLaw(ElectronDistribution):
-    r"""Class for power-law particle spectrum. Built on astropy Fittable1DModel
+    r"""Class for power-law particle spectrum. Built on :class:`~astropy.modeling.Fittable1DModel`.
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
@@ -143,7 +143,7 @@ class PowerLaw(ElectronDistribution):
 
 
 class BrokenPowerLaw(ElectronDistribution):
-    r"""Class for broken power-law particle spectrum.
+    r"""Class for broken power-law particle spectrum. Built on :class:`~astropy.modeling.Fittable1DModel`.
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
@@ -207,7 +207,7 @@ class BrokenPowerLaw(ElectronDistribution):
 
 
 class LogParabola(ElectronDistribution):
-    r"""Class for log-parabolic particle spectrum. Built on astropy Fittable1DModel
+    r"""Class for log-parabolic particle spectrum. Built on :class:`~astropy.modeling.Fittable1DModel`.
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
