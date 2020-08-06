@@ -365,7 +365,7 @@ class Blob:
             \gamma_{\mathrm{max}} = \sqrt{\frac{3 \xi e B }{ \sigma_T U'_\mathrm{ext}}} 
         """
         return np.sqrt(
-            3 * self.xi * e * self.B_cgs / (4 * sigma_T * dt.u_ph(r, self))
+            3 * self.xi * e * self.B_cgs / (4 * sigma_T * dt.u(r, self))
         ).to_value("")
 
     @property
@@ -410,7 +410,7 @@ class Blob:
             \gamma_b = 3  m_e c^2 / 4 \sigma_T U'_{\mathrm{ext}} R_b 
         """
         #        u_ext=np.power(self.Gamma,2) * np.power(1-mu*self.Beta,2) * dt.xi_dt*dt.L_disk/(4*np.pi*np.power(d,2) * c)
-        return (3 * mec2 / (4 * sigma_T * dt.u_ph(r, self) * self.R_b)).to("").value
+        return (3 * mec2 / (4 * sigma_T * dt.u(r, self) * self.R_b)).to("").value
 
     @property
     def u_ph_synch(self):

@@ -191,8 +191,8 @@ class BrokenPowerLaw(ElectronDistribution):
             + f" - p1: {self.p1.value:.2f}\n"
             + f" - p2: {self.p2.value:.2f}\n"
             + f" - gamma_b: {self.gamma_b.value:.2e}\n"
-            + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}\n"
+            + f" - gamma_min: {self.gamma_min.value:.2e}\n"
+            + f" - gamma_max: {self.gamma_max.value:.2e}\n"
         )
 
     def SSA_integrand(self, gamma):
