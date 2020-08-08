@@ -2,6 +2,7 @@ import numpy as np
 from astropy.constants import h, c, m_e, sigma_T
 import astropy.units as u
 from .compton import cos_psi, x_re_shell, x_re_ring, mu_star
+from .targets import SSDisk, SphericalShellBLR, RingDustTorus
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
@@ -33,7 +34,7 @@ class Absorption:
     blob : :class:`~agnpy.emission_regions.Blob`
         emission region and electron distribution hitting the photon target
     target : :class:`~agnpy.targets`
-        class describing the target photon field    
+        class describing the target photon field
     r : :class:`~astropy.units.Quantity`
         distance of the blob from the Black Hole (i.e. from the target photons)
     """
@@ -48,7 +49,7 @@ class Absorption:
 
     def set_mu(self, mu_size=100):
         self.mu_size = mu_size
-        if self.target.type == "SSDisk":
+        if isinstance(self.target, SSDisk):
             # in case of hte disk the mu interval does not go from -1 to 1
             r_tilde = (self.r / self.target.R_g).to_value("")
             self.mu = self.target.mu_from_r_tilde(r_tilde)
@@ -80,7 +81,7 @@ class Absorption:
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed, **note** these are 
+            array of frequencies, in Hz, to compute the sed, **note** these are
             observed frequencies (observer frame).
         """
         # define the dimensionless energy
@@ -127,7 +128,7 @@ class Absorption:
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed, **note** these are 
+            array of frequencies, in Hz, to compute the sed, **note** these are
             observed frequencies (observer frame).
         """
         # define the dimensionless energy
@@ -170,7 +171,7 @@ class Absorption:
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed, **note** these are 
+            array of frequencies, in Hz, to compute the sed, **note** these are
             observed frequencies (observer frame).
         """
         # define the dimensionless energy
@@ -212,12 +213,12 @@ class Absorption:
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the opacity, **note** these are 
+            array of frequencies, in Hz, to compute the opacity, **note** these are
             observed frequencies (observer frame).
         """
-        if self.target.type == "SSDisk":
+        if isinstance(self.target, SSDisk):
             return self._opacity_disk(nu)
-        if self.target.type == "SphericalShellBLR":
+        if isinstance(self.target, SphericalShellBLR):
             return self._opacity_shell_blr(nu)
-        if self.target.type == "RingDustTorus":
+        if isinstance(self.target, RingDustTorus):
             return self._opacity_ring_torus(nu)
