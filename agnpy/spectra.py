@@ -201,7 +201,7 @@ class BrokenPowerLaw(ElectronDistribution):
         index = np.where(gamma <= self.gamma_b, self.p1, self.p2)
         return np.where(
             (self.gamma_min <= gamma) * (gamma <= self.gamma_max),
-            self.k_e * -(index + 2) / gamma * (gamma / self.gamma_b) ** (index),
+            self.k_e * -(index + 2) / gamma * (gamma / self.gamma_b) ** (-index),
             0,
         )
 
