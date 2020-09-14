@@ -9,16 +9,11 @@ import pytest
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 # variables with _test are global and meant to be used in all tests
 spectrum_norm_test = 1e-13 * u.Unit("cm-3")
-p_test = 2
 gamma_min_test = 1
 gamma_max_test = 1e6
 pwl_dict_test = {
     "type": "PowerLaw",
-    "parameters": {
-        "p": p_test,
-        "gamma_min": gamma_min_test,
-        "gamma_max": gamma_max_test,
-    },
+    "parameters": {"p": 2, "gamma_min": gamma_min_test, "gamma_max": gamma_max_test},
 }
 p1_test = 2.4
 p2_test = 3.4
@@ -26,9 +21,9 @@ gamma_b_test = 1e2
 bpwl_dict_test = {
     "type": "BrokenPowerLaw",
     "parameters": {
-        "p1": p1_test,
-        "p2": p2_test,
-        "gamma_b": gamma_b_test,
+        "p1": 2.4,
+        "p2": 3.4,
+        "gamma_b": 1e2,
         "gamma_min": gamma_min_test,
         "gamma_max": gamma_max_test,
     },

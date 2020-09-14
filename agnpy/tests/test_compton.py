@@ -10,61 +10,20 @@ from agnpy.compton import SynchrotronSelfCompton, ExternalCompton
 import matplotlib.pyplot as plt
 from pathlib import Path
 import pytest
+from .utils import make_sed_comparison_plot
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 tests_dir = Path(__file__).parent
 
-
-def make_sed_comparison_plot(nu, reference_sed, agnpy_sed, fig_title, fig_name):
-    """make a SED comparison plot for visual inspection"""
-    fig, ax = plt.subplots(
-        2, sharex=True, gridspec_kw={"height_ratios": [2, 1]}, figsize=(8, 6)
-    )
-    # plot the SEDs in the upper panel
-    ax[0].loglog(nu, reference_sed, marker=".", ls="-", lw=1.5, label="reference")
-    ax[0].loglog(nu, agnpy_sed, marker=".", ls="--", lw=1.5, label="agnpy")
-    ax[0].legend()
-    ax[0].set_xlabel(r"$\nu\,/\,{\rm Hz}$")
-    ax[0].set_ylabel(r"$\nu F_{\nu}\,/\,({\rm erg}\,{\rm cm}^{-2}\,{\rm s}^{-1})$")
-    ax[0].set_title(fig_title)
-    # plot the deviation in the bottom panel
-    deviation = 1 - agnpy_sed / reference_sed
-    ax[1].semilogx(
-        nu,
-        deviation,
-        lw=1.5,
-        label=r"$|1 - \nu F_{\nu, \rm agnpy} \, / \,\nu F_{\nu, \rm reference}|$",
-    )
-    ax[1].legend(loc=2)
-    ax[1].axhline(0, ls="-", lw=1.5, color="dimgray")
-    ax[1].axhline(0.2, ls="--", lw=1.5, color="dimgray")
-    ax[1].axhline(-0.2, ls="--", lw=1.5, color="dimgray")
-    ax[1].axhline(0.3, ls=":", lw=1.5, color="dimgray")
-    ax[1].axhline(-0.3, ls=":", lw=1.5, color="dimgray")
-    ax[1].set_ylim([-0.5, 0.5])
-    ax[1].set_xlabel(r"$\nu / Hz$")
-    fig.savefig(f"{tests_dir}/crosscheck_figures/{fig_name}.png")
-
-
-# global PWL blob, same parameters of Figure 7.4 in Dermer Menon 2009
-PWL_SPECTRUM_NORM = 1e48 * u.Unit("erg")
-PWL_DICT = {
+# variables with _test are global and meant to be used in all tests
+pwl_spectrum_norm_test = 1e48 * u.Unit("erg")
+pwl_dict_test = {
     "type": "PowerLaw",
-    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e5},
+    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e5,},
 }
-R_B_PWL = 1e16 * u.cm
-B_PWL = 1 * u.G
-Z_PWL = Distance(1e27, unit=u.cm).z
-DELTA_D_PWL = 10
-GAMMA_PWL = 10
-PWL_BLOB = Blob(
-    R_B_PWL, Z_PWL, DELTA_D_PWL, GAMMA_PWL, B_PWL, PWL_SPECTRUM_NORM, PWL_DICT
-)
-
-# global BPL blob, same parameters of the examples in Finke 2016
-BPL_SPECTRUM_NORM = 6e42 * u.Unit("erg")
-BPL_DICT = {
+bpwl_spectrum_norm_test = 6e42 * u.Unit("erg")
+bpwl_dict_test = {
     "type": "BrokenPowerLaw",
     "parameters": {
         "p1": 2.0,
@@ -74,15 +33,21 @@ BPL_DICT = {
         "gamma_max": 5e7,
     },
 }
-R_B_BPL = 1e16 * u.cm
-B_BPL = 0.56 * u.G
-Z_BPL = 1
-DELTA_D_BPL = 40
-GAMMA_BPL = 40
-BPL_BLOB = Blob(
-    R_B_BPL, Z_BPL, DELTA_D_BPL, GAMMA_BPL, B_BPL, BPL_SPECTRUM_NORM, BPL_DICT
+# blob reproducing Figure 7.4 of Dermer Menon 2009
+pwl_blob_test = Blob(
+    1e16 * u.cm,
+    Distance(1e27, unit=u.cm).z,
+    10,
+    10,
+    1 * u.G,
+    pwl_spectrum_norm_test,
+    pwl_dict_test,
 )
-BPL_BLOB.set_gamma_size(500)
+# blob reproducing the EC scenarios in Finke 2016
+bpwl_blob_test = Blob(
+    1e16 * u.cm, 1, 40, 40, 0.56 * u.G, bpwl_spectrum_norm_test, bpwl_dict_test,
+)
+bpwl_blob_test.set_gamma_size(500)
 
 
 class TestSynchrotronSelfCompton:
@@ -98,8 +63,8 @@ class TestSynchrotronSelfCompton:
         sampled_ssc_nu = sampled_ssc_table[:, 0] * u.Hz
         sampled_ssc_sed = sampled_ssc_table[:, 1] * u.Unit("erg cm-2 s-1")
         # agnpy
-        synch = Synchrotron(PWL_BLOB)
-        ssc = SynchrotronSelfCompton(PWL_BLOB, synch)
+        synch = Synchrotron(pwl_blob_test)
+        ssc = SynchrotronSelfCompton(pwl_blob_test, synch)
         # recompute the SED at the same ordinates where the figure was sampled
         agnpy_ssc_sed = ssc.sed_flux(sampled_ssc_nu)
         # sed comparison plot
@@ -108,7 +73,7 @@ class TestSynchrotronSelfCompton:
             sampled_ssc_sed,
             agnpy_ssc_sed,
             "Synchrotron Self Compton",
-            "ssc_comparison_figure_7_4_dermer_menon_2009",
+            f"{tests_dir}/crosscheck_figures/ssc_comparison_figure_7_4_dermer_menon_2009.png",
         )
         # requires that the SED points deviate less than 15% from the figure
         assert u.allclose(
@@ -137,7 +102,7 @@ class TestExternalCompton:
         R_out = 200
         disk = SSDisk(M_BH, L_disk, eta, R_in, R_out, R_g_units=True)
         # recompute the SED at the same ordinates where the figure was sampled
-        ec_disk = ExternalCompton(BPL_BLOB, disk, r=1e17 * u.cm)
+        ec_disk = ExternalCompton(bpwl_blob_test, disk, r=1e17 * u.cm)
         agnpy_ec_disk_sed = ec_disk.sed_flux(sampled_ec_disk_nu)
         # sed comparison plot
         make_sed_comparison_plot(
@@ -145,7 +110,7 @@ class TestExternalCompton:
             sampled_ec_disk_sed,
             agnpy_ec_disk_sed,
             "External Compton on Shakura Sunyaev Disk",
-            "ec_disk_comparison_figure_8_finke_2016",
+            f"{tests_dir}/crosscheck_figures/ec_disk_comparison_figure_8_finke_2016.png",
         )
         # requires that the SED points deviate less than 40% from the figure
         assert u.allclose(
@@ -171,7 +136,7 @@ class TestExternalCompton:
         R_line = 1e17 * u.cm
         blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
         # recompute the SED at the same ordinates where the figure was sampled
-        ec_blr = ExternalCompton(BPL_BLOB, blr, r=1e18 * u.cm)
+        ec_blr = ExternalCompton(bpwl_blob_test, blr, r=1e18 * u.cm)
         agnpy_ec_blr_sed = ec_blr.sed_flux(sampled_ec_blr_nu)
         # sed comparison plot
         make_sed_comparison_plot(
@@ -179,7 +144,7 @@ class TestExternalCompton:
             sampled_ec_blr_sed,
             agnpy_ec_blr_sed,
             "External Compton on Spherical Shell Broad Line Region",
-            "ec_blr_comparison_figure_10_finke_2016",
+            f"{tests_dir}/crosscheck_figures/ec_blr_comparison_figure_10_finke_2016.png",
         )
         # requires that the SED points deviate less than 30% from the figure
         assert u.allclose(
@@ -207,7 +172,7 @@ class TestExternalCompton:
         csi_dt = 0.1
         dt = RingDustTorus(L_disk, csi_dt, T_dt)
         # recompute the SED at the same ordinates where the figure was sampled
-        ec_dt = ExternalCompton(BPL_BLOB, dt, r=1e20 * u.cm)
+        ec_dt = ExternalCompton(bpwl_blob_test, dt, r=1e20 * u.cm)
         agnpy_ec_dt_sed = ec_dt.sed_flux(sampled_ec_dt_nu)
         # sed comparison plot
         make_sed_comparison_plot(
@@ -215,7 +180,7 @@ class TestExternalCompton:
             sampled_ec_dt_sed,
             agnpy_ec_dt_sed,
             "External Compton on Ring Dust Torus",
-            "ec_dt_comparison_figure_11_finke_2016",
+            f"{tests_dir}/crosscheck_figures/ec_dt_comparison_figure_11_finke_2016.png",
         )
         # requires that the SED points deviate less than 30% from the figure
         assert u.allclose(
@@ -236,8 +201,8 @@ class TestExternalCompton:
         # point like source approximating the blr
         ps_blr = PointSourceBehindJet(blr.xi_line * L_disk, blr.epsilon_line)
         # external Compton
-        ec_blr = ExternalCompton(BPL_BLOB, blr, r=1e22 * u.cm)
-        ec_ps_blr = ExternalCompton(BPL_BLOB, ps_blr, r=1e22 * u.cm)
+        ec_blr = ExternalCompton(bpwl_blob_test, blr, r=1e22 * u.cm)
+        ec_ps_blr = ExternalCompton(bpwl_blob_test, ps_blr, r=1e22 * u.cm)
         # seds
         nu = np.logspace(15, 28) * u.Hz
         ec_blr_sed = ec_blr.sed_flux(nu)
@@ -258,8 +223,8 @@ class TestExternalCompton:
         # point like source approximating the dt
         ps_dt = PointSourceBehindJet(dt.xi_dt * L_disk, dt.epsilon_dt)
         # external Compton
-        ec_dt = ExternalCompton(BPL_BLOB, dt, r=1e22 * u.cm)
-        ec_ps_dt = ExternalCompton(BPL_BLOB, ps_dt, r=1e22 * u.cm)
+        ec_dt = ExternalCompton(bpwl_blob_test, dt, r=1e22 * u.cm)
+        ec_ps_dt = ExternalCompton(bpwl_blob_test, ps_dt, r=1e22 * u.cm)
         # seds
         nu = np.logspace(15, 28) * u.Hz
         ec_dt_sed = ec_dt.sed_flux(nu)

@@ -1,14 +1,13 @@
 # test on synchrotron module
+import pytest
 import numpy as np
+from pathlib import Path
 import astropy.units as u
 from astropy.constants import m_e, c, h
 from astropy.coordinates import Distance
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron, nu_synch_peak, epsilon_B
-import matplotlib.pyplot as plt
-from pathlib import Path
-import pytest
-
+from .utils import make_sed_comparison_plot
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 epsilon_equivalency = [
@@ -16,64 +15,35 @@ epsilon_equivalency = [
 ]
 tests_dir = Path(__file__).parent
 
-
-def make_sed_comparison_plot(nu, reference_sed, agnpy_sed, fig_title, fig_name):
-    """make a SED comparison plot for visual inspection"""
-    fig, ax = plt.subplots(
-        2, sharex=True, gridspec_kw={"height_ratios": [2, 1]}, figsize=(8, 6)
-    )
-    # plot the SEDs in the upper panel
-    ax[0].loglog(nu, reference_sed, marker=".", ls="-", lw=1.5, label="reference")
-    ax[0].loglog(nu, agnpy_sed, marker=".", ls="--", lw=1.5, label="agnpy")
-    ax[0].legend()
-    ax[0].set_xlabel(r"$\nu\,/\,{\rm Hz}$")
-    ax[0].set_ylabel(r"$\nu F_{\nu}\,/\,({\rm erg}\,{\rm cm}^{-2}\,{\rm s}^{-1})$")
-    ax[0].set_title(fig_title)
-    # plot the deviation in the bottom panel
-    deviation = 1 - agnpy_sed / reference_sed
-    ax[1].semilogx(
-        nu,
-        deviation,
-        lw=1.5,
-        label=r"$1 - \nu F_{\nu, \rm agnpy} \, / \,\nu F_{\nu, \rm reference}$",
-    )
-    ax[1].legend(loc=2)
-    ax[1].axhline(0, ls="-", lw=1.5, color="dimgray")
-    ax[1].axhline(0.2, ls="--", lw=1.5, color="dimgray")
-    ax[1].axhline(-0.2, ls="--", lw=1.5, color="dimgray")
-    ax[1].axhline(0.3, ls=":", lw=1.5, color="dimgray")
-    ax[1].axhline(-0.3, ls=":", lw=1.5, color="dimgray")
-    ax[1].set_ylim([-0.5, 0.5])
-    ax[1].set_xlabel(r"$\nu / Hz$")
-    fig.savefig(f"{tests_dir}/crosscheck_figures/{fig_name}.png")
-
-
-# global PWL blob, same parameters of Figure 7.4 in Dermer Menon 2009
-SPECTRUM_NORM = 1e48 * u.Unit("erg")
-PWL_DICT = {
+# variables with _test are global and meant to be used in all tests
+# here as a default we use the same parameters of Figure 7.4 in Dermer Menon 2009
+spectrum_norm_test = 1e48 * u.Unit("erg")
+p_test = 2.8
+gamma_min_test = 1e2
+gamma_max_test = 1e5
+pwl_dict_test = {
     "type": "PowerLaw",
-    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e5},
-}
-R_B = 1e16 * u.cm
-B = 1 * u.G
-Z = Distance(1e27, unit=u.cm).z
-DELTA_D = 10
-GAMMA = 10
-PWL_BLOB = Blob(R_B, Z, DELTA_D, GAMMA, B, SPECTRUM_NORM, PWL_DICT)
-
-# global blob with BPL law of electrons, to test the parametrisation of the
-# delta function approximation
-BPL_DICT = {
-    "type": "BrokenPowerLaw",
     "parameters": {
-        "p1": 2.5,
-        "p2": 3.5,
-        "gamma_b": 1e4,
-        "gamma_min": 1e2,
-        "gamma_max": 1e7,
+        "p": p_test,
+        "gamma_min": gamma_min_test,
+        "gamma_max": gamma_max_test,
     },
 }
-BPL_BLOB = Blob(R_B, Z, DELTA_D, GAMMA, B, SPECTRUM_NORM, BPL_DICT)
+# blob parameters
+R_b_test = 1e16 * u.cm
+B_test = 1 * u.G
+z_test = Distance(1e27, unit=u.cm).z
+delta_D_test = 10
+Gamma_test = 10
+pwl_blob_test = Blob(
+    R_b_test,
+    z_test,
+    delta_D_test,
+    Gamma_test,
+    B_test,
+    spectrum_norm_test,
+    pwl_dict_test,
+)
 
 
 class TestSynchrotron:
@@ -89,7 +59,7 @@ class TestSynchrotron:
         )
         sampled_synch_nu = sampled_synch_sed_table[:, 0] * u.Hz
         sampled_synch_sed = sampled_synch_sed_table[:, 1] * u.Unit("erg cm-2 s-1")
-        synch = Synchrotron(PWL_BLOB)
+        synch = Synchrotron(pwl_blob_test)
         # recompute the SED at the same ordinates where the figure was sampled
         agnpy_synch_sed = synch.sed_flux(sampled_synch_nu)
         # sed comparison plot
@@ -98,7 +68,7 @@ class TestSynchrotron:
             sampled_synch_sed,
             agnpy_synch_sed,
             "Synchrotron",
-            "synch_comparison_figure_7_4_dermer_menon_2009",
+            f"{tests_dir}/crosscheck_figures/synch_comparison_figure_7_4_dermer_menon_2009.png",
         )
         # requires that the SED points deviate less than 15% from the figure
         assert u.allclose(
@@ -108,25 +78,81 @@ class TestSynchrotron:
             rtol=0.15,
         )
 
-    def test_ssa_sed(self):
-        """test this version SSA SED against the one generated with version 0.0.6"""
+    @pytest.mark.parametrize(
+        "reference_sed , spectrum_type, spectrum_parameters, figure_title, figure_path",
+        [
+            (
+                "sampled_seds/synch_ssa_pwl_jetset_1.1.2.txt",
+                "PowerLaw",
+                {"p": 2, "gamma_min": 2, "gamma_max": 1e6},
+                "Self-Absorbed Synchrotron, power-law electron distribution",
+                f"{tests_dir}/crosscheck_figures/ssa_pwl_comparison_jetset_1.1.2.png",
+            ),
+            (
+                "sampled_seds/synch_ssa_bpwl_jetset_1.1.2.txt",
+                "BrokenPowerLaw",
+                {"p1": 2, "p2": 3, "gamma_b": 1e4, "gamma_min": 2, "gamma_max": 1e6},
+                "Self-Absorbed Synchrotron, broken power-law electron distribution",
+                f"{tests_dir}/crosscheck_figures/ssa_bpwl_comparison_jetset_1.1.2.png",
+            ),
+            (
+                "sampled_seds/synch_ssa_lp_jetset_1.1.2.txt",
+                "LogParabola",
+                {"p": 2, "q": 0.4, "gamma_0": 1e4, "gamma_min": 2, "gamma_max": 1e6},
+                "Self-Absorbed Synchrotron, log-parabola electron distribution",
+                f"{tests_dir}/crosscheck_figures/ssa_lp_comparison_jetset_1.1.2.png",
+            ),
+        ],
+    )
+    def test_ssa_reference_sed(
+        self,
+        reference_sed,
+        spectrum_type,
+        spectrum_parameters,
+        figure_title,
+        figure_path,
+    ):
+        """test SSA SED generated by a given electron distribution against the 
+        ones generated with jetset version 1.1.2, via jetset_ssa_sed.py script"""
         sampled_ssa_sed_table = np.loadtxt(
-            f"{tests_dir}/sampled_seds/ssa_sed_agnpy_v0_0_6.txt",
-            delimiter=",",
-            comments="#",
+            f"{tests_dir}/{reference_sed}", delimiter=",", comments="#",
         )
         sampled_ssa_nu = sampled_ssa_sed_table[:, 0] * u.Hz
         sampled_ssa_sed = sampled_ssa_sed_table[:, 1] * u.Unit("erg cm-2 s-1")
-        ssa = Synchrotron(PWL_BLOB, ssa=True)
+        # same parameters used to produce the jetset SED
+        spectrum_norm = 1e2 * u.Unit("cm-3")
+        spectrum_dict = {"type": spectrum_type, "parameters": spectrum_parameters}
+        blob = Blob(
+            R_b=5e15 * u.cm,
+            z=0.1,
+            delta_D=10,
+            Gamma=10,
+            B=0.1 * u.G,
+            spectrum_norm=spectrum_norm,
+            spectrum_dict=spectrum_dict,
+        )
+        # recompute the SED at the same ordinates where the figure was sampled
+        ssa = Synchrotron(blob, ssa=True)
         agnpy_ssa_sed = ssa.sed_flux(sampled_ssa_nu)
+        # sed comparison plot
+        make_sed_comparison_plot(
+            sampled_ssa_nu, sampled_ssa_sed, agnpy_ssa_sed, figure_title, figure_path,
+        )
+        # requires that the SED points deviate less than 5% from the figure
+        # there are divergencies at very low and very high energies, therefore
+        # we will check between 10^(11) and 10^(19) Hz
+        condition = (sampled_ssa_nu >= 1e11 * u.Hz) * ((sampled_ssa_nu <= 1e19 * u.Hz))
         assert u.allclose(
-            agnpy_ssa_sed, sampled_ssa_sed, atol=0 * u.Unit("erg cm-2 s-1"), rtol=1e-3
+            agnpy_ssa_sed[condition],
+            sampled_ssa_sed[condition],
+            atol=0 * u.Unit("erg cm-2 s-1"),
+            rtol=0.05,
         )
 
     def test_nu_synch_peak(self):
         gamma = 100
-        nu_synch = nu_synch_peak(B, gamma).to_value("Hz")
+        nu_synch = nu_synch_peak(B_test, gamma).to_value("Hz")
         assert np.isclose(nu_synch, 27992489872.33304, atol=0)
 
     def test_epsilon_B(self):
-        assert np.isclose(epsilon_B(B), 2.2655188038060715e-14, atol=0)
+        assert np.isclose(epsilon_B(B_test), 2.2655188038060715e-14, atol=0)
