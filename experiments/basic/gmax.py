@@ -15,6 +15,7 @@ from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron
 from agnpy.compton import ExternalCompton, SynchrotronSelfCompton
 from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
+from agnpy.spectral_constraints import SpectralConstraints
 
 # parameters of the blob
 B0 = 0.1 * u.G
@@ -46,7 +47,9 @@ blob = Blob(r0, z, delta_D, Gamma, B0, norm, spectrum_dict, xi=xi)
 
 #############################################
 # limits from confinement of particles inside the blob:
-gmaxconf = blob.gamma_max_larmor
+
+sc=SpectralConstraints(blob)
+gmaxconf = sc.gamma_max_larmor
 # computing larmor radius of this electron, should be of the size of the blob
 # R_L = 33.36 km * (p/(GeV/c)) * (G/B) * Z^-1
 # https://w3.iihe.ac.be/~aguilar/PHYS-467/PA3.pdf
@@ -57,7 +60,7 @@ print("R_L (gmaxconf)=", rlarmor, "R_b=", blob.R_b)
 
 #############################################
 # now maximum from balistic time
-gmaxbal = blob.gamma_max_ballistic
+gmaxbal = sc.gamma_max_ballistic
 
 # compute acceleration time for those electrons
 # eq 2 from https://arxiv.org/abs/1208.6200a, note that this is rough scaling accurate to ~10%
@@ -71,7 +74,7 @@ print(f"dist_cross (tau_acc(gmaxbal))={dist_cross:.2e}, R_b={blob.R_b:.2e}")
 
 #############################################
 # now maximum from synchrotron losses
-gmaxsyn = blob.gamma_max_synch
+gmaxsyn = sc.gamma_max_synch
 
 # calculate t_acc
 tau_acc = 1.0 * gmaxsyn * 511.0e3 / 1.0e9 / (blob.xi / 1.0e-4 * blob.B / u.G) * u.s
@@ -96,7 +99,7 @@ print(f"E(gmaxsyn) = {Emax:.2e}, Elost = {Elost:.2e}")
 # with dynamical time scale of crossing R
 
 # now compare the value from the class with the formula below
-gamma_b = blob.gamma_break_synch
+gamma_b = sc.gamma_break_synch
 gamma_break_check = (
     6
     * np.pi
@@ -149,9 +152,10 @@ print(
     energy_flux_sim / np.trapz(ssc1_sed / (nu * const.h.cgs), nu * const.h.cgs),
 )
 # same energy densities mean in Thomson regime the same energy losses ==> the same energy flux
-print("break_synchr/break_SSC = ", blob1.gamma_break_synch / blob1.gamma_break_SSC)
+sc1=SpectralConstraints(blob1)
+print("break_synchr/break_SSC = ", sc1.gamma_break_synch / sc1.gamma_break_SSC)
 
-print("gmax_synchr/gmax_SSC = ", blob1.gamma_max_synch / blob1.gamma_max_SSC)
+print("gmax_synchr/gmax_SSC = ", sc1.gamma_max_synch / sc1.gamma_max_SSC)
 
 # SSC is at the same level as Synchr. so the cooling breaks and maximum energies are also same
 
