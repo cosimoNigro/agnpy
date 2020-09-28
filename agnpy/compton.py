@@ -350,7 +350,7 @@ class ExternalCompton:
         epsilon_s *= 1 + self.blob.z
         # for multidimensional integration
         # axis 0: gamma
-        # axis 3: epsilon_s
+        # axis 1: epsilon_s
         # arrays starting with _ are multidimensional and used for integration
         _gamma = np.reshape(self.gamma, (self.gamma.size, 1))
         _N_e = np.reshape(self.transformed_N_e, (self.transformed_N_e.size, 1))
