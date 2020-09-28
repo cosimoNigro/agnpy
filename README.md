@@ -3,10 +3,14 @@
   <img width="60%" src="docs/_static/logo.png">
 </p>
 
-Modelling Active Galactic Nuclei radiative processes with python.
+Modelling Active Galactic Nuclei radiative processes with python.    
 
 ## descritpion
 `agnpy` focuses on the numerical computation of the photon spectra produced by leptonic radiative processes in jetted Active Galactic Nuclei (AGN).  
+
+## citing agnpy
+If you are using `agnpy` for your work you can acknowledge and reference it through its [zenodo record](https://zenodo.org/record/4055176).
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4055175.svg)](https://doi.org/10.5281/zenodo.4055175)
 
 ## documentation and quickstart
 You are invited to check the documentation at https://agnpy.readthedocs.io/en/latest/.    
