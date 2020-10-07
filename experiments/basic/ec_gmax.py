@@ -83,7 +83,7 @@ print("SSC total=", ssc1_total, ", EC DT total=", ec_dt1_total)
 # similar density of radiation but there is a factor of ~1.4 difference in the integrated flux
 # this probably comes from different angular distribution of the radiation
 
-sc1=SpectralConstraints(blob1)
+sc1 = SpectralConstraints(blob1)
 gbreakssc = sc1.gamma_break_SSC
 gbreakdt = sc1.gamma_break_EC_DT(dt1, h)
 print(

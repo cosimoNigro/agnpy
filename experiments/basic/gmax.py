@@ -48,7 +48,7 @@ blob = Blob(r0, z, delta_D, Gamma, B0, norm, spectrum_dict, xi=xi)
 #############################################
 # limits from confinement of particles inside the blob:
 
-sc=SpectralConstraints(blob)
+sc = SpectralConstraints(blob)
 gmaxconf = sc.gamma_max_larmor
 # computing larmor radius of this electron, should be of the size of the blob
 # R_L = 33.36 km * (p/(GeV/c)) * (G/B) * Z^-1
@@ -152,7 +152,7 @@ print(
     energy_flux_sim / np.trapz(ssc1_sed / (nu * const.h.cgs), nu * const.h.cgs),
 )
 # same energy densities mean in Thomson regime the same energy losses ==> the same energy flux
-sc1=SpectralConstraints(blob1)
+sc1 = SpectralConstraints(blob1)
 print("break_synchr/break_SSC = ", sc1.gamma_break_synch / sc1.gamma_break_SSC)
 
 print("gmax_synchr/gmax_SSC = ", sc1.gamma_max_synch / sc1.gamma_max_SSC)

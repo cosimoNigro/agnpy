@@ -5,8 +5,8 @@ from astropy.constants import e, c, m_e, sigma_T
 e = e.gauss
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 # equivalency for decomposing Gauss in Gaussian-cgs units (not available in astropy)
-#Gauss_cgs_unit = "cm(-1/2) g(1/2) s-1"
-#Gauss_cgs_equivalency = [(u.G, u.Unit(Gauss_cgs_unit), lambda x: x, lambda x: x)]
+# Gauss_cgs_unit = "cm(-1/2) g(1/2) s-1"
+# Gauss_cgs_equivalency = [(u.G, u.Unit(Gauss_cgs_unit), lambda x: x, lambda x: x)]
 
 
 __all__ = ["SpectralConstraints"]

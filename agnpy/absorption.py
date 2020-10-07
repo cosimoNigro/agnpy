@@ -83,8 +83,8 @@ class Absorption:
         epsilon_1 = nu.to("", equivalencies=epsilon_equivalency)
         # transform to BH frame
         epsilon_1 *= 1 + self.blob.z
-        # each value of l, distance from the BH, defines a different range of 
-        # cosine integration, we have to break the integration as the array of 
+        # each value of l, distance from the BH, defines a different range of
+        # cosine integration, we have to break the integration as the array of
         # mu takes different values at each distance
         integral = np.empty(len(epsilon_1))
         for i, _epsilon_1 in enumerate(epsilon_1):
@@ -107,7 +107,10 @@ class Absorption:
                 _cos_psi = cos_psi(self.blob.mu_s, _mu, _phi)
                 _s = _epsilon_1 * _epsilon * (1 - _cos_psi) / 2
                 _integrand_mu = _phi_disk_mu / (
-                    _epsilon * np.power(_l, 3) * _mu * np.power(np.power(_mu, -2) - 1, 3 / 2)
+                    _epsilon
+                    * np.power(_l, 3)
+                    * _mu
+                    * np.power(np.power(_mu, -2) - 1, 3 / 2)
                 )
                 _integrand = _integrand_mu * (1 - _cos_psi) * sigma(_s)
                 # integrate over mu and phi
@@ -116,7 +119,7 @@ class Absorption:
                 integrand_l[i] = integral_phi.to_value("cm-1")
             # integrate over l
             integral[j] = np.trapz(integrand_l, self.l, axis=0).to_value("cm")
-        
+
         prefactor_num = 3 * self.target.L_disk * self.target.R_g
         prefactor_denum = 16 * np.pi * self.target.eta * m_e * np.power(c, 3)
         tau = prefactor_num / prefactor_denum * integral
