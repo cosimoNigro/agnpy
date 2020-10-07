@@ -15,6 +15,7 @@ from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron
 from agnpy.compton import ExternalCompton, SynchrotronSelfCompton
 from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
+from agnpy.spectral_constraints import SpectralConstraints
 
 # parameters of the blob with a narrow EED
 B0 = 10.1 * u.G
@@ -56,7 +57,7 @@ blob1 = Blob(r0, z, delta_D, Gamma, B0, norm, spectrum_dict, xi=xi)
 dt1 = RingDustTorus(L_disk, xi_dt, T_dt, R_dt=R_dt)
 
 # energy density of DT radiation field in the blob
-u_dt1 = dt1.u_ph(h, blob1)
+u_dt1 = dt1.u(h, blob1)
 u_synch1 = blob1.u_ph_synch
 print(
     "energy density in the blob, DT radiation: ",
@@ -82,15 +83,16 @@ print("SSC total=", ssc1_total, ", EC DT total=", ec_dt1_total)
 # similar density of radiation but there is a factor of ~1.4 difference in the integrated flux
 # this probably comes from different angular distribution of the radiation
 
-gbreakssc = blob1.gamma_break_SSC
-gbreakdt = blob1.gamma_break_EC_DT(dt1, h)
+sc1=SpectralConstraints(blob1)
+gbreakssc = sc1.gamma_break_SSC
+gbreakdt = sc1.gamma_break_EC_DT(dt1, h)
 print(
     "break SSC=", gbreakssc, ", break EC=", gbreakdt, ", ratio: ", gbreakssc / gbreakdt
 )
 # values of the break scale with energy density so they are the same
 
-gmaxssc = blob1.gamma_max_SSC
-gmaxdt = blob1.gamma_max_EC_DT(dt1, h)
+gmaxssc = sc1.gamma_max_SSC
+gmaxdt = sc1.gamma_max_EC_DT(dt1, h)
 print("max SSC=", gmaxssc, ", max EC=", gmaxdt, ", ratio: ", gmaxssc / gmaxdt)
 # the same with values of the maximum gamma factor
 
@@ -133,7 +135,7 @@ ec_dt2 = ExternalCompton(blob1, dt2, h)
 ec_dt2_sed = ec_dt2.sed_flux(nu)
 dt2_sed = dt2.sed_flux(nu, z)
 
-u_dt2 = dt2.u_ph(h, blob1)
+u_dt2 = dt2.u(h, blob1)
 print("DT energy density (test 1)=", u_dt1, ", (test2)=", u_dt2)
 # same energy densities
 
@@ -173,7 +175,7 @@ ec_dt3 = ExternalCompton(blob1, dt3, h)
 ec_dt3_sed = ec_dt3.sed_flux(nu)
 dt3_sed = dt3.sed_flux(nu, z)
 
-u_dt3 = dt3.u_ph(h, blob1)
+u_dt3 = dt3.u(h, blob1)
 print("DT energy density (test 1)=", u_dt1, ", (test3)=", u_dt3)
 # same energy densities
 

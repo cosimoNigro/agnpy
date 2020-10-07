@@ -52,6 +52,14 @@ agnpy.absorption module
    :undoc-members:
    :show-inheritance:
 
+agnpy.spectral_constraints module
+-----------------------
+
+.. automodule:: agnpy.spectral_constraints
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------
