@@ -12,7 +12,7 @@ epsilon_equivalency = [
 ]
 
 
-__all__ = ["sigma", "Absorption"]
+__all__ = ["sigma", "tau_disk_finke_2016", "Absorption"]
 
 
 def sigma(s):
@@ -24,6 +24,35 @@ def sigma(s):
     values = _prefactor * (_term1 + _term2)
     values[s < 1] = 0
     return values
+
+def tau_disk_finke_2016(nu, blob, disk, r):
+    """Eq. (63) in Finke 2016, for testing purposes only"""
+    r_tilde = (r / disk.R_g).to_value("")
+    l_tilde = np.logspace(0, 5, 50) * r_tilde
+    epsilon_1 = nu.to("", equivalencies=epsilon_equivalency)
+    epsilon_1 *= 1 + blob.z
+    # axis 0: R_tilde
+    # axis 1: l_tilde
+    # axis 2: epsilon
+    _R_tilde = np.reshape(disk.R_tilde, (disk.R_tilde.size, 1, 1))
+    _l_tilde = np.reshape(l_tilde, (1, l_tilde.size, 1))
+    _epsilon_1 = np.reshape(epsilon_1, (1, 1 , epsilon_1.size))
+    _epsilon = disk.epsilon(_R_tilde)
+    _phi_disk = disk.phi_disk(_R_tilde)
+    _mu = np.sqrt(1 / (1 + _R_tilde**2 / _l_tilde**2))
+    _s = epsilon_1 * _epsilon * (1 - _mu) / 2
+    integrand = (
+        _l_tilde**(-2) *
+        _R_tilde**(-5/4) * 
+        _phi_disk * 
+        (1 + _R_tilde**2 / _l_tilde**2)**(-3/2) * 
+        (sigma(_s) / sigma_T).to_value("") *
+        (1 - _mu)
+    )
+    integral_R_tilde = np.trapz(integrand, disk.R_tilde, axis=0)
+    integral_l_tilde = np.trapz(integral_R_tilde, l_tilde, axis=0)
+    prefactor = 1e7 * disk.l_Edd**(3/4) * disk.M_8**(1/4) * disk.eta**(-3/4)
+    return prefactor * integral_l_tilde 
 
 
 class Absorption:
@@ -76,54 +105,53 @@ class Absorption:
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed, **note** these are
-            observed frequencies (observer frame).
+            array of frequencies, in Hz, to compute the absorption, **note** 
+            these are observed frequencies (observer frame).
         """
         # define the dimensionless energy
         epsilon_1 = nu.to("", equivalencies=epsilon_equivalency)
         # transform to BH frame
         epsilon_1 *= 1 + self.blob.z
         # each value of l, distance from the BH, defines a different range of
-        # cosine integration, we have to break the integration as the array of
-        # mu takes different values at each distance
-        integral = np.empty(len(epsilon_1))
-        for i, _epsilon_1 in enumerate(epsilon_1):
-            integrand_l = np.empty(len(self.l))
-            for j, _l in enumerate(self.l):
-                print("j: ", j)
-                print("l: ", _l)
-                l_tilde = (_l / self.target.R_g).to_value("")
-                # for the multidimensional integration on the angles only
-                # axis 0 : phi
-                # axis 1 : mu
-                _phi = np.reshape(self.phi, (1, self.phi.size))
-                mu = self.target.mu_from_r_tilde(l_tilde)
-                print("mu: ", mu)
-                print("-------------")
+        # cosine integration, we cannot use direct integration of multidimensional
+        # numpy arrays but we have to use an explicit loop over the distances
+        # as mu takes a different array of values at each distance
+        r_tilde = (self.r / self.target.R_g).to_value("")
+        l_tilde = np.logspace(0, 5, 50) * r_tilde
+        tau_epsilon_1 = np.ndarray(0)
+        for _epsilon_1 in epsilon_1:
+            integrand_l_tilde = np.ndarray(0)
+            for _l_tilde in l_tilde:
+                # multidimensional integration (only in solid angle)
+                # axis 0: mu
+                # axis 1: phi
+                mu = self.target.mu_from_r_tilde(_l_tilde)
                 _mu = np.reshape(mu, (mu.size, 1))
-                # epsilon and phi disk have the same dimension as mu
-                _epsilon = self.target.epsilon_mu(_mu, l_tilde)
-                _phi_disk_mu = self.target.phi_disk_mu(_mu, l_tilde)
+                _phi = np.reshape(self.phi, (1, self.phi.size))
+                _epsilon = self.target.epsilon_mu(_mu, _l_tilde)
+                _phi_disk = self.target.phi_disk_mu(_mu, _l_tilde)
+                # angle between the photons
                 _cos_psi = cos_psi(self.blob.mu_s, _mu, _phi)
                 _s = _epsilon_1 * _epsilon * (1 - _cos_psi) / 2
-                _integrand_mu = _phi_disk_mu / (
-                    _epsilon
-                    * np.power(_l, 3)
-                    * _mu
-                    * np.power(np.power(_mu, -2) - 1, 3 / 2)
+                _cross_section = sigma(_s).to_value("cm2")
+                _integrand = (
+                    _phi_disk
+                    / (_epsilon * _mu * _l_tilde ** 3 * (_mu ** (-2) - 1) ** (-3 / 2))
+                    * (1 - _cos_psi)
+                    * _cross_section
                 )
-                _integrand = _integrand_mu * (1 - _cos_psi) * sigma(_s)
-                # integrate over mu and phi
-                integral_mu = np.trapz(_integrand, mu, axis=0)
-                integral_phi = np.trapz(integral_mu, self.phi, axis=0)
-                integrand_l[i] = integral_phi.to_value("cm-1")
-            # integrate over l
-            integral[j] = np.trapz(integrand_l, self.l, axis=0).to_value("cm")
-
-        prefactor_num = 3 * self.target.L_disk * self.target.R_g
-        prefactor_denum = 16 * np.pi * self.target.eta * m_e * np.power(c, 3)
-        tau = prefactor_num / prefactor_denum * integral
-        return tau
+                # integrate over the solid angle
+                _integral_mu = np.trapz(_integrand, mu, axis=0)
+                _integral_phi = np.trapz(_integral_mu, self.phi, axis=0)
+                integrand_l_tilde = np.append(integrand_l_tilde, _integral_phi)
+            # integrate over the distance
+            integral_l_tilde = np.trapz(integrand_l_tilde, l_tilde, axis=0)
+            tau_epsilon_1 = np.append(tau_epsilon_1, integral_l_tilde)
+        prefactor = (
+            3 * self.target.L_disk / ((4 * np.pi) ** 2 * self.target.R_g * m_e * c ** 3)
+        )
+        tau_epsilon_1 *= prefactor.to_value("cm-2")
+        return tau_epsilon_1
 
     def _opacity_shell_blr(self, nu):
         """opacity generated by a spherical shell Broad Line Region

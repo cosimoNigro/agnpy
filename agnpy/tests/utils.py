@@ -8,7 +8,7 @@ def make_sed_comparison_plot(nu, reference_sed, agnpy_sed, fig_title, fig_path):
         2, sharex=True, gridspec_kw={"height_ratios": [2, 1]}, figsize=(8, 6)
     )
     # plot the SEDs in the upper panel
-    ax[0].loglog(nu, reference_sed, marker=".", ls="-", lw=1.5, label="reference")
+    ax[0].loglog(nu, reference_sed, marker="o", ls="-", lw=1.5, label="reference")
     ax[0].loglog(nu, agnpy_sed, marker=".", ls="--", lw=1.5, label="agnpy")
     ax[0].legend()
     ax[0].set_xlabel(r"$\nu\,/\,{\rm Hz}$")
