@@ -25,8 +25,11 @@ def sigma(s):
     values[s < 1] = 0
     return values
 
+
 def tau_disk_finke_2016(nu, blob, disk, r):
-    """Eq. (63) in Finke 2016, for testing purposes only"""
+    """Eq. 63 in Finke 2016, for testing purposes only
+    It assumes the blob moves parallel to the jet axis, mu_s = 1 => cos_psi = mu
+    """
     r_tilde = (r / disk.R_g).to_value("")
     l_tilde = np.logspace(0, 5, 50) * r_tilde
     epsilon_1 = nu.to("", equivalencies=epsilon_equivalency)
@@ -36,23 +39,23 @@ def tau_disk_finke_2016(nu, blob, disk, r):
     # axis 2: epsilon
     _R_tilde = np.reshape(disk.R_tilde, (disk.R_tilde.size, 1, 1))
     _l_tilde = np.reshape(l_tilde, (1, l_tilde.size, 1))
-    _epsilon_1 = np.reshape(epsilon_1, (1, 1 , epsilon_1.size))
+    _epsilon_1 = np.reshape(epsilon_1, (1, 1, epsilon_1.size))
     _epsilon = disk.epsilon(_R_tilde)
     _phi_disk = disk.phi_disk(_R_tilde)
-    _mu = np.sqrt(1 / (1 + _R_tilde**2 / _l_tilde**2))
+    _mu = np.sqrt(1 / (1 + _R_tilde ** 2 / _l_tilde ** 2))
     _s = epsilon_1 * _epsilon * (1 - _mu) / 2
     integrand = (
-        _l_tilde**(-2) *
-        _R_tilde**(-5/4) * 
-        _phi_disk * 
-        (1 + _R_tilde**2 / _l_tilde**2)**(-3/2) * 
-        (sigma(_s) / sigma_T).to_value("") *
-        (1 - _mu)
+        _l_tilde ** (-2)
+        * _R_tilde ** (-5 / 4)
+        * _phi_disk
+        * (1 + _R_tilde ** 2 / _l_tilde ** 2) ** (-3 / 2)
+        * (sigma(_s) / sigma_T).to_value("")
+        * (1 - _mu)
     )
     integral_R_tilde = np.trapz(integrand, disk.R_tilde, axis=0)
     integral_l_tilde = np.trapz(integral_R_tilde, l_tilde, axis=0)
-    prefactor = 1e7 * disk.l_Edd**(3/4) * disk.M_8**(1/4) * disk.eta**(-3/4)
-    return prefactor * integral_l_tilde 
+    prefactor = 1e7 * disk.l_Edd ** (3 / 4) * disk.M_8 ** (1 / 4) * disk.eta ** (-3 / 4)
+    return prefactor * integral_l_tilde
 
 
 class Absorption:

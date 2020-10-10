@@ -16,6 +16,13 @@ def make_sed_comparison_plot(nu, reference_sed, agnpy_sed, fig_title, fig_path):
     ax[0].set_title(fig_title)
     # plot the deviation in the bottom panel
     deviation = 1 - agnpy_sed / reference_sed
+    ax[1].axhline(0, ls="-", color="darkgray")
+    ax[1].axhline(0.2, ls="--", color="darkgray")
+    ax[1].axhline(-0.2, ls="--", color="darkgray")
+    ax[1].axhline(0.3, ls=":", color="darkgray")
+    ax[1].axhline(-0.3, ls=":", color="darkgray")
+    ax[1].set_ylim([-0.5, 0.5])
+    ax[1].set_xlabel(r"$\nu / Hz$")
     ax[1].semilogx(
         nu,
         deviation,
@@ -23,11 +30,4 @@ def make_sed_comparison_plot(nu, reference_sed, agnpy_sed, fig_title, fig_path):
         label=r"$1 - \nu F_{\nu, \rm agnpy} \, / \,\nu F_{\nu, \rm reference}$",
     )
     ax[1].legend(loc=2)
-    ax[1].axhline(0, ls="-", lw=1.5, color="dimgray")
-    ax[1].axhline(0.2, ls="--", lw=1.5, color="dimgray")
-    ax[1].axhline(-0.2, ls="--", lw=1.5, color="dimgray")
-    ax[1].axhline(0.3, ls=":", lw=1.5, color="dimgray")
-    ax[1].axhline(-0.3, ls=":", lw=1.5, color="dimgray")
-    ax[1].set_ylim([-0.5, 0.5])
-    ax[1].set_xlabel(r"$\nu / Hz$")
     fig.savefig(f"{fig_path}")

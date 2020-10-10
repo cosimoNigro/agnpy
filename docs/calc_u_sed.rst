@@ -1,7 +1,7 @@
 .. _calc_u_sed:
 
 ===========================================================================
-Calculations of Energy Densities of Photon Targets and Inverse Compton SEDs
+Calculations of Energy Densities, Inverse Compton SEDs gamma-gamma absorption
 ===========================================================================
 In this section we collect the formulas that are implemented in :py:mod:`~agnpy.targets`
 and :py:mod:`~agnpy.compton` to compute the energy densities (:math:`u`) of the
