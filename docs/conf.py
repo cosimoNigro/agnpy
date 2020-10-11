@@ -79,6 +79,8 @@ mathjax_config = {
             "uunits": r"{{\rm erg}\,{\rm cm}^{-3}}",
             "diff": r"{\mathrm{d}}",
             "utransform": r"{\Gamma^3 (1 + \Beta \mu')^3}",
+            "rtilde" : r"\tilde{r}",
+            "ltilde" : r"\tilde{l}"
         }
     }
 }
