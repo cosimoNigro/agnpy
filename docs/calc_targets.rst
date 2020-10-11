@@ -172,7 +172,7 @@ Shakura Sunyaev Disk
 --------------------
 
 .. _compton_disk:
-.. figure:: _static/compton_disk.pdf
+.. figure:: _static/compton_disk.png
     :width: 400px
     :align: center
 
@@ -270,7 +270,7 @@ Spherical Shell Broad Line Region
 ---------------------------------
 
 .. _compton_reprocessed:
-.. figure:: _static/compton_reprocessed.pdf
+.. figure:: _static/compton_reprocessed.png
     :width: 400px
     :align: center
 
@@ -468,14 +468,14 @@ Compton-scattering external radiation fields reads
 :math:`\epsilon_s` the dimensionless energy of the scattered photon, :math:`\delta_D`
 the Doppler factor of the blob. The extreme of integration on the target energy 
 :math:`\epsilon_{\rm high}` and Lorentz factor of the electron :math:`\gamma_{\rm low}`
-are imposed by kinematics limits
+are imposed by kinematics limits:
 
 .. math::
     \epsilon_{\rm high} &= \frac{2 \epsilon_s}{1 - \cos \psi}, \\
-       \gamma_{\rm low} &= \frac{\epsilon_s}{2} 
-       \left[ 1 + \sqrt{1 + \frac{2}{\epsilon \epsilon_s (1 - \cos \psi)}} \right],
+    \gamma_{\rm low} &= \frac{\epsilon_s}{2} 
+    \left[ 1 + \sqrt{1 + \frac{2}{\epsilon \epsilon_s (1 - \cos \psi)}} \right],
 
-with :math:`\cos\psi` the angle between the direction of the incident photon 
+with :math:`\cos\psi` being the angle between the direction of the incident photon 
 and the electron
 
 .. math::
@@ -483,8 +483,8 @@ and the electron
     :label: cos_psi
 
 remember that in [DermerMenon2009]_ and in the other reference we rely on, the "head-on"
-approximation for the Compton cross section is used, these means the Compton-scattered
-photons have the same direction of the scattering electrons.
+approximation for the Compton cross section is considered. This implies that the Compton-scattered
+photons have the same direction of the scattering electrons. 
 The Compton cross section is simplified in Eq. :eq:`ec_sed` to the integration 
 kernel 
 
@@ -530,9 +530,8 @@ Plugging Eq. :eq:`u_ps_behind_jet` in Eq. :eq:`ec_sed`
                                \int_{-1}^{1} \diff\mu \,
                                \int_{0}^{\epsilon_{\rm high}} \diff\epsilon \,
                                \frac{L_0}{4 \pi c r^2} \frac{\delta(\mu - 1)}{2 \pi} 
-                               \delta(\epsilon - \epsilon_0) \cdot \\
-                            &  \cdot \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \, 
-                               \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C \\
+                               \delta(\epsilon - \epsilon_0) \,
+                               \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \, \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C \\
                             &= \boxed{\frac{3}{2^7 \pi^2} \frac{\sigma_T L_0}{d_L^2 r^2}  
                                \left( \frac{\epsilon_s}{\epsilon_0} \right)^2 \delta_D^3 
                                \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \, 
@@ -548,13 +547,12 @@ Plugging Eq. :eq:`u_ss_disk` in Eq. :eq:`ec_sed`
 
 .. math::
     \nu F_{\nu}^{\rm EC}(r) &= \frac{3 c \sigma_T}{8} \frac{1}{4 \pi d_L^2} \epsilon_s^2 \delta_D^3
-                               \int_0^{2 \pi} \diff\phi \, 
+                               \int_0^{2 \pi} \diff\phi \,
                                \int_{\mu_{\rm min}}^{\mu_{\rm max}} \diff\mu \,
                                \int_{0}^{\epsilon_{\rm high}} \diff\epsilon \,
                                \frac{3}{(4 \pi)^2 c} \frac{G M \dot{m}}{R^3 \mu}
-                               \varphi(\mu; r)\,\delta(\epsilon - \epsilon_0(\mu; r)) \frac{1}{\epsilon^2} \cdot \\
-                            &  \cdot \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \, 
-                               \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C \\
+                               \varphi(\mu; r) \delta(\epsilon - \epsilon_0(\mu; r)) \frac{1}{\epsilon^2} \,
+                               \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \, \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C \\
                             &= \boxed{\frac{3^2}{2^9 \pi^3}
                                \frac{\sigma_T G M \dot{m}}{d_L^2 r^3} 
                                \epsilon_s^2 \delta_D^3
@@ -566,12 +564,15 @@ Plugging Eq. :eq:`u_ss_disk` in Eq. :eq:`ec_sed`
     :label: ec_ss_disk
 
 Notice that now in the Compton Kernel :math:`\Xi_c` the target energy is angle 
-dependent: :math:`\epsilon \rightarrow \epsilon_0(\mu; r)`.
+dependent: :math:`\epsilon \rightarrow \epsilon_0(\mu; r)`. In the previous formula - as already done in the computation 
+of the energy densities - we have expressed both :math:`\varphi` and :math:`\epsilon_0` as a function of the 
+zenith angle (:math:`\mu`) and the height above the disk (:math:`r`), rather than simply as a function of the radial
+coordinate along the disk (:math:`R`).    
 
 Expressing the luminosity of the disk as 
 :math:`L_{\rm disk} = l_{\rm Edd} L_{Edd} = \eta \dot{m} c^2` and remembering the 
 expression for the gravitational radius (:math:`R_g = GM / c^2`) one can easily obtain
-Eq. 70 of [Dermer2009]_ from Eq. :eq:`ec_ss_disk`.
+Eq. 70 of [Dermer2009]_ from Eq. :eq:`ec_ss_disk`.    
 
 In the reference a factor :math:`1 / \mu` is missing in the integrand 
 (compare Eq. 25 in [Dermer2002]_ with Eq. 69 in [Dermer2009]_).
@@ -588,9 +589,8 @@ Plugging Eq. :eq:`u_blr` in Eq. :eq:`ec_sed`
                                \int_{0}^{\epsilon_{\rm high}} \diff\epsilon \,
                                \frac{\xi_{\rm li} L_{\rm disk}}{(4\pi)^2 c} 
                                \delta(\epsilon - \epsilon_{\rm li}) 
-                               \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \delta(\mu - \mu_*) \cdot \\
-                            &  \cdot \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \, 
-                               \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C \\
+                               \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \delta(\mu - \mu_*) \,
+                               \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \, \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C \\
                            &=  \boxed{\frac{3}{2^9 \pi^3} 
                                \frac{\sigma_T \xi_{\rm li} L_{\rm disk}}{d_L^2}
                                \left( \frac{\epsilon_s}{\epsilon_{\rm li}} \right)^2
@@ -604,9 +604,8 @@ Plugging Eq. :eq:`u_blr` in Eq. :eq:`ec_sed`
 Notice this time in the Compton Kernel the target energy will be simply :math:`\epsilon_{\rm li}`
 but the angle between the electron and the photon will depend on :math:`\mu_*` 
 (by virtue of the delta in :math:`\mu`): 
-:math:`\cos \psi = \mu_* \mu_s + \sqrt{1 - \mu_*^2} \sqrt{1 - \mu_s^2} \cos \phi,`
-with :math:`\mu_*` in turn depending on the zenith angle of the reprocessing material
-:math:`\mu_{\rm re}` according to Eq. :eq:`reprocessed_geom`.
+:math:`\cos \psi = \mu_* \mu_s + \sqrt{1 - \mu_*^2} \sqrt{1 - \mu_s^2} \cos \phi,` 
+with :math:`\mu_*` in turn depending on the zenith angle of the reprocessing material, :math:`\mu_{\rm re}`, according to Eq. :eq:`reprocessed_geom`.
 
 Ring Dust Torus
 ---------------
@@ -618,9 +617,8 @@ Plugging Eq. :eq:`u_dt` in Eq. :eq:`ec_sed`
                                \int_{-1}^{1} \diff\mu \,
                                \int_{0}^{\epsilon_{\rm high}} \diff\epsilon \,
                                \frac{\xi_{\rm dt} L_{\rm disk}}{8 \pi^2 c x^2} 
-                               \delta(\mu - r/x) \delta(\epsilon - 2.7 \Theta) \cdot \\
-                            &  \cdot \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \,
-                               \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C \\
+                               \delta(\mu - r/x) \delta(\epsilon - 2.7 \Theta) \,
+                               \int_{\gamma_{\rm low}}^{\infty} \diff\gamma \, \frac{N'_e(\gamma / \delta_D)}{\gamma^2}\,\Xi_C \\
                            &=  \boxed{\frac{3}{2^8 \pi^3} 
                                \frac{\sigma_T \xi_{\rm dt} L_{\rm disk}}{d_L^2 x^2}
                                \left( \frac{\epsilon_s}{\epsilon_{\rm dt}} \right)^2
@@ -631,8 +629,7 @@ Plugging Eq. :eq:`u_dt` in Eq. :eq:`ec_sed`
     :label: ec_dt
 
 Notice in the Compton Kernel the target energy will be simply :math:`\epsilon_{\rm dt} = 2.7 \Theta`
-and the angle between the electron and the photon 
-:math:`\cos \psi = \mu_s r/x + \sqrt{1 - (r/x)^2} \sqrt{1 - \mu_s^2} \cos \phi,`.
+and the angle between the electron and the photon :math:`\cos \psi = \mu_s r/x + \sqrt{1 - (r/x)^2} \sqrt{1 - \mu_s^2} \cos \phi`.
 
 
 Optical depth for :math:`\gamma`-:math:`\gamma` pair production
@@ -640,7 +637,7 @@ Optical depth for :math:`\gamma`-:math:`\gamma` pair production
 We will use the previously listed densities :math:`u(\epsilon, \Omega; r)`
 to compute their optical depth for :math:`\gamma`-:math:`\gamma` pair production.
 
-The optical depth for :math:`\gamma`-:math:`\gamma` pair production for a target with energy density :math:`u(\epsilon, \Omega)` reads:
+The optical depth for :math:`\gamma`-:math:`\gamma` pair production for a target with energy density :math:`u(\epsilon, \Omega)` reads
 
 .. math::
     \tau_{\gamma \gamma}(\nu) = \int_{r}^{\infty} \diff l \,
@@ -654,11 +651,16 @@ The optical depth for :math:`\gamma`-:math:`\gamma` pair production for a target
 where: 
     - :math:`\cos\psi = \mu\mu_s + \sqrt{1 - \mu^2}\sqrt{1 - \mu_s^2} \cos\phi` is the cosine of the angle between the hitting and the absorbing photon;
     - :math:`u(\epsilon, \mu, \phi; l)` is the energy density of the target photon field;
-    - :math:`\sigma_{\gamma \gamma}(s)` is the pair-production cross section, with :math:`s = \epsilon_1 \epsilon \, (1 - \cos\psi)\,/\,2` and :math:`\epsilon_1 = h \nu\,/\,(m_e c^2)` the dimensionless hitting photon energy.
+    - :math:`\sigma_{\gamma \gamma}(s)` is the pair-production cross section; 
+    - :math:`s = \epsilon_1 \epsilon \, (1 - \cos\psi)\,/\,2` is the kinematic variable representing the Lorentz factor of the produced :math:`e^{\pm}` pair in the center-of-momentum frame;  
+    - :math:`\epsilon_1 = h \nu\,/\,(m_e c^2)` is the dimensionless energy of the photon hitting the target.
 
-Photoabsorption results in an attenuation of the photon flux by a factor :math:`\exp(-\tau_{\gamma \gamma})`.
+Photoabsorption results in an attenuation of the photon flux by a factor :math:`\exp(-\tau_{\gamma \gamma})`.    
 
-Basic formulas are borrowed from [Finke2016]_. The approach presented therein (and in [Dermer2009]_) simplifies the integration by assuming that the hitting photons travel in the direction parallel to the jet axis (:math:`\mu_s \rightarrow 1`), decoupling the cross section and the :math:`(1 - \cos\psi)` term from the integral on :math:`\phi`. The optical depths thus calculated are therefore valid only for blazars.
+Basic formulas are borrowed from [Finke2016]_. The approach presented therein (and in [Dermer2009]_) though simplifies 
+the integration by assuming that the hitting photons travel in the direction parallel to the jet axis 
+(:math:`\mu_s \rightarrow 1`), decoupling the cross section and the :math:`(1 - \cos\psi)` term from the integral on 
+:math:`\phi`. The optical depths thus calculated are therefore valid only for blazars.    
 `agnpy` carries on the full integration, such that the optical depths are valid for any jetted AGN.
 
 Isotropic Monochromatic
@@ -680,7 +682,7 @@ Plugging Eq. :eq:`u_iso` in Eq. :eq:`tau`
                                  \sigma_{\gamma \gamma}(s).}
     :label: tau_iso
 
-In this case :math:`s = \epsilon_0 \epsilon_1 (1 - \cos\psi) / 2`.
+In this case the kinematic variable :math:`s = \epsilon_0 \epsilon_1 (1 - \cos\psi) / 2`.
 
 Monochromatic Point Source Behind the Jet
 -----------------------------------------
@@ -695,13 +697,12 @@ Plugging Eq. :eq:`u_ps_behind_jet` in Eq. :eq:`tau`
                                  \frac{L_0}{4 \pi c l^2} \frac{\delta(\mu-1)}{2 \pi} \delta(\epsilon - \epsilon_0) \, 
                                  \sigma_{\gamma \gamma}(s) \\
                               &= \boxed{\frac{L_0}{4 \pi \epsilon_0 m_e c^2}
-                                 \int_{r}^{\infty} \diff l \, (1 - \mu_s) \,
-                                 \frac{\sigma_{\gamma \gamma}(s)}{l^2}.}
+                                 \int_{r}^{\infty} \frac{\diff l}{l^2} \, (1 - \mu_s) \, \sigma_{\gamma \gamma}(s).}
     :label: tau_ps_behind_jet
 
-Notice that the delta on :math:`\mu` removes also the dependency on :math:`\phi`
-as :math:`\cos \psi(\mu=1) = \mu_s` within the integration kernel. In this case
-:math:`s = \epsilon_0 \epsilon_1 (1 - \mu_s) / 2`.
+Notice that the delta on :math:`\mu` removes also the dependency on :math:`\phi` within the cross section, as :math:`\cos \psi(\mu=1) = \mu_s`.
+
+In this case the kinematic variable :math:`s = \epsilon_0 \epsilon_1 (1 - \mu_s) / 2`.
 
 Shakura Sunyaev Disk
 --------------------
@@ -721,7 +722,7 @@ Plugging Eq. :eq:`u_ss_disk` in Eq. :eq:`tau`
                                  \int_{\mu_{\rm min}(l)}^{\mu_{\rm max}(l)}  \diff\mu \, (1 - \cos\psi) \, 
                                  \frac{\varphi(\mu; l)}{\epsilon_0(\mu; l) \mu l^3 (\mu^{-2} - 1)^{3/2}} \,
                                  \sigma_{\gamma \gamma}(s) \\
-                              &= \boxed{\frac{3}{(4 \pi)^2} \frac{L_{\rm disk}}{m_e c^3 R_g \eta} \,
+                              &= \boxed{\frac{3}{(4 \pi)^2} \frac{L_{\rm disk}}{m_e c^3 \eta R_g} \,
                                  \int_{\rtilde}^{\infty} \diff \ltilde \,
                                  \int_{0}^{2\pi} \diff\phi \, 
                                  \int_{\mu_{\rm min}(\ltilde)}^{\mu_{\rm max}(\ltilde)}  \diff\mu \, (1 - \cos\psi) \, 
@@ -729,6 +730,16 @@ Plugging Eq. :eq:`u_ss_disk` in Eq. :eq:`tau`
                                  \sigma_{\gamma \gamma}(s).}
     :label: tau_ss_disk 
 
+In the previous formula - as already done in the computation of the energy densities and the EC SEDs - we have 
+expressed both :math:`\varphi` and :math:`\epsilon_0` as a function of the zenith angle (:math:`\mu`) and the height 
+above the disk (:math:`l`), rather than simply as a function of the radial coordinate along the disk (:math:`R`). 
+
+Notice in the last equality we have reduced the integration over the distance (:math:`l`) to the scaled distance (:math:`\tilde{l} = l / R_g`).
+
+Also in this case each value of :math:`l` in the outermost integral changes the extremes of integration on :math:`\mu` 
+(remembering :math:`\mu_{\rm  min} = \sqrt{1 / (1 + R_{\rm out}^2/l^2)}`, :math:`\mu_{\rm  max} = \sqrt{1 / (1 + R_{\rm in}^2/l^2)}`).   
+
+In this case the kinematic variable :math:`s = \epsilon_0(\mu; \ltilde) \epsilon_1 (1 - \cos\psi) / 2`.
 
 Spherical Shell Broad Line Region
 ---------------------------------
@@ -753,7 +764,16 @@ Plugging Eq. :eq:`u_blr` in Eq. :eq:`tau`
                                  \int_{0}^{2\pi} \diff\phi \,
                                  \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{\tilde{x}^2} \, (1 - \mu_*) \,
                                  \sigma_{\gamma \gamma}(s).}
-                                  
+
+Given the delta in :math:`\mu` the angle between the photons is :math:`\cos \psi = \mu_* \mu_s + \sqrt{1 - \mu_*^2} \sqrt{1 - \mu_s^2} \cos \phi`
+with :math:`\mu_*` in turn depending on the zenith angle of the reprocessing material, :math:`\mu_{\rm re}`, according to Eq. :eq:`reprocessed_geom`.          
+
+Notice in the last equality we have reduced the integration over the distance (:math:`l`) to the scaled distance (:math:`\tilde{l} = l / R_g`).
+All other distances indicated with tilde are similarly scaled: 
+:math:`\tilde{x}^2 = \tilde{R}_{\rm li}^2 + \tilde{r}^2 - 2 \tilde{r}  \tilde{R}_{\rm li} \mu_{\rm re}`.
+
+In this case the kinematic variable :math:`s = \epsilon_{\rm li} \epsilon_1 (1 - \cos\psi) / 2`.
+
 Ring Dust Torus
 ---------------
 
@@ -765,7 +785,7 @@ Plugging Eq. :eq:`u_dt` in Eq. :eq:`tau`
                                  \int_{-1}^{1}  \diff\mu \, (1 - \cos\psi) \, 
                                  \int_{0}^{\infty} \diff\epsilon \,
                                  \frac{\xi_{\rm dt} L_{\rm disk}}{8 \pi^2 c x^2} 
-                                 \delta(\mu - r/x) \delta(\epsilon - \epsilon_{\rm dt}) \cdot \\
+                                 \delta(\mu - r/x) \delta(\epsilon - \epsilon_{\rm dt}) \,
                                  \sigma_{\gamma \gamma}(s) \\   
                               &= \frac{1}{8 \pi^2} \frac{\xi_{\rm dt} L_{\rm disk}}{\epsilon_{\rm dt} m_e c^3}
                                  \int_{r}^{\infty} \diff l \,
@@ -778,3 +798,11 @@ Plugging Eq. :eq:`u_dt` in Eq. :eq:`tau`
                                  \frac{(1 - \cos\psi)}{\tilde{x}^2} \, 
                                  \sigma_{\gamma \gamma}(s).}
                                  
+Given the delta in :math:`\mu` the angle between the photons is :math:`\cos \psi = \mu_s r/x + \sqrt{1 - (r/x)^2} \sqrt{1 - \mu_s^2} \cos \phi`.  
+
+Notice in the last equality we have also changed the integration over the distance (:math:`l`) to be integration over 
+the reduced distance (:math:`\tilde{l} = l / R_g`).
+All other distances indicated with tilde are similarly scaled: 
+:math:`\tilde{x}^2 = \tilde{R}_{\rm dt}^2 + \tilde{r}^2`.
+
+In this case the kinematic variable :math:`s = \epsilon_{\rm dt} \epsilon_1 (1 - \cos\psi) / 2`.
