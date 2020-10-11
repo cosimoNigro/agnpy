@@ -750,16 +750,17 @@ Plugging Eq. :eq:`u_blr` in Eq. :eq:`tau`
                                  \int_{0}^{2\pi} \diff\phi \, 
                                  \int_{-1}^{1}  \diff\mu \, (1 - \cos\psi) \, 
                                  \int_{0}^{\infty} \diff\epsilon \,
+                                 \frac{1}{\epsilon m_e c^2}
                                  \frac{\xi_{\rm li} L_{\rm disk}}{(4\pi)^2c} 
                                  \delta(\epsilon - \epsilon_{\rm li}) 
                                  \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \delta(\mu - \mu_*) \,
                                  \sigma_{\gamma \gamma}(s) \\     
-                              &= \frac{1}{4 \pi} \frac{\xi_{\rm li} L_{\rm disk}}{\epsilon_{\rm li} m_e c^3} \,
+                              &= \frac{1}{(4 \pi)^2} \frac{\xi_{\rm li} L_{\rm disk}}{\epsilon_{\rm li} m_e c^3} \,
                                  \int_{r}^{\infty} \diff l \,
                                  \int_{0}^{2\pi} \diff\phi \,
                                  \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \, (1 - \mu_*) \,
                                  \sigma_{\gamma \gamma}(s) \\     
-                              &= \boxed{\frac{1}{4 \pi} \frac{\xi_{\rm li} L_{\rm disk}}{\epsilon_{\rm li} m_e c^3 R_g} \,
+                              &= \boxed{\frac{1}{(4 \pi)^2} \frac{\xi_{\rm li} L_{\rm disk}}{\epsilon_{\rm li} m_e c^3 R_g} \,
                                  \int_{\rtilde}^{\infty} \diff \ltilde \,
                                  \int_{0}^{2\pi} \diff\phi \,
                                  \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{\tilde{x}^2} \, (1 - \mu_*) \,
@@ -784,6 +785,7 @@ Plugging Eq. :eq:`u_dt` in Eq. :eq:`tau`
                                  \int_{0}^{2\pi} \diff\phi \, 
                                  \int_{-1}^{1}  \diff\mu \, (1 - \cos\psi) \, 
                                  \int_{0}^{\infty} \diff\epsilon \,
+                                 \frac{1}{\epsilon m_e c^2}
                                  \frac{\xi_{\rm dt} L_{\rm disk}}{8 \pi^2 c x^2} 
                                  \delta(\mu - r/x) \delta(\epsilon - \epsilon_{\rm dt}) \,
                                  \sigma_{\gamma \gamma}(s) \\   
