@@ -52,8 +52,7 @@ def make_comparison_plot(
     comp_label,
     fig_title,
     fig_path,
-    plot_type,
-    nu_range=None,
+    plot_type
 ):
     """make a comparison plot, for SED or gamma-gamma absorption 
     between two different sources: a reference (literature or another code)
@@ -78,8 +77,6 @@ def make_comparison_plot(
         path to save the figure
     plot_type : `{"sed", "tau"}`
         whether we are doing a comparison plot for a SED or an optical depth 
-    nu_range : `list` of :class:`~astropy.units.Quantity`
-        extremes of the range over which we are performing the comparison
     """
     if plot_type == "sed":
         x_label = SED_X_LABEL
@@ -104,10 +101,6 @@ def make_comparison_plot(
     ax[0].legend(loc="best")
     ax[0].set_ylabel(y_label)
     ax[0].set_title(fig_title)
-    # plot the range within which we are comparing
-    if nu_range is not None:
-        ax[0].axvline(nu_range[0].to_value("Hz"), ls=":", color="k")
-        ax[0].axvline(nu_range[1].to_value("Hz"), ls=":", color="k")
     # plot the deviation in the bottom panel
     deviation = 1 - y_comp / y_ref
     ax[1].axhline(0, ls="-", color="darkgray")
@@ -116,10 +109,6 @@ def make_comparison_plot(
     ax[1].axhline(0.3, ls=":", color="darkgray")
     ax[1].axhline(-0.3, ls=":", color="darkgray")
     ax[1].set_ylim([-0.5, 0.5])
-    # plot the range within which we are comparing
-    if nu_range is not None:
-        ax[1].axvline(nu_range[0].to_value("Hz"), ls=":", color="k")
-        ax[1].axvline(nu_range[1].to_value("Hz"), ls=":", color="k")
     ax[1].semilogx(
         nu, deviation, marker=".", ls="--", color="C1", lw=1.5, label=deviation_label
     )

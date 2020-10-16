@@ -127,10 +127,6 @@ class TestSynchrotron:
         ssa = Synchrotron(blob, ssa=True)
         sed_agnpy = ssa.sed_flux(nu_ref)
         # sed comparison plot
-        # requires that the SED points deviate less than 5% from the figure
-        # there are divergencies at very low and very high energies, therefore
-        # we will check between 10^(11) and 10^(19) Hz
-        nu_range = [1e11, 1e19] * u.Hz
         make_comparison_plot(
             nu_ref,
             sed_ref,
@@ -140,8 +136,11 @@ class TestSynchrotron:
             figure_title,
             figure_path,
             "sed",
-            nu_range,
         )
+        # requires that the SED points deviate less than 5% from the figure
+        # there are divergencies at very low and very high energies, therefore
+        # we will check between 10^(11) and 10^(19) Hz
+        nu_range = [1e11, 1e19] * u.Hz
         assert check_deviation_within_bounds(
             nu_ref, sed_ref, sed_agnpy, 0, 0.05, nu_range
         )
