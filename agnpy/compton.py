@@ -335,7 +335,7 @@ class ExternalCompton:
         sed = prefactor_num / prefactor_denom * integral_phi
         return sed.to("erg cm-2 s-1")
 
-    def _sed_flux_point_like(self, nu):
+    def _sed_flux_point_source(self, nu):
         """SED flux for EC on a point like source behind the jet
         
         Parameters
@@ -556,7 +556,7 @@ class ExternalCompton:
         if isinstance(self.target, CMB):
             return self._sed_flux_cmb(nu)
         if isinstance(self.target, PointSourceBehindJet):
-            return self._sed_flux_point_like(nu)
+            return self._sed_flux_point_source(nu)
         if isinstance(self.target, SSDisk):
             return self._sed_flux_disk(nu)
         if isinstance(self.target, SphericalShellBLR):

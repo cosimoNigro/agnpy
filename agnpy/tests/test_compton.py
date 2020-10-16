@@ -14,7 +14,8 @@ from .utils import make_sed_comparison_plot
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
-tests_dir = Path(__file__).parent
+agnpy_dir = Path(__file__).parent.parent.parent
+data_dir = f"{agnpy_dir}/data"
 
 # variables with _test are global and meant to be used in all tests
 pwl_spectrum_norm_test = 1e48 * u.Unit("erg")
@@ -56,7 +57,7 @@ class TestSynchrotronSelfCompton:
     def test_ssc_reference_sed(self):
         """test agnpy SSC SED against the one in Figure 7.4 of Dermer Menon"""
         sampled_ssc_table = np.loadtxt(
-            f"{tests_dir}/sampled_seds/ssc_figure_7_4_dermer_menon_2009.txt",
+            f"{data_dir}/sampled_seds/ssc_figure_7_4_dermer_menon_2009.txt",
             delimiter=",",
             comments="#",
         )
@@ -72,8 +73,10 @@ class TestSynchrotronSelfCompton:
             sampled_ssc_nu,
             sampled_ssc_sed,
             agnpy_ssc_sed,
+            "Figure 7.4, Dermer and Menon (2009)",
+            "agnpy",
             "Synchrotron Self Compton",
-            f"{tests_dir}/crosscheck_figures/ssc_comparison_figure_7_4_dermer_menon_2009.png",
+            f"{data_dir}/crosscheck_figures/ssc_comparison_figure_7_4_dermer_menon_2009.png",
         )
         # requires that the SED points deviate less than 15% from the figure
         assert u.allclose(
@@ -88,7 +91,7 @@ class TestExternalCompton:
         """test agnpy SED for EC on Disk against the one in Figure 8 of Finke 2016"""
         # reference SED
         sampled_ec_disk_table = np.loadtxt(
-            f"{tests_dir}/sampled_seds/ec_disk_figure_8_finke_2016.txt",
+            f"{data_dir}/sampled_seds/ec_disk_figure_8_finke_2016.txt",
             delimiter=",",
             comments="#",
         )
@@ -109,8 +112,10 @@ class TestExternalCompton:
             sampled_ec_disk_nu,
             sampled_ec_disk_sed,
             agnpy_ec_disk_sed,
+            "Figure 8, Finke (2016)",
+            "agnpy",
             "External Compton on Shakura Sunyaev Disk",
-            f"{tests_dir}/crosscheck_figures/ec_disk_comparison_figure_8_finke_2016.png",
+            f"{data_dir}/crosscheck_figures/ec_disk_comparison_figure_8_finke_2016.png",
         )
         # requires that the SED points deviate less than 40% from the figure
         assert u.allclose(
@@ -124,7 +129,7 @@ class TestExternalCompton:
         """test agnpy SED for EC on BLR against the one in Figure 10 of Finke 2016"""
         # reference SED
         sampled_ec_blr_table = np.loadtxt(
-            f"{tests_dir}/sampled_seds/ec_blr_figure_10_finke_2016.txt",
+            f"{data_dir}/sampled_seds/ec_blr_figure_10_finke_2016.txt",
             delimiter=",",
             comments="#",
         )
@@ -143,8 +148,10 @@ class TestExternalCompton:
             sampled_ec_blr_nu,
             sampled_ec_blr_sed,
             agnpy_ec_blr_sed,
+            "Figure 10, Finke (2016)",
+            "agnpy",
             "External Compton on Spherical Shell Broad Line Region",
-            f"{tests_dir}/crosscheck_figures/ec_blr_comparison_figure_10_finke_2016.png",
+            f"{data_dir}/crosscheck_figures/ec_blr_comparison_figure_10_finke_2016.png",
         )
         # requires that the SED points deviate less than 30% from the figure
         assert u.allclose(
@@ -158,7 +165,7 @@ class TestExternalCompton:
         """test agnpy SED for EC on DT against the one in Figure 11 of Finke 2016"""
         # reference SED
         sampled_ec_dt_table = np.loadtxt(
-            f"{tests_dir}/sampled_seds/ec_dt_figure_11_finke_2016.txt",
+            f"{data_dir}/sampled_seds/ec_dt_figure_11_finke_2016.txt",
             delimiter=",",
             comments="#",
         )
@@ -179,8 +186,10 @@ class TestExternalCompton:
             sampled_ec_dt_nu,
             sampled_ec_dt_sed,
             agnpy_ec_dt_sed,
+            "Figure 11, Finke (2016)",
+            "agnpy",
             "External Compton on Ring Dust Torus",
-            f"{tests_dir}/crosscheck_figures/ec_dt_comparison_figure_11_finke_2016.png",
+            f"{data_dir}/crosscheck_figures/ec_dt_comparison_figure_11_finke_2016.png",
         )
         # requires that the SED points deviate less than 30% from the figure
         assert u.allclose(
@@ -207,6 +216,16 @@ class TestExternalCompton:
         nu = np.logspace(15, 28) * u.Hz
         ec_blr_sed = ec_blr.sed_flux(nu)
         ec_ps_blr_sed = ec_ps_blr.sed_flux(nu)
+        # sed comparison plot
+        make_sed_comparison_plot(
+            nu,
+            ec_blr_sed,
+            ec_ps_blr_sed,
+            "spherical shell BLR",
+            "point source behind the jet",
+            "External Compton " + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm line}$",
+            f"{data_dir}/crosscheck_figures/ec_blr_point_source_comparison.png",
+        )
         # requires a 20% deviation from the two SED points
         assert u.allclose(
             ec_blr_sed, ec_ps_blr_sed, atol=0 * u.Unit("erg cm-2 s-1"), rtol=0.2
@@ -229,6 +248,15 @@ class TestExternalCompton:
         nu = np.logspace(15, 28) * u.Hz
         ec_dt_sed = ec_dt.sed_flux(nu)
         ec_ps_dt_sed = ec_ps_dt.sed_flux(nu)
+        make_sed_comparison_plot(
+            nu,
+            ec_dt_sed,
+            ec_ps_dt_sed,
+            "ring dust torus",
+            "point source behind the jet",
+            "External Compton " + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm dt}$",
+            f"{data_dir}/crosscheck_figures/ec_dt_point_source_comparison.png",
+        )
         # requires a 20% deviation from the two SED points
         assert u.allclose(
             ec_dt_sed, ec_ps_dt_sed, atol=0 * u.Unit("erg cm-2 s-1"), rtol=0.2

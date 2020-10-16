@@ -696,11 +696,15 @@ Plugging Eq. :eq:`u_ps_behind_jet` in Eq. :eq:`tau`
                                  \frac{1}{\epsilon m_e c^2} 
                                  \frac{L_0}{4 \pi c l^2} \frac{\delta(\mu-1)}{2 \pi} \delta(\epsilon - \epsilon_0) \, 
                                  \sigma_{\gamma \gamma}(s) \\
-                              &= \boxed{\frac{L_0}{4 \pi \epsilon_0 m_e c^2}
-                                 \int_{r}^{\infty} \frac{\diff l}{l^2} \, (1 - \mu_s) \, \sigma_{\gamma \gamma}(s).}
+                              &= \frac{L_0}{4 \pi \epsilon_0 m_e c^2}
+                                 \int_{r}^{\infty} \frac{\diff l}{l^2} \, (1 - \mu_s) \, \sigma_{\gamma \gamma}(s) \\
+                              &= \boxed{\frac{L_0}{4 \pi \epsilon_0 m_e c^2 R_g}
+                                 \int_{\rtilde}^{\infty} \frac{\diff \ltilde}{\ltilde^2} \, (1 - \mu_s) \, \sigma_{\gamma \gamma}(s).}
     :label: tau_ps_behind_jet
 
 Notice that the delta on :math:`\mu` removes also the dependency on :math:`\phi` within the cross section, as :math:`\cos \psi(\mu=1) = \mu_s`.
+
+Notice in the last equality we have reduced the integration over the distance (:math:`l`) to the scaled distance (:math:`\tilde{l} = l / R_g`).
 
 In this case the kinematic variable :math:`s = \epsilon_0 \epsilon_1 (1 - \mu_s) / 2`.
 
