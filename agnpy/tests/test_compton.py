@@ -10,7 +10,7 @@ from agnpy.compton import SynchrotronSelfCompton, ExternalCompton
 import matplotlib.pyplot as plt
 from pathlib import Path
 import pytest
-from .utils import make_sed_comparison_plot
+from agnpy.utils import make_comparison_plot
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
@@ -69,7 +69,7 @@ class TestSynchrotronSelfCompton:
         # recompute the SED at the same ordinates where the figure was sampled
         agnpy_ssc_sed = ssc.sed_flux(sampled_ssc_nu)
         # sed comparison plot
-        make_sed_comparison_plot(
+        make_comparison_plot(
             sampled_ssc_nu,
             sampled_ssc_sed,
             agnpy_ssc_sed,
@@ -77,6 +77,7 @@ class TestSynchrotronSelfCompton:
             "agnpy",
             "Synchrotron Self Compton",
             f"{data_dir}/crosscheck_figures/ssc_comparison_figure_7_4_dermer_menon_2009.png",
+            "sed",
         )
         # requires that the SED points deviate less than 15% from the figure
         assert u.allclose(
@@ -104,11 +105,12 @@ class TestExternalCompton:
         R_in = 6
         R_out = 200
         disk = SSDisk(M_BH, L_disk, eta, R_in, R_out, R_g_units=True)
+        r = 1e17 * u.cm
         # recompute the SED at the same ordinates where the figure was sampled
-        ec_disk = ExternalCompton(bpwl_blob_test, disk, r=1e17 * u.cm)
+        ec_disk = ExternalCompton(bpwl_blob_test, disk, r)
         agnpy_ec_disk_sed = ec_disk.sed_flux(sampled_ec_disk_nu)
         # sed comparison plot
-        make_sed_comparison_plot(
+        make_comparison_plot(
             sampled_ec_disk_nu,
             sampled_ec_disk_sed,
             agnpy_ec_disk_sed,
@@ -116,6 +118,7 @@ class TestExternalCompton:
             "agnpy",
             "External Compton on Shakura Sunyaev Disk",
             f"{data_dir}/crosscheck_figures/ec_disk_comparison_figure_8_finke_2016.png",
+            "sed",
         )
         # requires that the SED points deviate less than 40% from the figure
         assert u.allclose(
@@ -140,11 +143,12 @@ class TestExternalCompton:
         xi_line = 0.024
         R_line = 1e17 * u.cm
         blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
+        r = 1e18 * u.cm
         # recompute the SED at the same ordinates where the figure was sampled
-        ec_blr = ExternalCompton(bpwl_blob_test, blr, r=1e18 * u.cm)
+        ec_blr = ExternalCompton(bpwl_blob_test, blr, r)
         agnpy_ec_blr_sed = ec_blr.sed_flux(sampled_ec_blr_nu)
         # sed comparison plot
-        make_sed_comparison_plot(
+        make_comparison_plot(
             sampled_ec_blr_nu,
             sampled_ec_blr_sed,
             agnpy_ec_blr_sed,
@@ -152,6 +156,7 @@ class TestExternalCompton:
             "agnpy",
             "External Compton on Spherical Shell Broad Line Region",
             f"{data_dir}/crosscheck_figures/ec_blr_comparison_figure_10_finke_2016.png",
+            "sed",
         )
         # requires that the SED points deviate less than 30% from the figure
         assert u.allclose(
@@ -178,11 +183,12 @@ class TestExternalCompton:
         T_dt = 1e3 * u.K
         csi_dt = 0.1
         dt = RingDustTorus(L_disk, csi_dt, T_dt)
+        r = 1e20 * u.cm
         # recompute the SED at the same ordinates where the figure was sampled
-        ec_dt = ExternalCompton(bpwl_blob_test, dt, r=1e20 * u.cm)
+        ec_dt = ExternalCompton(bpwl_blob_test, dt, r)
         agnpy_ec_dt_sed = ec_dt.sed_flux(sampled_ec_dt_nu)
         # sed comparison plot
-        make_sed_comparison_plot(
+        make_comparison_plot(
             sampled_ec_dt_nu,
             sampled_ec_dt_sed,
             agnpy_ec_dt_sed,
@@ -190,6 +196,7 @@ class TestExternalCompton:
             "agnpy",
             "External Compton on Ring Dust Torus",
             f"{data_dir}/crosscheck_figures/ec_dt_comparison_figure_11_finke_2016.png",
+            "sed",
         )
         # requires that the SED points deviate less than 30% from the figure
         assert u.allclose(
@@ -207,24 +214,27 @@ class TestExternalCompton:
         xi_line = 0.024
         R_line = 1e17 * u.cm
         blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
+        r = 1e22 * u.cm
         # point like source approximating the blr
         ps_blr = PointSourceBehindJet(blr.xi_line * L_disk, blr.epsilon_line)
         # external Compton
-        ec_blr = ExternalCompton(bpwl_blob_test, blr, r=1e22 * u.cm)
-        ec_ps_blr = ExternalCompton(bpwl_blob_test, ps_blr, r=1e22 * u.cm)
+        ec_blr = ExternalCompton(bpwl_blob_test, blr, r)
+        ec_ps_blr = ExternalCompton(bpwl_blob_test, ps_blr, r)
         # seds
         nu = np.logspace(15, 28) * u.Hz
         ec_blr_sed = ec_blr.sed_flux(nu)
         ec_ps_blr_sed = ec_ps_blr.sed_flux(nu)
         # sed comparison plot
-        make_sed_comparison_plot(
+        make_comparison_plot(
             nu,
             ec_blr_sed,
             ec_ps_blr_sed,
             "spherical shell BLR",
-            "point source behind the jet",
-            "External Compton on Spherical Shell BLR, " + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm line}$",
+            "point source approximating the BLR",
+            "External Compton on Spherical Shell BLR, "
+            + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm line}$",
             f"{data_dir}/crosscheck_figures/ec_blr_point_source_comparison.png",
+            "sed",
         )
         # requires a 20% deviation from the two SED points
         assert u.allclose(
@@ -239,23 +249,26 @@ class TestExternalCompton:
         T_dt = 1e3 * u.K
         csi_dt = 0.1
         dt = RingDustTorus(L_disk, csi_dt, T_dt)
+        r = 1e22 * u.cm
         # point like source approximating the dt
         ps_dt = PointSourceBehindJet(dt.xi_dt * L_disk, dt.epsilon_dt)
         # external Compton
-        ec_dt = ExternalCompton(bpwl_blob_test, dt, r=1e22 * u.cm)
-        ec_ps_dt = ExternalCompton(bpwl_blob_test, ps_dt, r=1e22 * u.cm)
+        ec_dt = ExternalCompton(bpwl_blob_test, dt, r)
+        ec_ps_dt = ExternalCompton(bpwl_blob_test, ps_dt, r)
         # seds
         nu = np.logspace(15, 28) * u.Hz
         ec_dt_sed = ec_dt.sed_flux(nu)
         ec_ps_dt_sed = ec_ps_dt.sed_flux(nu)
-        make_sed_comparison_plot(
+        make_comparison_plot(
             nu,
             ec_dt_sed,
             ec_ps_dt_sed,
             "ring dust torus",
-            "point source behind the jet",
-            "External Compton on Ring Dust Torus, " + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm dt}$",
+            "point source approximating the DT",
+            "External Compton on Ring Dust Torus, "
+            + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm dt}$",
             f"{data_dir}/crosscheck_figures/ec_dt_point_source_comparison.png",
+            "sed",
         )
         # requires a 20% deviation from the two SED points
         assert u.allclose(
