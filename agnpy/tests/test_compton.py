@@ -223,7 +223,7 @@ class TestExternalCompton:
             ec_ps_blr_sed,
             "spherical shell BLR",
             "point source behind the jet",
-            "External Compton " + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm line}$",
+            "External Compton on Spherical Shell BLR, " + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm line}$",
             f"{data_dir}/crosscheck_figures/ec_blr_point_source_comparison.png",
         )
         # requires a 20% deviation from the two SED points
@@ -254,7 +254,7 @@ class TestExternalCompton:
             ec_ps_dt_sed,
             "ring dust torus",
             "point source behind the jet",
-            "External Compton " + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm dt}$",
+            "External Compton on Ring Dust Torus, " + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm dt}$",
             f"{data_dir}/crosscheck_figures/ec_dt_point_source_comparison.png",
         )
         # requires a 20% deviation from the two SED points
