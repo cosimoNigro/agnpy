@@ -696,15 +696,11 @@ Plugging Eq. :eq:`u_ps_behind_jet` in Eq. :eq:`tau`
                                  \frac{1}{\epsilon m_e c^2} 
                                  \frac{L_0}{4 \pi c l^2} \frac{\delta(\mu-1)}{2 \pi} \delta(\epsilon - \epsilon_0) \, 
                                  \sigma_{\gamma \gamma}(s) \\
-                              &= \frac{L_0}{4 \pi \epsilon_0 m_e c^2}
-                                 \int_{r}^{\infty} \frac{\diff l}{l^2} \, (1 - \mu_s) \, \sigma_{\gamma \gamma}(s) \\
-                              &= \boxed{\frac{L_0}{4 \pi \epsilon_0 m_e c^2 R_g}
-                                 \int_{\rtilde}^{\infty} \frac{\diff \ltilde}{\ltilde^2} \, (1 - \mu_s) \, \sigma_{\gamma \gamma}(s).}
+                              &= \boxed{\frac{L_0}{4 \pi \epsilon_0 m_e c^3}
+                                 \frac{(1 - \mu_s)}{r} \, \sigma_{\gamma \gamma}(s). }
     :label: tau_ps_behind_jet
 
 Notice that the delta on :math:`\mu` removes also the dependency on :math:`\phi` within the cross section, as :math:`\cos \psi(\mu=1) = \mu_s`.
-
-Notice in the last equality we have reduced the integration over the distance (:math:`l`) to the scaled distance (:math:`\tilde{l} = l / R_g`).
 
 In this case the kinematic variable :math:`s = \epsilon_0 \epsilon_1 (1 - \mu_s) / 2`.
 
@@ -759,23 +755,14 @@ Plugging Eq. :eq:`u_blr` in Eq. :eq:`tau`
                                  \delta(\epsilon - \epsilon_{\rm li}) 
                                  \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \delta(\mu - \mu_*) \,
                                  \sigma_{\gamma \gamma}(s) \\     
-                              &= \frac{1}{(4 \pi)^2} \frac{\xi_{\rm li} L_{\rm disk}}{\epsilon_{\rm li} m_e c^3} \,
+                              &= \boxed{\frac{1}{(4 \pi)^2} \frac{\xi_{\rm li} L_{\rm disk}}{\epsilon_{\rm li} m_e c^3} \,
                                  \int_{r}^{\infty} \diff l \,
                                  \int_{0}^{2\pi} \diff\phi \,
                                  \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{x^2} \, (1 - \mu_*) \,
-                                 \sigma_{\gamma \gamma}(s) \\     
-                              &= \boxed{\frac{1}{(4 \pi)^2} \frac{\xi_{\rm li} L_{\rm disk}}{\epsilon_{\rm li} m_e c^3 R_g} \,
-                                 \int_{\rtilde}^{\infty} \diff \ltilde \,
-                                 \int_{0}^{2\pi} \diff\phi \,
-                                 \int_{-1}^{1}\frac{\diff\mu_{\rm re}}{\tilde{x}^2} \, (1 - \mu_*) \,
-                                 \sigma_{\gamma \gamma}(s).}
+                                 \sigma_{\gamma \gamma}(s) .} 
 
 Given the delta in :math:`\mu` the angle between the photons is :math:`\cos \psi = \mu_* \mu_s + \sqrt{1 - \mu_*^2} \sqrt{1 - \mu_s^2} \cos \phi`
-with :math:`\mu_*` in turn depending on the zenith angle of the reprocessing material, :math:`\mu_{\rm re}`, according to Eq. :eq:`reprocessed_geom`.          
-
-Notice in the last equality we have reduced the integration over the distance (:math:`l`) to the scaled distance (:math:`\tilde{l} = l / R_g`).
-All other distances indicated with tilde are similarly scaled: 
-:math:`\tilde{x}^2 = \tilde{R}_{\rm li}^2 + \tilde{r}^2 - 2 \tilde{r}  \tilde{R}_{\rm li} \mu_{\rm re}`.
+with :math:`\mu_*` in turn depending on the zenith angle of the reprocessing material, :math:`\mu_{\rm re}`, according to Eq. :eq:`reprocessed_geom`.
 
 In this case the kinematic variable :math:`s = \epsilon_{\rm li} \epsilon_1 (1 - \cos\psi) / 2`.
 
@@ -793,22 +780,12 @@ Plugging Eq. :eq:`u_dt` in Eq. :eq:`tau`
                                  \frac{\xi_{\rm dt} L_{\rm disk}}{8 \pi^2 c x^2} 
                                  \delta(\mu - r/x) \delta(\epsilon - \epsilon_{\rm dt}) \,
                                  \sigma_{\gamma \gamma}(s) \\   
-                              &= \frac{1}{8 \pi^2} \frac{\xi_{\rm dt} L_{\rm disk}}{\epsilon_{\rm dt} m_e c^3}
+                              &= \boxed{ \frac{1}{8 \pi^2} \frac{\xi_{\rm dt} L_{\rm disk}}{\epsilon_{\rm dt} m_e c^3}
                                  \int_{r}^{\infty} \diff l \,
                                  \int_{0}^{2\pi} \diff\phi \,
                                  \frac{(1 - \cos\psi)}{x^2} \, 
-                                 \sigma_{\gamma \gamma}(s) \\
-                              &= \boxed{\frac{1}{8 \pi^2} \frac{\xi_{\rm dt} L_{\rm disk}}{\epsilon_{\rm dt} m_e c^3 R_g}
-                                 \int_{r}^{\infty} \diff \ltilde \,
-                                 \int_{0}^{2\pi} \diff\phi \,
-                                 \frac{(1 - \cos\psi)}{\tilde{x}^2} \, 
-                                 \sigma_{\gamma \gamma}(s).}
-                                 
-Given the delta in :math:`\mu` the angle between the photons is :math:`\cos \psi = \mu_s r/x + \sqrt{1 - (r/x)^2} \sqrt{1 - \mu_s^2} \cos \phi`.  
+                                 \sigma_{\gamma \gamma}(s). }
 
-Notice in the last equality we have also changed the integration over the distance (:math:`l`) to be integration over 
-the reduced distance (:math:`\tilde{l} = l / R_g`).
-All other distances indicated with tilde are similarly scaled: 
-:math:`\tilde{x}^2 = \tilde{R}_{\rm dt}^2 + \tilde{r}^2`.
+Given the delta in :math:`\mu` the angle between the photons is :math:`\cos \psi = \mu_s r/x + \sqrt{1 - (r/x)^2} \sqrt{1 - \mu_s^2} \cos \phi`.  
 
 In this case the kinematic variable :math:`s = \epsilon_{\rm dt} \epsilon_1 (1 - \cos\psi) / 2`.

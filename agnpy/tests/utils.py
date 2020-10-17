@@ -8,22 +8,20 @@ SED_Y_LABEL = r"$\nu F_{\nu}\,/\,({\rm erg}\,{\rm cm}^{-2}\,{\rm s}^{-1})$"
 SED_DEVIATION_LABEL = r"$1 - \nu F_{\nu, \rm agnpy}\,/\,\nu F_{\nu, \rm reference}$"
 
 TAU_X_LABEL = r"$\nu\,/\,{\rm Hz}$"
-TAU_Y_LABEL = r"$\tau_{\gamma\gamma}"
+TAU_Y_LABEL = r"$\tau_{\gamma\gamma}$"
 TAU_DEVIATION_LABEL = (
     r"$1 - \tau_{\gamma\gamma, \rm agnpy}\,/\,\tau_{\gamma\gamma, \rm reference}$"
 )
 
 
-def extract_columns_sample_file(sample_file, x_unit, y_unit):
+def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
     """return two arrays of quantities from a sample file"""
     sample_table = np.loadtxt(sample_file, delimiter=",", comments="#")
     x = sample_table[:, 0] * u.Unit(x_unit)
-    if y_unit == None:
-        y = sample_table[:, 0]
+    if y_unit is None:
+        y = sample_table[:, 1]
     else:
         y = sample_table[:, 1] * u.Unit(y_unit)
-    if x.unit != u.Hz:
-        x.to("Hz", equivalencies=u.spectral())
     return x, y
 
 
