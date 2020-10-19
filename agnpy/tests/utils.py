@@ -18,10 +18,12 @@ def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
     """return two arrays of quantities from a sample file"""
     sample_table = np.loadtxt(sample_file, delimiter=",", comments="#")
     x = sample_table[:, 0] * u.Unit(x_unit)
-    if y_unit is None:
-        y = sample_table[:, 1]
-    else:
-        y = sample_table[:, 1] * u.Unit(y_unit)
+    y = (
+        sample_table[:, 1]
+        if y_unit is None
+        else sample_table[:, 1] * u.Unit(y_unit)
+    )
+
     return x, y
 
 
