@@ -60,7 +60,7 @@ Overview
    tutorials/synchrotron_self_compton.ipynb
    tutorials/external_compton.ipynb
    absorption
-   calc_u_sed
+   calc_targets
    bibliography
    modules
 

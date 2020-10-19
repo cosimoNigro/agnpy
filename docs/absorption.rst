@@ -1,26 +1,13 @@
 .. _absorption:
 
 
-:math:`\gamma`-:math:`\gamma` absorption
-========================================
-
-The photon fields that represent the target for the Compton scattering might re-absorb the scattered photons via :math:`\gamma`-:math:`\gamma` pair production. `agnpy` computes the optical depth (or opacity) :math:`\tau_{\gamma \gamma}` as a function of the frequency :math:`\nu` of the photon hitting the target. 
-
-.. math::
-   \tau_{\gamma \gamma}(\nu) = \int_{r}^{\infty} {\rm d}l \; \int_{0}^{2\pi} {\rm d}\phi \; 
-                               \int_{-1}^{1} {\rm d}\mu \; (1 - \cos\psi) \int_{0}^{\infty} {\rm d}\epsilon \;
-                               \frac{u(\epsilon, \mu, \phi; l)}{\epsilon m_e c^2} \, \sigma_{\gamma \gamma}(s),
-
-where: 
-    - :math:`\cos\psi = \mu\mu_s + \sqrt{1 - \mu^2}\sqrt{1 - \mu_s^2} \cos\phi` is the cosine of the angle between the hitting and the absorbing photon;
-    - :math:`u(\epsilon, \mu, \phi; l)` is the energy density of the target photon field;
-    - :math:`\sigma_{\gamma \gamma}(s)` is the pair-production cross section, with :math:`s = \epsilon_1 \epsilon \, (1 - \cos\psi)\,/\,2` and :math:`\epsilon_1 = h \nu\,/\,(m_e c^2)` the dimensionless hitting photon energy.
-
-Photoabsorption results in an attenuation of the photon flux by a factor :math:`\exp(-\tau_{\gamma \gamma})`.
-
-Basic formulas are borrowed from [Finke2016]_. The approach presented therein (and in [Dermer2009]_) simplifies the integration by assuming that the hitting photons travel in the direction parallel to the jet axis (:math:`\mu_s \rightarrow 1`), decoupling the cross section and the :math:`(1 - \cos\psi)` term from the integral on :math:`\phi`. The optical depths thus calculated are therefore valid only for blazars.
-
-`agnpy` carries on the full integration, such that the optical depths are valid for any jetted AGN.
+Absorption by :math:`\gamma`-:math:`\gamma` pair production
+===========================================================
+The photon fields that represent the target for the Compton scattering might re-absorb 
+the scattered photons via :math:`\gamma`-:math:`\gamma` pair production. `agnpy` computes the 
+optical depth (or opacity) :math:`\tau_{\gamma \gamma}` as a function of the frequency :math:`\nu` 
+of the photon hitting the target. Photoabsorption results in an attenuation of the photon flux 
+by a factor :math:`\exp(-\tau_{\gamma \gamma})`.
 
 Absorption on target photon fields
 ----------------------------------
