@@ -1,19 +1,24 @@
 # test on synchrotron module
 import pytest
 import numpy as np
-from pathlib import Path
 import astropy.units as u
 from astropy.constants import m_e, c, h
 from astropy.coordinates import Distance
+from pathlib import Path
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron, nu_synch_peak, epsilon_B
-from .utils import make_sed_comparison_plot
+from .utils import (
+    make_comparison_plot,
+    extract_columns_sample_file,
+    check_deviation_within_bounds,
+)
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 epsilon_equivalency = [
     (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
 ]
-tests_dir = Path(__file__).parent
+agnpy_dir = Path(__file__).parent.parent.parent
+data_dir = f"{agnpy_dir}/data"
 
 # variables with _test are global and meant to be used in all tests
 # here as a default we use the same parameters of Figure 7.4 in Dermer Menon 2009
@@ -52,73 +57,62 @@ class TestSynchrotron:
     def test_synch_reference_sed(self):
         """test agnpy synchrotron SED against the one sampled from Figure
         7.4 of Dermer Menon 2009"""
-        sampled_synch_sed_table = np.loadtxt(
-            f"{tests_dir}/sampled_seds/synch_figure_7_4_dermer_menon_2009.txt",
-            delimiter=",",
-            comments="#",
+        # reference SED
+        nu_ref, sed_ref = extract_columns_sample_file(
+            f"{data_dir}/sampled_seds/synch_figure_7_4_dermer_menon_2009.txt",
+            "Hz",
+            "erg cm-2 s-1",
         )
-        sampled_synch_nu = sampled_synch_sed_table[:, 0] * u.Hz
-        sampled_synch_sed = sampled_synch_sed_table[:, 1] * u.Unit("erg cm-2 s-1")
-        synch = Synchrotron(pwl_blob_test)
         # recompute the SED at the same ordinates where the figure was sampled
-        agnpy_synch_sed = synch.sed_flux(sampled_synch_nu)
+        synch = Synchrotron(pwl_blob_test)
+        sed_agnpy = synch.sed_flux(nu_ref)
         # sed comparison plot
-        make_sed_comparison_plot(
-            sampled_synch_nu,
-            sampled_synch_sed,
-            agnpy_synch_sed,
+        make_comparison_plot(
+            nu_ref,
+            sed_ref,
+            sed_agnpy,
+            "Figure 7.4, Dermer and Menon (2009)",
+            "agnpy",
             "Synchrotron",
-            f"{tests_dir}/crosscheck_figures/synch_comparison_figure_7_4_dermer_menon_2009.png",
+            f"{data_dir}/crosscheck_figures/synch_comparison_figure_7_4_dermer_menon_2009.png",
+            "sed",
         )
         # requires that the SED points deviate less than 15% from the figure
-        assert u.allclose(
-            agnpy_synch_sed,
-            sampled_synch_sed,
-            atol=0 * u.Unit("erg cm-2 s-1"),
-            rtol=0.15,
-        )
+        assert check_deviation_within_bounds(nu_ref, sed_ref, sed_agnpy, 0, 0.15)
 
     @pytest.mark.parametrize(
-        "reference_sed , spectrum_type, spectrum_parameters, figure_title, figure_path",
+        "file_ref , spectrum_type, spectrum_parameters, figure_title, figure_path",
         [
             (
-                "sampled_seds/synch_ssa_pwl_jetset_1.1.2.txt",
+                f"{data_dir}/sampled_seds/synch_ssa_pwl_jetset_1.1.2.txt",
                 "PowerLaw",
                 {"p": 2, "gamma_min": 2, "gamma_max": 1e6},
                 "Self-Absorbed Synchrotron, power-law electron distribution",
-                f"{tests_dir}/crosscheck_figures/ssa_pwl_comparison_jetset_1.1.2.png",
+                f"{data_dir}/crosscheck_figures/ssa_pwl_comparison_jetset_1.1.2.png",
             ),
             (
-                "sampled_seds/synch_ssa_bpwl_jetset_1.1.2.txt",
+                f"{data_dir}/sampled_seds/synch_ssa_bpwl_jetset_1.1.2.txt",
                 "BrokenPowerLaw",
                 {"p1": 2, "p2": 3, "gamma_b": 1e4, "gamma_min": 2, "gamma_max": 1e6},
                 "Self-Absorbed Synchrotron, broken power-law electron distribution",
-                f"{tests_dir}/crosscheck_figures/ssa_bpwl_comparison_jetset_1.1.2.png",
+                f"{data_dir}/crosscheck_figures/ssa_bpwl_comparison_jetset_1.1.2.png",
             ),
             (
-                "sampled_seds/synch_ssa_lp_jetset_1.1.2.txt",
+                f"{data_dir}/sampled_seds/synch_ssa_lp_jetset_1.1.2.txt",
                 "LogParabola",
                 {"p": 2, "q": 0.4, "gamma_0": 1e4, "gamma_min": 2, "gamma_max": 1e6},
                 "Self-Absorbed Synchrotron, log-parabola electron distribution",
-                f"{tests_dir}/crosscheck_figures/ssa_lp_comparison_jetset_1.1.2.png",
+                f"{data_dir}/crosscheck_figures/ssa_lp_comparison_jetset_1.1.2.png",
             ),
         ],
     )
     def test_ssa_reference_sed(
-        self,
-        reference_sed,
-        spectrum_type,
-        spectrum_parameters,
-        figure_title,
-        figure_path,
+        self, file_ref, spectrum_type, spectrum_parameters, figure_title, figure_path,
     ):
         """test SSA SED generated by a given electron distribution against the 
         ones generated with jetset version 1.1.2, via jetset_ssa_sed.py script"""
-        sampled_ssa_sed_table = np.loadtxt(
-            f"{tests_dir}/{reference_sed}", delimiter=",", comments="#",
-        )
-        sampled_ssa_nu = sampled_ssa_sed_table[:, 0] * u.Hz
-        sampled_ssa_sed = sampled_ssa_sed_table[:, 1] * u.Unit("erg cm-2 s-1")
+        # reference SED
+        nu_ref, sed_ref = extract_columns_sample_file(file_ref, "Hz", "erg cm-2 s-1")
         # same parameters used to produce the jetset SED
         spectrum_norm = 1e2 * u.Unit("cm-3")
         spectrum_dict = {"type": spectrum_type, "parameters": spectrum_parameters}
@@ -133,20 +127,24 @@ class TestSynchrotron:
         )
         # recompute the SED at the same ordinates where the figure was sampled
         ssa = Synchrotron(blob, ssa=True)
-        agnpy_ssa_sed = ssa.sed_flux(sampled_ssa_nu)
+        sed_agnpy = ssa.sed_flux(nu_ref)
         # sed comparison plot
-        make_sed_comparison_plot(
-            sampled_ssa_nu, sampled_ssa_sed, agnpy_ssa_sed, figure_title, figure_path,
+        make_comparison_plot(
+            nu_ref,
+            sed_ref,
+            sed_agnpy,
+            "jetset 1.1.2",
+            "agnpy",
+            figure_title,
+            figure_path,
+            "sed",
         )
         # requires that the SED points deviate less than 5% from the figure
         # there are divergencies at very low and very high energies, therefore
         # we will check between 10^(11) and 10^(19) Hz
-        condition = (sampled_ssa_nu >= 1e11 * u.Hz) * ((sampled_ssa_nu <= 1e19 * u.Hz))
-        assert u.allclose(
-            agnpy_ssa_sed[condition],
-            sampled_ssa_sed[condition],
-            atol=0 * u.Unit("erg cm-2 s-1"),
-            rtol=0.05,
+        nu_range = [1e11, 1e19] * u.Hz
+        assert check_deviation_within_bounds(
+            nu_ref, sed_ref, sed_agnpy, 0, 0.05, nu_range
         )
 
     def test_nu_synch_peak(self):
