@@ -2,7 +2,7 @@
 import pytest
 import numpy as np
 import astropy.units as u
-from astropy.constants import m_e, c, M_sun
+from astropy.constants import h, m_e, c, M_sun
 from astropy.coordinates import Distance
 from pathlib import Path
 from agnpy.emission_regions import Blob
