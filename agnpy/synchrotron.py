@@ -1,7 +1,7 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import h, e, c, m_e, sigma_T
-from astropy.modeling import Parameter, Fittable1DModel
+from .utils.math import trapz_loglog
 
 e = e.gauss
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
@@ -85,7 +85,7 @@ class Synchrotron:
         x_denom = 3 * e * self.blob.B_cgs * h * np.power(_gamma, 2)
         x = (x_num / x_denom).to_value("")
         integrand = R(x) * _SSA_integrand
-        integral = np.trapz(integrand, gamma, axis=0)
+        integral = trapz_loglog(integrand, gamma, axis=0)
         return (prefactor_P_syn * prefactor_k_epsilon * integral).to("cm-1")
 
     def tau_ssa(self, epsilon):
@@ -145,7 +145,7 @@ class Synchrotron:
         x_denom = 3 * e * self.blob.B_cgs * h * np.power(_gamma, 2)
         x = (x_num / x_denom).to_value("")
         integrand = _N_e * R(x)
-        integral = np.trapz(integrand, gamma, axis=0)
+        integral = trapz_loglog(integrand, gamma, axis=0)
         emissivity = (prefactor * integral).to("erg s-1")
         if self.ssa:
             emissivity *= self.attenuation_ssa(epsilon)

@@ -2,7 +2,7 @@ import numpy as np
 from astropy.constants import h, c, m_e, sigma_T, G
 import astropy.units as u
 from .targets import CMB, PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
-
+from .utils.math import trapz_loglog
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 # equivalency to transform frequencies to energies in electron rest mass units
@@ -184,8 +184,8 @@ class SynchrotronSelfCompton:
         integrand_gamma = _N_e / np.power(_gamma, 2) * _kernel
         integrand = integrand_epsilon * integrand_gamma
         # integrate the Lorentz factor and the target synchrotron energies axes
-        integral_gamma = np.trapz(integrand, gamma, axis=0)
-        integral_epsilon = np.trapz(integral_gamma, self.epsilon_syn, axis=0)
+        integral_gamma = trapz_loglog(integrand, gamma, axis=0)
+        integral_epsilon = trapz_loglog(integral_gamma, self.epsilon_syn, axis=0)
         prefactor = (
             9
             * sigma_T
@@ -315,7 +315,7 @@ class ExternalCompton:
             _gamma, _epsilon_s, self.target.epsilon_0, self.blob.mu_s, _mu, _phi
         )
         _integrand = np.power(_gamma, -2) * _N_e * _kernel
-        integral_gamma = np.trapz(_integrand, self.gamma, axis=0)
+        integral_gamma = trapz_loglog(_integrand, self.gamma, axis=0)
         integral_mu = np.trapz(integral_gamma, self.mu, axis=0)
         integral_phi = np.trapz(integral_mu, self.phi, axis=0)
         prefactor_num = (
@@ -362,7 +362,7 @@ class ExternalCompton:
             _gamma, _epsilon_s, self.target.epsilon_0, self.blob.mu_s, 1, 0
         )
         _integrand = np.power(_gamma, -2) * _N_e * _kernel
-        integral_gamma = np.trapz(_integrand, self.gamma, axis=0)
+        integral_gamma = trapz_loglog(_integrand, self.gamma, axis=0)
         prefactor_num = (
             3
             * sigma_T
@@ -422,7 +422,7 @@ class ExternalCompton:
             * _N_e
             * _kernel
         )
-        integral_gamma = np.trapz(_integrand, self.gamma, axis=0)
+        integral_gamma = trapz_loglog(_integrand, self.gamma, axis=0)
         integral_mu = np.trapz(integral_gamma, self.mu, axis=0)
         integral_phi = np.trapz(integral_mu, self.phi, axis=0)
         prefactor_num = (
@@ -474,7 +474,7 @@ class ExternalCompton:
             _gamma, _epsilon_s, self.target.epsilon_line, self.blob.mu_s, _mu_star, _phi
         )
         _integrand = np.power(_x, -2) * np.power(_gamma, -2) * _N_e * _kernel
-        integral_gamma = np.trapz(_integrand, self.gamma, axis=0)
+        integral_gamma = trapz_loglog(_integrand, self.gamma, axis=0)
         integral_mu = np.trapz(integral_gamma, self.mu, axis=0)
         integral_phi = np.trapz(integral_mu, self.phi, axis=0)
         prefactor_num = (
@@ -524,7 +524,7 @@ class ExternalCompton:
             _gamma, _epsilon_s, self.target.epsilon_dt, self.blob.mu_s, mu, _phi
         )
         _integrand = np.power(_gamma, -2) * _N_e * _kernel
-        integral_gamma = np.trapz(_integrand, self.gamma, axis=0)
+        integral_gamma = trapz_loglog(_integrand, self.gamma, axis=0)
         integral_phi = np.trapz(integral_gamma, self.phi, axis=0)
         prefactor_num = (
             3

@@ -1,6 +1,7 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import m_e
+from .utils.math import trapz_loglog
 from astropy.modeling import Parameter, Fittable1DModel
 
 
@@ -37,7 +38,7 @@ class ElectronDistribution(Fittable1DModel):
         gamma = np.logspace(np.log10(gamma_low), np.log10(gamma_up), 200)
         values = self.evaluate(gamma, **kwargs)
         values *= np.power(gamma, gamma_power)
-        return np.trapz(values, gamma, axis=0)
+        return trapz_loglog(values, gamma, axis=0)
 
     def integral(self, gamma_low, gamma_up, gamma_power=0):
         """integral of __this__ electron distribution over the range gamma_low, 
@@ -53,7 +54,7 @@ class ElectronDistribution(Fittable1DModel):
         gamma = np.logspace(np.log10(gamma_low), np.log10(gamma_up), 200)
         values = self.__call__(gamma)
         values *= np.power(gamma, gamma_power)
-        return np.trapz(values, gamma, axis=0)
+        return trapz_loglog(values, gamma, axis=0)
 
     @classmethod
     def from_normalised_density(cls, n_e_tot, **kwargs):
