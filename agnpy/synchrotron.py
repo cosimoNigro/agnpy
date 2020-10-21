@@ -1,20 +1,15 @@
+# module containing the synchrotron radiative processes
 import numpy as np
 import astropy.units as u
-from astropy.constants import h, e, c, m_e, sigma_T
-from .utils.math import trapz_loglog
+from astropy.constants import e, h, c, m_e, sigma_T
+from .spectra import PowerLaw
+from .utils.math import trapz_loglog, axes_reshaper
+from .utils.conversion import nu_to_epsilon_prime, B_to_cgs
 
 e = e.gauss
-mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 B_cr = 4.414e13 * u.G  # critical magnetic field
-lambda_c = (h / (m_e * c)).to("cm")  # Compton wavelength
-# equivalency for decomposing Gauss in Gaussian-cgs units (not available in astropy)
-Gauss_cgs_unit = "cm(-1/2) g(1/2) s-1"
-Gauss_cgs_equivalency = [(u.G, u.Unit(Gauss_cgs_unit), lambda x: x, lambda x: x)]
-# equivalency to transform frequencies to energies in electron rest mass units
-epsilon_equivalency = [
-    (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
-]
-
+# default gamma grid to be used for integration
+gamma_to_integrate = np.logspace(1, 9, 200)
 
 __all__ = ["R", "nu_synch_peak", "Synchrotron"]
 
@@ -50,19 +45,21 @@ class Synchrotron:
     ----------
     blob : :class:`~agnpy.emission_region.Blob`
         emitting region and electron distribution 
-        
     ssa : bool
         whether or not to consider synchrotron self absorption (SSA).    
         The absorption factor will be taken into account in
         :func:`~agnpy.synchrotron.Synchrotron.com_sed_emissivity`, in order to be
         propagated to :func:`~agnpy.synchrotron.Synchrotron.sed_luminosity` and
         :func:`~agnpy.synchrotron.Synchrotron.sed_flux`.
+    integrator : (`~agnpy.math.utils.trapz_loglog`, `~numpy.trapz`)
+        function to be used for the integration
 	"""
 
-    def __init__(self, blob, ssa=False):
+    def __init__(self, blob=None, ssa=False, integrator=np.trapz):
         self.blob = blob
         self.epsilon_B = (self.blob.B / B_cr).to_value("")
         self.ssa = ssa
+        self.integrator = integrator
 
     def k_epsilon(self, epsilon):
         r"""SSA absorption factor Eq. 7.142 in [DermerMenon2009]_.
@@ -141,10 +138,14 @@ class Synchrotron:
         _gamma = np.reshape(gamma, (gamma.size, 1))
         _N_e = np.reshape(N_e, (N_e.size, 1))
         _epsilon = np.reshape(epsilon, (1, epsilon.size))
+        print("_gamma shape: ", _gamma.shape)
+        print("_epsilon shape: ", _epsilon.shape)
+        print("_N_e shape: ", _N_e.shape)
         x_num = 4 * np.pi * _epsilon * np.power(m_e, 2) * np.power(c, 3)
         x_denom = 3 * e * self.blob.B_cgs * h * np.power(_gamma, 2)
         x = (x_num / x_denom).to_value("")
         integrand = _N_e * R(x)
+        print("R(x) shape: ", R(x).shape)
         integral = trapz_loglog(integrand, gamma, axis=0)
         emissivity = (prefactor * integral).to("erg s-1")
         if self.ssa:
@@ -168,9 +169,7 @@ class Synchrotron:
         :class:`~astropy.units.Quantity`
             array of the SED values corresponding to each frequency
         """
-        epsilon = nu.to("", equivalencies=epsilon_equivalency)
-        # correct epsilon to the jet comoving frame
-        epsilon_prime = (1 + self.blob.z) * epsilon / self.blob.delta_D
+        epsilon_prime = nu_to_epsilon_prime(nu, self.blob.z, self.blob.delta_D)
         prefactor = np.power(self.blob.delta_D, 4)
         return prefactor * self.com_sed_emissivity(epsilon_prime)
 
@@ -193,9 +192,7 @@ class Synchrotron:
         :class:`~astropy.units.Quantity`
             array of the SED values corresponding to each frequency
         """
-        epsilon = nu.to("", equivalencies=epsilon_equivalency)
-        # correct epsilon to the jet comoving frame
-        epsilon_prime = (1 + self.blob.z) * epsilon / self.blob.delta_D
+        epsilon_prime = nu_to_epsilon_prime(nu, self.blob.z, self.blob.delta_D)
         prefactor = np.power(self.blob.delta_D, 4) / (
             4 * np.pi * np.power(self.blob.d_L, 2)
         )
@@ -205,9 +202,7 @@ class Synchrotron:
     def sed_flux_delta_approx(self, nu):
         """synchrotron flux SED using the delta approximation for the synchrotron
         radiation Eq. 7.70 [DermerMenon2009]_"""
-        epsilon = nu.to("", equivalencies=epsilon_equivalency)
-        # correct epsilon to the jet comoving frame
-        epsilon_prime = (1 + self.blob.z) * epsilon / self.blob.delta_D
+        epsilon_prime = nu_to_epsilon_prime(nu, self.blob.z, self.blob.delta_D)
         gamma_s = np.sqrt(epsilon_prime / epsilon_B(self.blob.B))
         prefactor = (
             np.power(self.blob.delta_D, 4)
@@ -229,3 +224,49 @@ class Synchrotron:
         """
         idx_max = self.sed_flux(nu).argmax()
         return nu[idx_max]
+
+    @staticmethod
+    def evaluate_sed_flux(
+        nu,
+        z,
+        d_L,  
+        delta_D,
+        B,
+        R_b,
+        gamma=gamma_to_integrate,
+        integrator=np.trapz,
+        electron_distribution=PowerLaw,
+        *args
+    ):
+        """evaluate the synchrotron SED
+
+        Parameters
+        ----------
+        epsilon: :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed, **note** these are 
+            observed frequencies (observer frame).
+        B: :class:`~astropy.units.Quantity`
+            magnetic field
+        integrator: function
+            integrating function to be used
+        electron_distribution: :class:`~agnpy.spectra`
+            electron distribution function
+        args: :class:`~astropy.units.Quantity`
+            arguments of the electron distribution function
+        """
+        # conversions
+        B = B_to_cgs(B) 
+        epsilon = nu_to_epsilon_prime(nu, z, delta_D)
+        # multidimensional integration
+        _gamma, _epsilon = axes_reshaper(gamma, epsilon)
+        V_b = 4 / 3 * np.pi * R_b ** 3
+        N_e = V_b * electron_distribution.evaluate(_gamma, *args)
+        x = (
+            4 * np.pi * _epsilon * m_e ** 2 * c ** 3 /
+            (3 * e * B * h * np.power(_gamma, 2))
+        ).to_value("")
+        integrand = N_e * R(x)
+        integral = integrator(integrand, _gamma, axis=0)
+        emissivity = np.sqrt(3) * epsilon * e ** 3 * B / h * integral
+        sed = delta_D ** 4 / (4 * np.pi * d_L ** 2) * emissivity 
+        return sed.to("erg cm-2 s-1")

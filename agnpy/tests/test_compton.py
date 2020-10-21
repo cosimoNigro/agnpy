@@ -53,7 +53,7 @@ pwl_blob_test = Blob(
 bpwl_blob_test = Blob(
     1e16 * u.cm, 1, 40, 40, 0.56 * u.G, bpwl_spectrum_norm_test, bpwl_dict_test,
 )
-bpwl_blob_test.set_gamma_size(500)
+# bpwl_blob_test.set_gamma_size(200)
 
 
 class TestSynchrotronSelfCompton:

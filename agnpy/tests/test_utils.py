@@ -19,8 +19,8 @@ def integral_line_loglog(x_min, x_max, m, n):
 class TestMathUtils:
     """test uitls.math"""
 
-    @pytest.mark.parametrize("m", np.arange(-3, 3.5, 0.5))
-    @pytest.mark.parametrize("n", np.arange(-3, 3.5, 0.5))
+    @pytest.mark.parametrize("m", np.arange(-2, 2.5, 0.5))
+    @pytest.mark.parametrize("n", np.arange(-2, 2.5, 0.5))
     def test_trapz_log_log(self, m, n):
         """test the trapz log-log integration method"""
         x = np.logspace(2, 5)
