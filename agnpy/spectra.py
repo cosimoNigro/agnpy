@@ -115,6 +115,10 @@ class PowerLaw(ElectronDistribution):
         self.gamma_min = gamma_min
         self.gamma_max = gamma_max
 
+    @property
+    def parameters(self):
+        return [self.k_e, self.p, self.gamma_min, self.gamma_max]
+
     @staticmethod
     def evaluate(gamma, k_e, p, gamma_min, gamma_max):
         return np.where(
@@ -191,6 +195,17 @@ class BrokenPowerLaw(ElectronDistribution):
         self.gamma_b = gamma_b
         self.gamma_min = gamma_min
         self.gamma_max = gamma_max
+
+    @property
+    def parameters(self):
+        return [
+            self.k_e,
+            self.p1,
+            self.p2,
+            self.gamma_b,
+            self.gamma_min,
+            self.gamma_max,
+        ]
 
     @staticmethod
     def evaluate(gamma, k_e, p1, p2, gamma_b, gamma_min, gamma_max):
@@ -286,6 +301,10 @@ class LogParabola(ElectronDistribution):
         self.gamma_min = gamma_min
         self.gamma_max = gamma_max
 
+    @property
+    def parameters(self):
+        return [self.k_e, self.p, self.q, self.gamma_0, self.gamma_min, self.gamma_max]
+
     @staticmethod
     def evaluate(gamma, k_e, p, q, gamma_0, gamma_min, gamma_max):
         gamma_ratio = gamma / gamma_0
@@ -306,14 +325,16 @@ class LogParabola(ElectronDistribution):
         )
 
     @staticmethod
-    def evlauate_SSA_integrand(gamma, p, q, gamma_0, gamma_min, gamma_max):
+    def evaluate_SSA_integrand(gamma, k_e, p, q, gamma_0, gamma_min, gamma_max):
         r"""(analytical) integrand for the synchrotron self-absorption:
         :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`"""
         prefactor = -(p + 2 * q * np.log10(gamma / gamma_0) + 2) / gamma
-        return prefactor * self.evaluate(gamma, p, q, gamma_0, gamma_min, gamma_max)
+        return prefactor * LogParabola.evaluate(
+            gamma, k_e, p, q, gamma_0, gamma_min, gamma_max
+        )
 
     def SSA_integrand(self, gamma):
-        return self.evlauate_SSA_integrand(
+        return self.evaluate_SSA_integrand(
             gamma,
             self.k_e,
             self.p,
