@@ -2,7 +2,7 @@ import numpy as np
 from astropy.constants import h, c, m_e, sigma_T, G
 import astropy.units as u
 from .targets import CMB, PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
-from .utils.math import trapz_loglog
+from .utils.math import trapz_loglog, log
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 # equivalency to transform frequencies to energies in electron rest mass units
@@ -16,7 +16,7 @@ __all__ = ["SynchrotronSelfCompton", "ExternalCompton", "cos_psi"]
 
 def F_c(q, gamma_e):
     """isotropic Compton kernel, Eq. 6.75 in [DermerMenon2009]_, Eq. 10 in [Finke2008]_"""
-    term_1 = 2 * q * np.log(q)
+    term_1 = 2 * q * log(q)
     term_2 = (1 + 2 * q) * (1 - q)
     term_3 = 1 / 2 * np.power(gamma_e * q, 2) / (1 + gamma_e * q) * (1 - q)
     return term_1 + term_2 + term_3

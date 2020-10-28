@@ -4,7 +4,7 @@ import astropy.units as u
 from astropy.constants import e, h, c, m_e, sigma_T
 from .spectra import PowerLaw
 from .utils.math import trapz_loglog, axes_reshaper
-from .utils.conversion import nu_to_epsilon_prime, B_to_cgs
+from .utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
 
 e = e.gauss
 B_cr = 4.414e13 * u.G  # critical magnetic field
@@ -28,14 +28,38 @@ def R(x):
 def nu_synch_peak(B, gamma):
     """observed peak frequency for monoenergetic electrons 
     Eq. 7.19 in [DermerMenon2009]_"""
-    B = B.to(Gauss_cgs_unit, equivalencies=Gauss_cgs_equivalency)
+    B = B_to_cgs(B)
     nu_peak = (e * B / (2 * np.pi * m_e * c)) * np.power(gamma, 2)
     return nu_peak.to("Hz")
+
+
+def calc_x(B_cgs, epsilon, gamma):
+    """ratio of the frequency to the critical synchrotron frequency from 
+    Eq. 7.34 in [DermerMenon2009]_, argument of R(x),
+    note B has to be in cgs Gauss units"""
+    x = (
+        4
+        * np.pi
+        * epsilon
+        * np.power(m_e, 2)
+        * np.power(c, 3)
+        / (3 * e * B_cgs * np.power(gamma, 2))
+    )
+    return x.to_value("")
 
 
 def epsilon_B(B):
     r""":math:`\epsilon_B`, Eq. 7.21 [DermerMenon2009]_"""
     return (B / B_cr).to_value("")
+
+
+def single_electron_synch_power(B_cgs, epsilon, gamma):
+    """angle-averaged synchrotron power for a single electron, 
+    to be folded with the electron distribution    
+    """
+    x = calc_x(B_cgs, epsilon, gamma)
+    prefactor = np.sqrt(3) * np.power(e, 3) * B_cgs / h
+    return prefactor * R(x)
 
 
 class Synchrotron:
@@ -61,29 +85,24 @@ class Synchrotron:
         self.ssa = ssa
         self.integrator = integrator
 
-    def k_epsilon(self, epsilon):
-        r"""SSA absorption factor Eq. 7.142 in [DermerMenon2009]_.
-        The part of the integrand that is dependent on :math:`\gamma` is 
-        computed analytically in each of the :class:`~agnpy.spectra` classes."""
-        gamma = self.blob.gamma
-        SSA_integrand = self.blob.n_e.SSA_integrand(gamma)
-        # for multidimensional integration
-        # axis 0: electrons gamma
-        # axis 1: photons epsilon
-        # arrays starting with _ are multidimensional and used for integration
-        _gamma = np.reshape(gamma, (gamma.size, 1))
-        _SSA_integrand = np.reshape(SSA_integrand, (SSA_integrand.size, 1))
-        _epsilon = np.reshape(epsilon, (1, epsilon.size))
-        prefactor_P_syn = np.sqrt(3) * np.power(e, 3) * self.blob.B_cgs / h
-        prefactor_k_epsilon = (
-            -1 / (8 * np.pi * m_e * np.power(epsilon, 2)) * np.power(lambda_c / c, 3)
-        )
-        x_num = 4 * np.pi * _epsilon * np.power(m_e, 2) * np.power(c, 3)
-        x_denom = 3 * e * self.blob.B_cgs * h * np.power(_gamma, 2)
-        x = (x_num / x_denom).to_value("")
-        integrand = R(x) * _SSA_integrand
-        integral = trapz_loglog(integrand, gamma, axis=0)
-        return (prefactor_P_syn * prefactor_k_epsilon * integral).to("cm-1")
+    def _evaluate_sed_flux(nu, z, d_L, delta_D, B, R_b, gamma, integrator, n_e, *args):
+        """evaluate the synchrotron SED for a general set of model parameters
+        """
+        # conversions
+        epsilon = nu_to_epsilon_prime(nu, z, delta_D)
+        B_cgs = B_to_cgs(B)
+        # multidimensional integration
+        _gamma, _epsilon = axes_reshaper(gamma, epsilon)
+        V_b = 4 / 3 * np.pi * np.power(R_b, 3)
+        N_e = V_b * n_e.evaluate(_gamma, *args)
+        # fold the electron distribution with the synchrotron power
+        integrand = N_e * single_electron_synch_power(B_cgs, _epsilon, _gamma)
+        emissivity = integrator(integrand, _gamma, axis=0)
+        sed = np.power(delta_D, 4) / (4 * np.pi * np.power(delta_L, 2)) * emissivity
+        return sed.to("erg cm-2 s-1")
+
+    def _evaluate_tau_ssa(nu, z, d_L, delta_D, B, R_b, gamma, integrator, n_e, *args):
+        pass
 
     def tau_ssa(self, epsilon):
         """SSA opacity, Eq. before 7.122 in [DermerMenon2009]_
@@ -229,7 +248,7 @@ class Synchrotron:
     def evaluate_sed_flux(
         nu,
         z,
-        d_L,  
+        d_L,
         delta_D,
         B,
         R_b,
@@ -255,18 +274,22 @@ class Synchrotron:
             arguments of the electron distribution function
         """
         # conversions
-        B = B_to_cgs(B) 
+        B = B_to_cgs(B)
         epsilon = nu_to_epsilon_prime(nu, z, delta_D)
         # multidimensional integration
         _gamma, _epsilon = axes_reshaper(gamma, epsilon)
         V_b = 4 / 3 * np.pi * R_b ** 3
         N_e = V_b * electron_distribution.evaluate(_gamma, *args)
         x = (
-            4 * np.pi * _epsilon * m_e ** 2 * c ** 3 /
-            (3 * e * B * h * np.power(_gamma, 2))
+            4
+            * np.pi
+            * _epsilon
+            * m_e ** 2
+            * c ** 3
+            / (3 * e * B * h * np.power(_gamma, 2))
         ).to_value("")
         integrand = N_e * R(x)
         integral = integrator(integrand, _gamma, axis=0)
         emissivity = np.sqrt(3) * epsilon * e ** 3 * B / h * integral
-        sed = delta_D ** 4 / (4 * np.pi * d_L ** 2) * emissivity 
+        sed = delta_D ** 4 / (4 * np.pi * d_L ** 2) * emissivity
         return sed.to("erg cm-2 s-1")

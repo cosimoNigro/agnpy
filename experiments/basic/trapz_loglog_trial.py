@@ -1,12 +1,16 @@
+import sys
+
+sys.path.append("../../")
 import warnings
 import numpy as np
 import astropy.units as u
 from astropy.constants import h, e, m_e, c, sigma_T, M_sun, G
 from agnpy.emission_regions import Blob
-from agnpy.synchrotron import R, epsilon_equivalency
+from agnpy.synchrotron import R
 from agnpy.compton import compton_kernel
 from agnpy.targets import PointSourceBehindJet, SSDisk
-from agnpy.utils.math import trapz_loglog, power
+from agnpy.utils.math import trapz_loglog
+from agnpy.utils.conversion import nu_to_epsilon_prime
 import matplotlib.pyplot as plt
 
 e = e.gauss
@@ -52,9 +56,7 @@ print(blob)
 
 def sed_synch(nu, blob, integration):
     """compute the synchrotron SED"""
-    epsilon = nu.to("", equivalencies=epsilon_equivalency)
-    # correct epsilon to the jet comoving frame
-    epsilon_prime = (1 + blob.z) * epsilon / blob.delta_D
+    epsilon = nu_to_epsilon_prime(nu, blob.z, blob.delta_D)
     # electrond distribution lorentz factor
     gamma = blob.gamma
     N_e = blob.N_e(gamma)
@@ -78,8 +80,9 @@ def sed_synch(nu, blob, integration):
 
 sed_trapz = sed_synch(nu, blob, np.trapz)
 sed_trapz_loglog = sed_synch(nu, blob, trapz_loglog)
-plt.loglog(nu, sed_trapz, marker="o")
-plt.loglog(nu, sed_trapz_loglog, ls="--", marker=".")
+plt.loglog(nu, sed_trapz, marker="o", label="np.trapz")
+plt.loglog(nu, sed_trapz_loglog, ls="--", marker=".", label="naima trapz_loglog")
+plt.legend()
 plt.show()
 
 
@@ -89,17 +92,13 @@ print("-> test with EC on point like source")
 
 def sed_flux_point_source(nu, blob, target, r, integrate):
     """SED flux for EC on a point like source behind the jet
-
     Parameters
     ----------
     nu : `~astropy.units.Quantity`
         array of frequencies, in Hz, to compute the sed, **note** these are 
         observed frequencies (observer frame).
     """
-    # define the dimensionless energy
-    epsilon_s = nu.to("", equivalencies=epsilon_equivalency)
-    # transform to BH frame
-    epsilon_s *= 1 + blob.z
+    epsilon_s = nu_to_epsilon_prime(nu, blob.z, blob.delta_D)
     # for multidimensional integration
     # axis 0: gamma
     # axis 1: epsilon_s
@@ -141,9 +140,11 @@ nu = np.logspace(20, 30) * u.Hz
 blob.set_gamma_size(500)
 sed_trapz = sed_flux_point_source(nu, blob, ps, r, np.trapz)
 sed_trapz_loglog = sed_flux_point_source(nu, blob, ps, r, trapz_loglog)
-plt.loglog(nu, sed_trapz, marker="o")
-plt.loglog(nu, sed_trapz_loglog, ls="--", marker=".")
+plt.loglog(nu, sed_trapz, marker="o", label="np.trapz")
+plt.loglog(nu, sed_trapz_loglog, ls="--", marker=".", label="naima trapz_loglog")
+plt.legend()
 plt.show()
+
 
 # a test with external Compton on point like source
 print("-> test with EC on disk")
@@ -158,7 +159,6 @@ disk = SSDisk(M_BH, L_disk, eta, R_in, R_out, R_g_units=True)
 
 def sed_flux_disk(nu, blob, target, r, integrate):
     """SED flux for EC on SS Disk
-
     Parameters
     ----------
     nu : `~astropy.units.Quantity`
@@ -166,9 +166,7 @@ def sed_flux_disk(nu, blob, target, r, integrate):
         observed frequencies (observer frame).
     """
     # define the dimensionless energy
-    epsilon_s = nu.to("", equivalencies=epsilon_equivalency)
-    # transform to BH frame
-    epsilon_s *= 1 + blob.z
+    epsilon_s = nu_to_epsilon_prime(nu, blob.z, blob.delta_D)
     # for multidimensional integration
     # axis 0: gamma
     # axis 1: mu
@@ -223,6 +221,7 @@ nu = np.logspace(20, 30) * u.Hz
 blob.set_gamma_size(100)
 sed_trapz = sed_flux_disk(nu, blob, disk, r, np.trapz)
 sed_trapz_loglog = sed_flux_disk(nu, blob, disk, r, trapz_loglog)
-plt.loglog(nu, sed_trapz, marker="o")
-plt.loglog(nu, sed_trapz_loglog, ls="--", marker=".")
+plt.loglog(nu, sed_trapz, marker="o", label="np.trapz")
+plt.loglog(nu, sed_trapz_loglog, ls="--", marker=".", label="naima trapz_loglog")
+plt.legend()
 plt.show()

@@ -2,6 +2,7 @@
 from astropy.constants import m_e, h, c
 import astropy.units as u
 
+
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 lambda_c = (h / (m_e * c)).to("cm")  # Compton wavelength
 # equivalency for decomposing Gauss in Gaussian-cgs units (not available in astropy)
@@ -12,11 +13,13 @@ epsilon_equivalency = [
     (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
 ]
 
+
 def nu_to_epsilon_prime(nu, z=0, delta_D=1):
     """convert the frequency to a dimensionless energy in another reference
     frame with redshift z and moving with doppler factor delta_D"""
     epsilon = nu.to("", equivalencies=epsilon_equivalency)
     return (1 + z) * epsilon / delta_D
+
 
 def B_to_cgs(B):
     """convert a magnetic field to CGS units"""

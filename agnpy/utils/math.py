@@ -1,5 +1,6 @@
 # math utilities for agnpy
 import numpy as np
+import warnings
 
 # type of float to be used for math operation
 numpy_type = np.float64
@@ -7,10 +8,6 @@ numpy_type = np.float64
 ftiny = np.finfo(numpy_type).tiny
 # largest positive float
 fmax = np.finfo(numpy_type).max
-# the smallest positive power of the base 10 that causes overflow.
-fminexp = np.finfo(numpy_type).minexp
-# the smallest negative power of the base 10 that causes overflow.
-fmaxexp = np.finfo(numpy_type).maxexp
 
 
 def axes_reshaper(*args):
@@ -28,7 +25,7 @@ def axes_reshaper(*args):
     
     Parameters
     ----------
-    arg: 1-dimensional `~numpy.ndarray`s to be reshaped
+    args: 1-dimensional `~numpy.ndarray`s to be reshaped
     """
     n = len(args)
     dim = (1,) * n
@@ -47,16 +44,76 @@ def log(x):
     return np.log(values)
 
 
-def power(x, m):
-    """clipped power to avoid RuntimeWarning: overflow in power"""
-    m = np.clip(m, fminexp, fmaxexp)
-    return x ** m
-
-
 def trapz_loglog(y, x, axis=0):
     """
     Integrate a function approximating its discrete intervals as power-laws
     (straight lines in log-log space)
+
+    Parameters
+    ----------
+    y : array_like
+        array to integrate
+    x : array_like, optional
+        independent variable to integrate over
+    axis : int, optional
+        along which axis the integration has to be performed
+
+    Returns
+    -------
+    trapz : float
+        Definite integral as approximated by trapezoidal rule in loglog space.
+    """
+    try:
+        y_unit = y.unit
+        y = y.value
+    except AttributeError:
+        y_unit = 1.0
+    try:
+        x_unit = x.unit
+        x = x.value
+    except AttributeError:
+        x_unit = 1.0
+
+    slice_low = [slice(None)] * y.ndim
+    slice_up = [slice(None)] * y.ndim
+    # multi-dimensional equivalent of x_low = x[:-1]
+    slice_low[axis] = slice(None, -1)
+    # multi-dimensional equivalent of x_up = x[1:]
+    slice_up[axis] = slice(1, None)
+
+    # reshape x to be broadcastable with y
+    if x.ndim == 1:
+        shape = [1] * y.ndim
+        shape[axis] = x.shape[0]
+        x = x.reshape(shape)
+
+    x_low = x[tuple(slice_low)]
+    x_up = x[tuple(slice_up)]
+    y_low = y[tuple(slice_low)]
+    y_up = y[tuple(slice_up)]
+
+    # slope in the given logarithmic bin
+    m = np.where(
+        (y_low == 0) + (y_up == 0),
+        -np.inf,
+        (log(y_low) - log(y_up)) / (log(x_low) - log(x_up)),
+    )
+
+    vals = np.where(
+        np.abs(m + 1) > 1e-10,
+        y_low / (m + 1) * (x_up * np.power(x_up / x_low, m) - x_low),
+        x_low * y_low * log(x_up / x_low),
+    )
+
+    return np.add.reduce(vals, axis) * x_unit * y_unit
+
+
+def trapz_loglog_naima(y, x, axis=-1, intervals=False):
+    """
+    Integrate along the given axis using the composite trapezoidal rule in
+    loglog space.
+
+    Integrate `y` (`x`) along given axis in loglog space.
 
     Parameters
     ----------
@@ -83,42 +140,42 @@ def trapz_loglog(y, x, axis=0):
     except AttributeError:
         x_unit = 1.0
 
-    slice_low = [slice(None)] * y.ndim
-    slice_up = [slice(None)] * y.ndim
-    # multi-dimensional equivalent of x_low = x[:-1]
-    slice_low[axis] = slice(None, -1)
-    # multi-dimensional equivalent of x_up = x[1:]
-    slice_up[axis] = slice(1, None)
+    y = np.asanyarray(y)
+    x = np.asanyarray(x)
 
-    slice_low = tuple(slice_low)
-    slice_up = tuple(slice_up)
+    slice1 = [slice(None)] * y.ndim
+    slice2 = [slice(None)] * y.ndim
+    slice1[axis] = slice(None, -1)
+    slice2[axis] = slice(1, None)
 
-    # reshape x to be broadcastable with y
+    slice1 = tuple(slice1)
+    slice2 = tuple(slice2)
+
     if x.ndim == 1:
         shape = [1] * y.ndim
         shape[axis] = x.shape[0]
         x = x.reshape(shape)
 
-    x_low = x[slice_low]
-    x_up = x[slice_up]
-    y_low = y[slice_low]
-    y_up = y[slice_up]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        # Compute the power law indices in each integration bin
+        b = np.log10(y[slice2] / y[slice1]) / np.log10(x[slice2] / x[slice1])
 
-    log_x_low = log(x_low)
-    log_x_up = log(x_up)
-    log_y_low = log(y_low)
-    log_y_up = log(y_up)
+        # if local powerlaw index is -1, use \int 1/x = log(x); otherwise use
+        # normal powerlaw integration
+        trapzs = np.where(
+            np.abs(b + 1.0) > 1e-10,
+            (y[slice1] * (x[slice2] * (x[slice2] / x[slice1]) ** b - x[slice1]))
+            / (b + 1),
+            x[slice1] * y[slice1] * np.log(x[slice2] / x[slice1]),
+        )
 
-    # index in the bin
-    m = (log_y_low - log_y_up) / (log_x_low - log_x_up)
-    vals = y_low / (m + 1) * (x_up * power(x_up / x_low, m) - x_low)
+    tozero = (y[slice1] == 0.0) + (y[slice2] == 0.0) + (x[slice1] == x[slice2])
+    trapzs[tozero] = 0.0
 
-    # value of y very close to zero will make m large and explode the exponential
-    tozero = (
-        np.isclose(y_low, 0, atol=0, rtol=1e-10)
-        + np.isclose(y_up, 0, atol=0, rtol=1e-10)
-        + np.isclose(x_low, x_up, atol=0, rtol=1e-10)
-    )
-    vals[tozero] = 0.0
+    if intervals:
+        return trapzs * x_unit * y_unit
 
-    return np.add.reduce(vals, axis) * x_unit * y_unit
+    ret = np.add.reduce(trapzs, axis) * x_unit * y_unit
+
+    return ret
