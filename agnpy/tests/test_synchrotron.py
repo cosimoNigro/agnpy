@@ -25,12 +25,25 @@ data_dir = f"{agnpy_dir}/data"
 # here as a default we use the same parameters of Figure 7.4 in Dermer Menon 2009
 spectrum_norm_test = 1e48 * u.Unit("erg")
 p_test = 2.8
+q_test = 0.2
+gamma_0 = 1e3
 gamma_min_test = 1e2
 gamma_max_test = 1e5
 pwl_dict_test = {
     "type": "PowerLaw",
     "parameters": {
         "p": p_test,
+        "gamma_min": gamma_min_test,
+        "gamma_max": gamma_max_test,
+    },
+}
+# dictionary test for log parabola
+lp_dict_test = {
+    "type": "LogParabola",
+    "parameters": {
+        "p": p_test,
+        "q": q_test,
+        "gamma_0": gamma_0,
         "gamma_min": gamma_min_test,
         "gamma_max": gamma_max_test,
     },
@@ -49,6 +62,15 @@ pwl_blob_test = Blob(
     B_test,
     spectrum_norm_test,
     pwl_dict_test,
+)
+lp_blob_test = Blob(
+    R_b_test,
+    z_test,
+    delta_D_test,
+    Gamma_test,
+    B_test,
+    spectrum_norm_test,
+    lp_dict_test,
 )
 
 
@@ -152,7 +174,7 @@ class TestSynchrotron:
         """check that in a given frequency range the full synchrotron SED coincides
         with the delta function approximation"""
         nu = np.logspace(10, 20) * u.Hz
-        synch = Synchrotron(pwl_blob_test)
+        synch = Synchrotron(lp_blob_test)
         sed_full = synch.sed_flux(nu)
         sed_delta = synch.sed_flux_delta_approx(nu)
         make_comparison_plot(
@@ -167,8 +189,8 @@ class TestSynchrotron:
             1e-16,
             1e-8,
         )
-        # requires that the SED points deviate less than 10% in a limit
-        nu_range = [1e12, 1e16] * u.Hz
+        # requires that the delta approximation SED points deviate less than 10%
+        nu_range = [1e12, 1e17] * u.Hz
         assert check_deviation_within_bounds(nu, sed_full, sed_delta, 0, 0.1, nu_range)
 
     def test_nu_synch_peak(self):
