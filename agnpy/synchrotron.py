@@ -140,6 +140,22 @@ class Synchrotron:
 
         return sed
 
+    @staticmethod
+    def evaluate_sed_flux_delta_approx(nu, z, d_L, delta_D, B, R_b, n_e, *args):
+        """synchrotron flux SED using the delta approximation for the synchrotron
+        radiation Eq. 7.70 [DermerMenon2009]_"""
+        epsilon_prime = nu_to_epsilon_prime(nu, z, delta_D)
+        gamma_s = np.sqrt(epsilon_prime / epsilon_B(B))
+        B_cgs = B_to_cgs(B)
+        U_B = np.power(B_cgs, 2) / (8 * np.pi)
+        V_b = 4 / 3 * np.pi * np.power(R_b, 3)
+        N_e = V_b * n_e.evaluate(gamma_s, *args)
+        prefactor = (
+            np.power(delta_D, 4) * c * sigma_T * U_B / (6 * np.pi * np.power(d_L, 2))
+        )
+        value = prefactor * np.power(gamma_s, 3) * N_e
+        return value.to("erg cm-2 s-1")
+
     def sed_flux(self, nu):
         """evaluate the synchrotron SED for a Synchrotron object built from a 
         blob"""
@@ -158,19 +174,18 @@ class Synchrotron:
         )
 
     def sed_flux_delta_approx(self, nu):
-        """synchrotron flux SED using the delta approximation for the synchrotron
-        radiation Eq. 7.70 [DermerMenon2009]_"""
-        epsilon_prime = nu_to_epsilon_prime(nu, self.blob.z, self.blob.delta_D)
-        gamma_s = np.sqrt(epsilon_prime / epsilon_B(self.blob.B))
-        prefactor = (
-            np.power(self.blob.delta_D, 4)
-            / (6 * np.pi * np.power(self.blob.d_L, 2))
-            * c
-            * sigma_T
-            * self.blob.U_B
+        """evaluate the synchrotron SED using the delta approximation for a 
+        Synchrotron object built from a blob"""
+        return self.evaluate_sed_flux_delta_approx(
+            nu,
+            self.blob.z,
+            self.blob.d_L,
+            self.blob.delta_D,
+            self.blob.B,
+            self.blob.R_b,
+            self.blob.n_e,
+            *self.blob.n_e.parameters,
         )
-        value = prefactor * np.power(gamma_s, 3) * self.blob.N_e(gamma_s)
-        return value.to("erg cm-2 s-1")
 
     def sed_peak_flux(self, nu):
         """provided a grid of frequencies nu, returns the peak flux of the SED

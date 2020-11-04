@@ -12,6 +12,7 @@ from .utils import (
     extract_columns_sample_file,
     check_deviation_within_bounds,
 )
+import matplotlib.pyplot as plt
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 epsilon_equivalency = [
@@ -146,6 +147,29 @@ class TestSynchrotron:
         assert check_deviation_within_bounds(
             nu_ref, sed_ref, sed_agnpy, 0, 0.05, nu_range
         )
+
+    def test_synch_delta_sed(self):
+        """check that in a given frequency range the full synchrotron SED coincides
+        with the delta function approximation"""
+        nu = np.logspace(10, 20) * u.Hz
+        synch = Synchrotron(pwl_blob_test)
+        sed_full = synch.sed_flux(nu)
+        sed_delta = synch.sed_flux_delta_approx(nu)
+        make_comparison_plot(
+            nu,
+            sed_full,
+            sed_delta,
+            "full integration",
+            "delta function approximation",
+            "Synchrotron",
+            f"{data_dir}/crosscheck_figures/synch_comparison_delta_aprproximation.png",
+            "sed",
+            1e-16,
+            1e-8,
+        )
+        # requires that the SED points deviate less than 10% in a limit
+        nu_range = [1e12, 1e16] * u.Hz
+        assert check_deviation_within_bounds(nu, sed_full, sed_delta, 0, 0.1, nu_range)
 
     def test_nu_synch_peak(self):
         gamma = 100
