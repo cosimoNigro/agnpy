@@ -9,7 +9,7 @@ from .utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
 e = e.gauss
 B_cr = 4.414e13 * u.G  # critical magnetic field
 # default gamma grid to be used for integration
-gamma_to_integrate = np.logspace(1, 9, 200)
+gamma_to_integrate = np.logspace(1, 9, 300)
 
 __all__ = ["R", "nu_synch_peak", "Synchrotron"]
 
@@ -116,7 +116,6 @@ class Synchrotron:
         nu, z, d_L, delta_D, B, R_b, gamma, integrator, ssa, n_e, *args
     ):
         """evaluate the synchrotron SED for a general set of model parameters,
-        for parameters meaning see `evaluate_sed_flux`,
         functions to be used for fitting"""
         # conversions
         epsilon = nu_to_epsilon_prime(nu, z, delta_D)

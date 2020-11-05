@@ -1,15 +1,15 @@
+# module containing the Compton radiative processes
 import numpy as np
 from astropy.constants import h, c, m_e, sigma_T, G
 import astropy.units as u
+from .synchrotron import Synchrotron
 from .targets import CMB, PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
-from .utils.math import trapz_loglog, log
+from .utils.math import trapz_loglog, log, axes_reshaper
+from .utils.conversion import nu_to_epsilon_prime
 
-mec2 = m_e.to("erg", equivalencies=u.mass_energy())
-# equivalency to transform frequencies to energies in electron rest mass units
-epsilon_equivalency = [
-    (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
-]
-
+# default gamma grid and frequency grid to be used for integration
+nu_to_integrate = np.logspace(5, 30, 300) * u.Hz  # used for SSC
+gamma_to_integrate = np.logspace(1, 9, 300)
 
 __all__ = ["SynchrotronSelfCompton", "ExternalCompton", "cos_psi"]
 
@@ -137,104 +137,70 @@ class SynchrotronSelfCompton:
         class describing the synchrotron photons target
     """
 
-    def __init__(self, blob, synchrotron):
+    def __init__(self, blob=None, ssa=False, integrator=np.trapz):
         self.blob = blob
-        self.synchrotron = synchrotron
-        # default grid of epsilon values over which for the synchroton emission
-        self.epsilon_syn = np.logspace(-13, 10, 300)
-        self.synch_sed_emissivity = self.synchrotron.com_sed_emissivity(
-            self.epsilon_syn
+        self.ssa = ssa
+        self.integrator = integrator
+
+    @staticmethod
+    def evaluate_sed_flux(
+        nu, z, d_L, delta_D, B, R_b, gamma, integrator, ssa, n_e, *args
+    ):
+        """evaluate the SSC SED for a general set of model parameters,
+        functions to be used for fitting"""
+        # conversions
+        # frequencies to be integrated over
+        epsilon = nu_to_epsilon_prime(nu_to_integrate, z, delta_D)
+        # frequencies of the final sed
+        epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
+        # synchrotron sed
+        sed_synch = Synchrotron.evaluate_sed_flux(
+            nu_to_integrate, z, d_L, delta_D, B, R_b, gamma, integrator, ssa, n_e, *args
         )
-
-    def com_sed_emissivity(self, epsilon):
-        r"""SSC  emissivity: 
-
-        .. math::
-            \epsilon'\,J'_{\mathrm{SSC}}(\epsilon')\,[\mathrm{erg}\,\mathrm{s}^{-1}]
-        
-        Eq. 8 and 9 of [Finke2008]_.
-
-        **Note:** This emissivity is computed in the co-moving frame of the blob.
-        When calling this function from another, these energies
-        have to be transformed in the co-moving frame of the plasmoid.
-
-        Parameters
-        ----------
-        epsilon : :class:`~numpy.ndarray`
-            dimensionless energies (in electron rest mass units) of the scattered photons
-        """
-        gamma = self.blob.gamma
-        N_e = self.blob.N_e(gamma).value
-        # Eq. 22 of [Finke2008]_, the factor 3 / 4 accounts for averaging in a sphere
+        # Eq. 8 [Finke2008]_
+        u_synch = (
+            3
+            * np.power(d_L, 2)
+            * sed_synch
+            / (c * np.power(R_b, 2) * np.power(delta_D, 4) * epsilon)
+        )
+        # factor 3 / 4 accounts for averaging in a sphere
         # not included in Dermer and Finke's papers
-        J_epsilon_syn = 3 / 4 * self.synch_sed_emissivity / self.epsilon_syn
-        # for multidimensional integration
-        # axis = 0 : electrons Lorentz factors
-        # axis = 1 : target photons energies
-        # axis = 2 : scattered photons energies
-        # arrays starting with _ are multidimensional and used for integration
-        _gamma = np.reshape(gamma, (gamma.size, 1, 1))
-        _N_e = np.reshape(N_e, (N_e.size, 1, 1))
-        _epsilon_syn = np.reshape(self.epsilon_syn, (1, self.epsilon_syn.size, 1))
-        _J_epsilon_syn = np.reshape(J_epsilon_syn, (1, J_epsilon_syn.size, 1))
-        _epsilon = np.reshape(epsilon, (1, 1, epsilon.size))
-        _kernel = isotropic_kernel(_gamma, _epsilon_syn, _epsilon)
-        # build the integrands of Eq. 9 in [2], using the reshaped arrays
-        integrand_epsilon = _J_epsilon_syn / np.power(_epsilon_syn, 2)
-        integrand_gamma = _N_e / np.power(_gamma, 2) * _kernel
-        integrand = integrand_epsilon * integrand_gamma
-        # integrate the Lorentz factor and the target synchrotron energies axes
-        integral_gamma = trapz_loglog(integrand, gamma, axis=0)
-        integral_epsilon = trapz_loglog(integral_gamma, self.epsilon_syn, axis=0)
-        prefactor = (
-            9
-            * sigma_T
-            * np.power(epsilon, 2)
-            / (16 * np.pi * np.power(self.blob.R_b, 2))
+        u_synch *= 3 / 4
+        # multidimensional integration
+        _gamma, _epsilon, _epsilon_s = axes_reshaper(gamma, epsilon, epsilon_s)
+        V_b = 4 / 3 * np.pi * np.power(R_b, 3)
+        N_e = V_b * n_e.evaluate(_gamma, *args)
+        # reshape u as epsilon
+        _u_synch = np.reshape(u_synch, (1, u_synch.size, 1))
+        # integrate
+        kernel = isotropic_kernel(_gamma, _epsilon, _epsilon_s)
+        integrand = (
+            _u_synch / np.power(_epsilon, 2) * N_e / np.power(_gamma, 2) * kernel
         )
-        emissivity = prefactor * integral_epsilon
-        return emissivity.to("erg s-1")
-
-    def sed_luminosity(self, nu):
-        r"""SSC luminosity SED: 
-
-        .. math::
-            \nu L_{\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]
-
-        Parameters
-        ----------
-        nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed, **note** these are 
-            observed frequencies (observer frame).
-        """
-        epsilon = nu.to("", equivalencies=epsilon_equivalency)
-        # correct epsilon to the jet comoving frame
-        epsilon_prime = (1 + self.blob.z) * epsilon / self.blob.delta_D
-        prefactor = np.power(self.blob.delta_D, 4)
-        return prefactor * self.com_sed_emissivity(epsilon_prime)
+        integral_gamma = integrator(integrand, gamma, axis=0)
+        integral_epsilon = integrator(integral_gamma, epsilon, axis=0)
+        emissivity = 3 / 4 * c * sigma_T * np.power(epsilon_s, 2) * integral_epsilon
+        prefactor = np.power(delta_D, 4) / (4 * np.pi * np.power(d_L, 2))
+        sed = (prefactor * emissivity).to("erg cm-2 s-1")
+        return sed
 
     def sed_flux(self, nu):
-        r"""SSC flux SED:
-        
-        .. math::
-            \nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
-        
-        Eq. 15 in [Finke2008]_
-
-        Parameters
-        ----------
-        nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed, **note** these are 
-            observed frequencies (observer frame).
-        """
-        epsilon = nu.to("", equivalencies=epsilon_equivalency)
-        # correct epsilon to the jet comoving frame
-        epsilon_prime = (1 + self.blob.z) * epsilon / self.blob.delta_D
-        prefactor = np.power(self.blob.delta_D, 4) / (
-            4 * np.pi * np.power(self.blob.d_L, 2)
+        """evaluate the synchrotron SED for a Synchrotron object built from a 
+        blob"""
+        return self.evaluate_sed_flux(
+            nu,
+            self.blob.z,
+            self.blob.d_L,
+            self.blob.delta_D,
+            self.blob.B,
+            self.blob.R_b,
+            self.blob.gamma,
+            self.integrator,
+            self.ssa,
+            self.blob.n_e,
+            *self.blob.n_e.parameters,
         )
-        sed = prefactor * self.com_sed_emissivity(epsilon_prime)
-        return sed.to("erg cm-2 s-1")
 
     def sed_peak_flux(self, nu):
         """provided a grid of frequencies nu, returns the peak flux of the SED

@@ -41,7 +41,15 @@ def check_deviation(x, y_ref, y_comp, atol, rtol, x_range=None):
 
 
 def make_comparison_plot(
-    nu, y_ref, y_comp, ref_label, comp_label, fig_title, fig_path, plot_type, y_range=None
+    nu,
+    y_ref,
+    y_comp,
+    ref_label,
+    comp_label,
+    fig_title,
+    fig_path,
+    plot_type,
+    y_range=None,
 ):
     """make a comparison plot, for SED or gamma-gamma absorption 
     between two different sources: a reference (literature or another code)

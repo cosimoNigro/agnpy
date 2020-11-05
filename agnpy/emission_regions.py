@@ -84,10 +84,10 @@ class Blob:
         delta_D=10,
         Gamma=10,
         B=1 * u.G,
-        spectrum_norm=1e-13 * u.Unit("cm-3"),
+        spectrum_norm=1e48 * u.Unit("erg"),
         spectrum_dict={
             "type": "PowerLaw",
-            "parameters": {"p": 2.3, "gamma_min": 1e2, "gamma_max": 1e6},
+            "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7},
         },
         spectrum_norm_type="integral",
         xi=1.0,
