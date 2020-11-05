@@ -100,9 +100,9 @@ def trapz_loglog(y, x, axis=0):
     )
 
     vals = np.where(
-        np.abs(m + 1) > 1e-10,
-        y_low / (m + 1) * (x_up * np.power(x_up / x_low, m) - x_low),
+        np.isclose(m, -1, atol=0, rtol=1e-6),
         x_low * y_low * log(x_up / x_low),
+        y_low / (m + 1) * (x_up * np.power(x_up / x_low, m) - x_low),
     )
 
     return np.add.reduce(vals, axis) * x_unit * y_unit

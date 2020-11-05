@@ -23,7 +23,7 @@ def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
     return x, y
 
 
-def check_deviation_within_bounds(x, y_ref, y_comp, atol, rtol, x_range=None):
+def check_deviation(x, y_ref, y_comp, atol, rtol, x_range=None):
     """check the deviation of two quantities within a given range of x"""
     if x_range is not None:
         condition = (x >= x_range[0]) * (x <= x_range[1])
@@ -41,16 +41,7 @@ def check_deviation_within_bounds(x, y_ref, y_comp, atol, rtol, x_range=None):
 
 
 def make_comparison_plot(
-    nu,
-    y_ref,
-    y_comp,
-    ref_label,
-    comp_label,
-    fig_title,
-    fig_path,
-    plot_type,
-    y_lim_low=None,
-    y_lim_up=None,
+    nu, y_ref, y_comp, ref_label, comp_label, fig_title, fig_path, plot_type, y_range=None
 ):
     """make a comparison plot, for SED or gamma-gamma absorption 
     between two different sources: a reference (literature or another code)
@@ -75,7 +66,7 @@ def make_comparison_plot(
         path to save the figure
     plot_type : `{"sed", "tau"}`
         whether we are doing a comparison plot for a SED or an optical depth 
-    y_lim_low, y_lim_up : float
+    y_range : list of float
         lower and upper limit of the y axis limt
     """
     if plot_type == "sed":
@@ -101,8 +92,8 @@ def make_comparison_plot(
     ax[0].legend(loc="best")
     ax[0].set_ylabel(y_label)
     ax[0].set_title(fig_title)
-    if (y_lim_low is not None) and (y_lim_up is not None):
-        ax[0].set_ylim([y_lim_low, y_lim_up])
+    if y_range is not None:
+        ax[0].set_ylim(y_range)
     # plot the deviation in the bottom panel
     deviation = 1 - y_comp / y_ref
     ax[1].axhline(0, ls="-", color="darkgray")
