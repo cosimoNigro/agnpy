@@ -135,19 +135,67 @@ class SynchrotronSelfCompton:
         emission region and electron distribution hitting the photon target
     synchrotron : :class:`~agnpy.synchrotron.Synchrotron`
         class describing the synchrotron photons target
+    integrator : (`~agnpy.math.utils.trapz_loglog`, `~numpy.trapz`)
+        function to be used for the integration
     """
 
-    def __init__(self, blob=None, ssa=False, integrator=np.trapz):
+    def __init__(self, blob, ssa=False, integrator=np.trapz):
         self.blob = blob
         self.ssa = ssa
         self.integrator = integrator
 
     @staticmethod
     def evaluate_sed_flux(
-        nu, z, d_L, delta_D, B, R_b, gamma, integrator, ssa, n_e, *args
+        nu,
+        z,
+        d_L,
+        delta_D,
+        B,
+        R_b,
+        n_e,
+        *args,
+        ssa=False,
+        integrator=np.trapz,
+        gamma=gamma_to_integrate,
     ):
-        """evaluate the SSC SED for a general set of model parameters,
-        functions to be used for fitting"""
+        """Evaluates the SSC flux SED
+        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`
+        for a general model of set parameters. Eq. 21 in [Finke2008]_.
+        
+        Parameters
+        ----------
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed 
+            **note** these are observed frequencies (observer frame)
+        z : float
+            redshift of the source
+        d_L : :class:`~astropy.units.Quantity` 
+            luminosity distance of the source
+        delta_D: float
+            Doppler factor of the relativistic outflow
+        B : :class:`~astropy.units.Quantity`
+            magnetic field in the blob 
+        R_b : :class:`~astropy.units.Quantity`
+            size of the emitting region (spherical blob assumed)
+        n_e: :class:`~agnpy.spectra.ElectronDistribution`
+            electron energy distribution
+        *args
+            parameters of the electron energy distribution (k_e, p, ...)
+        ssa: bool
+            whether to consider or not the self-absorption, default false
+        integrator: func
+            which function to use for integration, default `numpy.trapz`
+        gamma : `~numpy.ndarray`
+            array of Lorentz factor over which to integrate the electron 
+            distribution
+        
+        **Note** arguments after *args are keyword-only arguments
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            array of the SED values corresponding to each frequency
+        """
         # conversions
         # frequencies to be integrated over
         epsilon = nu_to_epsilon_prime(nu_to_integrate, z, delta_D)
@@ -155,7 +203,17 @@ class SynchrotronSelfCompton:
         epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
         # synchrotron sed
         sed_synch = Synchrotron.evaluate_sed_flux(
-            nu_to_integrate, z, d_L, delta_D, B, R_b, gamma, integrator, ssa, n_e, *args
+            nu_to_integrate,
+            z,
+            d_L,
+            delta_D,
+            B,
+            R_b,
+            n_e,
+            *args,
+            ssa=ssa,
+            integrator=integrator,
+            gamma=gamma,
         )
         # Eq. 8 [Finke2008]_
         u_synch = (3 * np.power(d_L, 2) * sed_synch) / (
@@ -183,8 +241,8 @@ class SynchrotronSelfCompton:
         return sed
 
     def sed_flux(self, nu):
-        """evaluate the synchrotron SED for a Synchrotron object built from a 
-        blob"""
+        """Evaluates the SSC flux SED for a SynchrotronSelfComtpon 
+        object built from a blob."""
         return self.evaluate_sed_flux(
             nu,
             self.blob.z,
@@ -192,12 +250,19 @@ class SynchrotronSelfCompton:
             self.blob.delta_D,
             self.blob.B,
             self.blob.R_b,
-            self.blob.gamma,
-            self.integrator,
-            self.ssa,
             self.blob.n_e,
             *self.blob.n_e.parameters,
+            ssa=self.ssa,
+            integrator=self.integrator,
+            gamma=self.blob.gamma,
         )
+
+    def sed_luminosity(self, nu):
+        """Evaluates the SSC luminosity SED
+        :math:`\nu L_{\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]`
+        for a a SynchrotronSelfCompton object built from a blob."""
+        sphere = 4 * np.pi * np.power(self.blob.d_L, 2)
+        return (sphere * self.sed_flux(nu)).to("erg s-1")
 
     def sed_peak_flux(self, nu):
         """provided a grid of frequencies nu, returns the peak flux of the SED
@@ -265,7 +330,7 @@ class ExternalCompton:
         phi,
         integrator,
         n_e,
-        *args
+        *args,
     ):
         """evaluate the SED flux for external compton on a monochromatic diffuse target"""
         # frequencies of the final sed

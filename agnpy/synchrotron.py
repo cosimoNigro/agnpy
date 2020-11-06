@@ -13,7 +13,7 @@ __all__ = ["R", "nu_synch_peak", "Synchrotron"]
 e = e.gauss
 B_cr = 4.414e13 * u.G  # critical magnetic field
 # default gamma grid to be used for integration
-gamma_to_integrate = np.logspace(1, 9, 300)
+gamma_to_integrate = np.logspace(1, 9, 200)
 
 
 def R(x):
@@ -65,8 +65,8 @@ def single_electron_synch_power(B_cgs, epsilon, gamma):
 
 
 def tau_to_attenuation(tau):
-    """convert the synchrotron self-absorption optical depth to an attenuation
-    Eq. 7.122 in [DermerMenon2009]_"""
+    """Converts the synchrotron self-absorption optical depth to an attenuation
+    Eq. 7.122 in [DermerMenon2009]_."""
     u = 1 / 2 + np.exp(-tau) / tau - (1 - np.exp(-tau)) / np.power(tau, 2)
     attenuation = np.where(tau < 1e-3, 1, 3 * u / tau)
     return attenuation
@@ -89,9 +89,8 @@ class Synchrotron:
         function to be used for the integration
 	"""
 
-    def __init__(self, blob=None, ssa=False, integrator=np.trapz):
+    def __init__(self, blob, ssa=False, integrator=np.trapz):
         self.blob = blob
-        self.epsilon_B = (self.blob.B / B_cr).to_value("")
         self.ssa = ssa
         self.integrator = integrator
 
@@ -213,8 +212,8 @@ class Synchrotron:
 
     @staticmethod
     def evaluate_sed_flux_delta_approx(nu, z, d_L, delta_D, B, R_b, n_e, *args):
-        """Synchrotron flux SED using the delta approximation for the synchrotron
-        radiation Eq. 7.70 [DermerMenon2009]_."""
+        """Synchrotron flux SED using the delta approximation for the 
+        synchrotron radiation Eq. 7.70 [DermerMenon2009]_."""
         epsilon_prime = nu_to_epsilon_prime(nu, z, delta_D)
         gamma_s = np.sqrt(epsilon_prime / epsilon_B(B))
         B_cgs = B_to_cgs(B)
@@ -272,7 +271,8 @@ class Synchrotron:
         return self.sed_flux(nu).max()
 
     def sed_peak_nu(self, nu):
-        """provided a grid of frequencies nu, returns the frequency at which the SED peaks
+        """provided a grid of frequencies nu, returns the frequency at which the 
+        SED peaks
         """
         idx_max = self.sed_flux(nu).argmax()
         return nu[idx_max]
