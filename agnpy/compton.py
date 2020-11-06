@@ -8,8 +8,8 @@ from .utils.math import trapz_loglog, log, axes_reshaper
 from .utils.conversion import nu_to_epsilon_prime
 
 # default gamma grid and frequency grid to be used for integration
-nu_to_integrate = np.logspace(5, 30, 300) * u.Hz  # used for SSC
-gamma_to_integrate = np.logspace(1, 9, 300)
+nu_to_integrate = np.logspace(5, 30, 200) * u.Hz  # used for SSC
+gamma_to_integrate = np.logspace(1, 9, 200)
 
 __all__ = ["SynchrotronSelfCompton", "ExternalCompton", "cos_psi"]
 
@@ -158,11 +158,8 @@ class SynchrotronSelfCompton:
             nu_to_integrate, z, d_L, delta_D, B, R_b, gamma, integrator, ssa, n_e, *args
         )
         # Eq. 8 [Finke2008]_
-        u_synch = (
-            3
-            * np.power(d_L, 2)
-            * sed_synch
-            / (c * np.power(R_b, 2) * np.power(delta_D, 4) * epsilon)
+        u_synch = (3 * np.power(d_L, 2) * sed_synch) / (
+            c * np.power(R_b, 2) * np.power(delta_D, 4) * epsilon
         )
         # factor 3 / 4 accounts for averaging in a sphere
         # not included in Dermer and Finke's papers
@@ -227,7 +224,7 @@ class ExternalCompton:
         distance of the blob from the Black Hole (i.e. from the target photons)
     """
 
-    def __init__(self, blob, target, r=None):
+    def __init__(self, blob=None, target=None, r=None, integrator=np.trapz):
         self.blob = blob
         # we integrate on a larger grid to account for the transformation
         # of the electron density in the reference frame of the BH
@@ -238,6 +235,7 @@ class ExternalCompton:
         self.r = r
         self.set_mu()
         self.set_phi()
+        self.integrator = integrator
 
     def set_mu(self, mu_size=100):
         self.mu_size = mu_size
@@ -252,103 +250,110 @@ class ExternalCompton:
         self.phi_size = phi_size
         self.phi = np.linspace(0, 2 * np.pi, self.phi_size)
 
-    def _sed_flux_cmb(self, nu):
-        """SED flux for EC on CMB
-        
-        Parameters
-        ----------
-        nu : `~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed, **note** these are 
-            observed frequencies (observer frame).
-        """
-        # define the dimensionless energy
-        epsilon_s = nu.to("", equivalencies=epsilon_equivalency)
-        # transform to BH frame
-        epsilon_s *= 1 + self.blob.z
-        # for multidimensional integration
-        # axis 0: gamma
-        # axis 1: mu
-        # axis 2: phi
-        # axis 3: epsilon_s
-        # arrays starting with _ are multidimensional and used for integration
-        _gamma = np.reshape(self.gamma, (self.gamma.size, 1, 1, 1))
-        _N_e = np.reshape(self.transformed_N_e, (self.transformed_N_e.size, 1, 1, 1))
-        _mu = np.reshape(self.mu, (1, self.mu.size, 1, 1))
-        _phi = np.reshape(self.phi, (1, 1, self.phi.size, 1))
-        _epsilon_s = np.reshape(epsilon_s, (1, 1, 1, epsilon_s.size))
-        # define integrating function
-        _kernel = compton_kernel(
-            _gamma, _epsilon_s, self.target.epsilon_0, self.blob.mu_s, _mu, _phi
-        )
-        _integrand = np.power(_gamma, -2) * _N_e * _kernel
-        integral_gamma = trapz_loglog(_integrand, self.gamma, axis=0)
-        integral_mu = np.trapz(integral_gamma, self.mu, axis=0)
-        integral_phi = np.trapz(integral_mu, self.phi, axis=0)
+    @staticmethod
+    def evaluate_sed_flux_iso_mono(
+        nu,
+        z,
+        d_L,
+        delta_D,
+        R_b,
+        epsilon_0,
+        u_0,
+        gamma,
+        mu,
+        mu_s,
+        phi,
+        integrator,
+        n_e,
+        *args
+    ):
+        """evaluate the SED flux for external compton on a monochromatic diffuse target"""
+        # frequencies of the final sed
+        epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
+        # multidimensional integration
+        _gamma, _mu, _phi, _epsilon_s = axes_reshaper(gamma, mu, phi, epsilon_s)
+        V_b = 4 / 3 * np.pi * np.power(R_b, 3)
+        N_e = V_b * n_e.evaluate(_gamma, *args)
+        kernel = compton_kernel(_gamma, _epsilon_s, epsilon_0, mu_s, _mu, _phi)
+        integrand = np.power(_gamma, -2) * N_e * kernel
+        integral_gamma = trapz_loglog(integrand, gamma, axis=0)
+        integral_mu = np.trapz(integral_gamma, mu, axis=0)
+        integral = np.trapz(integral_mu, phi, axis=0)
         prefactor_num = (
-            3
-            * c
-            * sigma_T
-            * self.target.u_0
-            * np.power(epsilon_s, 2)
-            * np.power(self.blob.delta_D, 3)
+            3 * c * sigma_T * u_0 * np.power(epsilon_s, 2) * np.power(delta_D, 3)
         )
         prefactor_denom = (
             np.power(2, 7)
             * np.power(np.pi, 2)
-            * np.power(self.blob.d_L, 2)
-            * np.power(self.target.epsilon_0, 2)
+            * np.power(d_L, 2)
+            * np.power(epsilon_0, 2)
         )
-        sed = prefactor_num / prefactor_denom * integral_phi
+        sed = prefactor_num / prefactor_denom * integral
         return sed.to("erg cm-2 s-1")
 
-    def _sed_flux_point_source(self, nu):
-        """SED flux for EC on a point like source behind the jet
-        
-        Parameters
-        ----------
-        nu : `~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed, **note** these are 
-            observed frequencies (observer frame).
-        """
-        # define the dimensionless energy
-        epsilon_s = nu.to("", equivalencies=epsilon_equivalency)
-        # transform to BH frame
-        epsilon_s *= 1 + self.blob.z
-        # for multidimensional integration
-        # axis 0: gamma
-        # axis 1: epsilon_s
-        # arrays starting with _ are multidimensional and used for integration
-        _gamma = np.reshape(self.gamma, (self.gamma.size, 1))
-        _N_e = np.reshape(self.transformed_N_e, (self.transformed_N_e.size, 1))
-        _epsilon_s = np.reshape(epsilon_s, (1, epsilon_s.size))
-        # define integrating function
-        # notice once the value of mu = 1, phi can assume any value, we put 0
-        # convenience
-        _kernel = compton_kernel(
-            _gamma, _epsilon_s, self.target.epsilon_0, self.blob.mu_s, 1, 0
+    def sed_flux_cmb(self, nu):
+        return self.evaluate_sed_flux_iso_mono(
+            nu,
+            self.blob.z,
+            self.blob.d_L,
+            self.blob.delta_D,
+            self.blob.R_b,
+            self.target.epsilon_0,
+            self.target.u_0,
+            self.blob.gamma_to_integrate,
+            self.mu,
+            self.blob.mu_s,
+            self.phi,
+            self.integrator,
+            self.blob.n_e,
+            *self.blob.n_e.parameters,
         )
-        _integrand = np.power(_gamma, -2) * _N_e * _kernel
-        integral_gamma = trapz_loglog(_integrand, self.gamma, axis=0)
+
+    @staticmethod
+    def evaluate_sed_flux_point_source(
+        nu, z, d_L, delta_D, R_b, epsilon_0, L_0, gamma, mu_s, r, integrator, n_e, *args
+    ):
+        # frequencies of the final sed
+        epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
+        # multidimensional integration
+        _gamma, _epsilon_s = axes_reshaper(gamma, epsilon_s)
+        V_b = 4 / 3 * np.pi * np.power(R_b, 3)
+        N_e = V_b * n_e.evaluate(_gamma, *args)
+        kernel = compton_kernel(_gamma, _epsilon_s, epsilon_0, mu_s, 1, 0)
+        integrand = np.power(_gamma, -2) * N_e * kernel
+        integral_gamma = integrator(integrand, gamma, axis=0)
         prefactor_num = (
-            3
-            * sigma_T
-            * self.target.L_0
-            * np.power(epsilon_s, 2)
-            * np.power(self.blob.delta_D, 3)
+            3 * sigma_T * L_0 * np.power(epsilon_s, 2) * np.power(delta_D, 3)
         )
         prefactor_denom = (
             np.power(2, 7)
             * np.power(np.pi, 2)
-            * np.power(self.blob.d_L, 2)
-            * np.power(self.r, 2)
-            * np.power(self.target.epsilon_0, 2)
+            * np.power(d_L, 2)
+            * np.power(r, 2)
+            * np.power(epsilon_0, 2)
         )
         sed = prefactor_num / prefactor_denom * integral_gamma
         return sed.to("erg cm-2 s-1")
 
+    def sed_flux_point_source(self, nu):
+        return self.evaluate_sed_flux_point_source(
+            nu,
+            self.blob.z,
+            self.blob.d_L,
+            self.blob.delta_D,
+            self.blob.R_b,
+            self.target.epsilon_0,
+            self.target.L_0,
+            self.blob.gamma_to_integrate,
+            self.blob.mu_s,
+            self.r,
+            self.integrator,
+            self.blob.n_e,
+            *self.blob.n_e.parameters,
+        )
+
     def _sed_flux_disk(self, nu):
         """SED flux for EC on SS Disk
-
         Parameters
         ----------
         nu : `~astropy.units.Quantity`
@@ -388,7 +393,7 @@ class ExternalCompton:
             * _N_e
             * _kernel
         )
-        integral_gamma = trapz_loglog(_integrand, self.gamma, axis=0)
+        integral_gamma = np.trapz(_integrand, self.gamma, axis=0)
         integral_mu = np.trapz(integral_gamma, self.mu, axis=0)
         integral_phi = np.trapz(integral_mu, self.phi, axis=0)
         prefactor_num = (
@@ -520,9 +525,9 @@ class ExternalCompton:
             observed frequencies (observer frame).
         """
         if isinstance(self.target, CMB):
-            return self._sed_flux_cmb(nu)
+            return self.sed_flux_cmb(nu)
         if isinstance(self.target, PointSourceBehindJet):
-            return self._sed_flux_point_source(nu)
+            return self.sed_flux_point_source(nu)
         if isinstance(self.target, SSDisk):
             return self._sed_flux_disk(nu)
         if isinstance(self.target, SphericalShellBLR):

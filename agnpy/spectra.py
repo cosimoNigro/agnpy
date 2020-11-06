@@ -1,3 +1,4 @@
+# module containing the electron spectra
 import numpy as np
 import astropy.units as u
 from .utils.math import trapz_loglog
@@ -9,6 +10,8 @@ __all__ = [
     "BrokenPowerLaw",
     "LogParabola",
 ]
+
+integrator = np.trapz
 
 
 class ElectronDistribution:
@@ -34,7 +37,7 @@ class ElectronDistribution:
         gamma = np.logspace(np.log10(gamma_low), np.log10(gamma_up), 200)
         values = self.evaluate(gamma, **kwargs)
         values *= np.power(gamma, gamma_power)
-        return trapz_loglog(values, gamma, axis=0)
+        return integrator(values, gamma, axis=0)
 
     def integral(self, gamma_low, gamma_up, gamma_power=0):
         """integral of __this particular__ electron distribution over the range 
@@ -50,7 +53,7 @@ class ElectronDistribution:
         gamma = np.logspace(np.log10(gamma_low), np.log10(gamma_up), 200)
         values = self.__call__(gamma)
         values *= np.power(gamma, gamma_power)
-        return trapz_loglog(values, gamma, axis=0)
+        return integrator(values, gamma, axis=0)
 
     @classmethod
     def from_normalised_density(cls, n_e_tot, **kwargs):
@@ -109,7 +112,7 @@ class PowerLaw(ElectronDistribution):
         maximum Lorentz factor of the electron distribution
     """
 
-    def __init__(self, k_e=1e-13 * u.Unit("cm-3"), p=2, gamma_min=10, gamma_max=1e7):
+    def __init__(self, k_e=1e-13 * u.Unit("cm-3"), p=2.1, gamma_min=10, gamma_max=1e5):
         self.k_e = k_e
         self.p = p
         self.gamma_min = gamma_min
