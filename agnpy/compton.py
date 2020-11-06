@@ -158,7 +158,7 @@ class SynchrotronSelfCompton:
         integrator=np.trapz,
         gamma=gamma_to_integrate,
     ):
-        """Evaluates the SSC flux SED
+        r"""Evaluates the SSC flux SED
         :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`
         for a general model of set parameters. Eq. 21 in [Finke2008]_.
         
@@ -197,11 +197,10 @@ class SynchrotronSelfCompton:
             array of the SED values corresponding to each frequency
         """
         # conversions
-        # frequencies to be integrated over
+        # synchrotron frequencies to be integrated over
         epsilon = nu_to_epsilon_prime(nu_to_integrate, z, delta_D)
         # frequencies of the final sed
         epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
-        # synchrotron sed
         sed_synch = Synchrotron.evaluate_sed_flux(
             nu_to_integrate,
             z,
@@ -242,7 +241,7 @@ class SynchrotronSelfCompton:
 
     def sed_flux(self, nu):
         """Evaluates the SSC flux SED for a SynchrotronSelfComtpon 
-        object built from a blob."""
+        object built from a Blob."""
         return self.evaluate_sed_flux(
             nu,
             self.blob.z,
@@ -258,7 +257,7 @@ class SynchrotronSelfCompton:
         )
 
     def sed_luminosity(self, nu):
-        """Evaluates the SSC luminosity SED
+        r"""Evaluates the SSC luminosity SED
         :math:`\nu L_{\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]`
         for a a SynchrotronSelfCompton object built from a blob."""
         sphere = 4 * np.pi * np.power(self.blob.d_L, 2)

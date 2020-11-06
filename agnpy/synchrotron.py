@@ -141,7 +141,7 @@ class Synchrotron:
         integrator=np.trapz,
         gamma=gamma_to_integrate,
     ):
-        """Evaluates the synchrotron flux SED
+        r"""Evaluates the synchrotron flux SED
         :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`
         for a general model of set parameters. Eq. 21 in [Finke2008]_.
         
@@ -227,9 +227,8 @@ class Synchrotron:
         return value.to("erg cm-2 s-1")
 
     def sed_flux(self, nu):
-        """Evaluates the synchrotron flux SED 
-        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`
-        for a Synchrotron object built from a blob."""
+        r"""Evaluates the synchrotron flux SED for a Synchrotron object built 
+        from a blob."""
         return self.evaluate_sed_flux(
             nu,
             self.blob.z,
@@ -259,7 +258,7 @@ class Synchrotron:
         )
 
     def sed_luminosity(self, nu):
-        """Evaluates the synchrotron luminosity SED
+        r"""Evaluates the synchrotron luminosity SED
         :math:`\nu L_{\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]`
         for a a Synchrotron object built from a blob."""
         sphere = 4 * np.pi * np.power(self.blob.d_L, 2)

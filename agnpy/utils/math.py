@@ -15,13 +15,13 @@ def axes_reshaper(*args):
     broadcastable in multi-dimensional operations
 
     the rearrangement scheme for a list of n arrays is the following:
-    `arrays[0]` is reshaped as `(arrays[0].size, 1, 1, ..., 1)` -> axis 0
-    `arrays[1]` is reshaped as `(1, arrays[1].size, 1, ..., 1)` -> axis 1
-    `arrays[2]` is reshaped as `(1, 1, arrays[2].size ..., 1)` -> axis 2
+    `args[0]` is reshaped as `(args[0].size, 1, 1, ..., 1)` -> axis 0
+    `args[1]` is reshaped as `(1, args[1].size, 1, ..., 1)` -> axis 1
+    `args[2]` is reshaped as `(1, 1, args[2].size ..., 1)` -> axis 2
         .
         .
         .
-    `arrays[n-1]` is reshaped as `(1, 1, 1, ..., arrays[n-1].size)` -> axis n-1
+    `args[n-1]` is reshaped as `(1, 1, 1, ..., args[n-1].size)` -> axis n-1
     
     Parameters
     ----------
