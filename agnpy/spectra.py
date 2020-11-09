@@ -35,6 +35,8 @@ class ElectronDistribution:
             higher integration limit
         gamma_power : int
             power of gamma to raise the electron distribution before integration
+        integrator: func
+            function to be used for integration, default is :class:`~numpy.trapz`
         kwargs : dict
             parameters of the electron distribution
         """

@@ -288,7 +288,7 @@ class ExternalCompton:
         distance of the blob from the Black Hole (i.e. from the target photons)
     """
 
-    def __init__(self, blob=None, target=None, r=None, integrator=np.trapz):
+    def __init__(self, blob, target, r=None, integrator=np.trapz):
         self.blob = blob
         # we integrate on a larger grid to account for the transformation
         # of the electron density in the reference frame of the BH
