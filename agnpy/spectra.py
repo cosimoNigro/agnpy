@@ -11,15 +11,19 @@ __all__ = [
     "LogParabola",
 ]
 
-integrator = np.trapz
-
 
 class ElectronDistribution:
-    """Base class grouping common functions to be used by all electron 
-    distributions."""
+    """Base class grouping common functionalities to be used by all electron 
+    distributions. Choose the function to be used for integration. The
+    default is :class:`~numpy.trapz`"""
+
+    def __init__(self, integrator=np.trapz):
+        self.integrator = integrator
 
     @staticmethod
-    def general_integral(self, gamma_low, gamma_up, gamma_power=0, **kwargs):
+    def general_integral(
+        self, gamma_low, gamma_up, gamma_power=0, integrator=np.trapz, **kwargs
+    ):
         """integral of __any__ electron distribution over the range gamma_low, 
         gamma_up
 
@@ -53,7 +57,7 @@ class ElectronDistribution:
         gamma = np.logspace(np.log10(gamma_low), np.log10(gamma_up), 200)
         values = self.__call__(gamma)
         values *= np.power(gamma, gamma_power)
-        return integrator(values, gamma, axis=0)
+        return self.integrator(values, gamma, axis=0)
 
     @classmethod
     def from_normalised_density(cls, n_e_tot, **kwargs):
@@ -110,9 +114,19 @@ class PowerLaw(ElectronDistribution):
         minimum Lorentz factor of the electron distribution
     gamma_max : float
         maximum Lorentz factor of the electron distribution
+    integrator: func
+        function to be used for integration, default is :class:`~numpy.trapz`
     """
 
-    def __init__(self, k_e=1e-13 * u.Unit("cm-3"), p=2.1, gamma_min=10, gamma_max=1e5):
+    def __init__(
+        self,
+        k_e=1e-13 * u.Unit("cm-3"),
+        p=2.1,
+        gamma_min=10,
+        gamma_max=1e5,
+        integrator=np.trapz,
+    ):
+        super().__init__(integrator)
         self.k_e = k_e
         self.p = p
         self.gamma_min = gamma_min
@@ -181,6 +195,8 @@ class BrokenPowerLaw(ElectronDistribution):
         minimum Lorentz factor of the electron distribution
     gamma_max : float
         maximum Lorentz factor of the electron distribution
+    integrator: func
+        function to be used for integration, default is :class:`~numpy.trapz`
     """
 
     def __init__(
@@ -191,7 +207,9 @@ class BrokenPowerLaw(ElectronDistribution):
         gamma_b=1e3,
         gamma_min=10,
         gamma_max=1e7,
+        integrator=np.trapz,
     ):
+        super().__init__(integrator)
         self.k_e = k_e
         self.p1 = p1
         self.p2 = p2
@@ -286,6 +304,8 @@ class LogParabola(ElectronDistribution):
         minimum Lorentz factor of the electron distribution
     gamma_max : float
         maximum Lorentz factor of the electron distribution
+    integrator: func
+        function to be used for integration, default is :class:`~numpy.trapz`
     """
 
     def __init__(
@@ -296,7 +316,9 @@ class LogParabola(ElectronDistribution):
         gamma_0=1e3,
         gamma_min=10,
         gamma_max=1e7,
+        integrator=np.trapz,
     ):
+        super().__init__(integrator)
         self.k_e = k_e
         self.p = p
         self.q = q
