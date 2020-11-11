@@ -1,8 +1,8 @@
 # module containing the electron spectra
 import numpy as np
 import astropy.units as u
-from .utils.math import trapz_loglog
-from .utils.conversion import mec2
+from ..utils.math import trapz_loglog
+from ..utils.conversion import mec2
 
 __all__ = [
     "ElectronDistribution",

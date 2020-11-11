@@ -40,10 +40,4 @@ sed_ec_cmb = ec_cmb.sed_flux(nu)
 plt.loglog(nu, sed_ec_cmb)
 plt.show()
 
-# EC on point source
-blob.set_gamma_size(500)
-ps = PointSourceBehindJet(1e45 * u.Unit("erg s-1"), 1e-6)
-ec_ps = ExternalCompton(blob, ps, r=1e19 * u.cm)
-sed_ec_ps = ec_ps.sed_flux(nu)
-plt.loglog(nu, sed_ec_ps)
-plt.show()
+# EC on monochromatic point-source

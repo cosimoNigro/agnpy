@@ -1,13 +1,13 @@
-# module containing the synchrotron radiative processes
+# module containing the synchrotron radiative process
 import numpy as np
 import astropy.units as u
 from astropy.constants import e, h, c, m_e, sigma_T
-from .spectra import PowerLaw
-from .utils.math import axes_reshaper
-from .utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
+from ..spectra import PowerLaw
+from ..utils.math import axes_reshaper
+from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
 
 
-__all__ = ["R", "nu_synch_peak", "Synchrotron"]
+__all__ = ["R", "nu_synch_peak", "epsilon_B", "Synchrotron"]
 
 
 e = e.gauss
@@ -160,15 +160,15 @@ class Synchrotron:
             magnetic field in the blob 
         R_b : :class:`~astropy.units.Quantity`
             size of the emitting region (spherical blob assumed)
-        n_e: :class:`~agnpy.spectra.ElectronDistribution`
+        n_e : :class:`~agnpy.spectra.ElectronDistribution`
             electron energy distribution
         *args
             parameters of the electron energy distribution (k_e, p, ...)
-        ssa: bool
+        ssa : bool
             whether to consider or not the self-absorption, default false
-        integrator: func
+        integrator : func
             which function to use for integration, default `numpy.trapz`
-        gamma : `~numpy.ndarray`
+        gamma : :class:`~numpy.ndarray`
             array of Lorentz factor over which to integrate the electron 
             distribution
         

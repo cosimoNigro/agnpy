@@ -1,7 +1,7 @@
 import numpy as np
 from astropy.constants import c, G, h, m_e, M_sun, sigma_T
 import astropy.units as u
-from .compton import cos_psi, x_re_shell, x_re_ring, mu_star
+from .utils.geometry import cos_psi, x_re_shell, mu_star_shell, x_re_ring
 from .targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
 
 

@@ -3,15 +3,8 @@ import astropy.units as u
 from astropy.constants import e, c, m_e, sigma_T
 from astropy.coordinates import Distance
 import matplotlib.pyplot as plt
-from .spectra import PowerLaw, BrokenPowerLaw, LogParabola
-
-
-e = e.gauss
-mec2 = m_e.to("erg", equivalencies=u.mass_energy())
-# equivalency for decomposing Gauss in Gaussian-cgs units (not available in astropy)
-Gauss_cgs_unit = "cm(-1/2) g(1/2) s-1"
-Gauss_cgs_equivalency = [(u.G, u.Unit(Gauss_cgs_unit), lambda x: x, lambda x: x)]
-
+from ..spectra import PowerLaw, BrokenPowerLaw, LogParabola
+from ..utils.conversion import mec2, B_to_cgs
 
 __all__ = ["Blob"]
 
@@ -105,7 +98,7 @@ class Blob:
         self.theta_s = (np.arccos(self.mu_s) * u.rad).to("deg")
         self.B = B
         # B decomposed in Gaussian-cgs units
-        self.B_cgs = B.to(Gauss_cgs_unit, equivalencies=Gauss_cgs_equivalency)
+        self.B_cgs = B_to_cgs(B)
         self.spectrum_norm = spectrum_norm
         self.spectrum_norm_type = spectrum_norm_type
         self.spectrum_dict = spectrum_dict
