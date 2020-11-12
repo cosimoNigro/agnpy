@@ -228,7 +228,7 @@ class Synchrotron:
 
     def sed_flux(self, nu):
         r"""Evaluates the synchrotron flux SED for a Synchrotron object built 
-        from a blob."""
+        from a Blob."""
         return self.evaluate_sed_flux(
             nu,
             self.blob.z,

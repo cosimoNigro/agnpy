@@ -214,41 +214,29 @@ class SSDisk:
             + f" - R_out (disk inner radius): {self.R_out.cgs:.2e}"
         )
 
-    def mu_from_r_tilde(self, r_tilde, size=100):
+    # methods to be used in SED calculations without invoking the class
+    @staticmethod
+    def mu_from_r_tilde(R_in_tilde, R_out_tilde, r_tilde, size=100):
         r"""array of cosine angles, spanning from :math:`R_{\mathrm{in}}` to 
         :math:`R_{\mathrm{out}}`, viewed from a given distance :math:`\tilde{r}` 
         along the jet axis, Eq. 72 and 73 in [Finke2016]_."""
-        mu_min = 1 / np.sqrt(1 + np.power((self.R_out_tilde / r_tilde), 2))
-        mu_max = 1 / np.sqrt(1 + np.power((self.R_in_tilde / r_tilde), 2))
+        mu_min = 1 / np.sqrt(1 + np.power((R_out_tilde / r_tilde), 2))
+        mu_max = 1 / np.sqrt(1 + np.power((R_in_tilde / r_tilde), 2))
         return np.linspace(mu_min, mu_max, size)
 
-    def phi_disk(self, R_tilde):
-        """Radial dependency of disk temperature, Eq. 63 in [Dermer2009]_.
-
-        Parameters
-        ----------
-        R_tilde : :class:`~nump.ndarray`
-            radial coordinate along the disk normalised to R_g
-        """
-        return 1 - np.sqrt(self.R_in_tilde / R_tilde)
-
-    def phi_disk_mu(self, mu, r_tilde):
-        r"""same as phi_disk but computed with cosine of zenith mu and normalised 
-        distance from the black hole :math:`\tilde{r}` Eq. 67 in [Dermer2009]_."""
+    @staticmethod
+    def phi_disk_mu(mu, R_in_tilde, r_tilde):
         R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
-        return self.phi_disk(R_tilde)
+        return 1 - np.sqrt(R_in_tilde / R_tilde)
 
-    def epsilon(self, R_tilde):
-        r"""monochromatic approximation for the mean photon energy at radius 
-        :math:`\tilde{R}` of the accretion disk. Eq. 65 in [Dermer2009]_."""
-        xi = np.power(self.l_Edd / (self.M_8 * self.eta), 1 / 4)
-        return 2.7 * 1e-4 * xi * np.power(R_tilde, -3 / 4)
-
-    def epsilon_mu(self, mu, r_tilde):
-        r"""same as epsilon but computed with cosine of zenith mu and distance
-        from the black hole :math:`\tilde{r}`. Eq. 67 in [Dermer2009]_."""
+    @staticmethod
+    def epsilon_mu(L_disk, M_BH, eta, mu, r_tilde):
+        M_8 = (M_BH / (1e8 * M_sun)).to_value("")
+        L_Edd = 1.26 * 1e46 * M_8 << u.Unit("erg s-1")
+        l_Edd = (L_disk / L_Edd).to_value("")
+        xi = np.power(l_Edd / (M_8 * eta), 1 / 4)
         R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
-        return self.epsilon(R_tilde)
+        return 2.7e-4 * xi * np.power(R_tilde, -3 / 4)
 
     def T(self, R_tilde):
         r"""Temperature of the disk at distance :math:`\tilde{R}`. 

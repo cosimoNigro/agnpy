@@ -1,8 +1,8 @@
 # module containing the External Compton radiative process
 import numpy as np
-from astropy.constants import c, sigma_T
+from astropy.constants import c, sigma_T, G
 from ..utils.math import trapz_loglog, log, axes_reshaper
-from ..utils.conversion import nu_to_epsilon_prime
+from ..utils.conversion import nu_to_epsilon_prime, r_to_R_g_units
 from ..targets import (
     CMB,
     PointSourceBehindJet,
@@ -32,13 +32,14 @@ class ExternalCompton:
         distance of the blob from the Black Hole (i.e. from the target photons)
     """
 
-    def __init__(self, blob, target, r=None):
+    def __init__(self, blob, target, r=None, integrator=np.trapz):
         self.blob = blob
         # we integrate on a larger grid to account for the transformation
         # of the electron density in the reference frame of the BH
         self.gamma = self.blob.gamma_to_integrate
         self.target = target
         self.r = r
+        self.integrator = integrator
         self.set_mu()
         self.set_phi()
 
@@ -47,7 +48,9 @@ class ExternalCompton:
         if isinstance(self.target, SSDisk):
             # in case of hte disk the mu interval does not go from -1 to 1
             r_tilde = (self.r / self.target.R_g).to_value("")
-            self.mu = self.target.mu_from_r_tilde(r_tilde)
+            self.mu = self.target.mu_from_r_tilde(
+                self.target.R_in_tilde, self.target.R_out_tilde, r_tilde
+            )
         else:
             self.mu = np.linspace(-1, 1, self.mu_size)
 
@@ -128,7 +131,7 @@ class ExternalCompton:
         integrand = N_e / np.power(_gamma, 2) * kernel
         integral_gamma = integrator(integrand, gamma, axis=0)
         integral_mu = np.trapz(integral_gamma, mu, axis=0)
-        integral = np.trapz(integral_mu, phi, axis=0)
+        integral_phi = np.trapz(integral_mu, phi, axis=0)
         prefactor_num = (
             3 * c * sigma_T * u_0 * np.power(epsilon_s, 2) * np.power(delta_D, 3)
         )
@@ -138,7 +141,7 @@ class ExternalCompton:
             * np.power(d_L, 2)
             * np.power(epsilon_0, 2)
         )
-        sed = (prefactor_num / prefactor_denom * integral).to("erg cm-2 s-1")
+        sed = (prefactor_num / prefactor_denom * integral_phi).to("erg cm-2 s-1")
         return sed
 
     def sed_flux_cmb(self, nu):
@@ -153,9 +156,10 @@ class ExternalCompton:
             self.target.u_0,
             self.blob.n_e,
             *self.blob.n_e.parameters,
-            gamma=gamma_to_integrate,
-            mu=mu_to_integrate,
-            phi=phi_to_integrate
+            integrator=self.integrator,
+            gamma=self.gamma,
+            mu=self.mu,
+            phi=self.phi
         )
 
     @staticmethod
@@ -218,10 +222,94 @@ class ExternalCompton:
             self.r,
             self.blob.n_e,
             *self.blob.n_e.parameters,
-            integrator=np.trapz,
-            gamma=gamma_to_integrate,
-            mu=mu_to_integrate,
-            phi=phi_to_integrate
+            integrator=self.integrator,
+            gamma=self.gamma,
+            mu=self.mu,
+            phi=self.phi
+        )
+
+    @staticmethod
+    def evaluate_sed_flux_ss_disk(
+        nu,
+        z,
+        d_L,
+        delta_D,
+        mu_s,
+        R_b,
+        M_BH,
+        L_disk,
+        eta,
+        R_in,
+        R_out,
+        r,
+        n_e,
+        *args,
+        integrator=np.trapz,
+        gamma=gamma_to_integrate,
+        mu_size=100,
+        phi=phi_to_integrate
+    ):
+        # conversions
+        epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
+        r_tilde = r_to_R_g_units(r, M_BH)
+        R_in_tilde = r_to_R_g_units(R_in, M_BH)
+        R_out_tilde = r_to_R_g_units(R_out, M_BH) 
+        m_dot = (L_disk / (eta * np.power(c, 2))).to("g / s")
+        # multidimensional integration
+        mu = SSDisk.mu_from_r_tilde(R_in_tilde, R_out_tilde, r_tilde)
+        _gamma, _mu, _phi, _epsilon_s = axes_reshaper(gamma, mu, phi, epsilon_s)
+        V_b = 4 / 3 * np.pi * np.power(R_b, 3)
+        N_e = V_b * n_e.evaluate(_gamma / delta_D, *args)
+        epsilon = SSDisk.epsilon_mu(L_disk, M_BH, eta, _mu, r_tilde)
+        phi_disk = SSDisk.phi_disk_mu(_mu, R_in_tilde, r_tilde)
+        kernel = compton_kernel(_gamma, _epsilon_s, epsilon, mu_s, _mu, _phi)
+        integrand = (
+            phi_disk
+            / np.power(epsilon, 2)
+            / _mu
+            / np.power(np.power(_mu, -2) - 1, -3 / 2)
+            * N_e
+            / np.power(_gamma, 2)
+            * kernel
+        )
+        integral_gamma = np.trapz(integrand, gamma, axis=0)
+        integral_mu = np.trapz(integral_gamma, mu, axis=0)
+        integral_phi = np.trapz(integral_mu, phi, axis=0)
+        prefactor_num = (
+            9
+            * sigma_T
+            * G
+            * M_BH
+            * m_dot
+            * np.power(epsilon_s, 2)
+            * np.power(delta_D, 3)
+        )
+        prefactor_denom = (
+            np.power(2, 9) * np.power(np.pi, 3) * np.power(d_L, 2) * np.power(r, 3)
+        )
+        sed = (prefactor_num / prefactor_denom * integral_phi).to("erg cm-2 s-1")
+        return sed
+
+    def sed_flux_ss_disk(self, nu):
+        return self.evaluate_sed_flux_ss_disk(
+            nu,
+            self.blob.z,
+            self.blob.d_L,
+            self.blob.delta_D,
+            self.blob.mu_s,
+            self.blob.R_b,
+            self.target.M_BH,
+            self.target.L_disk,
+            self.target.eta,
+            self.target.R_in,
+            self.target.R_out,
+            self.r,
+            self.blob.n_e,
+            *self.blob.n_e.parameters,
+            integrator=self.integrator,
+            gamma=self.gamma,
+            mu_size=self.mu_size,
+            phi=self.phi
         )
 
     def sed_flux(self, nu):
@@ -230,3 +318,5 @@ class ExternalCompton:
             return self.sed_flux_cmb(nu)
         if isinstance(self.target, PointSourceBehindJet):
             return self.sed_flux_ps_behind_jet(nu)
+        if isinstance(self.target, SSDisk):
+            return self.sed_flux_ss_disk(nu)
