@@ -20,9 +20,11 @@ def nu_to_epsilon_prime(nu, z=0, delta_D=1):
     epsilon = nu.to("", equivalencies=epsilon_equivalency)
     return (1 + z) * epsilon / delta_D
 
+
 def B_to_cgs(B):
     """convert a magnetic field to CGS units"""
     return B.to(Gauss_cgs_unit, equivalencies=Gauss_cgs_equivalency)
+
 
 def r_to_R_g_units(r, M):
     """convert a distance in graviational radii units"""

@@ -3,6 +3,7 @@ import numpy as np
 from astropy.constants import c, sigma_T, G
 from ..utils.math import trapz_loglog, log, axes_reshaper
 from ..utils.conversion import nu_to_epsilon_prime, r_to_R_g_units
+from ..utils.geometry import x_re_shell, mu_star_shell
 from ..targets import (
     CMB,
     PointSourceBehindJet,
@@ -253,9 +254,11 @@ class ExternalCompton:
         epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
         r_tilde = r_to_R_g_units(r, M_BH)
         R_in_tilde = r_to_R_g_units(R_in, M_BH)
-        R_out_tilde = r_to_R_g_units(R_out, M_BH) 
+        R_out_tilde = r_to_R_g_units(R_out, M_BH)
         m_dot = (L_disk / (eta * np.power(c, 2))).to("g / s")
         # multidimensional integration
+        # for the disk we do not integrate mu from -1 to 1 but choose the range
+        # of zenith angles subtended from a given distance
         mu = SSDisk.mu_from_r_tilde(R_in_tilde, R_out_tilde, r_tilde)
         _gamma, _mu, _phi, _epsilon_s = axes_reshaper(gamma, mu, phi, epsilon_s)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
@@ -312,6 +315,77 @@ class ExternalCompton:
             phi=self.phi
         )
 
+    @staticmethod
+    def evaluate_sed_flux_blr(
+        nu,
+        z,
+        d_L,
+        delta_D,
+        mu_s,
+        R_b,
+        L_disk,
+        xi_line,
+        epsilon_line,
+        R_line,
+        r,
+        n_e,
+        *args,
+        integrator=np.trapz,
+        gamma=gamma_to_integrate,
+        mu=mu_to_integrate,
+        phi=phi_to_integrate
+    ):
+        # conversions
+        epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
+        # multidimensional integration
+        _gamma, _mu, _phi, _epsilon_s = axes_reshaper(gamma, mu, phi, epsilon_s)
+        V_b = 4 / 3 * np.pi * np.power(R_b, 3)
+        N_e = V_b * n_e.evaluate(_gamma / delta_D, *args)
+        x = x_re_shell(_mu, R_line, r)
+        mu_star = mu_star_shell(_mu, R_line, r)
+        kernel = compton_kernel(_gamma, _epsilon_s, epsilon_line, mu_s, mu_star, _phi)
+        integrand = 1 / np.power(x, 2) * N_e / np.power(_gamma, 2) * kernel
+        integral_gamma = np.trapz(integrand, gamma, axis=0)
+        integral_mu = np.trapz(integral_gamma, mu, axis=0)
+        integral_phi = np.trapz(integral_mu, phi, axis=0)
+        prefactor_num = (
+            3
+            * sigma_T
+            * xi_line
+            * L_disk
+            * np.power(epsilon_s, 2)
+            * np.power(delta_D, 3)
+        )
+        prefactor_denom = (
+            np.power(2, 9)
+            * np.power(np.pi, 3)
+            * np.power(d_L, 2)
+            * np.power(epsilon_line, 2)
+        )
+        sed = (prefactor_num / prefactor_denom * integral_phi).to("erg cm-2 s-1")
+        return sed
+
+    def sed_flux_blr(self, nu):
+        return self.evaluate_sed_flux_blr(
+            nu,
+            self.blob.z,
+            self.blob.d_L,
+            self.blob.delta_D,
+            self.blob.mu_s,
+            self.blob.R_b,
+            self.target.L_disk,
+            self.target.xi_line,
+            self.target.epsilon_line,
+            self.target.R_line,
+            self.r,
+            self.blob.n_e,
+            *self.blob.n_e.parameters,
+            integrator=self.integrator,
+            gamma=self.gamma,
+            mu=self.mu,
+            phi=self.phi
+        )
+
     def sed_flux(self, nu):
         """EC flux SED"""
         if isinstance(self.target, CMB):
@@ -320,3 +394,5 @@ class ExternalCompton:
             return self.sed_flux_ps_behind_jet(nu)
         if isinstance(self.target, SSDisk):
             return self.sed_flux_ss_disk(nu)
+        if isinstance(self.target, SphericalShellBLR):
+            return self.sed_flux_blr(nu)

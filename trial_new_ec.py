@@ -59,3 +59,12 @@ ec_disk = ExternalCompton(blob, disk, r=1e18 * u.cm)
 ec_disk_sed = ec_disk.sed_flux(nu)
 plt.loglog(nu, ec_disk_sed)
 plt.show()
+
+# EC on BLR
+xi_line = 0.024
+R_line = 1e17 * u.cm
+blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
+ec_blr = ExternalCompton(blob, blr, r=1e18 * u.cm)
+ec_blr_sed = ec_blr.sed_flux(nu)
+plt.loglog(nu, ec_blr_sed)
+plt.show()
