@@ -68,3 +68,12 @@ ec_blr = ExternalCompton(blob, blr, r=1e18 * u.cm)
 ec_blr_sed = ec_blr.sed_flux(nu)
 plt.loglog(nu, ec_blr_sed)
 plt.show()
+
+# EC on DT
+T_dt = 1e3 * u.K
+csi_dt = 0.1
+dt = RingDustTorus(L_disk, csi_dt, T_dt)
+ec_dt = ExternalCompton(blob, dt, r=1e18 * u.cm)
+ec_dt_sed = ec_dt.sed_flux(nu)
+plt.loglog(nu, ec_dt_sed)
+plt.show()

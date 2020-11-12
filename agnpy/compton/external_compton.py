@@ -3,7 +3,7 @@ import numpy as np
 from astropy.constants import c, sigma_T, G
 from ..utils.math import trapz_loglog, log, axes_reshaper
 from ..utils.conversion import nu_to_epsilon_prime, r_to_R_g_units
-from ..utils.geometry import x_re_shell, mu_star_shell
+from ..utils.geometry import x_re_shell, mu_star_shell, x_re_ring
 from ..targets import (
     CMB,
     PointSourceBehindJet,
@@ -386,6 +386,70 @@ class ExternalCompton:
             phi=self.phi
         )
 
+    @staticmethod
+    def evaluate_sed_flux_dt(
+        nu,
+        z,
+        d_L,
+        delta_D,
+        mu_s,
+        R_b,
+        L_disk,
+        xi_dt,
+        epsilon_dt,
+        R_dt,
+        r,
+        n_e,
+        *args,
+        integrator=np.trapz,
+        gamma=gamma_to_integrate,
+        phi=phi_to_integrate
+    ):
+        # conversions
+        epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
+        # multidimensional integration
+        _gamma, _phi, _epsilon_s = axes_reshaper(gamma, phi, epsilon_s)
+        V_b = 4 / 3 * np.pi * np.power(R_b, 3)
+        N_e = V_b * n_e.evaluate(_gamma / delta_D, *args)
+        x_re = x_re_ring(R_dt, r)
+        mu = (r / x_re).to_value("")
+        kernel = compton_kernel(_gamma, _epsilon_s, epsilon_dt, mu_s, mu, _phi)
+        integrand = N_e / np.power(_gamma, 2) * kernel
+        integral_gamma = np.trapz(integrand, gamma, axis=0)
+        integral_phi = np.trapz(integral_gamma, phi, axis=0)
+        prefactor_num = (
+            3 * sigma_T * xi_dt * L_disk * np.power(epsilon_s, 2) * np.power(delta_D, 3)
+        )
+        prefactor_denom = (
+            np.power(2, 8)
+            * np.power(np.pi, 3)
+            * np.power(d_L, 2)
+            * np.power(x_re, 2)
+            * np.power(epsilon_dt, 2)
+        )
+        sed = (prefactor_num / prefactor_denom * integral_phi).to("erg cm-2 s-1")
+        return sed
+
+    def sed_flux_dt(self, nu):
+        return self.evaluate_sed_flux_dt(
+            nu,
+            self.blob.z,
+            self.blob.d_L,
+            self.blob.delta_D,
+            self.blob.mu_s,
+            self.blob.R_b,
+            self.target.L_disk,
+            self.target.xi_dt,
+            self.target.epsilon_dt,
+            self.target.R_dt,
+            self.r,
+            self.blob.n_e,
+            *self.blob.n_e.parameters,
+            integrator=self.integrator,
+            gamma=self.gamma,
+            phi=self.phi
+        )
+
     def sed_flux(self, nu):
         """EC flux SED"""
         if isinstance(self.target, CMB):
@@ -396,3 +460,5 @@ class ExternalCompton:
             return self.sed_flux_ss_disk(nu)
         if isinstance(self.target, SphericalShellBLR):
             return self.sed_flux_blr(nu)
+        if isinstance(self.target, RingDustTorus):
+            return self.sed_flux_dt(nu)
