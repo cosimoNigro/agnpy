@@ -123,7 +123,7 @@ class ExternalCompton:
             array of the SED values corresponding to each frequency
         """
         # conversion
-        epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon_s = nu_to_epsilon_prime(nu, z)
         # multi-dimensional integration
         _gamma, _mu, _phi, _epsilon_s = axes_reshaper(gamma, mu, phi, epsilon_s)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
@@ -189,7 +189,7 @@ class ExternalCompton:
         same parameters as in :func:`~agnpy.ExternalCompton.evaluate_sed_flux_iso_mono`
         """
         # conversion
-        epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon_s = nu_to_epsilon_prime(nu, z)
         # multi-dimensional integration
         _gamma, _epsilon_s = axes_reshaper(gamma, epsilon_s)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
@@ -251,7 +251,7 @@ class ExternalCompton:
         phi=phi_to_integrate
     ):
         # conversions
-        epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon_s = nu_to_epsilon_prime(nu, z)
         r_tilde = r_to_R_g_units(r, M_BH)
         R_in_tilde = r_to_R_g_units(R_in, M_BH)
         R_out_tilde = r_to_R_g_units(R_out, M_BH)
@@ -270,7 +270,7 @@ class ExternalCompton:
             phi_disk
             / np.power(epsilon, 2)
             / _mu
-            / np.power(np.power(_mu, -2) - 1, -3 / 2)
+            / np.power(np.power(_mu, -2) - 1, 3 / 2)
             * N_e
             / np.power(_gamma, 2)
             * kernel
@@ -336,7 +336,7 @@ class ExternalCompton:
         phi=phi_to_integrate
     ):
         # conversions
-        epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon_s = nu_to_epsilon_prime(nu, z)
         # multidimensional integration
         _gamma, _mu, _phi, _epsilon_s = axes_reshaper(gamma, mu, phi, epsilon_s)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
@@ -406,7 +406,7 @@ class ExternalCompton:
         phi=phi_to_integrate
     ):
         # conversions
-        epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon_s = nu_to_epsilon_prime(nu, z)
         # multidimensional integration
         _gamma, _phi, _epsilon_s = axes_reshaper(gamma, phi, epsilon_s)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)

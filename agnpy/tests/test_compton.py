@@ -9,24 +9,19 @@ from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron
 from agnpy.targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
 from agnpy.compton import SynchrotronSelfCompton, ExternalCompton
-from .utils import (
-    make_comparison_plot,
-    extract_columns_sample_file,
-    check_deviation_within_bounds,
-)
+from .utils import make_comparison_plot, extract_columns_sample_file, check_deviation
 
-mec2 = m_e.to("erg", equivalencies=u.mass_energy())
-epsilon_equivalency = [
-    (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
-]
 agnpy_dir = Path(__file__).parent.parent.parent
+# where to read sampled files
 data_dir = f"{agnpy_dir}/data"
+# where to save figures
+figures_dir = f"{data_dir}/crosscheck_figures/compton"
 
 # variables with _test are global and meant to be used in all tests
 pwl_spectrum_norm_test = 1e48 * u.Unit("erg")
 pwl_dict_test = {
     "type": "PowerLaw",
-    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e5,},
+    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e5},
 }
 bpwl_spectrum_norm_test = 6e42 * u.Unit("erg")
 bpwl_dict_test = {
@@ -53,7 +48,7 @@ pwl_blob_test = Blob(
 bpwl_blob_test = Blob(
     1e16 * u.cm, 1, 40, 40, 0.56 * u.G, bpwl_spectrum_norm_test, bpwl_dict_test,
 )
-# bpwl_blob_test.set_gamma_size(200)
+bpwl_blob_test.set_gamma_size(500)
 
 
 class TestSynchrotronSelfCompton:
@@ -68,8 +63,7 @@ class TestSynchrotronSelfCompton:
             "erg cm-2 s-1",
         )
         # recompute the SED at the same ordinates where the figure was sampled
-        synch = Synchrotron(pwl_blob_test)
-        ssc = SynchrotronSelfCompton(pwl_blob_test, synch)
+        ssc = SynchrotronSelfCompton(pwl_blob_test)
         sed_agnpy = ssc.sed_flux(nu_ref)
         # sed comparison plot
         make_comparison_plot(
@@ -79,11 +73,11 @@ class TestSynchrotronSelfCompton:
             "Figure 7.4, Dermer and Menon (2009)",
             "agnpy",
             "Synchrotron Self Compton",
-            f"{data_dir}/crosscheck_figures/ssc_comparison_figure_7_4_dermer_menon_2009.png",
+            f"{figures_dir}/ssc_comparison_figure_7_4_dermer_menon_2009.png",
             "sed",
         )
         # requires that the SED points deviate less than 15% from the figure
-        assert check_deviation_within_bounds(nu_ref, sed_ref, sed_agnpy, 0, 0.15)
+        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.15)
 
 
 class TestExternalCompton:
@@ -116,11 +110,11 @@ class TestExternalCompton:
             "Figure 8, Finke (2016)",
             "agnpy",
             "External Compton on Shakura Sunyaev Disk",
-            f"{data_dir}/crosscheck_figures/ec_disk_comparison_figure_8_finke_2016.png",
+            f"{figures_dir}/ec_disk_comparison_figure_8_finke_2016.png",
             "sed",
         )
         # requires that the SED points deviate less than 40% from the figure
-        assert check_deviation_within_bounds(nu_ref, sed_ref, sed_agnpy, 0, 0.4)
+        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.4)
 
     def test_ec_blr_reference_sed(self):
         """test agnpy SED for EC on BLR against the one in Figure 10 of Finke 2016"""
@@ -147,11 +141,11 @@ class TestExternalCompton:
             "Figure 10, Finke (2016)",
             "agnpy",
             "External Compton on Spherical Shell Broad Line Region",
-            f"{data_dir}/crosscheck_figures/ec_blr_comparison_figure_10_finke_2016.png",
+            f"{figures_dir}/ec_blr_comparison_figure_10_finke_2016.png",
             "sed",
         )
         # requires that the SED points deviate less than 30% from the figure
-        assert check_deviation_within_bounds(nu_ref, sed_ref, sed_agnpy, 0, 0.3)
+        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.3)
 
     def test_ec_dt_reference_sed(self):
         """test agnpy SED for EC on DT against the one in Figure 11 of Finke 2016"""
@@ -180,11 +174,11 @@ class TestExternalCompton:
             "Figure 11, Finke (2016)",
             "agnpy",
             "External Compton on Ring Dust Torus",
-            f"{data_dir}/crosscheck_figures/ec_dt_comparison_figure_11_finke_2016.png",
+            f"{figures_dir}/ec_dt_comparison_figure_11_finke_2016.png",
             "sed",
         )
         # requires that the SED points deviate less than 30% from the figure
-        assert check_deviation_within_bounds(nu_ref, sed_ref, sed_agnpy, 0, 0.3)
+        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.3)
 
     def test_ec_blr_vs_point_source(self):
         """check if in the limit of large distances the EC on the BLR tends to
@@ -213,11 +207,11 @@ class TestExternalCompton:
             "point source approximating the BLR",
             "External Compton on Spherical Shell BLR, "
             + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm line}$",
-            f"{data_dir}/crosscheck_figures/ec_blr_point_source_comparison.png",
+            f"{figures_dir}/ec_blr_point_source_comparison.png",
             "sed",
         )
         # requires a 20% deviation from the two SED points
-        assert check_deviation_within_bounds(nu, sed_ec_blr, sed_ec_ps_blr, 0, 0.2)
+        assert check_deviation(nu, sed_ec_blr, sed_ec_ps_blr, 0, 0.2)
 
     def test_ec_dt_vs_point_source(self):
         """check if in the limit of large distances the EC on the DT tends to
@@ -245,8 +239,8 @@ class TestExternalCompton:
             "point source approximating the DT",
             "External Compton on Ring Dust Torus, "
             + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm dt}$",
-            f"{data_dir}/crosscheck_figures/ec_dt_point_source_comparison.png",
+            f"{figures_dir}/ec_dt_point_source_comparison.png",
             "sed",
         )
         # requires a 20% deviation from the two SED points
-        assert check_deviation_within_bounds(nu, sed_ec_dt, sed_ec_ps_dt, 0, 0.2)
+        assert check_deviation(nu, sed_ec_dt, sed_ec_ps_dt, 0, 0.2)
