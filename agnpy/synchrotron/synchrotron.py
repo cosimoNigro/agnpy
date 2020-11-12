@@ -12,7 +12,7 @@ __all__ = ["R", "nu_synch_peak", "epsilon_B", "Synchrotron"]
 
 e = e.gauss
 B_cr = 4.414e13 * u.G  # critical magnetic field
-# default gamma grid to be used for integration
+# default gamma array to be used for integration
 gamma_to_integrate = np.logspace(1, 9, 200)
 
 
@@ -143,7 +143,7 @@ class Synchrotron:
     ):
         r"""Evaluates the synchrotron flux SED
         :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`
-        for a general model of set parameters. Eq. 21 in [Finke2008]_.
+        for a general set of model parameters. Eq. 21 in [Finke2008]_.
         
         Parameters
         ----------

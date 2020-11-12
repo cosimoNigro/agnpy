@@ -10,17 +10,9 @@ from ..utils.conversion import nu_to_epsilon_prime
 
 __all__ = ["SynchrotronSelfCompton"]
 
-# default gamma and frequency grid to be used for integration
+# default gamma and frequency arrays to be used for integration
 nu_to_integrate = np.logspace(5, 30, 200) * u.Hz  # used for SSC
 gamma_to_integrate = np.logspace(1, 9, 200)
-
-
-def F_c(q, gamma_e):
-    """isotropic Compton kernel, Eq. 6.75 in [DermerMenon2009]_, Eq. 10 in [Finke2008]_"""
-    term_1 = 2 * q * log(q)
-    term_2 = (1 + 2 * q) * (1 - q)
-    term_3 = 1 / 2 * np.power(gamma_e * q, 2) / (1 + gamma_e * q) * (1 - q)
-    return term_1 + term_2 + term_3
 
 
 class SynchrotronSelfCompton:
@@ -57,7 +49,7 @@ class SynchrotronSelfCompton:
     ):
         r"""Evaluates the SSC flux SED
         :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`
-        for a general model of set parameters. Eq. 21 in [Finke2008]_.
+        for a general set of model parameters. Eq. 21 in [Finke2008]_.
         
         Parameters
         ----------

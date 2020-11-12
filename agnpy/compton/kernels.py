@@ -1,12 +1,14 @@
 # integration kernels for inverse Compton evaluation
 import numpy as np
+from ..utils.math import log
+from ..utils.geometry import cos_psi
 
 __all__ = ["F_c", "isotropic_kernel", "get_gamma_min", "compton_kernel"]
 
 
 def F_c(q, gamma_e):
     """isotropic Compton kernel, Eq. 6.75 in [DermerMenon2009]_, Eq. 10 in [Finke2008]_"""
-    term_1 = 2 * q * np.log(q)
+    term_1 = 2 * q * log(q)
     term_2 = (1 + 2 * q) * (1 - q)
     term_3 = 1 / 2 * np.power(gamma_e * q, 2) / (1 + gamma_e * q) * (1 - q)
     return term_1 + term_2 + term_3
