@@ -1,14 +1,17 @@
+# module containing the targets for the external compton radiation
 import numpy as np
 from astropy.constants import m_e, h, c, k_B, M_sun, G
 import astropy.units as u
 from astropy.coordinates import Distance
+from ..utils.conversion import mec2, lambda_c, nu_to_epsilon_prime
 
 
-mec2 = m_e.to("erg", equivalencies=u.mass_energy())
-lambda_c = (h / (m_e * c)).to("cm")  # Compton wavelength
-# equivalency to transform frequencies to energies in electron rest mass units
-epsilon_equivalency = [
-    (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
+__all__ = [
+    "CMB",
+    "SSDisk",
+    "PointSourceBehindJet",
+    "SphericalShellBLR",
+    "RingDustTorus",
 ]
 
 
@@ -41,26 +44,6 @@ lines_dictionary = {
     "HeI": {"lambda": 5877.29 * u.Angstrom, "R_Hbeta_ratio": 0.39},
     "Halpha": {"lambda": 6564.61 * u.Angstrom, "R_Hbeta_ratio": 1.3},
 }
-
-
-__all__ = [
-    "CMB",
-    "SSDisk",
-    "PointSourceBehindJet",
-    "SphericalShellBLR",
-    "RingDustTorus",
-    "print_lines_list",
-]
-
-
-def print_lines_list():
-    r"""Print the list of the available spectral lines.
-    The dictionary with the possible emission lines is taken from Table 5 in 
-    [Finke2016]_ and contains the value of the line wavelength and the ratio of 
-    its radius to the radius of the :math:`H_{\beta}` shell, not used at the moment.
-    """
-    for line in lines_dictionary.keys():
-        print(f"{line}: {lines_dictionary[line]}")
 
 
 def I_epsilon_bb(epsilon, Theta):
@@ -251,9 +234,18 @@ class SSDisk:
         R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
         return SSDisk.evaluate_epsilon(L_disk, M_BH, eta, R_tilde)
 
+    def epsilon_mu(self, mu, r_tilde):
+        return self.evaluate_epsilon_mu(self.L_disk, self.M_BH, self.eta, mu, r_tilde)
+
     def epsilon(self, R_tilde):
         r"""dimensionless energy emitted at the disk radius :math:`\tilde{R}`"""
         return self.evaluate_epsilon(self.L_disk, self.M_BH, self.eta, R_tilde)
+
+    def phi_disk_mu(self, mu, r_tilde):
+        return self.evaluate_phi_disk_mu(mu, self.R_in_tilde, r_tilde)
+
+    def phi_disk(self, R_tilde):
+        return 1 - np.sqrt(self.R_in_tilde / R_tilde)
 
     def T(self, R_tilde):
         r"""temperature of the disk at radius :math:`\tilde{R}`. 
@@ -400,6 +392,15 @@ class SphericalShellBLR:
             + f" - line (type of emitted line): {self.line}, lambda = {self.lambda_line.cgs:.2f}\n"
             + f" - R_line (radius of the BLR shell): {self.R_line.cgs:.2e}\n"
         )
+
+    def print_lines_list():
+        r"""Print the list of the available spectral lines.
+        The dictionary with the possible emission lines is taken from Table 5 in 
+        [Finke2016]_ and contains the value of the line wavelength and the ratio of 
+        its radius to the radius of the :math:`H_{\beta}` shell, not used at the moment.
+        """
+        for line in lines_dictionary.keys():
+            print(f"{line}: {lines_dictionary[line]}")
 
     def u(self, r, blob=None):
         """Density of radiation produced by the BLR at the distance r along the 

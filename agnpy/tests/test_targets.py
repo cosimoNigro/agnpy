@@ -128,6 +128,11 @@ class TestSSDisk:
         assert np.isclose(mu[0], mu_min_expected, atol=0, rtol=1e-2)
         assert np.isclose(mu[-1], mu_max_expected, atol=0, rtol=1e-2)
 
+    def test_phi_disk(self):
+        R_tilde = 10
+        phi_expected = 0.225
+        assert np.isclose(disk_test.phi_disk(R_tilde), phi_expected, atol=0, rtol=1e-2)
+
     def test_phi_disk_mu(self):
         r_tilde = 10
         mu = 1 / np.sqrt(2)
