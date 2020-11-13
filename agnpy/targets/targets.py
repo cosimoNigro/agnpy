@@ -214,38 +214,56 @@ class SSDisk:
             + f" - R_out (disk inner radius): {self.R_out.cgs:.2e}"
         )
 
-    # methods to be used in SED calculations without invoking the class
+    # staticmethods to be used in SED calculations without using a class instance
     @staticmethod
-    def mu_from_r_tilde(R_in_tilde, R_out_tilde, r_tilde, size=100):
+    def evaluate_mu_from_r_tilde(R_in_tilde, R_out_tilde, r_tilde, size=100):
         r"""array of cosine angles, spanning from :math:`R_{\mathrm{in}}` to 
-        :math:`R_{\mathrm{out}}`, viewed from a given distance :math:`\tilde{r}` 
-        along the jet axis, Eq. 72 and 73 in [Finke2016]_."""
+        :math:`R_{\mathrm{out}}`, viewed from a given height :math:`\tilde{r}` 
+        above the disk, Eq. 72 and 73 in [Finke2016]_."""
         mu_min = 1 / np.sqrt(1 + np.power((R_out_tilde / r_tilde), 2))
         mu_max = 1 / np.sqrt(1 + np.power((R_in_tilde / r_tilde), 2))
         return np.linspace(mu_min, mu_max, size)
 
     @staticmethod
-    def phi_disk_mu(mu, R_in_tilde, r_tilde):
+    def evaluate_phi_disk_mu(mu, R_in_tilde, r_tilde):
+        """dependency of the radiant surface-energy flux from the disk radius, 
+        here obtained from the cosine of the zenith `mu` and the height above 
+        the disk `r_tilde` (in graviational radius units), 
+        Eq. 63 [Dermer2009]_"""
         R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
         return 1 - np.sqrt(R_in_tilde / R_tilde)
 
     @staticmethod
-    def epsilon_mu(L_disk, M_BH, eta, mu, r_tilde):
+    def evaluate_epsilon(L_disk, M_BH, eta, R_tilde):
+        """evaluate the dimensionless energy emitted at the radius `R_tilde` 
+        Eq. 65 [Dermer2009]_"""
         M_8 = (M_BH / (1e8 * M_sun)).to_value("")
         L_Edd = 1.26 * 1e46 * M_8 << u.Unit("erg s-1")
         l_Edd = (L_disk / L_Edd).to_value("")
         xi = np.power(l_Edd / (M_8 * eta), 1 / 4)
-        R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
         return 2.7e-4 * xi * np.power(R_tilde, -3 / 4)
 
+    @staticmethod
+    def evaluate_epsilon_mu(L_disk, M_BH, eta, mu, r_tilde):
+        """same as :func:`~agnpy.targets.SSDisk.evaluate_epsilon` but 
+        considering the cosine of the subtended zenith `mu` and the height 
+        above the disk `r` instead of the radius `R_tilde`"""
+        R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
+        return SSDisk.evaluate_epsilon(L_disk, M_BH, eta, R_tilde)
+
+    def epsilon(self, R_tilde):
+        r"""dimensionless energy emitted at the disk radius :math:`\tilde{R}`"""
+        return self.evaluate_epsilon(self.L_disk, self.M_BH, self.eta, R_tilde)
+
     def T(self, R_tilde):
-        r"""Temperature of the disk at distance :math:`\tilde{R}`. 
+        r"""temperature of the disk at radius :math:`\tilde{R}`. 
         Eq. 64 in [Dermer2009]_."""
         value = mec2 / (2.7 * k_B) * self.epsilon(R_tilde)
         return value.to("K")
 
     def Theta(self, R_tilde):
-        r"""Dimensionless temperature of the black body at distance :math:`\tilde{R}`"""
+        r"""dimensionless temperature of the black body at radius
+        :math:`\tilde{R}`"""
         theta = k_B * self.T(R_tilde) / mec2
         return theta.to_value("")
 
@@ -262,7 +280,7 @@ class SSDisk:
             comvoing with the blob
         """
         r_tilde = (r / self.R_g).to_value("")
-        mu = self.mu_from_r_tilde(r_tilde)
+        mu = self.evaluate_mu_from_r_tilde(self.R_in_tilde, self.R_out_tilde, r_tilde)
         prefactor = (
             3
             * self.l_Edd
@@ -274,7 +292,7 @@ class SSDisk:
             1
             / mu
             * np.power(np.power(mu, -2) - 1, -3 / 2)
-            * self.phi_disk_mu(mu, r_tilde)
+            * self.evaluate_phi_disk_mu(mu, self.R_in_tilde, r_tilde)
         )
         if blob:
             mu_prime = (mu - blob.Beta) / (1 - blob.Beta * mu)

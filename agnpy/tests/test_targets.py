@@ -13,45 +13,34 @@ from agnpy.targets import (
 )
 import pytest
 
-# global PWL blob, used to compute energy densities of targets
-# in the reference frame comoving with it
-SPECTRUM_NORM = 1e48 * u.Unit("erg")
-PWL_DICT = {
-    "type": "PowerLaw",
-    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e5},
-}
-R_B = 1e16 * u.cm
-B = 1 * u.G
-Z = Distance(1e27, unit=u.cm).z
-DELTA_D = 10
-GAMMA = 10
-PWL_BLOB = Blob(R_B, Z, DELTA_D, GAMMA, B, SPECTRUM_NORM, PWL_DICT)
+# variables with _test are global and meant to be used in all tests
+blob_test = Blob()
 
-# global CMB at z = 1
-CMB_Z_1 = CMB(z=1)
+# CMB at z = 1
+cmb_test = CMB(z=1)
 
-# global PointSourceBehindJet
-PS = PointSourceBehindJet(1e46 * u.Unit("erg s-1"), 1e-5)
+# PointSourceBehindJet
+ps_test = PointSourceBehindJet(1e46 * u.Unit("erg s-1"), 1e-5)
 
-# global disk
-M_BH = 1.2 * 1e9 * M_sun
-L_DISK = 1.512 * 1e46 * u.Unit("erg s-1")
-ETA = 1 / 12
-R_G = 1.77 * 1e14 * u.cm
-R_IN_G_UNITS = 6
-R_OUT_G_UNITS = 200
-R_IN = R_IN_G_UNITS * R_G
-R_OUT = R_OUT_G_UNITS * R_G
-DISK = SSDisk(M_BH, L_DISK, ETA, R_IN, R_OUT)
+# disk
+M_BH_test = 1.2 * 1e9 * M_sun
+L_disk_test = 1.512 * 1e46 * u.Unit("erg s-1")
+eta_test = 1 / 12
+R_g_test = 1.77 * 1e14 * u.cm
+R_in_tilde_test = 6
+R_out_tilde_test = 200
+R_in_test = R_in_tilde_test * R_g_test
+R_out_test = R_out_tilde_test * R_g_test
+disk_test = SSDisk(M_BH_test, L_disk_test, eta_test, R_in_test, R_out_test)
 # useful for checks
-L_EDD = 15.12 * 1e46 * u.Unit("erg s-1")
-M_DOT = 2.019 * 1e26 * u.Unit("g s-1")
+L_Edd_test = 15.12 * 1e46 * u.Unit("erg s-1")
+m_dot_test = 2.019 * 1e26 * u.Unit("g s-1")
 
-# global SphericalShellBLR
-BLR = SphericalShellBLR(L_DISK, 0.1, "Lyalpha", 1e17 * u.cm)
+# SphericalShellBLR
+blr_test = SphericalShellBLR(L_disk_test, 0.1, "Lyalpha", 1e17 * u.cm)
 
 # dust torus definition
-DT = RingDustTorus(L_DISK, 0.1, 1000 * u.K)
+dt_test = RingDustTorus(L_disk_test, 0.1, 1000 * u.K)
 
 
 class TestCMB:
@@ -61,16 +50,16 @@ class TestCMB:
         """test u in the stationary reference frame"""
         assert u.isclose(
             6.67945605e-12 * u.Unit("erg / cm3"),
-            CMB_Z_1.u(),
+            cmb_test.u(),
             atol=0 * u.Unit("erg / cm3"),
-            rtol=1e-3,
+            rtol=1e-5,
         )
 
     def test_u_comoving(self):
         """test u in the reference frame comoving with the blob"""
         assert u.isclose(
             8.88373221e-10 * u.Unit("erg / cm3"),
-            CMB_Z_1.u(PWL_BLOB),
+            cmb_test.u(blob_test),
             atol=0 * u.Unit("erg / cm3"),
             rtol=1e-3,
         )
@@ -84,7 +73,7 @@ class TestPointSourceBehindJet:
         r = np.asarray([1e18, 1e19, 1e20]) * u.cm
         assert u.allclose(
             [2.65441873e-02, 2.65441873e-04, 2.65441873e-06] * u.Unit("erg / cm3"),
-            PS.u(r),
+            ps_test.u(r),
             atol=0 * u.Unit("erg / cm3"),
             rtol=1e-3,
         )
@@ -94,7 +83,7 @@ class TestPointSourceBehindJet:
         r = np.asarray([1e18, 1e19, 1e20]) * u.cm
         assert u.allclose(
             [6.6693519e-05, 6.6693519e-07, 6.6693519e-09] * u.Unit("erg / cm3"),
-            PS.u(r, PWL_BLOB),
+            ps_test.u(r, blob_test),
             atol=0 * u.Unit("erg / cm3"),
             rtol=1e-3,
         )
@@ -105,76 +94,79 @@ class TestSSDisk:
 
     # global quantities defining the test disk
     def test_L_Edd(self):
-        assert u.isclose(DISK.L_Edd, L_EDD, atol=0 * u.Unit("erg s-1"), rtol=1e-3)
+        assert u.isclose(
+            disk_test.L_Edd, L_Edd_test, atol=0 * u.Unit("erg s-1"), rtol=1e-3
+        )
 
     def test_l_Edd(self):
-        assert u.isclose(DISK.l_Edd, 0.1, atol=0, rtol=1e-3)
+        assert u.isclose(disk_test.l_Edd, 0.1, atol=0, rtol=1e-3)
 
     def test_m_dot(self):
-        assert u.isclose(DISK.m_dot, M_DOT, atol=0 * u.Unit("g s-1"), rtol=1e-3)
+        assert u.isclose(
+            disk_test.m_dot, m_dot_test, atol=0 * u.Unit("g s-1"), rtol=1e-3
+        )
 
     @pytest.mark.parametrize(
         "R_in, R_out, R_g_units",
-        [(R_IN_G_UNITS, R_OUT_G_UNITS, False), (R_IN, R_OUT, True),],
+        [(R_in_tilde_test, R_out_tilde_test, False), (R_in_test, R_out_test, True),],
     )
     def test_R_in_R_out_units(self, R_in, R_out, R_g_units):
         """check if a TypeError is raised when passing R_in and R_out with 
         (without) units but specifiying R_g_units True (False)"""
         with pytest.raises(TypeError):
-            disk = SSDisk(M_BH, L_DISK, ETA, R_in, R_out, R_g_units)
+            disk = SSDisk(M_BH_test, L_disk_test, eta_test, R_in, R_out, R_g_units)
 
     def test_R_g(self):
-        assert u.isclose(DISK.R_g, R_G, atol=0 * u.cm, rtol=1e-2)
+        assert u.isclose(disk_test.R_g, R_g_test, atol=0 * u.cm, rtol=1e-2)
 
     def test_mu_from_r_tilde(self):
-        mu = DISK.mu_from_r_tilde(10)
+        mu = SSDisk.evaluate_mu_from_r_tilde(
+            R_in_tilde_test, R_out_tilde_test, r_tilde=10
+        )
         mu_min_expected = 0.050
         mu_max_expected = 0.858
-        assert np.isclose(mu[0], mu_min_expected, atol=0, rtol=1e-3)
-        assert np.isclose(mu[-1], mu_max_expected, atol=0, rtol=1e-3)
-
-    def test_phi_disk(self):
-        R_tilde = 10
-        phi_expected = 0.225
-        assert np.isclose(DISK.phi_disk(R_tilde), phi_expected, atol=0, rtol=1e-2)
+        assert np.isclose(mu[0], mu_min_expected, atol=0, rtol=1e-2)
+        assert np.isclose(mu[-1], mu_max_expected, atol=0, rtol=1e-2)
 
     def test_phi_disk_mu(self):
         r_tilde = 10
-        # assume R_tilde = 10 as before
         mu = 1 / np.sqrt(2)
-        phi_expected = 0.225
-        assert np.allclose(
-            DISK.phi_disk_mu(mu, r_tilde), phi_expected, atol=0, rtol=1e-2
-        )
+        phi_disk_expected = 0.225
+        phi_disk = SSDisk.evaluate_phi_disk_mu(mu, R_in_tilde_test, r_tilde)
+        assert np.allclose(phi_disk, phi_disk_expected, atol=0, rtol=1e-2)
 
     def test_epsilon(self):
         R_tilde = 10
         epsilon_expected = 2.7e-5
-        assert np.allclose(DISK.epsilon(R_tilde), epsilon_expected, atol=0, rtol=1e-2)
+        assert np.allclose(
+            disk_test.epsilon(R_tilde), epsilon_expected, atol=0, rtol=1e-2
+        )
 
     def test_epsilon_mu(self):
         r_tilde = 10
         # assume R_tilde = 10 as before
         mu = 1 / np.sqrt(2)
-        epsilon_expected = 2.7e-5
-        assert np.allclose(
-            DISK.epsilon_mu(mu, r_tilde), epsilon_expected, atol=0, rtol=1e-2
+        epsilon_disk_expected = 2.7e-5
+        epsilon_disk = SSDisk.evaluate_epsilon_mu(
+            L_disk_test, M_BH_test, eta_test, mu, r_tilde
         )
+        assert np.allclose(epsilon_disk, epsilon_disk_expected, atol=0, rtol=1e-2)
 
     def test_T(self):
         R_tilde = 10
-        R = 10 * R_G
+        R = 10 * R_g_test
         phi_expected = 0.225
         # Eq. 64 [Dermer2009]
         T_expected = np.power(
-            3 * G * M_BH * M_DOT / (8 * np.pi * np.power(R, 3) * sigma_sb), 1 / 4
+            3 * G * M_BH_test * m_dot_test / (8 * np.pi * np.power(R, 3) * sigma_sb),
+            1 / 4,
         ).to("K")
-        assert u.isclose(DISK.T(R_tilde), T_expected, atol=0 * u.K, rtol=1e-2)
+        assert u.isclose(disk_test.T(R_tilde), T_expected, atol=0 * u.K, rtol=1e-2)
 
     def test_Theta(R_tilde):
         R_tilde = 10
-        epsilon = DISK.epsilon(R_tilde)
-        assert np.isclose(epsilon, 2.7 * DISK.Theta(R_tilde), atol=0, rtol=1e-2)
+        epsilon = disk_test.epsilon(R_tilde)
+        assert np.isclose(epsilon, 2.7 * disk_test.Theta(R_tilde), atol=0, rtol=1e-2)
 
 
 class TestSphericalShellBLR:
@@ -211,7 +203,7 @@ class TestSphericalShellBLR:
                 4.01348246e-07,
             ]
             * u.Unit("erg / cm3"),
-            BLR.u(r),
+            blr_test.u(r),
             atol=0 * u.Unit("erg / cm3"),
         )
 
@@ -219,10 +211,14 @@ class TestSphericalShellBLR:
         """test that for large enough distances the energy density of the 
         BLR tends to the one of a point like source approximating it"""
         # point source with the same luminosity as the BLR
-        ps_blr = PointSourceBehindJet(BLR.xi_line * BLR.L_disk, BLR.epsilon_line)
+        ps_blr = PointSourceBehindJet(
+            blr_test.xi_line * blr_test.L_disk, blr_test.epsilon_line
+        )
         # r >> R_line
         r = np.logspace(19, 23, 10) * u.cm
-        assert u.allclose(BLR.u(r), ps_blr.u(r), atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
+        assert u.allclose(
+            blr_test.u(r), ps_blr.u(r), atol=0 * u.Unit("erg cm-3"), rtol=1e-2
+        )
 
     def test_u_comoving(self):
         """test u in the reference frame comoving with the blob"""
@@ -241,7 +237,7 @@ class TestSphericalShellBLR:
                 1.00855244e-09,
             ]
             * u.Unit("erg / cm3"),
-            BLR.u(r, PWL_BLOB),
+            blr_test.u(r, blob_test),
             atol=0 * u.Unit("erg / cm3"),
         )
 
@@ -249,12 +245,14 @@ class TestSphericalShellBLR:
         """test that for large enough distances the energy density of the 
         BLR tends to the one of a point like source approximating it"""
         # point source with the same luminosity as the BLR
-        ps_blr = PointSourceBehindJet(BLR.xi_line * BLR.L_disk, BLR.epsilon_line)
+        ps_blr = PointSourceBehindJet(
+            blr_test.xi_line * blr_test.L_disk, blr_test.epsilon_line
+        )
         # r >> R_line
         r = np.logspace(19, 23, 10) * u.cm
         assert u.allclose(
-            BLR.u(r, PWL_BLOB),
-            ps_blr.u(r, PWL_BLOB),
+            blr_test.u(r, blob_test),
+            ps_blr.u(r, blob_test),
             atol=0 * u.Unit("erg cm-3"),
             rtol=1e-1,
         )
@@ -264,11 +262,11 @@ class TestRingDustTorus:
     """class grouping all the tests related to the RingDustTorus target"""
 
     def test_sublimation_radius(self):
-        assert u.allclose(DT.R_dt, 1.361 * 1e19 * u.cm, atol=0 * u.cm, rtol=1e-3)
+        assert u.allclose(dt_test.R_dt, 1.361 * 1e19 * u.cm, atol=0 * u.cm, rtol=1e-3)
 
     def test_setting_radius(self):
         """check that, when passed manually, the radius is correctly set"""
-        dt = RingDustTorus(L_DISK, 0.1, 1e3 * u.K, 1e19 * u.cm)
+        dt = RingDustTorus(L_disk_test, 0.1, 1e3 * u.K, 1e19 * u.cm)
         assert u.allclose(dt.R_dt, 1e19 * u.cm, atol=0 * u.cm)
 
     def test_u(self):
@@ -288,7 +286,7 @@ class TestRingDustTorus:
                 4.01348104e-13,
             ]
             * u.Unit("erg / cm3"),
-            DT.u(r),
+            dt_test.u(r),
             atol=0 * u.Unit("erg / cm3"),
         )
 
@@ -297,10 +295,12 @@ class TestRingDustTorus:
         distances, the energy density of the DT tends to the one of a point like 
         source approximating it"""
         # point source with the same luminosity as the DT
-        ps_dt = PointSourceBehindJet(DT.xi_dt * DT.L_disk, DT.epsilon_dt)
+        ps_dt = PointSourceBehindJet(dt_test.xi_dt * dt_test.L_disk, dt_test.epsilon_dt)
         # r >> R_dt
         r = np.logspace(21, 24, 10) * u.cm
-        assert u.allclose(DT.u(r), ps_dt.u(r), atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
+        assert u.allclose(
+            dt_test.u(r), ps_dt.u(r), atol=0 * u.Unit("erg cm-3"), rtol=1e-2
+        )
 
     def test_u_comoving(self):
         """test u in the reference frame comoving with the blob"""
@@ -319,7 +319,7 @@ class TestRingDustTorus:
                 1.00842240e-15,
             ]
             * u.Unit("erg / cm3"),
-            DT.u(r, PWL_BLOB),
+            dt_test.u(r, blob_test),
             atol=0 * u.Unit("erg / cm3"),
         )
 
@@ -328,12 +328,12 @@ class TestRingDustTorus:
         enough distances, the energy density of the DT tends to the one of 
         a point like source approximating it"""
         # point source with the same luminosity as the DT
-        ps_dt = PointSourceBehindJet(DT.xi_dt * DT.L_disk, DT.epsilon_dt)
+        ps_dt = PointSourceBehindJet(dt_test.xi_dt * dt_test.L_disk, dt_test.epsilon_dt)
         # r >> R_line
         r = np.logspace(21, 24, 10) * u.cm
         assert u.allclose(
-            DT.u(r, PWL_BLOB),
-            ps_dt.u(r, PWL_BLOB),
+            dt_test.u(r, blob_test),
+            ps_dt.u(r, blob_test),
             atol=0 * u.Unit("erg cm-3"),
             rtol=1e-1,
         )

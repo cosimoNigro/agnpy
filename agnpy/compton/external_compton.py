@@ -49,7 +49,7 @@ class ExternalCompton:
         if isinstance(self.target, SSDisk):
             # in case of hte disk the mu interval does not go from -1 to 1
             r_tilde = (self.r / self.target.R_g).to_value("")
-            self.mu = self.target.mu_from_r_tilde(
+            self.mu = self.target.evaluate_mu_from_r_tilde(
                 self.target.R_in_tilde, self.target.R_out_tilde, r_tilde
             )
         else:
@@ -259,12 +259,12 @@ class ExternalCompton:
         # multidimensional integration
         # for the disk we do not integrate mu from -1 to 1 but choose the range
         # of zenith angles subtended from a given distance
-        mu = SSDisk.mu_from_r_tilde(R_in_tilde, R_out_tilde, r_tilde)
+        mu = SSDisk.evaluate_mu_from_r_tilde(R_in_tilde, R_out_tilde, r_tilde)
         _gamma, _mu, _phi, _epsilon_s = axes_reshaper(gamma, mu, phi, epsilon_s)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
         N_e = V_b * n_e.evaluate(_gamma / delta_D, *args)
-        epsilon = SSDisk.epsilon_mu(L_disk, M_BH, eta, _mu, r_tilde)
-        phi_disk = SSDisk.phi_disk_mu(_mu, R_in_tilde, r_tilde)
+        epsilon = SSDisk.evaluate_epsilon_mu(L_disk, M_BH, eta, _mu, r_tilde)
+        phi_disk = SSDisk.evaluate_phi_disk_mu(_mu, R_in_tilde, r_tilde)
         kernel = compton_kernel(_gamma, _epsilon_s, epsilon, mu_s, _mu, _phi)
         integrand = (
             phi_disk
@@ -275,7 +275,7 @@ class ExternalCompton:
             / np.power(_gamma, 2)
             * kernel
         )
-        integral_gamma = np.trapz(integrand, gamma, axis=0)
+        integral_gamma = integrator(integrand, gamma, axis=0)
         integral_mu = np.trapz(integral_gamma, mu, axis=0)
         integral_phi = np.trapz(integral_mu, phi, axis=0)
         prefactor_num = (
