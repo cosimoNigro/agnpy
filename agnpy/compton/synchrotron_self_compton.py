@@ -4,15 +4,17 @@ from astropy.constants import h, c, m_e, sigma_T, G
 import astropy.units as u
 from .kernels import isotropic_kernel
 from ..synchrotron import Synchrotron
-from ..utils.math import trapz_loglog, log, axes_reshaper
+from ..utils.math import (
+    trapz_loglog,
+    log,
+    axes_reshaper,
+    gamma_to_integrate,
+    nu_to_integrate,
+)
 from ..utils.conversion import nu_to_epsilon_prime
 
 
 __all__ = ["SynchrotronSelfCompton"]
-
-# default gamma and frequency arrays to be used for integration
-nu_to_integrate = np.logspace(5, 30, 200) * u.Hz  # used for SSC
-gamma_to_integrate = np.logspace(1, 9, 200)
 
 
 class SynchrotronSelfCompton:

@@ -44,7 +44,6 @@ The only dependencies are:
 
 * `matplotlib <https://matplotlib.org>`_ for visualisation and reproduction of the tutorials.
 
-
 Overview
 --------
 
@@ -62,13 +61,6 @@ Overview
    absorption
    calc_targets
    bibliography
-   modules
+   agnpy
 
 
-After checking the documentation, to get more familiar with the package it is suggested to run the notebooks in `agnpy/tutorials`.
-
-Indices and tables
-------------------
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

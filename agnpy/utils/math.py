@@ -1,6 +1,13 @@
 # math utilities for agnpy
 import numpy as np
 import warnings
+import astropy.units as u
+
+# default arrays to be used for integration
+gamma_to_integrate = np.logspace(1, 9, 200)
+nu_to_integrate = np.logspace(5, 30, 200) * u.Hz  # used for SSC
+mu_to_integrate = np.linspace(-1, 1, 100)
+phi_to_integrate = np.linspace(0, 2 * np.pi, 50)
 
 # type of float to be used for math operation
 numpy_type = np.float64

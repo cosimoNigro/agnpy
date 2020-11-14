@@ -1,8 +1,8 @@
-# module containing the External Compton radiative process
+# module containing the gamma-gamma absorption
 import numpy as np
 from astropy.constants import c, G, h, m_e, M_sun, sigma_T
 import astropy.units as u
-from ..utils.math import axes_reshaper
+from ..utils.math import axes_reshaper, log
 from ..utils.geometry import cos_psi, x_re_shell, mu_star_shell, x_re_ring
 from ..utils.conversion import nu_to_epsilon_prime
 from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
@@ -15,7 +15,7 @@ def sigma(s):
     """photon-photon pair production cross section, Eq. 17 of [Dermer2009]"""
     beta_cm = np.sqrt(1 - np.power(s, -1))
     prefactor = 3 / 16 * sigma_T * (1 - np.power(beta_cm, 2))
-    term1 = (3 - np.power(beta_cm, 4)) * np.log((1 + beta_cm) / (1 - beta_cm))
+    term1 = (3 - np.power(beta_cm, 4)) * log((1 + beta_cm) / (1 - beta_cm))
     term2 = -2 * beta_cm * (2 - np.power(beta_cm, 2))
     values = prefactor * (term1 + term2)
     values[s < 1] = 0

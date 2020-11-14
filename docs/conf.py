@@ -22,7 +22,7 @@ copyright = "2019, Cosimo Nigro"
 author = "Cosimo Nigro"
 
 # The full version, including alpha/beta/rc tags
-release = "0.0.7.3"
+release = "0.0.8"
 
 
 # -- General configuration ---------------------------------------------------

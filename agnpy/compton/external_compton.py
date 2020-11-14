@@ -1,7 +1,14 @@
 # module containing the External Compton radiative process
 import numpy as np
 from astropy.constants import c, sigma_T, G
-from ..utils.math import trapz_loglog, log, axes_reshaper
+from ..utils.math import (
+    trapz_loglog,
+    log,
+    axes_reshaper,
+    gamma_to_integrate,
+    mu_to_integrate,
+    phi_to_integrate,
+)
 from ..utils.conversion import nu_to_epsilon_prime, r_to_R_g_units
 from ..utils.geometry import x_re_shell, mu_star_shell, x_re_ring
 from ..targets import (
@@ -15,17 +22,13 @@ from .kernels import isotropic_kernel, compton_kernel
 
 __all__ = ["ExternalCompton"]
 
-# default arrays to be used for integration
-gamma_to_integrate = np.logspace(1, 9, 200)
-mu_to_integrate = np.linspace(-1, 1, 100)
-phi_to_integrate = np.linspace(0, 2 * np.pi, 50)
-
 
 class ExternalCompton:
     """class for External Compton radiation computation
+
     Parameters
     ----------
-    blob : :class:`~agnpy.emission_region.Blob`
+    blob : :class:`~agnpy.emission_regions.Blob`
         emission region and electron distribution hitting the photon target
     target : :class:`~agnpy.targets`
         class describing the target photon field    
@@ -462,3 +465,9 @@ class ExternalCompton:
             return self.sed_flux_blr(nu)
         if isinstance(self.target, RingDustTorus):
             return self.sed_flux_dt(nu)
+
+    def sed_luminosity(self, nu):
+        r"""Evaluates the external Compton luminosity SED
+        :math:`\nu L_{\nu} \, [\mathrm{erg}\,\mathrm{s}^{-1}]`"""
+        sphere = 4 * np.pi * np.power(self.blob.d_L, 2)
+        return (sphere * self.sed_flux(nu)).to("erg s-1")

@@ -3,17 +3,14 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import e, h, c, m_e, sigma_T
 from ..spectra import PowerLaw
-from ..utils.math import axes_reshaper
+from ..utils.math import axes_reshaper, gamma_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
 
 
 __all__ = ["R", "nu_synch_peak", "epsilon_B", "Synchrotron"]
 
-
 e = e.gauss
 B_cr = 4.414e13 * u.G  # critical magnetic field
-# default gamma array to be used for integration
-gamma_to_integrate = np.logspace(1, 9, 200)
 
 
 def R(x):
