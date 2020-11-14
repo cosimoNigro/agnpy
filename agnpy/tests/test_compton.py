@@ -141,7 +141,7 @@ class TestExternalCompton:
         ec_disk = ExternalCompton(bpwl_blob_test, disk_test, r)
         sed_agnpy = ec_disk.sed_flux(nu_ref)
         # check in a restricted energy range
-        nu_range = [1e15, 1e27] * u.Hz
+        nu_range = [1e18, 1e28] * u.Hz
         make_comparison_plot(
             nu_ref,
             sed_ref,
