@@ -345,7 +345,7 @@ class ExternalCompton:
         mu_star = mu_star_shell(_mu, R_line, r)
         kernel = compton_kernel(_gamma, _epsilon_s, epsilon_line, mu_s, mu_star, _phi)
         integrand = 1 / np.power(x, 2) * N_e / np.power(_gamma, 2) * kernel
-        integral_gamma = np.trapz(integrand, gamma, axis=0)
+        integral_gamma = integrator(integrand, gamma, axis=0)
         integral_mu = np.trapz(integral_gamma, mu, axis=0)
         integral_phi = np.trapz(integral_mu, phi, axis=0)
         prefactor_num = (
@@ -415,7 +415,7 @@ class ExternalCompton:
         mu = (r / x_re).to_value("")
         kernel = compton_kernel(_gamma, _epsilon_s, epsilon_dt, mu_s, mu, _phi)
         integrand = N_e / np.power(_gamma, 2) * kernel
-        integral_gamma = np.trapz(integrand, gamma, axis=0)
+        integral_gamma = integrator(integrand, gamma, axis=0)
         integral_phi = np.trapz(integral_gamma, phi, axis=0)
         prefactor_num = (
             3 * sigma_T * xi_dt * L_disk * np.power(epsilon_s, 2) * np.power(delta_D, 3)

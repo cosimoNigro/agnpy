@@ -135,11 +135,14 @@ class Absorption:
                 phi_disk = self.target.phi_disk_mu(_mu, _l_tilde)
                 # angle between the photons
                 _cos_psi = cos_psi(self.blob.mu_s, _mu, _phi)
-                s = epsilon_1 * epsilon * (1 - _cos_psi) / 2
+                s = _epsilon_1 * epsilon * (1 - _cos_psi) / 2
                 cross_section = sigma(s).to_value("cm2")
                 integrand = (
                     phi_disk
-                    / (epsilon * _mu * _l_tilde ** 3 * (_mu ** (-2) - 1) ** (-3 / 2))
+                    / epsilon
+                    / _mu
+                    / np.power(_l_tilde, 3)
+                    / np.power(np.power(_mu, -2) - 1, -3 / 2)
                     * (1 - _cos_psi)
                     * cross_section
                 )
@@ -151,7 +154,11 @@ class Absorption:
             integral_l_tilde = np.trapz(integrand_l_tilde, l_tilde, axis=0)
             tau_epsilon_1 = np.append(tau_epsilon_1, integral_l_tilde)
         prefactor = (3 * self.target.L_disk) / (
-            (4 * np.pi) ** 2 * self.target.eta * m_e * c ** 3 * self.target.R_g
+            np.power(4 * np.pi, 2)
+            * self.target.eta
+            * m_e
+            * np.power(c, 3)
+            * self.target.R_g
         )
         tau_epsilon_1 *= prefactor.to_value("cm-2")
         return tau_epsilon_1

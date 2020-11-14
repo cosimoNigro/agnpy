@@ -50,6 +50,7 @@ def make_comparison_plot(
     fig_path,
     plot_type,
     y_range=None,
+    comparison_range=None,
 ):
     """make a comparison plot, for SED or gamma-gamma absorption 
     between two different sources: a reference (literature or another code)
@@ -76,6 +77,8 @@ def make_comparison_plot(
         whether we are doing a comparison plot for a SED or an optical depth 
     y_range : list of float
         lower and upper limit of the y axis limt
+    comparison_range : list of float
+        plot the range over which the residuals were checked 
     """
     if plot_type == "sed":
         x_label = SED_X_LABEL
@@ -115,4 +118,7 @@ def make_comparison_plot(
     )
     ax[1].set_xlabel(x_label)
     ax[1].legend(loc="best")
+    if comparison_range is not None:
+        ax[1].axvline(comparison_range[0], ls="--", color="k")
+        ax[1].axvline(comparison_range[1], ls="--", color="k")
     fig.savefig(f"{fig_path}")

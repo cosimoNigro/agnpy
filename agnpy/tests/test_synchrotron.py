@@ -150,7 +150,8 @@ class TestSynchrotron:
         # recompute the SED at the same ordinates where the figure was sampled
         ssa = Synchrotron(blob, ssa=True)
         sed_agnpy = ssa.sed_flux(nu_ref)
-        # sed comparison plot
+        # sed comparison plot, we will check between 10^(11) and 10^(19) Hz
+        nu_range = [1e11, 1e19] * u.Hz
         make_comparison_plot(
             nu_ref,
             sed_ref,
@@ -160,11 +161,9 @@ class TestSynchrotron:
             figure_title,
             figure_path,
             "sed",
+            comparison_range=nu_range.to_value("Hz"),
         )
         # requires that the SED points deviate less than 5% from the figure
-        # there are divergencies at very low and very high energies, therefore
-        # we will check between 10^(11) and 10^(19) Hz
-        nu_range = [1e11, 1e19] * u.Hz
         assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.05, nu_range)
 
     def test_synch_delta_sed(self):
@@ -174,6 +173,8 @@ class TestSynchrotron:
         synch = Synchrotron(lp_blob_test)
         sed_full = synch.sed_flux(nu)
         sed_delta = synch.sed_flux_delta_approx(nu)
+        # range of comparison
+        nu_range = [1e12, 1e17] * u.Hz
         make_comparison_plot(
             nu,
             sed_full,
@@ -184,9 +185,9 @@ class TestSynchrotron:
             f"{figures_dir}/synch_comparison_delta_aprproximation.png",
             "sed",
             [1e-16, 1e-8],
+            nu_range.to_value("Hz"),
         )
         # requires that the delta approximation SED points deviate less than 10%
-        nu_range = [1e12, 1e17] * u.Hz
         assert check_deviation(nu, sed_full, sed_delta, 0, 0.1, nu_range)
 
     def test_sed_integration_methods(self):
