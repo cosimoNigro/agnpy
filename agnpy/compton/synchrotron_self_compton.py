@@ -127,8 +127,7 @@ class SynchrotronSelfCompton:
         integral_epsilon = integrator(integral_gamma, epsilon, axis=0)
         emissivity = 3 / 4 * c * sigma_T * np.power(epsilon_s, 2) * integral_epsilon
         prefactor = np.power(delta_D, 4) / (4 * np.pi * np.power(d_L, 2))
-        sed = (prefactor * emissivity).to("erg cm-2 s-1")
-        return sed
+        return (prefactor * emissivity).to("erg cm-2 s-1")
 
     def sed_flux(self, nu):
         """Evaluates the SSC flux SED for a SynchrotronSelfComtpon 

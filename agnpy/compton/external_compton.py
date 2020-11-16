@@ -145,8 +145,7 @@ class ExternalCompton:
             * np.power(d_L, 2)
             * np.power(epsilon_0, 2)
         )
-        sed = (prefactor_num / prefactor_denom * integral_phi).to("erg cm-2 s-1")
-        return sed
+        return (prefactor_num / prefactor_denom * integral_phi).to("erg cm-2 s-1")
 
     def sed_flux_cmb(self, nu):
         """evaluates the flux SED for External Compton on the CMB"""
@@ -248,8 +247,7 @@ class ExternalCompton:
             * np.power(r, 2)
             * np.power(epsilon_0, 2)
         )
-        sed = (prefactor_num / prefactor_denom * integral).to("erg cm-2 s-1")
-        return sed
+        return (prefactor_num / prefactor_denom * integral).to("erg cm-2 s-1")
 
     def sed_flux_ps_behind_jet(self, nu):
         """evaluates the flux SED for External Compton on a point source behind 
@@ -384,8 +382,7 @@ class ExternalCompton:
         prefactor_denom = (
             np.power(2, 9) * np.power(np.pi, 3) * np.power(d_L, 2) * np.power(r, 3)
         )
-        sed = (prefactor_num / prefactor_denom * integral_phi).to("erg cm-2 s-1")
-        return sed
+        return (prefactor_num / prefactor_denom * integral_phi).to("erg cm-2 s-1")
 
     def sed_flux_ss_disk(self, nu):
         """evaluates the flux SED for External Compton on a [Shakura1973]_ disk"""
@@ -506,8 +503,7 @@ class ExternalCompton:
             * np.power(d_L, 2)
             * np.power(epsilon_line, 2)
         )
-        sed = (prefactor_num / prefactor_denom * integral_phi).to("erg cm-2 s-1")
-        return sed
+        return (prefactor_num / prefactor_denom * integral_phi).to("erg cm-2 s-1")
 
     def sed_flux_blr(self, nu):
         """evaluates the flux SED for External Compton on a spherical BLR"""
@@ -621,8 +617,7 @@ class ExternalCompton:
             * np.power(x_re, 2)
             * np.power(epsilon_dt, 2)
         )
-        sed = (prefactor_num / prefactor_denom * integral_phi).to("erg cm-2 s-1")
-        return sed
+        return (prefactor_num / prefactor_denom * integral_phi).to("erg cm-2 s-1")
 
     def sed_flux_dt(self, nu):
         """evaluates the flux SED for External Compton on a ring dust torus"""
