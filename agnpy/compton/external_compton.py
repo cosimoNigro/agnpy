@@ -267,9 +267,7 @@ class ExternalCompton:
             self.blob.n_e,
             *self.blob.n_e.parameters,
             integrator=self.integrator,
-            gamma=self.gamma,
-            mu=self.mu,
-            phi=self.phi
+            gamma=self.gamma
         )
 
     @staticmethod
