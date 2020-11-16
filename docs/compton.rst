@@ -13,135 +13,30 @@ Two different Compton processes are considered:
 
 Synchrotron Self-Compton
 ------------------------
-Let us keep expanding the example in :ref:`synchrotron` to compute the SSC radiation.
-Again let us define the blob
+The Synchrotron Self-Compton radiation calculation works exactly as the :ref:`synchrotron` one.
+The instance of the emission region has to be feeded to the radiative class initialiser.
+SED can be evaluated over an array of frequencies with the ``sed_flux`` method.
 
-.. code-block:: python
-
-	import numpy as np
-	import astropy.units as u
-	from astropy.coordinates import Distance
-	from agnpy.emission_regions import Blob
-	from agnpy.synchrotron import Synchrotron
-	from agnpy.compton import SynchrotronSelfCompton
-	import matplotlib.pyplot as plt
-
-	# set the spectrum normalisation (total energy in electrons in this case)
-	spectrum_norm = 1e48 * u.Unit("erg") 
-	# define the spectral function through a dictionary
-	spectrum_dict = {
-	    "type": "PowerLaw", 
-	    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7}
-	}
-	R_b = 1e16 * u.cm
-	B = 1 * u.G
-	z = Distance(1e27, unit=u.cm).z
-	delta_D = 10
-	Gamma = 10
-	blob = Blob(R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict)
-
-and the synchrotron radiation produced by it
-
-.. code-block:: python
-
-	synch = Synchrotron(blob)
-	
-the SSC radiation can be computed passing to the :class:`~agnpy.compton.SynchrotronSelfCompton` class the :class:`~agnpy.emission_regions.Blob` and :class:`~agnpy.synchrotron.Synchrotron` instances
-
-.. code-block:: python
-	
-	ssc = SynchrotronSelfCompton(blob, synch)
-
-we can now plot the complete SED
-
-.. code-block:: python
-	
-	nu = np.logspace(8, 30) * u.Hz
-	# let us compute the SED values at these frequencies 
-	synch_sed = synch.sed_flux(nu)
-	ssc_sed = ssc.sed_flux(nu)
-	plt.loglog(nu, synch_sed, lw=2, label="Synchrotron")
-	plt.loglog(nu, ssc_sed, lw=2, label="SSC")
-	plt.xlabel(r"$\nu\,/\,\mathrm{Hz}$")
-	plt.ylabel(r"$\nu F_{\nu}\,/\,(\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1})$")
-	plt.ylim([1e-12, 1e-8])
-	plt.legend()
-	plt.show()
-
-.. image:: _static/ssc.png
-    :width: 500px
-    :align: center
-
+.. plot:: snippets/ssc_snippet.py
+	:include-source:
 
 External Compton
 ----------------
+As an example of this process, let us consider Compton scattering of the photon field produced by the disk by a 
+power-law electron distribution.
 
-As an example of this process, let us consider Compton scattering of the photon field produced by the disk by a broken power-law electron distribution.
+.. plot:: snippets/ec_snippet.py
+	:include-source:
 
-.. code-block:: python
-
-	import numpy as np
-	import astropy.units as u
-	import astropy.constants as const
-	from astropy.coordinates import Distance
-	from agnpy.emission_regions import Blob
-	from agnpy.targets import SSDisk
-	from agnpy.compton import ExternalCompton
-	import matplotlib.pyplot as plt
-
-	spectrum_norm = 6e42 * u.erg
-	parameters = {
-	    "p1": 2.1,
-	    "p2": 3.5,
-	    "gamma_b": 1e4,
-	    "gamma_min": 20,
-	    "gamma_max": 5e7,
-	}
-	spectrum_dict = {"type": "BrokenPowerLaw", "parameters": parameters}
-	R_b = 1e16 * u.cm
-	B = 0.56 * u.G
-	z = 1
-	delta_D = 40
-	Gamma = 40
-	blob = Blob(R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict)
-	
-let us define the target disk
-
-.. code-block:: python
-
-	# disk parameters
-	M_BH = 1.2 * 1e9 * const.M_sun
-	L_disk = 2 * 1e46 * u.Unit("erg s-1")
-	eta = 1 / 12
-	R_in = 6
-	R_out = 200 
-	disk = SSDisk(M_BH, L_disk, eta, R_in, R_out, R_g_units=True)
-
-the EC radiation can be computed passing to the :class:`~agnpy.compton.ExternalCompton` 
-class the :class:`~agnpy.emission_regions.Blob` and :class:`~agnpy.targets.SSDisk` instances. 
-Remember also to set the distance between the blob and the target photon field (`r`)
+As we can see, the EC radiation can be computed passing to the :class:`~agnpy.compton.ExternalCompton` 
+class the instance of the emission region (:class:`~agnpy.emission_regions.Blob`) **and** the instance of the 
+target (:class:`~agnpy.targets.SSDisk`). **Note** also to the distance between the blob and the target photon field (``r``)
+has to be specified
 
 .. code-block:: python
 	
-	ec = ExternalCompton(blob, disk, r=1e17 * u.cm)
+	ec = ExternalCompton(blob, disk, r)
    
-let us plot the resulting SED:
-
-.. code-block:: python
-
-	nu = np.logspace(15, 30) * u.Hz
-	ec_disk_sed = ec.sed_flux(nu)
-	plt.loglog(nu, ec_disk_sed, lw=2, label="EC on Disk")
-	plt.xlabel(r"$\nu\,/\,\mathrm{Hz}$")
-	plt.ylabel(r"$\nu F_{\nu}\,/\,(\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1})$")
-	plt.ylim([1e-20, 1e-12])
-	plt.legend()
-	plt.show()
-
-.. image:: _static/ec_disk.png
-    :width: 500px
-    :align: center
-
 You can use any object in the :py:mod:`~agnpy.targets` module as target for external Compton.
 For more examples of Inverse Compton radiation and reproduction of literature results, 
 check the `tutorial notebook on external Compton <tutorials/external_compton.html>`_.
