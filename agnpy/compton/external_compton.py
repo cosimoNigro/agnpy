@@ -79,8 +79,8 @@ class ExternalCompton:
         mu=mu_to_integrate,
         phi=phi_to_integrate
     ):
-        r"""Evaluates the flux SED 
-        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`
+        r"""Evaluates the flux SED,
+        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
         for External Compton on a monochromatic isotropic target photon field
         for a general set of model parameters
 
@@ -149,6 +149,7 @@ class ExternalCompton:
         return sed
 
     def sed_flux_cmb(self, nu):
+        """evaluates the flux SED for External Compton on the CMB"""
         return self.evaluate_sed_flux_iso_mono(
             nu,
             self.blob.z,
@@ -180,16 +181,53 @@ class ExternalCompton:
         n_e,
         *args,
         integrator=np.trapz,
-        gamma=gamma_to_integrate,
-        mu=mu_to_integrate,
-        phi=phi_to_integrate
+        gamma=gamma_to_integrate
     ):
-        r"""Evaluates the flux SED 
-        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`
-        for External Compton on a monochromatic point-like source behind the jet
-        for a general set of model parameters.
+        r"""Evaluates the flux SED,
+        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
+        for External Compton on a point source of photons behind the jet 
+        for a general set of model parameters
 
-        same parameters as in :func:`~agnpy.ExternalCompton.evaluate_sed_flux_iso_mono`
+        Parameters
+        ----------
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed 
+            **note** these are observed frequencies (observer frame)
+        z : float
+            redshift of the source
+        d_L : :class:`~astropy.units.Quantity` 
+            luminosity distance of the source
+        delta_D: float
+            Doppler factor of the relativistic outflow
+        mu_s : float
+            cosine of the angle between the blob motion and the jet axis
+        R_b : :class:`~astropy.units.Quantity`
+            size of the emitting region (spherical blob assumed)
+        epsilon_0 : float
+            dimensionless energy (in electron rest mass energy units) of the
+            target photon field
+        L_0 : :class:`~astropy.units.Quantity`
+            luminosity [erg cm-3] of the point source behind the jet
+        r : :class:`~astropy.units.Quantity`
+            distance between the point source and the blob
+        n_e : :class:`~agnpy.spectra.ElectronDistribution`
+            electron energy distribution
+        *args
+            parameters of the electron energy distribution (k_e, p, ...)
+        ssa : bool
+            whether to consider or not the self-absorption, default false
+        integrator : func
+            which function to use for integration, default `numpy.trapz`
+        gamma : :class:`~numpy.ndarray`
+            array of Lorentz factor over which to integrate the electron 
+            distribution
+
+        **Note** arguments after *args are keyword-only arguments
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            array of the SED values corresponding to each frequency
         """
         # conversion
         epsilon_s = nu_to_epsilon_prime(nu, z)
@@ -214,6 +252,8 @@ class ExternalCompton:
         return sed
 
     def sed_flux_ps_behind_jet(self, nu):
+        """evaluates the flux SED for External Compton on a point source behind 
+        the jet"""
         return self.evaluate_sed_flux_ps_behind_jet(
             nu,
             self.blob.z,
@@ -253,6 +293,59 @@ class ExternalCompton:
         mu_size=100,
         phi=phi_to_integrate
     ):
+        r"""Evaluates the flux SED,
+        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
+        for External Compton on a monochromatic isotropic target photon field
+        for a general set of model parameters
+
+        Parameters
+        ----------
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed 
+            **note** these are observed frequencies (observer frame)
+        z : float
+            redshift of the source
+        d_L : :class:`~astropy.units.Quantity` 
+            luminosity distance of the source
+        delta_D: float
+            Doppler factor of the relativistic outflow
+        mu_s : float
+            cosine of the angle between the blob motion and the jet axis
+        R_b : :class:`~astropy.units.Quantity`
+            size of the emitting region (spherical blob assumed)
+        M_BH : :class:`~astropy.units.Quantity`
+            Black Hole mass    
+        L_disk : :class:`~astropy.units.Quantity`
+            luminosity of the disk 
+        eta : float
+            accretion efficiency
+        R_in : :class:`~astropy.units.Quantity` 
+            inner disk radius
+        R_out : :class:`~astropy.units.Quantity` 
+            inner disk radius
+        r : :class:`~astropy.units.Quantity`
+            distance between the disk and the blob
+        n_e : :class:`~agnpy.spectra.ElectronDistribution`
+            electron energy distribution
+        *args
+            parameters of the electron energy distribution (k_e, p, ...)
+        ssa : bool
+            whether to consider or not the self-absorption, default false
+        integrator : func
+            which function to use for integration, default `numpy.trapz`
+        gamma : :class:`~numpy.ndarray`
+            array of Lorentz factor over which to integrate the electron 
+            distribution
+        mu, phi : :class:`~numpy.ndarray`
+            arrays of cosine of zenith and azimuth angles to integrate over
+
+        **Note** arguments after *args are keyword-only arguments
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            array of the SED values corresponding to each frequency
+        """
         # conversions
         epsilon_s = nu_to_epsilon_prime(nu, z)
         r_tilde = r_to_R_g_units(r, M_BH)
@@ -297,6 +390,7 @@ class ExternalCompton:
         return sed
 
     def sed_flux_ss_disk(self, nu):
+        """evaluates the flux SED for External Compton on a [Shakura1973]_ disk"""
         return self.evaluate_sed_flux_ss_disk(
             nu,
             self.blob.z,
@@ -338,6 +432,55 @@ class ExternalCompton:
         mu=mu_to_integrate,
         phi=phi_to_integrate
     ):
+        r"""Evaluates the flux SED,
+        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
+        for External Compton on a monochromatic isotropic target photon field
+        for a general set of model parameters
+
+        Parameters
+        ----------
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed 
+            **note** these are observed frequencies (observer frame)
+        z : float
+            redshift of the source
+        d_L : :class:`~astropy.units.Quantity` 
+            luminosity distance of the source
+        delta_D: float
+            Doppler factor of the relativistic outflow
+        mu_s : float
+            cosine of the angle between the blob motion and the jet axis
+        L_disk : :class:`~astropy.units.Quantity`
+            Luminosity of the disk whose radiation is being reprocessed by the BLR
+        xi_line : float
+            fraction of the disk radiation reprocessed by the BLR
+        epsilon_line : string
+            dimensionless energy of the emitted line
+        R_line : :class:`~astropy.units.Quantity`
+            radius of the BLR spherical shell
+        r : :class:`~astropy.units.Quantity`
+            distance between the Broad Line Region and the blob
+        n_e : :class:`~agnpy.spectra.ElectronDistribution`
+            electron energy distribution
+        *args
+            parameters of the electron energy distribution (k_e, p, ...)
+        ssa : bool
+            whether to consider or not the self-absorption, default false
+        integrator : func
+            which function to use for integration, default `numpy.trapz`
+        gamma : :class:`~numpy.ndarray`
+            array of Lorentz factor over which to integrate the electron 
+            distribution
+        mu, phi : :class:`~numpy.ndarray`
+            arrays of cosine of zenith and azimuth angles to integrate over
+
+        **Note** arguments after *args are keyword-only arguments
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            array of the SED values corresponding to each frequency
+        """
         # conversions
         epsilon_s = nu_to_epsilon_prime(nu, z)
         # multidimensional integration
@@ -369,6 +512,7 @@ class ExternalCompton:
         return sed
 
     def sed_flux_blr(self, nu):
+        """evaluates the flux SED for External Compton on a spherical BLR"""
         return self.evaluate_sed_flux_blr(
             nu,
             self.blob.z,
@@ -408,6 +552,55 @@ class ExternalCompton:
         gamma=gamma_to_integrate,
         phi=phi_to_integrate
     ):
+        r"""Evaluates the flux SED,
+        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
+        for External Compton on a monochromatic isotropic target photon field
+        for a general set of model parameters
+
+        Parameters
+        ----------
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed 
+            **note** these are observed frequencies (observer frame)
+        z : float
+            redshift of the source
+        d_L : :class:`~astropy.units.Quantity` 
+            luminosity distance of the source
+        delta_D: float
+            Doppler factor of the relativistic outflow
+        mu_s : float
+            cosine of the angle between the blob motion and the jet axis
+        L_disk : :class:`~astropy.units.Quantity`
+            Luminosity of the disk whose radiation is being reprocessed by the BLR
+        xi_dt : float
+            fraction of the disk radiation reprocessed by the disk
+        epsilon_dt : string
+            peak (dimensionless) energy of the black body radiated by the torus 
+        R_dt : :class:`~astropy.units.Quantity`
+            radius of the ting-like torus
+        r : :class:`~astropy.units.Quantity`
+            distance between the Broad Line Region and the blob
+        n_e : :class:`~agnpy.spectra.ElectronDistribution`
+            electron energy distribution
+        *args
+            parameters of the electron energy distribution (k_e, p, ...)
+        ssa : bool
+            whether to consider or not the self-absorption, default false
+        integrator : func
+            which function to use for integration, default `numpy.trapz`
+        gamma : :class:`~numpy.ndarray`
+            array of Lorentz factor over which to integrate the electron 
+            distribution
+        mu, phi : :class:`~numpy.ndarray`
+            arrays of cosine of zenith and azimuth angles to integrate over
+
+        **Note** arguments after *args are keyword-only arguments
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            array of the SED values corresponding to each frequency
+        """
         # conversions
         epsilon_s = nu_to_epsilon_prime(nu, z)
         # multidimensional integration
@@ -434,6 +627,7 @@ class ExternalCompton:
         return sed
 
     def sed_flux_dt(self, nu):
+        """evaluates the flux SED for External Compton on a ring dust torus"""
         return self.evaluate_sed_flux_dt(
             nu,
             self.blob.z,
@@ -454,7 +648,7 @@ class ExternalCompton:
         )
 
     def sed_flux(self, nu):
-        """EC flux SED"""
+        """SEDs for external Compton"""
         if isinstance(self.target, CMB):
             return self.sed_flux_cmb(nu)
         if isinstance(self.target, PointSourceBehindJet):

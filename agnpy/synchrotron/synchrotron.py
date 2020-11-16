@@ -138,8 +138,8 @@ class Synchrotron:
         integrator=np.trapz,
         gamma=gamma_to_integrate,
     ):
-        r"""Evaluates the synchrotron flux SED
-        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`
+        r"""Evaluates the synchrotron flux SED,
+        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
         for a general set of model parameters. Eq. 21 in [Finke2008]_.
         
         Parameters
