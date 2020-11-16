@@ -91,12 +91,13 @@ we can print a summary of the BLR properties via
 	print(blr)                                                                                                                                                                
 
 .. code-block:: text
-
+	
 	* Spherical Shell Broad Line Region:
 	- L_disk (accretion disk luminosity): 2.00e+46 erg / s
 	- xi_line (fraction of the disk radiation reprocessed by the BLR): 2.40e-02
-	- line (type of emitted line): Lyalpha, lambda = 0.00 cm
+	- line (type of emitted line): Lyalpha, lambda = 1.22e-05 cm
 	- R_line (radius of the BLR shell): 1.00e+17 cm
+
 
 Dust Torus (DT)
 ---------------
@@ -138,6 +139,7 @@ and the redshift of the galaxy have to be specified.
 
 .. code-block:: python
 
+	from agnpy.utils.plot import plot_sed
 	import matplotlib.pyplot as plt
 	# redshift of the host galaxy
 	z = 0.1
@@ -147,12 +149,9 @@ and the redshift of the galaxy have to be specified.
 	disk_bb_sed = disk.sed_flux(nu, z)
 	dt_bb_sed = dt.sed_flux(nu, z)
 	# plot them
-	plt.loglog(nu, disk_bb_sed, lw=2, label="Accretion Disk")
-	plt.loglog(nu, dt_bb_sed, lw=2, label="Dust Torus")
-	plt.xlabel(r"$\nu\,/\,\mathrm{Hz}$")
-	plt.ylabel(r"$\nu F_{\nu}\,/\,(\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1})$")
+	plot_sed(nu, disk_bb_sed, lw=2, label="Accretion Disk")
+	plot_sed(nu, dt_bb_sed, lw=2, label="Dust Torus")
 	plt.ylim([1e-12, 1e-8])
-	plt.legend()
 	plt.show()
 
 .. image:: _static/disk_torus_black_bodies.png

@@ -18,16 +18,12 @@ def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
     """return two arrays of quantities from a sample file"""
     sample_table = np.loadtxt(sample_file, delimiter=",", comments="#")
     x = sample_table[:, 0] * u.Unit(x_unit)
-    y = (
-        sample_table[:, 1]
-        if y_unit is None
-        else sample_table[:, 1] * u.Unit(y_unit)
-    )
+    y = sample_table[:, 1] if y_unit is None else sample_table[:, 1] * u.Unit(y_unit)
 
     return x, y
 
 
-def check_deviation_within_bounds(x, y_ref, y_comp, atol, rtol, x_range=None):
+def check_deviation(x, y_ref, y_comp, atol, rtol, x_range=None):
     """check the deviation of two quantities within a given range of x"""
     if x_range is not None:
         condition = (x >= x_range[0]) * (x <= x_range[1])
@@ -45,7 +41,16 @@ def check_deviation_within_bounds(x, y_ref, y_comp, atol, rtol, x_range=None):
 
 
 def make_comparison_plot(
-    nu, y_ref, y_comp, ref_label, comp_label, fig_title, fig_path, plot_type
+    nu,
+    y_ref,
+    y_comp,
+    ref_label,
+    comp_label,
+    fig_title,
+    fig_path,
+    plot_type,
+    y_range=None,
+    comparison_range=None,
 ):
     """make a comparison plot, for SED or gamma-gamma absorption 
     between two different sources: a reference (literature or another code)
@@ -70,6 +75,10 @@ def make_comparison_plot(
         path to save the figure
     plot_type : `{"sed", "tau"}`
         whether we are doing a comparison plot for a SED or an optical depth 
+    y_range : list of float
+        lower and upper limit of the y axis limt
+    comparison_range : list of float
+        plot the range over which the residuals were checked 
     """
     if plot_type == "sed":
         x_label = SED_X_LABEL
@@ -94,6 +103,8 @@ def make_comparison_plot(
     ax[0].legend(loc="best")
     ax[0].set_ylabel(y_label)
     ax[0].set_title(fig_title)
+    if y_range is not None:
+        ax[0].set_ylim(y_range)
     # plot the deviation in the bottom panel
     deviation = 1 - y_comp / y_ref
     ax[1].axhline(0, ls="-", color="darkgray")
@@ -107,4 +118,7 @@ def make_comparison_plot(
     )
     ax[1].set_xlabel(x_label)
     ax[1].legend(loc="best")
+    if comparison_range is not None:
+        ax[1].axvline(comparison_range[0], ls="--", color="k")
+        ax[1].axvline(comparison_range[1], ls="--", color="k")
     fig.savefig(f"{fig_path}")

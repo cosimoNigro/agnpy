@@ -24,6 +24,9 @@ _build
 # pyenv
 .python-version
 
+# pytest
+.pytest_cache/
+
 # mypy
 .mypy_cache/
 .idea
@@ -38,3 +41,5 @@ _build
 .DS_Store
 ._pdf
 
+# vscode
+.vscode/

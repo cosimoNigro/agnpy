@@ -4,11 +4,11 @@ agnpy package
 Submodules
 ----------
 
-agnpy.compton module
+agnpy.spectra module
 --------------------
 
-.. automodule:: agnpy.compton
-   :members:
+.. automodule:: agnpy.spectra
+   :members: PowerLaw, BrokenPowerLaw, LogParabola, ElectronDistribution
    :undoc-members:
    :show-inheritance:
 
@@ -16,23 +16,7 @@ agnpy.emission\_regions module
 ------------------------------
 
 .. automodule:: agnpy.emission_regions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-agnpy.spectra module
---------------------
-
-.. automodule:: agnpy.spectra
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-agnpy.synchrotron module
-------------------------
-
-.. automodule:: agnpy.synchrotron
-   :members:
+   :members: Blob
    :undoc-members:
    :show-inheritance:
 
@@ -40,7 +24,23 @@ agnpy.targets module
 --------------------
 
 .. automodule:: agnpy.targets
-   :members:
+   :members: CMB, PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
+   :undoc-members:
+   :show-inheritance:
+
+agnpy.synchrotron module
+------------------------
+
+.. automodule:: agnpy.synchrotron
+   :members: Synchrotron
+   :undoc-members:
+   :show-inheritance:
+
+agnpy.compton module
+--------------------
+
+.. automodule:: agnpy.compton
+   :members: SynchrotronSelfCompton, ExternalCompton
    :undoc-members:
    :show-inheritance:
 
@@ -48,23 +48,22 @@ agnpy.absorption module
 -----------------------
 
 .. automodule:: agnpy.absorption
+   :members: Absorption
+   :undoc-members:
+   :show-inheritance:
+
+agnpy.constraints module
+------------------------
+
+.. automodule:: agnpy.constraints
    :members:
    :undoc-members:
    :show-inheritance:
 
-agnpy.spectral_constraints module
------------------------
-
-.. automodule:: agnpy.spectral_constraints
+agnpy.utils module
+------------------
+.. automodule:: agnpy.utils
    :members:
    :undoc-members:
    :show-inheritance:
 
-
-Module contents
----------------
-
-.. automodule:: agnpy
-   :members:
-   :undoc-members:
-   :show-inheritance:

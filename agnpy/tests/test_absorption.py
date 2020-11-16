@@ -11,13 +11,16 @@ from agnpy.absorption import Absorption, tau_disk_finke_2016
 from .utils import (
     make_comparison_plot,
     extract_columns_sample_file,
-    check_deviation_within_bounds,
+    check_deviation,
 )
 import matplotlib.pyplot as plt
 
-mec2 = m_e.to("erg", equivalencies=u.mass_energy())
+
 agnpy_dir = Path(__file__).parent.parent.parent
+# where to read sampled files
 data_dir = f"{agnpy_dir}/data"
+# where to save figures
+figures_dir = f"{data_dir}/crosscheck_figures/absorption"
 
 # variables with _test are global and meant to be used in all tests
 # here as a default we use the same parameters of Figure 7.4 in Dermer Menon 2009
@@ -74,9 +77,7 @@ class TestAbsorption:
         ax.set_title("Absorption Shakura Sunyaev Disk")
         ax.set_xlabel(r"$E\,/\,{\rm GeV}$")
         ax.set_ylabel(r"$\tau_{\gamma \gamma}$")
-        fig.savefig(
-            f"{data_dir}/crosscheck_figures/tau_disk_comaprison_figure_14_finke_2016.png"
-        )
+        fig.savefig(f"{figures_dir}/tau_disk_comaprison_figure_14_finke_2016.png")
         assert True
 
     def test_abs_blr_reference_tau(self):
@@ -105,7 +106,7 @@ class TestAbsorption:
             "Figure 14, Finke (2016)",
             "agnpy",
             "Absorption on Spherical Shell Broad Line Region",
-            f"{data_dir}/crosscheck_figures/tau_blr_lyman_alpha_comparison_figure_14_finke_2016.png",
+            f"{figures_dir}/tau_blr_lyman_alpha_comparison_figure_14_finke_2016.png",
             "tau",
         )
         assert True
@@ -135,7 +136,7 @@ class TestAbsorption:
             "Figure 14, Finke (2016)",
             "agnpy",
             "Absorption on Ring Dust Torus",
-            f"{data_dir}/crosscheck_figures/tau_dt_comparison_figure_14_finke_2016.png",
+            f"{figures_dir}/tau_dt_comparison_figure_14_finke_2016.png",
             "tau",
         )
         assert True
@@ -168,11 +169,11 @@ class TestAbsorption:
             "point source approximating the BLR",
             "Absorption on Spherical Shell BLR, "
             + r"$r = 10^{20}\,{\rm cm} \gg R_{\rm line}$",
-            f"{data_dir}/crosscheck_figures/tau_blr_point_source_comparison.png",
+            f"{figures_dir}/tau_blr_point_source_comparison.png",
             "tau",
         )
         # requires a 10% deviation from the two SED points
-        assert check_deviation_within_bounds(nu, tau_blr, tau_ps_blr, 0, 0.1)
+        assert check_deviation(nu, tau_blr, tau_ps_blr, 0, 0.1)
 
     def test_abs_dt_vs_point_source(self):
         """check if in the limit of large distances the gamma-gamma optical depth 
@@ -201,8 +202,8 @@ class TestAbsorption:
             "point source approximating the DT",
             "Absorption on Ring Dust Torus, "
             + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm dt}$",
-            f"{data_dir}/crosscheck_figures/tau_dt_point_source_comparison.png",
+            f"{figures_dir}/tau_dt_point_source_comparison.png",
             "tau",
         )
         # requires a 10% deviation from the two SED points
-        assert check_deviation_within_bounds(nu, tau_dt, tau_ps_dt, 0, 0.1)
+        assert check_deviation(nu, tau_dt, tau_ps_dt, 0, 0.1)

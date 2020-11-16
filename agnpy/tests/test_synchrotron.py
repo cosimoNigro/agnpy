@@ -7,29 +7,42 @@ from astropy.coordinates import Distance
 from pathlib import Path
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron, nu_synch_peak, epsilon_B
+from agnpy.utils.math import trapz_loglog
 from .utils import (
     make_comparison_plot,
     extract_columns_sample_file,
-    check_deviation_within_bounds,
+    check_deviation,
 )
 
-mec2 = m_e.to("erg", equivalencies=u.mass_energy())
-epsilon_equivalency = [
-    (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
-]
 agnpy_dir = Path(__file__).parent.parent.parent
+# where to read sampled files
 data_dir = f"{agnpy_dir}/data"
+# where to save figures
+figures_dir = f"{data_dir}/crosscheck_figures/synchrotron"
 
 # variables with _test are global and meant to be used in all tests
 # here as a default we use the same parameters of Figure 7.4 in Dermer Menon 2009
 spectrum_norm_test = 1e48 * u.Unit("erg")
 p_test = 2.8
+q_test = 0.2
+gamma_0 = 1e3
 gamma_min_test = 1e2
 gamma_max_test = 1e5
 pwl_dict_test = {
     "type": "PowerLaw",
     "parameters": {
         "p": p_test,
+        "gamma_min": gamma_min_test,
+        "gamma_max": gamma_max_test,
+    },
+}
+# dictionary test for log parabola
+lp_dict_test = {
+    "type": "LogParabola",
+    "parameters": {
+        "p": p_test,
+        "q": q_test,
+        "gamma_0": gamma_0,
         "gamma_min": gamma_min_test,
         "gamma_max": gamma_max_test,
     },
@@ -48,6 +61,15 @@ pwl_blob_test = Blob(
     B_test,
     spectrum_norm_test,
     pwl_dict_test,
+)
+lp_blob_test = Blob(
+    R_b_test,
+    z_test,
+    delta_D_test,
+    Gamma_test,
+    B_test,
+    spectrum_norm_test,
+    lp_dict_test,
 )
 
 
@@ -74,11 +96,11 @@ class TestSynchrotron:
             "Figure 7.4, Dermer and Menon (2009)",
             "agnpy",
             "Synchrotron",
-            f"{data_dir}/crosscheck_figures/synch_comparison_figure_7_4_dermer_menon_2009.png",
+            f"{figures_dir}/synch_comparison_figure_7_4_dermer_menon_2009.png",
             "sed",
         )
         # requires that the SED points deviate less than 15% from the figure
-        assert check_deviation_within_bounds(nu_ref, sed_ref, sed_agnpy, 0, 0.15)
+        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.15)
 
     @pytest.mark.parametrize(
         "file_ref , spectrum_type, spectrum_parameters, figure_title, figure_path",
@@ -88,21 +110,21 @@ class TestSynchrotron:
                 "PowerLaw",
                 {"p": 2, "gamma_min": 2, "gamma_max": 1e6},
                 "Self-Absorbed Synchrotron, power-law electron distribution",
-                f"{data_dir}/crosscheck_figures/ssa_pwl_comparison_jetset_1.1.2.png",
+                f"{figures_dir}/ssa_pwl_comparison_jetset_1.1.2.png",
             ),
             (
                 f"{data_dir}/sampled_seds/synch_ssa_bpwl_jetset_1.1.2.txt",
                 "BrokenPowerLaw",
                 {"p1": 2, "p2": 3, "gamma_b": 1e4, "gamma_min": 2, "gamma_max": 1e6},
                 "Self-Absorbed Synchrotron, broken power-law electron distribution",
-                f"{data_dir}/crosscheck_figures/ssa_bpwl_comparison_jetset_1.1.2.png",
+                f"{figures_dir}/ssa_bpwl_comparison_jetset_1.1.2.png",
             ),
             (
                 f"{data_dir}/sampled_seds/synch_ssa_lp_jetset_1.1.2.txt",
                 "LogParabola",
                 {"p": 2, "q": 0.4, "gamma_0": 1e4, "gamma_min": 2, "gamma_max": 1e6},
                 "Self-Absorbed Synchrotron, log-parabola electron distribution",
-                f"{data_dir}/crosscheck_figures/ssa_lp_comparison_jetset_1.1.2.png",
+                f"{figures_dir}/ssa_lp_comparison_jetset_1.1.2.png",
             ),
         ],
     )
@@ -128,7 +150,8 @@ class TestSynchrotron:
         # recompute the SED at the same ordinates where the figure was sampled
         ssa = Synchrotron(blob, ssa=True)
         sed_agnpy = ssa.sed_flux(nu_ref)
-        # sed comparison plot
+        # sed comparison plot, we will check between 10^(11) and 10^(19) Hz
+        nu_range = [1e11, 1e19] * u.Hz
         make_comparison_plot(
             nu_ref,
             sed_ref,
@@ -138,14 +161,56 @@ class TestSynchrotron:
             figure_title,
             figure_path,
             "sed",
+            comparison_range=nu_range.to_value("Hz"),
         )
         # requires that the SED points deviate less than 5% from the figure
-        # there are divergencies at very low and very high energies, therefore
-        # we will check between 10^(11) and 10^(19) Hz
-        nu_range = [1e11, 1e19] * u.Hz
-        assert check_deviation_within_bounds(
-            nu_ref, sed_ref, sed_agnpy, 0, 0.05, nu_range
+        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.05, nu_range)
+
+    def test_synch_delta_sed(self):
+        """check that in a given frequency range the full synchrotron SED coincides
+        with the delta function approximation"""
+        nu = np.logspace(10, 20) * u.Hz
+        synch = Synchrotron(lp_blob_test)
+        sed_full = synch.sed_flux(nu)
+        sed_delta = synch.sed_flux_delta_approx(nu)
+        # range of comparison
+        nu_range = [1e12, 1e17] * u.Hz
+        make_comparison_plot(
+            nu,
+            sed_full,
+            sed_delta,
+            "full integration",
+            "delta function approximation",
+            "Synchrotron",
+            f"{figures_dir}/synch_comparison_delta_aprproximation.png",
+            "sed",
+            [1e-16, 1e-8],
+            nu_range.to_value("Hz"),
         )
+        # requires that the delta approximation SED points deviate less than 10%
+        assert check_deviation(nu, sed_full, sed_delta, 0, 0.1, nu_range)
+
+    def test_sed_integration_methods(self):
+        """test different integration methods agains each other
+        simpole trapezoidal rule vs trapezoidal rule in log-log space
+        """
+        nu = np.logspace(8, 18) * u.Hz
+        synch_trapz = Synchrotron(pwl_blob_test, integrator=np.trapz)
+        synch_trapz_loglog = Synchrotron(pwl_blob_test, integrator=trapz_loglog)
+        sed_synch_trapz = synch_trapz.sed_flux(nu)
+        sed_synch_trapz_loglog = synch_trapz_loglog.sed_flux(nu)
+        make_comparison_plot(
+            nu,
+            sed_synch_trapz,
+            sed_synch_trapz_loglog,
+            "trapezoidal integration",
+            "trapezoidal log-log integration",
+            "Synchrotron",
+            f"{figures_dir}/synch_comparison_integration_methods.png",
+            "sed",
+        )
+        # requires that the SED points deviate less than 1%
+        assert check_deviation(nu, sed_synch_trapz, sed_synch_trapz_loglog, 0, 0.01)
 
     def test_nu_synch_peak(self):
         gamma = 100

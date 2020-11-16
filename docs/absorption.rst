@@ -22,7 +22,6 @@ In the following example we compute the optical depths produced by the disk, the
 	from agnpy.emission_regions import Blob
 	from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
 	from agnpy.absorption import Absorption
-	import matplotlib.pyplot as plt
 
 	# define the blob
 	spectrum_norm = 1e47 * u.erg
@@ -74,6 +73,13 @@ Remember also to set the distance between the blob and the target photon field (
 	tau_disk = absorption_disk.tau(nu)
 	tau_blr = absorption_blr.tau(nu)
 	tau_dt = absorption_dt.tau(nu)
+
+
+	# plot the absorption
+	import matplotlib.pyplot as plt
+	from agnpy.utils.plot import load_mpl_rc
+	# matplotlib adjustments
+	load_mpl_rc()
 
 	fig, ax = plt.subplots()
 	ax.loglog(E, tau_disk, lw=2, ls="-", label = "SS disk")

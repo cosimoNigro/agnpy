@@ -3,10 +3,10 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import m_e
 from agnpy.spectra import PowerLaw, BrokenPowerLaw, LogParabola
+from agnpy.utils.math import trapz_loglog
+from agnpy.utils.conversion import mec2
 import pytest
 
-
-mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 # variables with _test are global and meant to be used in all tests
 # global PowerLaw
 k_e_test = 1e-13 * u.Unit("cm-3")
@@ -93,13 +93,15 @@ class TestPowerLaw:
         # check that outside the boundaries values are all 0
         assert not np.all(values[~condition])
 
-    @pytest.mark.parametrize("p", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
-    def test_power_law_integral(self, p):
-        """test the integration of the power law for different spectral indexes"""
-        pwl = PowerLaw(k_e_test, p, gamma_min_test, gamma_max_test)
-        numerical_integral = pwl.integral(
-            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=0
+    @pytest.mark.parametrize("p", [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
+    @pytest.mark.parametrize("integrator", [np.trapz, trapz_loglog])
+    def test_power_law_integral(self, p, integrator):
+        """test the integration of the power law for different spectral indexes
+        different integrating functions"""
+        pwl = PowerLaw(
+            k_e_test, p, gamma_min_test, gamma_max_test, integrator=integrator
         )
+        numerical_integral = pwl.integral(gamma_min_test, gamma_max_test)
         analytical_integral = power_law_integral(
             k_e_test, p, gamma_min_test, gamma_max_test
         )
@@ -107,11 +109,14 @@ class TestPowerLaw:
             numerical_integral, analytical_integral, atol=0 * u.Unit("cm-3"), rtol=1e-2
         )
 
-    @pytest.mark.parametrize("p", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
-    def test_power_law_times_gamma_integral(self, p):
+    @pytest.mark.parametrize("p", [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
+    @pytest.mark.parametrize("integrator", [np.trapz, trapz_loglog])
+    def test_power_law_times_gamma_integral(self, p, integrator):
         """test the integration of the power law times gamma for different 
-        spectral indexes"""
-        pwl = PowerLaw(k_e_test, p, gamma_min_test, gamma_max_test)
+        spectral indexes and different integrating functions"""
+        pwl = PowerLaw(
+            k_e_test, p, gamma_min_test, gamma_max_test, integrator=integrator
+        )
         numerical_integral = pwl.integral(
             gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=1
         )
@@ -172,13 +177,22 @@ class TestBrokenPowerLaw:
         # check that outside the boundaries values are all 0
         assert not np.all(values[~condition])
 
-    @pytest.mark.parametrize("p1", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
-    @pytest.mark.parametrize("p2", [0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
-    @pytest.mark.parametrize("gamma_b", [1e2, 1e3, 1e4])
-    def test_broken_power_law_integral(self, p1, p2, gamma_b):
+    @pytest.mark.parametrize("p1", [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
+    @pytest.mark.parametrize("p2", [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
+    @pytest.mark.parametrize("gamma_b", [1e2, 1e3, 1e4, 1e5, 1e6])
+    @pytest.mark.parametrize("integrator", [np.trapz, trapz_loglog])
+    def test_broken_power_law_integral(self, p1, p2, gamma_b, integrator):
         """test the integration of the log parabola for different spectral 
-        indexes and breaks"""
-        bpwl = BrokenPowerLaw(k_e_test, p1, p2, gamma_b, gamma_min_test, gamma_max_test)
+        indexes and breaks and different integrating functions"""
+        bpwl = BrokenPowerLaw(
+            k_e_test,
+            p1,
+            p2,
+            gamma_b,
+            gamma_min_test,
+            gamma_max_test,
+            integrator=integrator,
+        )
         numerical_integral = bpwl.integral(
             gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=0
         )
@@ -189,13 +203,22 @@ class TestBrokenPowerLaw:
             numerical_integral, analytical_integral, atol=0 * u.Unit("cm-3"), rtol=1e-2
         )
 
-    @pytest.mark.parametrize("p1", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
-    @pytest.mark.parametrize("p2", [1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
-    @pytest.mark.parametrize("gamma_b", [1e2, 1e3, 1e4])
-    def test_broken_power_law_times_gamma_integral(self, p1, p2, gamma_b):
+    @pytest.mark.parametrize("p1", [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
+    @pytest.mark.parametrize("p2", [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
+    @pytest.mark.parametrize("gamma_b", [1e2, 1e3, 1e4, 1e5, 1e6])
+    @pytest.mark.parametrize("integrator", [np.trapz, trapz_loglog])
+    def test_broken_power_law_times_gamma_integral(self, p1, p2, gamma_b, integrator):
         """test the integration of the broken power law times gamma for different 
-        spectral indexes and breaks"""
-        bpwl = BrokenPowerLaw(k_e_test, p1, p2, gamma_b, gamma_min_test, gamma_max_test)
+        spectral indexes and breaks and different integrating functions"""
+        bpwl = BrokenPowerLaw(
+            k_e_test,
+            p1,
+            p2,
+            gamma_b,
+            gamma_min_test,
+            gamma_max_test,
+            integrator=integrator,
+        )
         numerical_integral = bpwl.integral(
             gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=1
         )
