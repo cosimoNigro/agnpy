@@ -13,14 +13,13 @@ It is here illustrated how to produce a synchrotron spectral energy distribution
 
 Note two aspects valid for all the radiative processes in `agnpy`:
 
-* to initialise any radiative process in `agnpy`, the instance of the emission region class (:class:`~agnpy.emission_regions.Blob` in this case) 
-has to be passed to the initialiser of the radiative process class (:class:`~agnpy.synchrotron.Synchrotron` in this case)
+1. to initialise any radiative process in `agnpy`, the instance of the emission region class (:class:`~agnpy.emission_regions.Blob` in this case) has to be passed to the initialiser of the radiative process class (:class:`~agnpy.synchrotron.Synchrotron` in this case)
 
 .. code-block:: python
 
 	synch = Synchrotron(blob)
 
-* the SEDs are always compute over an array of frequencies (astropy units), passed to the `sed_flux` function
+2. the SEDs are always compute over an array of frequencies (astropy units), passed to the `sed_flux` function
 
 .. code-block:: python
 

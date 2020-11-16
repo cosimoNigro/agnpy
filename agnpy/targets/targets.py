@@ -333,8 +333,7 @@ class SSDisk:
             redshift of the galaxy, to correct the observed frequencies and to 
             compute the flux once the distance is obtained
         """
-        nu *= 1 + z
-        epsilon = nu.to("", equivalencies=epsilon_equivalency)
+        epsilon = nu_to_epsilon_prime(nu, z)
         d_L = Distance(z=z).to("cm")
         d_L_tilde = (d_L / self.R_g).to_value("")
         Theta = self.Theta(self.R_tilde)
@@ -389,7 +388,7 @@ class SphericalShellBLR:
             f"* Spherical Shell Broad Line Region:\n"
             + f" - L_disk (accretion disk luminosity): {self.L_disk.cgs:.2e}\n"
             + f" - xi_line (fraction of the disk radiation reprocessed by the BLR): {self.xi_line:.2e}\n"
-            + f" - line (type of emitted line): {self.line}, lambda = {self.lambda_line.cgs:.2f}\n"
+            + f" - line (type of emitted line): {self.line}, lambda = {self.lambda_line.cgs:.2e}\n"
             + f" - R_line (radius of the BLR shell): {self.R_line.cgs:.2e}\n"
         )
 
@@ -513,8 +512,7 @@ class RingDustTorus:
             redshift of the galaxy, to correct the observed frequencies and to 
             compute the flux once the distance is obtained
         """
-        nu *= 1 + z
-        epsilon = nu.to("", equivalencies=epsilon_equivalency)
+        epsilon = nu_to_epsilon_prime(nu, z)
         d_L = Distance(z=z).to("cm")
         prefactor = np.pi * np.power((self.R_dt / d_L).to_value(""), 2)
         sed = prefactor * epsilon * I_epsilon_bb(epsilon, self.Theta)
