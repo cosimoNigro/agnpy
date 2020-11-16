@@ -12,12 +12,10 @@ def line_loglog(x, m, n):
 def integral_line_loglog(x_min, x_max, m, n):
     """analytical integral of the line in log-log space"""
     if np.isclose(m, -1, atol=0, rtol=1e-5):
-        value = np.exp(n) * np.log(x_max / x_min)
-    else:
-        f_low = line_loglog(x_min, m + 1, n) / (m + 1)
-        f_up = line_loglog(x_max, m + 1, n) / (m + 1)
-        value = f_up - f_low
-    return value
+        return np.exp(n) * np.log(x_max / x_min)
+    f_low = line_loglog(x_min, m + 1, n) / (m + 1)
+    f_up = line_loglog(x_max, m + 1, n) / (m + 1)
+    return f_up - f_low
 
 
 class TestMathUtils:

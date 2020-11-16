@@ -65,8 +65,7 @@ def tau_to_attenuation(tau):
     """Converts the synchrotron self-absorption optical depth to an attenuation
     Eq. 7.122 in [DermerMenon2009]_."""
     u = 1 / 2 + np.exp(-tau) / tau - (1 - np.exp(-tau)) / np.power(tau, 2)
-    attenuation = np.where(tau < 1e-3, 1, 3 * u / tau)
-    return attenuation
+    return np.where(tau < 1e-3, 1, 3 * u / tau)
 
 
 class Synchrotron:
@@ -121,8 +120,7 @@ class Synchrotron:
             -1 / (8 * np.pi * m_e * np.power(epsilon, 2)) * np.power(lambda_c / c, 3)
         )
         k_epsilon = (prefactor_k_epsilon * integral).to("cm-1")
-        tau = (2 * k_epsilon * R_b).to_value("")
-        return tau
+        return (2 * k_epsilon * R_b).to_value("")
 
     @staticmethod
     def evaluate_sed_flux(
