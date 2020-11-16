@@ -5,6 +5,7 @@ from astropy.coordinates import Distance
 import matplotlib.pyplot as plt
 from ..spectra import PowerLaw, BrokenPowerLaw, LogParabola
 from ..utils.conversion import mec2, B_to_cgs
+from ..utils.plot import load_mpl_rc
 
 __all__ = ["Blob"]
 
@@ -60,11 +61,11 @@ class Blob:
     spectrum_norm_type : ["integral", "differential", "gamma=1"]
         only with a normalisation in "cm-3" one can select among three types: 
 
-        * `integral`: (default) the spectrum is set such that :math:`n_{e,\,tot}` equals the value provided by `spectrum_norm`;  
+        * ``"integral"``: (default) the spectrum is set such that :math:`n_{e,\,tot}` equals the value provided by ``spectrum_norm``;  
         
-        * `differential`: the spectrum is set such that :math:`k_e` equals the value provided by `spectrum_norm`;    
+        * ``"differential"``: the spectrum is set such that :math:`k_e` equals the value provided by ``spectrum_norm``;    
         
-        * `gamma=1`: the spectrum is set such that :math:`n_e(\gamma=1)` equals the value provided by `spectrum_norm`.
+        * ``"gamma=1"``: the spectrum is set such that :math:`n_e(\gamma=1)` equals the value provided by ``spectrum_norm``.
         
     gamma_size : int
         size of the array of electrons Lorentz factors
@@ -73,7 +74,7 @@ class Blob:
     def __init__(
         self,
         R_b=1e16 * u.cm,
-        z=0.1,
+        z=0.069,
         delta_D=10,
         Gamma=10,
         B=1 * u.G,
@@ -241,7 +242,7 @@ class Blob:
         r"""total energy in non-thermal electrons
 
         .. math::
-            W_{e} = m_e c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm}\gamma' \gamma' N_e(\gamma')
+            W_{e} = m_e c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' \gamma' N_e(\gamma')
         """
         return mec2 * np.trapz(self.gamma * self.N_e(self.gamma), self.gamma)
 
@@ -328,6 +329,7 @@ class Blob:
         gamma_power : float
             power of gamma to raise the electron distribution
         """
+        load_mpl_rc()
         ax = plt.gca() if ax is None else ax
 
         ax.loglog(self.gamma, np.power(self.gamma, gamma_power) * self.n_e(self.gamma))

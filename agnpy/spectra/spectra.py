@@ -24,8 +24,8 @@ class ElectronDistribution:
     def general_integral(
         self, gamma_low, gamma_up, gamma_power=0, integrator=np.trapz, **kwargs
     ):
-        """integral of __any__ electron distribution over the range gamma_low, 
-        gamma_up
+        """integral of the electron distribution over the range gamma_low, 
+        gamma_up for a general set of parameters
 
         Parameters
         ----------
@@ -46,7 +46,7 @@ class ElectronDistribution:
         return integrator(values, gamma, axis=0)
 
     def integral(self, gamma_low, gamma_up, gamma_power=0):
-        """integral of __this particular__ electron distribution over the range 
+        """integral of **this particular** electron distribution over the range 
         gamma_low, gamma_up
 
         Parameters

@@ -9,9 +9,13 @@ The user is not supposed to interact directly with this classes, the electrons s
 
 The available analytic functions describing the electron distributions are:
 
-* :class:`~agnpy.spectra.PowerLaw`
-* :class:`~agnpy.spectra.BrokenPowerLaw`
-* :class:`~agnpy.spectra.LogParabola`
+* :class:`~agnpy.spectra.PowerLaw`;
+* :class:`~agnpy.spectra.BrokenPowerLaw`;
+* :class:`~agnpy.spectra.LogParabola`.
+
+These classes are built on the :class:`~agnpy.spectra.ElectronDistribution`
+class, containing methods to numerically integrate and set the normalisation of 
+the electron distributions.
 
 API
 ---
