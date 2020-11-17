@@ -46,6 +46,8 @@ A test suite is available in [`agnpy/tests`](https://github.com/cosimoNigro/agnp
 ## shields
 ![](https://github.com/cosimoNigro/agnpy/workflows/CI%20test/badge.svg)
 
+[![Documentation Status](https://readthedocs.org/projects/agnpy/badge/?version=latest)](https://agnpy.readthedocs.io/en/latest/?badge=latest)
+
 ![](https://codecov.io/gh/cosimoNigro/agnpy/branch/master/graph/badge.svg)
 
 ![](http://img.shields.io/pypi/v/agnpy.svg?text=version)
