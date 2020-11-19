@@ -36,9 +36,9 @@ pwl_dict_test = {
         "gamma_max": gamma_max_test,
     },
 }
-# blob parameters
+# blob parameters (use 3C 454.3 redshift z = 0.859)
 pwl_blob_test = Blob(
-    1e16 * u.cm, 0, 10, 10, 1 * u.G, spectrum_norm_test, pwl_dict_test,
+    1e16 * u.cm, 0.859, 10, 10, 1 * u.G, spectrum_norm_test, pwl_dict_test,
 )
 
 
