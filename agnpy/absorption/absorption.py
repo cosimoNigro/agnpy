@@ -1,14 +1,24 @@
 # module containing the gamma-gamma absorption
+from pathlib import Path
 import numpy as np
-from astropy.constants import c, G, h, m_e, M_sun, sigma_T
 import astropy.units as u
+from astropy.io import fits
+from astropy.constants import c, G, h, m_e, M_sun, sigma_T
+from scipy.interpolate import interp2d
 from ..utils.math import axes_reshaper, log
 from ..utils.geometry import cos_psi, x_re_shell, mu_star_shell, x_re_ring
 from ..utils.conversion import nu_to_epsilon_prime
 from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
 
 
-__all__ = ["sigma", "tau_disk_finke_2016", "Absorption"]
+__all__ = ["sigma", "tau_disk_finke_2016", "Absorption", "EBL"]
+
+agnpy_dir = Path(__file__).parent.parent.parent
+ebl_files_dict = {
+    "franceschini": f"{agnpy_dir}/data/ebl_models/ebl_franceschini08.fits.gz",
+    "dominguez": f"{agnpy_dir}/data/ebl_models/ebl_dominguez11.fits.gz",
+    "finke": f"{agnpy_dir}/data/ebl_models/ebl_finke10.fits.gz",
+}
 
 
 def sigma(s):
@@ -238,3 +248,44 @@ class Absorption:
             return self.opacity_shell_blr(nu)
         if isinstance(self.target, RingDustTorus):
             return self.opacity_ring_torus(nu)
+
+
+class EBL:
+    """model for the Extragalactic Background Light absorption
+    
+    Parameters
+    ----------
+    
+    """
+
+    def __init__(self, model="franceschini"):
+        if model not in ["franceschini", "dominguez", "finke"]:
+            raise ValueError("No EBL model for the reference you specified")
+        else:
+            self.model_file = ebl_files_dict[model]
+        # load the absorption table
+        self.load_absorption_table()
+        self.interpolate_absorption_table()
+
+    def load_absorption_table(self):
+        """load the reference values from the table file to be interpolated 
+        later"""
+        f = fits.open(self.model_file)
+        self.energy_ref = (
+            np.sqrt(f["ENERGIES"].data["ENERG_LO"] * f["ENERGIES"].data["ENERG_HI"])
+            * u.eV
+        )
+        self.z_ref = f["SPECTRA"].data["PARAMVAL"]
+        self.values_ref = f["SPECTRA"].data["INTPSPEC"]
+
+    def interpolate_absorption_table(self, kind="linear"):
+        """interpolate the reference values, choose the kind of interpolation"""
+        log10_energy_ref = np.log10(self.energy_ref.to_value("eV"))
+        self.interpolated_model = interp2d(
+            log10_energy_ref, self.z_ref, self.values_ref, kind=kind
+        )
+
+    def absorption(self, z, nu):
+        energy = nu.to_value("eV", equivalencies=u.spectral())
+        log10_energy = np.log10(energy)
+        return self.interpolated_model(log10_energy, z)
