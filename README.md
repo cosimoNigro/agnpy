@@ -4,6 +4,7 @@
 </p>
 
 Modelling Active Galactic Nuclei radiative processes with python.    
+[![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
 ## descritpion
 `agnpy` focuses on the numerical computation of the photon spectra produced by leptonic radiative processes in jetted Active Galactic Nuclei (AGN).  
