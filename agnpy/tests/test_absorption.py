@@ -7,7 +7,7 @@ from astropy.coordinates import Distance
 from pathlib import Path
 from agnpy.emission_regions import Blob
 from agnpy.targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
-from agnpy.absorption import Absorption, tau_disk_finke_2016
+from agnpy.absorption import Absorption, tau_disk_finke_2016, ebl_files_dict, EBL
 from .utils import (
     make_comparison_plot,
     extract_columns_sample_file,
@@ -207,3 +207,30 @@ class TestAbsorption:
         )
         # requires a 10% deviation from the two SED points
         assert check_deviation(nu, tau_dt, tau_ps_dt, 0, 0.1)
+
+
+class TestEBL:
+    """class grouping all tests related to the EBL class"""
+
+    @pytest.mark.parametrize("model", ["franceschini", "finke", "dominguez"])
+    @pytest.mark.parametrize("z", [0.5, 1.5])
+    def test_correct_interpolation(self, model, z):
+        # define the ebl model, evaluate it at the reference energies
+        ebl = EBL(model)
+        nu_ref = ebl.energy_ref.to("Hz", equivalencies=u.spectral())
+        absorption = ebl.absorption(z, nu_ref)
+        # find in the reference values the spectra for this redshift
+        z_idx = np.abs(z - ebl.z_ref).argmin()
+        absorption_ref = ebl.values_ref[z_idx]
+        make_comparison_plot(
+            nu_ref,
+            absorption_ref,
+            absorption,
+            "data",
+            "interpolated",
+            f"EBL absorption, {model} model, z = {z}",
+            f"{figures_dir}/ebl_abs_interp_comparison_{model}_z_{z}.png",
+            "abs.",
+        )
+        # requires a 1% deviation from the two SED points
+        assert check_deviation(nu_ref, absorption_ref, absorption, 0, 0.01)

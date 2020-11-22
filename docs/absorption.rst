@@ -3,16 +3,17 @@
 
 Absorption by :math:`\gamma`-:math:`\gamma` pair production
 ===========================================================
-The photon fields that represent the target for the Compton scattering might re-absorb 
-the scattered photons via :math:`\gamma`-:math:`\gamma` pair production. `agnpy` computes the 
-optical depth (or opacity) :math:`\tau_{\gamma \gamma}` as a function of the frequency :math:`\nu` 
-of the photon hitting the target. Photoabsorption results in an attenuation of the photon flux 
-by a factor :math:`\exp(-\tau_{\gamma \gamma})`.
+The photon fields that represent the targets for the Compton scattering might re-asbsorb
+the scattered photons via :math:`\gamma`-:math:`\gamma` pair production. 
+In the same way, on their path towards Earth, the highest-energy photons might be absorbed
+by the extragalactic background light (EBL).     
+`agnpy` computes the optical depth (or opacity) :math:`\tau_{\gamma \gamma}` as a function of the frequency :math:`\nu` 
+produced by the target photon fields and by the EBL. 
+Photoabsorption results in an attenuation of the flux by a factor :math:`\exp(-\tau_{\gamma \gamma})`.
 
 Absorption on target photon fields
 ----------------------------------
-
-In the following example we compute the optical depths produced by the disk, the broad line region and the dust torus photon fileds
+In the following example we compute the optical depth produced by the disk, the broad line region and the dust torus photon fileds
 
 .. code-block:: python
 
@@ -97,9 +98,20 @@ Remember also to set the distance between the blob and the target photon field (
     :align: center
 
 
+Extragalactic Background Light
+------------------------------
+The absorption produced by the EBL models of [Franceschini2008]_, [Finke2010]_ and [Dominguez2011]_, 
+tabulated as a function of redshift and energy, is available in `data/ebl_models`. 
+The absorption values are interpolated by `agnpy` and can be later evaluated for a given redshift and range of frequencies.
+
+.. plot:: snippets/ebl_models.py
+    :include-source:
+   
+
+
 API
 ---
 
 .. automodule:: agnpy.absorption
    :noindex:
-   :members: Absorption 
+   :members: Absorption, EBL
