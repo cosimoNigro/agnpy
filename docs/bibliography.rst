@@ -27,3 +27,11 @@ Bibliography
 .. [Dermer1994] `Dermer and Schlickeiser (1994) <https://ui.adsabs.harvard.edu/abs/1994ApJS...90..945D/abstract>`_,
    "On the Location of the Acceleration and Emission Sites in Gamma-Ray Blazars";
 
+.. [Franceschini2008] `Franceschini et al. (2008) <https://ui.adsabs.harvard.edu/abs/2008A%26A...487..837F/abstract>`_,
+   "Extragalactic optical-infrared background radiation, its time evolution and the cosmic photon-photon opacity"
+
+.. [Finke2010] `Finke et al. (2010) <https://ui.adsabs.harvard.edu/abs/2010ApJ...712..238F/abstract>`_,   
+   "Modeling the Extragalactic Background Light from Stars and Dust"
+
+.. [Dominguez2011] `Dominguez et al. (2011) <https://ui.adsabs.harvard.edu/abs/2011MNRAS.410.2556D/abstract>`_,
+   "Extragalactic background light inferred from AEGIS galaxy-SED-type fractions"

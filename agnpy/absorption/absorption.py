@@ -251,11 +251,17 @@ class Absorption:
 
 
 class EBL:
-    """model for the Extragalactic Background Light absorption
-    
+    """Class representing for the Extragalactic Background Light absorption. 
+    Tabulated values of absorption as a function of redshift and energy according
+    to the models of [Franceschini2008]_, [Finke2010]_, [Dominguez2011]_ are available
+    in `data/ebl_models`. 
+    They are interpolated by `agnpy` and can be later evaluated for a given redshift 
+    and range of frequencies.
+
     Parameters
     ----------
-    
+    model : ["franceschini", "dominguez", "finke"]
+        choose the reference for the EBL model
     """
 
     def __init__(self, model="franceschini"):
@@ -268,8 +274,7 @@ class EBL:
         self.interpolate_absorption_table()
 
     def load_absorption_table(self):
-        """load the reference values from the table file to be interpolated 
-        later"""
+        """load the reference values from the table file to be interpolated later"""
         f = fits.open(self.model_file)
         self.energy_ref = (
             np.sqrt(f["ENERGIES"].data["ENERG_LO"] * f["ENERGIES"].data["ENERG_HI"])
