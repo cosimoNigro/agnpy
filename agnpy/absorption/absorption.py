@@ -11,7 +11,7 @@ from ..utils.conversion import nu_to_epsilon_prime
 from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
 
 
-__all__ = ["sigma", "tau_disk_finke_2016", "Absorption", "EBL"]
+__all__ = ["sigma", "tau_disk_finke_2016", "Absorption", "ebl_files_dict", "EBL"]
 
 agnpy_dir = Path(__file__).parent.parent.parent
 ebl_files_dict = {
@@ -275,8 +275,9 @@ class EBL:
             np.sqrt(f["ENERGIES"].data["ENERG_LO"] * f["ENERGIES"].data["ENERG_HI"])
             * u.eV
         )
-        self.z_ref = f["SPECTRA"].data["PARAMVAL"]
-        self.values_ref = f["SPECTRA"].data["INTPSPEC"]
+        # Franceschini file has two columns repeated, eliminate them
+        self.z_ref = np.unique(f["SPECTRA"].data["PARAMVAL"])
+        self.values_ref = np.unique(f["SPECTRA"].data["INTPSPEC"], axis=0)
 
     def interpolate_absorption_table(self, kind="linear"):
         """interpolate the reference values, choose the kind of interpolation"""

@@ -51,6 +51,8 @@ def make_comparison_plot(
     plot_type,
     y_range=None,
     comparison_range=None,
+    x_scale="log",
+    y_scale="log"
 ):
     """make a comparison plot, for SED or gamma-gamma absorption 
     between two different sources: a reference (literature or another code)
@@ -73,24 +75,30 @@ def make_comparison_plot(
         upper title of the figure    
     fig_path : `string`
         path to save the figure
-    plot_type : `{"sed", "tau"}`
+    plot_type : `{"sed", "tau", ...}`
         whether we are doing a comparison plot for a SED or an optical depth 
+        if another string is specified it will be used for the y axis
     y_range : list of float
         lower and upper limit of the y axis limt
     comparison_range : list of float
         plot the range over which the residuals were checked 
     """
     if plot_type == "sed":
+        # set the axes labels for an SED plot
         x_label = SED_X_LABEL
         y_label = SED_Y_LABEL
         deviation_label = SED_DEVIATION_LABEL
     elif plot_type == "tau":
+        # set the axes labels for a tau plot
         x_label = TAU_X_LABEL
         y_label = TAU_Y_LABEL
         deviation_label = TAU_DEVIATION_LABEL
-    else:
-        raise ValueError("plot_type can have either SED or TAU values")
-
+    else :
+        # set a custom y label, keep the x-axis in frequency
+        x_label = SED_X_LABEL
+        y_label = plot_type
+        deviation_label = f"1 - ({plot_type} agnpy / {plot_type} ref.)" 
+    # make the plot
     fig, ax = plt.subplots(
         2,
         sharex=True,
@@ -100,9 +108,9 @@ def make_comparison_plot(
     # plot the SEDs or TAUs in the upper panel
     ax[0].loglog(nu, y_ref, marker="o", ls="-", lw=1.5, label=ref_label)
     ax[0].loglog(nu, y_comp, marker=".", ls="--", lw=1.5, label=comp_label)
-    ax[0].legend(loc="best")
     ax[0].set_ylabel(y_label)
     ax[0].set_title(fig_title)
+    ax[0].legend(loc="best")
     if y_range is not None:
         ax[0].set_ylim(y_range)
     # plot the deviation in the bottom panel
