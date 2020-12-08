@@ -46,7 +46,6 @@ def plot_sed(nu, sed, ax=None, **kwargs):
     comparison_range : list of float
         plot the range over which the residuals were checked 
     """
-    load_mpl_rc()
     ax = plt.gca() if ax is None else ax
 
     ax.loglog(nu, sed, **kwargs)
