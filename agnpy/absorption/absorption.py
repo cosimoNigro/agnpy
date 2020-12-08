@@ -13,7 +13,7 @@ from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustT
 
 __all__ = ["sigma", "tau_disk_finke_2016", "Absorption", "ebl_files_dict", "EBL"]
 
-agnpy_dir = Path(__file__).parent.parent.parent
+agnpy_dir = Path(__file__).parent.parent
 ebl_files_dict = {
     "franceschini": f"{agnpy_dir}/data/ebl_models/ebl_franceschini08.fits.gz",
     "dominguez": f"{agnpy_dir}/data/ebl_models/ebl_dominguez11.fits.gz",

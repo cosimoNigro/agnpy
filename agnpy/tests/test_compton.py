@@ -12,11 +12,13 @@ from agnpy.compton import SynchrotronSelfCompton, ExternalCompton
 from .utils import make_comparison_plot, extract_columns_sample_file, check_deviation
 from agnpy.utils.math import trapz_loglog
 
-agnpy_dir = Path(__file__).parent.parent.parent
+
+agnpy_dir = Path(__file__).parent.parent
 # where to read sampled files
-data_dir = f"{agnpy_dir}/data"
+data_dir = agnpy_dir / "data"
 # where to save figures
-figures_dir = f"{data_dir}/crosscheck_figures/compton"
+figures_dir = agnpy_dir.parent / "crosschecks/figures/compton"
+figures_dir.mkdir(parents=True, exist_ok=True)
 
 # variables with _test are global and meant to be used in all tests
 pwl_spectrum_norm_test = 1e48 * u.Unit("erg")
@@ -49,7 +51,7 @@ pwl_blob_test = Blob(
 bpwl_blob_test = Blob(
     1e16 * u.cm, 1, 40, 40, 0.56 * u.G, bpwl_spectrum_norm_test, bpwl_dict_test,
 )
-bpwl_blob_test.set_gamma_size(400)
+bpwl_blob_test.set_gamma_size(350)
 # global disk
 M_BH = 1.2 * 1e9 * M_sun.cgs
 L_disk = 2e46 * u.Unit("erg s-1")

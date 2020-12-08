@@ -130,3 +130,5 @@ def make_comparison_plot(
         ax[1].axvline(comparison_range[0], ls="--", color="k")
         ax[1].axvline(comparison_range[1], ls="--", color="k")
     fig.savefig(f"{fig_path}")
+    # avoid RuntimeWarning: More than 20 figures have been opened.
+    plt.close(fig)

@@ -14,11 +14,14 @@ from .utils import (
     check_deviation,
 )
 
-agnpy_dir = Path(__file__).parent.parent.parent
+
+agnpy_dir = Path(__file__).parent.parent
 # where to read sampled files
-data_dir = f"{agnpy_dir}/data"
+data_dir = agnpy_dir / "data"
 # where to save figures
-figures_dir = f"{data_dir}/crosscheck_figures/synchrotron"
+figures_dir = agnpy_dir.parent / "crosschecks/figures/synchrotron"
+figures_dir.mkdir(parents=True, exist_ok=True)
+
 
 # variables with _test are global and meant to be used in all tests
 # here as a default we use the same parameters of Figure 7.4 in Dermer Menon 2009
