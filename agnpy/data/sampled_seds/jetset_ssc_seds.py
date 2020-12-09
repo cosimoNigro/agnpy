@@ -1,4 +1,4 @@
-# generate a synchrotron + SSC SED to be confronted with the one produced by 
+# generate a synchrotron + SSC SED to be confronted with the one produced by
 # agnpy and Figure 7.4 of Dermer 2009
 from jetset.jet_model import Jet
 import numpy as np
@@ -19,7 +19,7 @@ pwl_jet.set_par("R", 1e16)
 pwl_jet.set_par("beam_obj", 10)
 pwl_jet.set_par("z_cosm", 0.07)
 # remove SSA
-pwl_jet.spectral_components.Sync.state = "on" 
+pwl_jet.spectral_components.Sync.state = "on"
 
 # synchrotron emission
 pwl_jet.set_nu_grid(1e10, 1e19, 50)
@@ -34,7 +34,7 @@ plt.show()
 condition = synch_sed.value > 1e-20
 nu = synch_nu.value[condition]
 sed = synch_sed.value[condition]
-np.savetxt("synch_pwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T)
+np.savetxt("synch_pwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
 
 # SSC emission
 pwl_jet.set_nu_grid(1e15, 1e26, 50)
@@ -49,4 +49,4 @@ plt.show()
 condition = ssc_sed.value > 1e-20
 nu = ssc_nu.value[condition]
 sed = ssc_sed.value[condition]
-np.savetxt("ssc_pwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T)
+np.savetxt("ssc_pwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
