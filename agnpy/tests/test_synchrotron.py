@@ -80,11 +80,11 @@ class TestSynchrotron:
     """class grouping all tests related to the Synchrotron class"""
 
     def test_synch_reference_sed(self):
-        """test agnpy synchrotron SED against the one sampled from Figure
-        7.4 of Dermer Menon 2009"""
+        """test agnpy synchrotron SED against the one from Figure 7.4 of Dermer 
+        Menon 2009"""
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
-            f"{data_dir}/sampled_seds/synch_figure_7_4_dermer_menon_2009.txt",
+            f"{data_dir}/reference_seds/synch_gamma_max_1e5_figure_7_4_dermer_menon_2009.txt",
             "Hz",
             "erg cm-2 s-1",
         )
@@ -92,6 +92,7 @@ class TestSynchrotron:
         synch = Synchrotron(pwl_blob_test)
         sed_agnpy = synch.sed_flux(nu_ref)
         # sed comparison plot
+        nu_range = [1e10, 1e18] * u.Hz
         make_comparison_plot(
             nu_ref,
             sed_ref,
@@ -101,29 +102,31 @@ class TestSynchrotron:
             "Synchrotron",
             f"{figures_dir}/synch_comparison_figure_7_4_dermer_menon_2009.png",
             "sed",
+            y_range=[1e-13, 1e-9],
+            comparison_range=nu_range.to_value("Hz"),
         )
-        # requires that the SED points deviate less than 15% from the figure
-        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.15)
+        # requires that the SED points deviate less than 30% from the figure
+        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.3, nu_range)
 
     @pytest.mark.parametrize(
         "file_ref , spectrum_type, spectrum_parameters, figure_title, figure_path",
         [
             (
-                f"{data_dir}/sampled_seds/synch_ssa_pwl_jetset_1.1.2.txt",
+                f"{data_dir}/reference_seds/synch_ssa_pwl_jetset_1.1.2.txt",
                 "PowerLaw",
                 {"p": 2, "gamma_min": 2, "gamma_max": 1e6},
                 "Self-Absorbed Synchrotron, power-law electron distribution",
                 f"{figures_dir}/ssa_pwl_comparison_jetset_1.1.2.png",
             ),
             (
-                f"{data_dir}/sampled_seds/synch_ssa_bpwl_jetset_1.1.2.txt",
+                f"{data_dir}/reference_seds/synch_ssa_bpwl_jetset_1.1.2.txt",
                 "BrokenPowerLaw",
                 {"p1": 2, "p2": 3, "gamma_b": 1e4, "gamma_min": 2, "gamma_max": 1e6},
                 "Self-Absorbed Synchrotron, broken power-law electron distribution",
                 f"{figures_dir}/ssa_bpwl_comparison_jetset_1.1.2.png",
             ),
             (
-                f"{data_dir}/sampled_seds/synch_ssa_lp_jetset_1.1.2.txt",
+                f"{data_dir}/reference_seds/synch_ssa_lp_jetset_1.1.2.txt",
                 "LogParabola",
                 {"p": 2, "q": 0.4, "gamma_0": 1e4, "gamma_min": 2, "gamma_max": 1e6},
                 "Self-Absorbed Synchrotron, log-parabola electron distribution",

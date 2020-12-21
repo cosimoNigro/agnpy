@@ -76,7 +76,7 @@ class TestSynchrotronSelfCompton:
         """test agnpy SSC SED against the one in Figure 7.4 of Dermer Menon"""
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
-            f"{data_dir}/sampled_seds/ssc_figure_7_4_dermer_menon_2009.txt",
+            f"{data_dir}/reference_seds/ssc_gamma_max_1e5_figure_7_4_dermer_menon_2009.txt",
             "Hz",
             "erg cm-2 s-1",
         )
@@ -84,6 +84,7 @@ class TestSynchrotronSelfCompton:
         ssc = SynchrotronSelfCompton(pwl_blob_test)
         sed_agnpy = ssc.sed_flux(nu_ref)
         # sed comparison plot
+        nu_range = [1e14, 1e25] * u.Hz
         make_comparison_plot(
             nu_ref,
             sed_ref,
@@ -93,9 +94,11 @@ class TestSynchrotronSelfCompton:
             "Synchrotron Self Compton",
             f"{figures_dir}/ssc_comparison_figure_7_4_dermer_menon_2009.png",
             "sed",
+            y_range=[1e-13, 1e-9],
+            comparison_range=nu_range.to_value("Hz"),
         )
         # requires that the SED points deviate less than 15% from the figure
-        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.15)
+        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.15, nu_range)
 
     def test_ssc_integration_methods(self):
         """test SSC SED for different integration methods against each other
@@ -134,7 +137,7 @@ class TestExternalCompton:
         """test agnpy SED for EC on Disk against the one in Figure 8 of Finke 2016"""
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
-            f"{data_dir}/sampled_seds/ec_disk_figure_8_finke_2016.txt",
+            f"{data_dir}/reference_seds/ec_disk_figure_8_finke_2016.txt",
             "Hz",
             "erg cm-2 s-1",
         )
@@ -189,7 +192,7 @@ class TestExternalCompton:
         """test agnpy SED for EC on BLR against the one in Figure 10 of Finke 2016"""
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
-            f"{data_dir}/sampled_seds/ec_blr_figure_10_finke_2016.txt",
+            f"{data_dir}/reference_seds/ec_blr_figure_10_finke_2016.txt",
             "Hz",
             "erg cm-2 s-1",
         )
@@ -245,7 +248,7 @@ class TestExternalCompton:
         """test agnpy SED for EC on DT against the one in Figure 11 of Finke 2016"""
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
-            f"{data_dir}/sampled_seds/ec_dt_figure_11_finke_2016.txt",
+            f"{data_dir}/reference_seds/ec_dt_figure_11_finke_2016.txt",
             "Hz",
             "erg cm-2 s-1",
         )
