@@ -163,15 +163,14 @@ class SSDisk:
         self.R_g = (G * self.M_BH / np.power(c, 2)).to("cm")
         if R_g_units:
             # check that numbers have been passed
-            R_in_unit_check = isinstance(R_in, int) or isinstance(R_in, float)
-            R_out_unit_check = isinstance(R_out, int) or isinstance(R_out, float)
-            if R_in_unit_check and R_out_unit_check:
-                self.R_in = R_in * self.R_g
-                self.R_out = R_out * self.R_g
-                self.R_in_tilde = R_in
-                self.R_out_tilde = R_out
-            else:
+            R_in_unit_check = isinstance(R_in, (int, float))
+            R_out_unit_check = isinstance(R_out, (int, float))
+            if not R_in_unit_check or not R_out_unit_check:
                 raise TypeError("R_in / R_out passed with units, int / float expected")
+            self.R_in = R_in * self.R_g
+            self.R_out = R_out * self.R_g
+            self.R_in_tilde = R_in
+            self.R_out_tilde = R_out
         else:
             # check that quantities have been passed
             R_in_unit_check = isinstance(R_in, u.Quantity)
@@ -373,11 +372,10 @@ class SphericalShellBLR:
         self.name = "SphericalShellBLR"
         self.L_disk = L_disk
         self.xi_line = xi_line
-        if line in lines_dictionary:
-            self.line = line
-            self.lambda_line = lines_dictionary[line]["lambda"]
-        else:
+        if line not in lines_dictionary:
             raise NameError(f"{line} not available in the line dictionary")
+        self.line = line
+        self.lambda_line = lines_dictionary[line]["lambda"]
         self.epsilon_line = (
             self.lambda_line.to("erg", equivalencies=u.spectral()) / mec2
         ).to_value("")
