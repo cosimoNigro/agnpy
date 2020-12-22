@@ -137,7 +137,7 @@ class TestExternalCompton:
         """test agnpy SED for EC on Disk against the one in Figure 8 of Finke 2016"""
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
-            f"{data_dir}/reference_seds/ec_disk_figure_8_finke_2016.txt",
+            f"{data_dir}/reference_seds/ec_disk_r_1e17_cm_figure_8_finke_2016.txt",
             "Hz",
             "erg cm-2 s-1",
         )
@@ -154,7 +154,7 @@ class TestExternalCompton:
             "Figure 8, Finke (2016)",
             "agnpy",
             "External Compton on Shakura Sunyaev Disk",
-            f"{figures_dir}/ec_disk_comparison_figure_8_finke_2016.png",
+            f"{figures_dir}/ec_disk_r_1e17_cm_comparison_figure_8_finke_2016.png",
             "sed",
             comparison_range=nu_range.to_value("Hz"),
         )

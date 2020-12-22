@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 
 SED_X_LABEL = r"$\nu\,/\,{\rm Hz}$"
 SED_Y_LABEL = r"$\nu F_{\nu}\,/\,({\rm erg}\,{\rm cm}^{-2}\,{\rm s}^{-1})$"
-SED_DEVIATION_LABEL = r"$1 - \nu F_{\nu, \rm agnpy}\,/\,\nu F_{\nu, \rm reference}$"
+SED_DEVIATION_LABEL = r"$\nu F_{\nu, \rm agnpy}\,/\,\nu F_{\nu, \rm reference} - 1$"
 
 TAU_X_LABEL = r"$\nu\,/\,{\rm Hz}$"
 TAU_Y_LABEL = r"$\tau_{\gamma\gamma}$"
 TAU_DEVIATION_LABEL = (
-    r"$1 - \tau_{\gamma\gamma, \rm agnpy}\,/\,\tau_{\gamma\gamma, \rm reference}$"
+    r"$\tau_{\gamma\gamma, \rm agnpy}\,/\,\tau_{\gamma\gamma, \rm reference}$ - 1"
 )
 
 
@@ -97,7 +97,7 @@ def make_comparison_plot(
         # set a custom y label, keep the x-axis in frequency
         x_label = SED_X_LABEL
         y_label = plot_type
-        deviation_label = f"1 - ({plot_type} agnpy / {plot_type} ref.)"
+        deviation_label = f"({plot_type} agnpy / {plot_type} ref.) - 1"
     # make the plot
     fig, ax = plt.subplots(
         2,
@@ -114,7 +114,7 @@ def make_comparison_plot(
     if y_range is not None:
         ax[0].set_ylim(y_range)
     # plot the deviation in the bottom panel
-    deviation = 1 - y_comp / y_ref
+    deviation = y_comp / y_ref - 1
     ax[1].axhline(0, ls="-", color="darkgray")
     ax[1].axhline(0.2, ls="--", color="darkgray")
     ax[1].axhline(-0.2, ls="--", color="darkgray")

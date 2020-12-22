@@ -1,6 +1,4 @@
-# the following points represents the synchrotron SED of the spectrum with
-# gamma_max = 1e5 in Figure 7.4 of Dermer and Menon 2009
-# courtesy of Charles Dermer         
+# nu / Hz | nuFnu / (erg cm-2 s-1)
 1.1999e+08, 9.3911e-18
 1.5818e+08, 8.3654e-17
 2.0853e+08, 3.8979e-16
