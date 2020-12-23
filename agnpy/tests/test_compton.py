@@ -20,7 +20,7 @@ data_dir = agnpy_dir / "data"
 figures_dir = agnpy_dir.parent / "crosschecks/figures/compton"
 figures_dir.mkdir(parents=True, exist_ok=True)
 
-# variables with _test are global and meant to be used in all tests
+# variables with _test are global and meant to be used in all tests  
 pwl_spectrum_norm_test = 1e48 * u.Unit("erg")
 pwl_dict_test = {
     "type": "PowerLaw",

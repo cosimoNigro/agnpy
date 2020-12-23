@@ -20,7 +20,7 @@ agnpy_dir = Path(__file__).parent.parent
 # where to read sampled files
 data_dir = agnpy_dir / "data"
 # where to save figures
-figures_dir = agnpy_dir.parent / "crosschecks/figures/absorption"
+figures_dir = agnpy_dir.parent / "crosschecks/figures/compton"
 figures_dir.mkdir(parents=True, exist_ok=True)
 
 # variables with _test are global and meant to be used in all tests
