@@ -19,33 +19,32 @@ def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
     sample_table = np.loadtxt(sample_file, delimiter=",", comments="#")
     x = sample_table[:, 0] * u.Unit(x_unit)
     y = sample_table[:, 1] if y_unit is None else sample_table[:, 1] * u.Unit(y_unit)
-
     return x, y
 
 
-def check_deviation(x, y_ref, y_comp, atol, rtol, x_range=None):
-    """check the deviation of two quantities within a given range of x"""
+def check_deviation(x, y_comp, y_ref, rtol, x_range=None):
+    """check the deviation of two quantities within a given range of x
+    when setting atol = 0 in np.allclose it will check that
+    |a - b| <= rtol * |b|, that is |a / b - 1| <= rtol. 
+    If we choose the agnpy values to be a and the reference (code ro figure from 
+    the literature) to be b then |a / b - 1| will be positive when agnpy
+    overestimates the reference (a > b) and negative when agnpy underestimates 
+    the reference (a < b). 
+    """
     if x_range is not None:
         condition = (x >= x_range[0]) * (x <= x_range[1])
         y_ref = y_ref[condition]
         y_comp = y_comp[condition]
-    # have the quantities to be compared units?
-    try:
-        y_ref.unit
-        atol *= y_ref.unit
-        comparison = u.allclose(y_ref, y_comp, atol=atol, rtol=rtol)
-    # dimensionless quantities to be compared
-    except AttributeError:
-        comparison = np.allclose(y_ref, y_comp, atol=atol, rtol=rtol)
+    comparison = np.allclose(y_comp, y_ref, atol=0, rtol=rtol)
     return comparison
 
 
 def make_comparison_plot(
     nu,
-    y_ref,
     y_comp,
-    ref_label,
+    y_ref,
     comp_label,
+    ref_label,
     fig_title,
     fig_path,
     plot_type,
@@ -62,11 +61,11 @@ def make_comparison_plot(
     ----------
     nu: :class:`~astropy.units.Quantity`
         frequencies over which the comparison plot has to be plotted
+    y_comp: :class:`~astropy.units.Quantity` or :class:`~numpy.ndarray`
+        SED or gamma-gamma absorption to compare with (usually agnpy)
     y_ref: :class:`~astropy.units.Quantity` or :class:`~numpy.ndarray`
         SED or gamma-gamma absorption to be compare with (from literature or
         another code)
-    y_comp: :class:`~astropy.units.Quantity` or :class:`~numpy.ndarray`
-        SED or gamma-gamma absorption to compare with (usually agnpy)
     ref_label : `string`
         label of the reference model
     comp_label : `string`
@@ -106,6 +105,7 @@ def make_comparison_plot(
         figsize=(8, 6),
     )
     # plot the SEDs or TAUs in the upper panel
+    # plot the reference sed with a continuous line and agnpy sed with a dashed one
     ax[0].loglog(nu, y_ref, marker="o", ls="-", lw=1.5, label=ref_label)
     ax[0].loglog(nu, y_comp, marker=".", ls="--", lw=1.5, label=comp_label)
     ax[0].set_ylabel(y_label)

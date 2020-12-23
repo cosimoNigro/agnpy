@@ -253,6 +253,10 @@ class TestBlob:
         pwl_blob_test.set_delta_D(Gamma=10, theta_s=20 * u.deg)
         assert np.allclose(pwl_blob_test.delta_D, 1.53804, atol=0)
 
+    def test_set_gamma_size(self):
+        pwl_blob_test.set_gamma_size(1000)
+        assert len(pwl_blob_test.gamma) == 1000
+
     def test_N_e(self):
         """check that N_e is n_e * V_b i.e. test their ratio to be V_b"""
         pwl_blob_test.set_spectrum(spectrum_norm_test, pwl_dict_test, "differential")

@@ -178,21 +178,31 @@ class Blob:
             self.spectrum_norm, self.spectrum_dict, self.spectrum_norm_type, gamma_size
         )
 
+    def set_gamma_size(self, gamma_size):
+        """change size of the array of electrons Lorentz factors"""
+        self.gamma_size = gamma_size
+        self.gamma = np.logspace(
+            np.log10(self.gamma_min), np.log10(self.gamma_max), self.gamma_size
+        )
+        self.gamma_to_integrate = np.logspace(1, 9, self.gamma_size)
+
     def set_gamma(self, gamma_min, gamma_max, gamma_size):
         """set the array of Lorentz factors to be used for integration in the 
         frame comoving with the blob"""
         self.gamma_min = gamma_min
         self.gamma_max = gamma_max
+        self.gamma_size = gamma_size
         # grid of Lorentz factor for the integration in the blob comoving frame
         self.gamma = np.logspace(
-            np.log10(self.gamma_min), np.log10(self.gamma_max), gamma_size
+            np.log10(self.gamma_min), np.log10(self.gamma_max), self.gamma_size
         )
 
     def set_spectrum(
         self, spectrum_norm, spectrum_dict, spectrum_norm_type, gamma_size=200
     ):
-        r"""set both the array of Lorentz factors and the spectrum :math:`n_e` 
-        for the electrons accelerated in the blob"""
+        r"""set the spectrum :math:`n_e` for the electrons accelerated in the 
+        blob, reset also the array of Lorentz factor given the `gamma_min` and
+        `gamma_max` in the parameters dictionary"""
         self.set_gamma(
             spectrum_dict["parameters"]["gamma_min"],
             spectrum_dict["parameters"]["gamma_max"],
