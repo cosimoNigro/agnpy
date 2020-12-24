@@ -35,8 +35,7 @@ def check_deviation(x, y_comp, y_ref, rtol, x_range=None):
         condition = (x >= x_range[0]) * (x <= x_range[1])
         y_ref = y_ref[condition]
         y_comp = y_comp[condition]
-    comparison = np.allclose(y_comp, y_ref, atol=0, rtol=rtol)
-    return comparison
+    return np.allclose(y_comp, y_ref, atol=0, rtol=rtol)
 
 
 def make_comparison_plot(
