@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 
 SED_X_LABEL = r"$\nu\,/\,{\rm Hz}$"
 SED_Y_LABEL = r"$\nu F_{\nu}\,/\,({\rm erg}\,{\rm cm}^{-2}\,{\rm s}^{-1})$"
-SED_DEVIATION_LABEL = r"$1 - \nu F_{\nu, \rm agnpy}\,/\,\nu F_{\nu, \rm reference}$"
+SED_DEVIATION_LABEL = r"$\nu F_{\nu, \rm agnpy}\,/\,\nu F_{\nu, \rm reference} - 1$"
 
 TAU_X_LABEL = r"$\nu\,/\,{\rm Hz}$"
 TAU_Y_LABEL = r"$\tau_{\gamma\gamma}$"
 TAU_DEVIATION_LABEL = (
-    r"$1 - \tau_{\gamma\gamma, \rm agnpy}\,/\,\tau_{\gamma\gamma, \rm reference}$"
+    r"$\tau_{\gamma\gamma, \rm agnpy}\,/\,\tau_{\gamma\gamma, \rm reference}$ - 1"
 )
 
 
@@ -19,33 +19,31 @@ def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
     sample_table = np.loadtxt(sample_file, delimiter=",", comments="#")
     x = sample_table[:, 0] * u.Unit(x_unit)
     y = sample_table[:, 1] if y_unit is None else sample_table[:, 1] * u.Unit(y_unit)
-
     return x, y
 
 
-def check_deviation(x, y_ref, y_comp, atol, rtol, x_range=None):
-    """check the deviation of two quantities within a given range of x"""
+def check_deviation(x, y_comp, y_ref, rtol, x_range=None):
+    """check the deviation of two quantities within a given range of x
+    when setting atol = 0 in np.allclose it will check that
+    |a - b| <= rtol * |b|, that is |a / b - 1| <= rtol. 
+    If we choose the agnpy values to be a and the reference (code ro figure from 
+    the literature) to be b then |a / b - 1| will be positive when agnpy
+    overestimates the reference (a > b) and negative when agnpy underestimates 
+    the reference (a < b). 
+    """
     if x_range is not None:
         condition = (x >= x_range[0]) * (x <= x_range[1])
         y_ref = y_ref[condition]
         y_comp = y_comp[condition]
-    # have the quantities to be compared units?
-    try:
-        y_ref.unit
-        atol *= y_ref.unit
-        comparison = u.allclose(y_ref, y_comp, atol=atol, rtol=rtol)
-    # dimensionless quantities to be compared
-    except AttributeError:
-        comparison = np.allclose(y_ref, y_comp, atol=atol, rtol=rtol)
-    return comparison
+    return np.allclose(y_comp, y_ref, atol=0, rtol=rtol)
 
 
 def make_comparison_plot(
     nu,
-    y_ref,
     y_comp,
-    ref_label,
+    y_ref,
     comp_label,
+    ref_label,
     fig_title,
     fig_path,
     plot_type,
@@ -62,11 +60,10 @@ def make_comparison_plot(
     ----------
     nu: :class:`~astropy.units.Quantity`
         frequencies over which the comparison plot has to be plotted
-    y_ref: :class:`~astropy.units.Quantity` or :class:`~numpy.ndarray`
-        SED or gamma-gamma absorption to be compare with (from literature or
-        another code)
     y_comp: :class:`~astropy.units.Quantity` or :class:`~numpy.ndarray`
-        SED or gamma-gamma absorption to compare with (usually agnpy)
+        SED or gamma-gamma absorption to be compared (usually agnpy)
+    y_ref: :class:`~astropy.units.Quantity` or :class:`~numpy.ndarray`
+        reference SED or gamma-gamma absorption (from literature or another code)
     ref_label : `string`
         label of the reference model
     comp_label : `string`
@@ -97,7 +94,7 @@ def make_comparison_plot(
         # set a custom y label, keep the x-axis in frequency
         x_label = SED_X_LABEL
         y_label = plot_type
-        deviation_label = f"1 - ({plot_type} agnpy / {plot_type} ref.)"
+        deviation_label = f"({plot_type} agnpy / {plot_type} ref.) - 1"
     # make the plot
     fig, ax = plt.subplots(
         2,
@@ -106,15 +103,18 @@ def make_comparison_plot(
         figsize=(8, 6),
     )
     # plot the SEDs or TAUs in the upper panel
-    ax[0].loglog(nu, y_ref, marker="o", ls="-", lw=1.5, label=ref_label)
-    ax[0].loglog(nu, y_comp, marker=".", ls="--", lw=1.5, label=comp_label)
+    # plot the reference sed with a continuous line and agnpy sed with a dashed one
+    ax[0].loglog(nu, y_ref, marker=".", ls="-", color="k", lw=1.5, label=ref_label)
+    ax[0].loglog(
+        nu, y_comp, marker=".", ls="--", color="crimson", lw=1.5, label=comp_label
+    )
     ax[0].set_ylabel(y_label)
     ax[0].set_title(fig_title)
     ax[0].legend(loc="best")
     if y_range is not None:
         ax[0].set_ylim(y_range)
     # plot the deviation in the bottom panel
-    deviation = 1 - y_comp / y_ref
+    deviation = y_comp / y_ref - 1
     ax[1].axhline(0, ls="-", color="darkgray")
     ax[1].axhline(0.2, ls="--", color="darkgray")
     ax[1].axhline(-0.2, ls="--", color="darkgray")
@@ -122,7 +122,13 @@ def make_comparison_plot(
     ax[1].axhline(-0.3, ls=":", color="darkgray")
     ax[1].set_ylim([-0.5, 0.5])
     ax[1].semilogx(
-        nu, deviation, marker=".", ls="--", color="C1", lw=1.5, label=deviation_label
+        nu,
+        deviation,
+        marker=".",
+        ls="--",
+        color="crimson",
+        lw=1.5,
+        label=deviation_label,
     )
     ax[1].set_xlabel(x_label)
     ax[1].legend(loc="best")

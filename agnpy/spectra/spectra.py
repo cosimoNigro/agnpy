@@ -98,6 +98,13 @@ class ElectronDistribution:
         k_e = norm.to("cm-3") / cls.evaluate(1, 1, **kwargs)
         return cls(k_e, **kwargs)
 
+    @classmethod
+    def from_total_energy(cls, W_e, V_b, **kwargs):
+        r"""sets :math:`k_e` from the total energy `W_e`, given a volume
+        V_b of the emission region."""
+        u_e = W_e / V_b
+        return cls.from_normalised_energy_density(u_e, **kwargs)
+
 
 class PowerLaw(ElectronDistribution):
     r"""Class for power-law particle spectrum. 

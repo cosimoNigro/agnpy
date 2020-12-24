@@ -51,7 +51,7 @@ pwl_blob_test = Blob(
 bpwl_blob_test = Blob(
     1e16 * u.cm, 1, 40, 40, 0.56 * u.G, bpwl_spectrum_norm_test, bpwl_dict_test,
 )
-bpwl_blob_test.set_gamma_size(350)
+bpwl_blob_test.set_gamma_size(400)
 # global disk
 M_BH = 1.2 * 1e9 * M_sun.cgs
 L_disk = 2e46 * u.Unit("erg s-1")
@@ -72,30 +72,38 @@ dt_test = RingDustTorus(L_disk, csi_dt, T_dt)
 class TestSynchrotronSelfCompton:
     """class grouping all tests related to the Synchrotron Slef Compton class"""
 
-    def test_ssc_reference_sed(self):
-        """test agnpy SSC SED against the one in Figure 7.4 of Dermer Menon"""
+    @pytest.mark.parametrize("gamma_max, nu_range_max", [("1e5", 1e25), ("1e7", 1e27)])
+    def test_ssc_reference_sed(self, gamma_max, nu_range_max):
+        """test agnpy SSC SED against the ones in Figure 7.4 of Dermer Menon 2009"""
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
-            f"{data_dir}/sampled_seds/ssc_figure_7_4_dermer_menon_2009.txt",
+            f"{data_dir}/reference_seds/dermer_menon_2009/figure_7_4/ssc_gamma_max_{gamma_max}.txt",
             "Hz",
             "erg cm-2 s-1",
         )
+        # agnpy
+        # change the gamma_max in the blob
+        pwl_dict_test["parameters"]["gamma_max"] = float(gamma_max)
+        pwl_blob_test.set_spectrum(pwl_spectrum_norm_test, pwl_dict_test, "integral")
         # recompute the SED at the same ordinates where the figure was sampled
         ssc = SynchrotronSelfCompton(pwl_blob_test)
         sed_agnpy = ssc.sed_flux(nu_ref)
         # sed comparison plot
+        nu_range = [1e14, nu_range_max] * u.Hz
         make_comparison_plot(
             nu_ref,
-            sed_ref,
             sed_agnpy,
-            "Figure 7.4, Dermer and Menon (2009)",
+            sed_ref,
             "agnpy",
-            "Synchrotron Self Compton",
-            f"{figures_dir}/ssc_comparison_figure_7_4_dermer_menon_2009.png",
+            "Figure 7.4, Dermer and Menon (2009)",
+            "Synchrotron Self Compton, " + r"$\gamma_{max} = $" + gamma_max,
+            f"{figures_dir}/ssc_comparison_gamma_max_{gamma_max}_figure_7_4_dermer_menon_2009.png",
             "sed",
+            y_range=[1e-13, 1e-9],
+            comparison_range=nu_range.to_value("Hz"),
         )
-        # requires that the SED points deviate less than 15% from the figure
-        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.15)
+        # requires that the SED points deviate less than 20% from the figure
+        assert check_deviation(nu_ref, sed_agnpy, sed_ref, 0.2, nu_range)
 
     def test_ssc_integration_methods(self):
         """test SSC SED for different integration methods against each other
@@ -107,56 +115,54 @@ class TestSynchrotronSelfCompton:
         )
         sed_ssc_trapz = ssc_trapz.sed_flux(nu)
         sed_ssc_trapz_loglog = ssc_trapz_loglog.sed_flux(nu)
-        # check in a restricted frequency range
-        nu_range = [1e15, 1e26] * u.Hz
+        # compare in a restricted energy range
+        nu_range = [1e15, 1e27] * u.Hz
         make_comparison_plot(
             nu,
-            sed_ssc_trapz,
             sed_ssc_trapz_loglog,
-            "trapezoidal integration",
+            sed_ssc_trapz,
             "trapezoidal log-log integration",
+            "trapezoidal integration",
             "Synchrotron Self Compton",
             f"{figures_dir}/ssc_comparison_integration_methods.png",
             "sed",
             comparison_range=nu_range.to_value("Hz"),
         )
-        # requires that the SED points deviate less than 20%
-        assert check_deviation(
-            nu, sed_ssc_trapz, sed_ssc_trapz_loglog, 0, 0.2, nu_range
-        )
+        # requires that the SED points deviate less than 15%
+        assert check_deviation(nu, sed_ssc_trapz_loglog, sed_ssc_trapz, 0.15, nu_range)
 
 
 class TestExternalCompton:
-    """class grouping all tests related to the Synchrotron Slef Compton class"""
+    """class grouping all tests related to the External Compton class"""
 
     # tests for EC on SSDisk
-    def test_ec_disk_reference_sed(self):
+    @pytest.mark.parametrize("r", ["1e17", "1e18"])
+    def test_ec_disk_reference_sed(self, r):
         """test agnpy SED for EC on Disk against the one in Figure 8 of Finke 2016"""
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
-            f"{data_dir}/sampled_seds/ec_disk_figure_8_finke_2016.txt",
+            f"{data_dir}/reference_seds/finke_2016/figure_8/ec_disk_r_{r}.txt",
             "Hz",
             "erg cm-2 s-1",
         )
         # recompute the SED at the same ordinates where the figure was sampled
-        r = 1e17 * u.cm
-        ec_disk = ExternalCompton(bpwl_blob_test, disk_test, r)
+        ec_disk = ExternalCompton(bpwl_blob_test, disk_test, float(r) * u.cm)
         sed_agnpy = ec_disk.sed_flux(nu_ref)
         # check in a restricted energy range
         nu_range = [1e18, 1e28] * u.Hz
         make_comparison_plot(
             nu_ref,
-            sed_ref,
             sed_agnpy,
-            "Figure 8, Finke (2016)",
+            sed_ref,
             "agnpy",
-            "External Compton on Shakura Sunyaev Disk",
-            f"{figures_dir}/ec_disk_comparison_figure_8_finke_2016.png",
+            "Figure 8, Finke (2016)",
+            f"External Compton on Shakura Sunyaev Disk, r = {r} cm",
+            f"{figures_dir}/ec_disk_comparison_r_{r}_cm_figure_8_finke_2016.png",
             "sed",
             comparison_range=nu_range.to_value("Hz"),
         )
-        # requires that the SED points deviate less than 30% from the figure
-        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.3, nu_range)
+        # requires that the SED points deviate less than 35% from the figure
+        assert check_deviation(nu_ref, sed_agnpy, sed_ref, 0.35, nu_range)
 
     def test_ec_disk_integration_methods(self):
         """test EC on Disk SED for different integration methods against each other
@@ -173,43 +179,45 @@ class TestExternalCompton:
         sed_ec_disk_trapz_loglog = ec_disk_trapz_loglog.sed_flux(nu)
         make_comparison_plot(
             nu,
-            sed_ec_disk_trapz,
             sed_ec_disk_trapz_loglog,
-            "trapezoidal integration",
+            sed_ec_disk_trapz,
             "trapezoidal log-log integration",
+            "trapezoidal integration",
             "External Compton on Shakura Sunyaev Disk",
             f"{figures_dir}/ec_disk_comparison_integration_methods.png",
             "sed",
         )
         # requires that the SED points deviate less than 20%
-        assert check_deviation(nu, sed_ec_disk_trapz, sed_ec_disk_trapz_loglog, 0, 0.2)
+        assert check_deviation(nu, sed_ec_disk_trapz_loglog, sed_ec_disk_trapz, 0.2)
 
     # tests for EC on BLR
-    def test_ec_blr_reference_sed(self):
+    @pytest.mark.parametrize("r", ["1e18", "1e19"])
+    def test_ec_blr_reference_sed(self, r):
         """test agnpy SED for EC on BLR against the one in Figure 10 of Finke 2016"""
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
-            f"{data_dir}/sampled_seds/ec_blr_figure_10_finke_2016.txt",
+            f"{data_dir}/reference_seds/finke_2016/figure_10/ec_blr_r_{r}.txt",
             "Hz",
             "erg cm-2 s-1",
         )
         # recompute the SED at the same ordinates where the figure was sampled
-        r = 1e18 * u.cm
-        ec_blr = ExternalCompton(bpwl_blob_test, blr_test, r)
+        ec_blr = ExternalCompton(bpwl_blob_test, blr_test, float(r) * u.cm)
         sed_agnpy = ec_blr.sed_flux(nu_ref)
-        # sed comparison plot
+        # check in a restricted energy range
+        nu_range = [1e18, 1e28] * u.Hz
         make_comparison_plot(
             nu_ref,
-            sed_ref,
             sed_agnpy,
-            "Figure 10, Finke (2016)",
+            sed_ref,
             "agnpy",
-            "External Compton on Spherical Shell Broad Line Region",
-            f"{figures_dir}/ec_blr_comparison_figure_10_finke_2016.png",
+            "Figure 10, Finke (2016)",
+            f"External Compton on Spherical Shell BLR, r = {r} cm",
+            f"{figures_dir}/ec_blr_comparison_r_{r}_cm_figure_10_finke_2016.png",
             "sed",
+            comparison_range=nu_range.to_value("Hz"),
         )
         # requires that the SED points deviate less than 30% from the figure
-        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.3)
+        assert check_deviation(nu_ref, sed_agnpy, sed_ref, 0.3, nu_range)
 
     def test_ec_blr_integration_methods(self):
         """test EC on BLR SED for different integration methods
@@ -223,50 +231,47 @@ class TestExternalCompton:
         sed_ec_blr_trapz = ec_blr_trapz.sed_flux(nu)
         sed_ec_blr_trapz_loglog = ec_blr_trapz_loglog.sed_flux(nu)
         # check in a restricted energy range
-        nu_range = [1e15, 1e27] * u.Hz
         make_comparison_plot(
             nu,
-            sed_ec_blr_trapz,
             sed_ec_blr_trapz_loglog,
-            "trapezoidal integration",
+            sed_ec_blr_trapz,
             "trapezoidal log-log integration",
+            "trapezoidal integration",
             "External Compton on Spherical Shell Broad Line Region",
             f"{figures_dir}/ec_blr_comparison_integration_methods.png",
             "sed",
-            comparison_range=nu_range.to_value("Hz"),
         )
         # requires that the SED points deviate less than 30%
-        assert check_deviation(
-            nu, sed_ec_blr_trapz, sed_ec_blr_trapz_loglog, 0, 0.3, nu_range
-        )
+        assert check_deviation(nu, sed_ec_blr_trapz_loglog, sed_ec_blr_trapz, 0.3)
 
     # tests for EC on DT
-    def test_ec_dt_reference_sed(self):
+    @pytest.mark.parametrize("r", ["1e20", "1e21"])
+    def test_ec_dt_reference_sed(self, r):
         """test agnpy SED for EC on DT against the one in Figure 11 of Finke 2016"""
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
-            f"{data_dir}/sampled_seds/ec_dt_figure_11_finke_2016.txt",
+            f"{data_dir}/reference_seds/finke_2016/figure_11/ec_dt_r_{r}.txt",
             "Hz",
             "erg cm-2 s-1",
         )
-        # correct miscalculation of the DT emissivity in Finke 2016
-        sed_ref *= 2
-        r = 1e20 * u.cm
-        ec_dt = ExternalCompton(bpwl_blob_test, dt_test, r)
+        # recompute the SED at the same ordinates where the figure was sampled
+        ec_dt = ExternalCompton(bpwl_blob_test, dt_test, float(r) * u.cm)
         sed_agnpy = ec_dt.sed_flux(nu_ref)
-        # sed comparison plot
+        # check in a restricted energy range
+        nu_range = [1e18, 1e28] * u.Hz
         make_comparison_plot(
             nu_ref,
-            sed_ref,
             sed_agnpy,
-            "Figure 11, Finke (2016)",
+            sed_ref,
             "agnpy",
-            "External Compton on Ring Dust Torus",
-            f"{figures_dir}/ec_dt_comparison_figure_11_finke_2016.png",
+            "Figure 11, Finke (2016)",
+            f"External Compton on Ring Dust Torus, r = {r} cm",
+            f"{figures_dir}/ec_dt_r_{r}_cm_comparison_figure_11_finke_2016.png",
             "sed",
+            comparison_range=nu_range.to_value("Hz"),
         )
         # requires that the SED points deviate less than 30% from the figure
-        assert check_deviation(nu_ref, sed_ref, sed_agnpy, 0, 0.3)
+        assert check_deviation(nu_ref, sed_agnpy, sed_ref, 0.3, nu_range)
 
     def test_ec_dt_integration_methods(self):
         """test EC on DT SED for different integration methods
@@ -281,16 +286,16 @@ class TestExternalCompton:
         sed_ec_dt_trapz_loglog = ec_dt_trapz_loglog.sed_flux(nu)
         make_comparison_plot(
             nu,
-            sed_ec_dt_trapz,
             sed_ec_dt_trapz_loglog,
-            "trapezoidal integration",
+            sed_ec_dt_trapz,
             "trapezoidal log-log integration",
+            "trapezoidal integration",
             "External Compton on Ring Dust Torus",
             f"{figures_dir}/ec_dt_comparison_integration_methods.png",
             "sed",
         )
         # requires that the SED points deviate less than 20%
-        assert check_deviation(nu, sed_ec_dt_trapz, sed_ec_dt_trapz_loglog, 0, 0.2)
+        assert check_deviation(nu, sed_ec_dt_trapz_loglog, sed_ec_dt_trapz, 0.2)
 
     # tests against point-like sources approximating the targets
     def test_ec_blr_vs_point_source(self):
@@ -311,17 +316,17 @@ class TestExternalCompton:
         # sed comparison plot
         make_comparison_plot(
             nu,
-            sed_ec_blr,
             sed_ec_ps_blr,
-            "spherical shell BLR",
+            sed_ec_blr,
             "point source approximating the BLR",
+            "spherical shell BLR",
             "External Compton on Spherical Shell BLR, "
             + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm line}$",
             f"{figures_dir}/ec_blr_point_source_comparison.png",
             "sed",
         )
         # requires a 20% deviation from the two SED points
-        assert check_deviation(nu, sed_ec_blr, sed_ec_ps_blr, 0, 0.2)
+        assert check_deviation(nu, sed_ec_ps_blr, sed_ec_blr, 0.2)
 
     def test_ec_dt_vs_point_source(self):
         """check if in the limit of large distances the EC on the DT tends to
@@ -338,14 +343,14 @@ class TestExternalCompton:
         sed_ec_ps_dt = ec_ps_dt.sed_flux(nu)
         make_comparison_plot(
             nu,
-            sed_ec_dt,
             sed_ec_ps_dt,
-            "ring dust torus",
+            sed_ec_dt,
             "point source approximating the DT",
+            "ring Dust Torus",
             "External Compton on Ring Dust Torus, "
             + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm dt}$",
             f"{figures_dir}/ec_dt_point_source_comparison.png",
             "sed",
         )
         # requires a 20% deviation from the two SED points
-        assert check_deviation(nu, sed_ec_dt, sed_ec_ps_dt, 0, 0.2)
+        assert check_deviation(nu, sed_ec_dt, sed_ec_ps_dt, 0.2)

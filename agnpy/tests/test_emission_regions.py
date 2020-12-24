@@ -91,7 +91,7 @@ class TestBlob:
     # - tests for normalisations in cm3
     def test_pwl_integral_norm_cm3(self):
         """test if the integral norm in cm-3 is correctly set"""
-        pwl_blob_test.set_n_e(spectrum_norm_test, pwl_dict_test, "integral")
+        pwl_blob_test.set_spectrum(spectrum_norm_test, pwl_dict_test, "integral")
         assert u.allclose(
             pwl_blob_test.n_e_tot,
             spectrum_norm_test,
@@ -101,7 +101,7 @@ class TestBlob:
 
     def test_pwl_differential_norm_cm3(self):
         """test if the differential norm in cm-3 is correctly set"""
-        pwl_blob_test.set_n_e(spectrum_norm_test, pwl_dict_test, "differential")
+        pwl_blob_test.set_spectrum(spectrum_norm_test, pwl_dict_test, "differential")
         assert u.allclose(
             pwl_blob_test.n_e.k_e,
             spectrum_norm_test,
@@ -111,7 +111,7 @@ class TestBlob:
 
     def test_pwl_gamma_1_norm_cm3(self):
         """test if the norm at gamma = 1 in cm-3 is correctly set"""
-        pwl_blob_test.set_n_e(spectrum_norm_test, pwl_dict_test, "gamma=1")
+        pwl_blob_test.set_spectrum(spectrum_norm_test, pwl_dict_test, "gamma=1")
         assert u.allclose(
             pwl_blob_test.n_e(1), spectrum_norm_test, atol=0 * u.Unit("cm-3"), rtol=1e-2
         )
@@ -120,7 +120,7 @@ class TestBlob:
     def test_pwl_integral_norm_erg_cm3(self):
         """test if the integral norm in erg cm-3 is correctly set"""
         u_e = 3e-4 * u.Unit("erg cm-3")
-        pwl_blob_test.set_n_e(u_e, pwl_dict_test, "integral")
+        pwl_blob_test.set_spectrum(u_e, pwl_dict_test, "integral")
         assert u.allclose(
             pwl_blob_test.u_e, u_e, atol=0 * u.Unit("erg cm-3"), rtol=1e-2,
         )
@@ -128,7 +128,7 @@ class TestBlob:
     def test_pwl_integral_norm_erg(self):
         """test if the integral norm in erg is correctly set"""
         W_e = 1e48 * u.erg
-        pwl_blob_test.set_n_e(W_e, pwl_dict_test, "integral")
+        pwl_blob_test.set_spectrum(W_e, pwl_dict_test, "integral")
         assert u.allclose(pwl_blob_test.W_e, W_e, atol=0 * u.erg, rtol=1e-2)
 
     # tests for the broken power-law spectrum
@@ -140,7 +140,7 @@ class TestBlob:
     # - tests for normalisations in cm3
     def test_bpl_integral_norm_cm3(self):
         """test if the integral norm in cm-3 is correctly set"""
-        bpwl_blob_test.set_n_e(spectrum_norm_test, bpwl_dict_test, "integral")
+        bpwl_blob_test.set_spectrum(spectrum_norm_test, bpwl_dict_test, "integral")
         assert u.allclose(
             bpwl_blob_test.n_e_tot,
             spectrum_norm_test,
@@ -150,7 +150,7 @@ class TestBlob:
 
     def test_bpl_differential_norm_cm3(self):
         """test if the differential norm in cm-3 is correctly set"""
-        bpwl_blob_test.set_n_e(spectrum_norm_test, bpwl_dict_test, "differential")
+        bpwl_blob_test.set_spectrum(spectrum_norm_test, bpwl_dict_test, "differential")
         assert u.allclose(
             bpwl_blob_test.n_e.k_e,
             spectrum_norm_test,
@@ -160,7 +160,7 @@ class TestBlob:
 
     def test_bpl_gamma_1_norm_cm3(self):
         """test if the norm at gamma = 1 in cm-3 is correctly set"""
-        bpwl_blob_test.set_n_e(spectrum_norm_test, bpwl_dict_test, "gamma=1")
+        bpwl_blob_test.set_spectrum(spectrum_norm_test, bpwl_dict_test, "gamma=1")
         assert u.allclose(
             bpwl_blob_test.n_e(1),
             spectrum_norm_test,
@@ -172,7 +172,7 @@ class TestBlob:
     def test_bpl_integral_norm_erg_cm3(self):
         """test if the integral norm in erg cm-3 is correctly set"""
         u_e = 3e-4 * u.Unit("erg cm-3")
-        bpwl_blob_test.set_n_e(u_e, bpwl_dict_test, "integral")
+        bpwl_blob_test.set_spectrum(u_e, bpwl_dict_test, "integral")
         assert u.allclose(
             bpwl_blob_test.u_e, u_e, atol=0 * u.Unit("erg cm-3"), rtol=1e-2,
         )
@@ -180,7 +180,7 @@ class TestBlob:
     def test_bpl_integral_norm_erg(self):
         """test if the integral norm in erg is correctly set"""
         W_e = 1e48 * u.erg
-        bpwl_blob_test.set_n_e(W_e, bpwl_dict_test, "integral")
+        bpwl_blob_test.set_spectrum(W_e, bpwl_dict_test, "integral")
         assert u.allclose(bpwl_blob_test.W_e, W_e, atol=0 * u.erg, rtol=1e-2)
 
     # tests for the log-parabola spectrum
@@ -192,7 +192,7 @@ class TestBlob:
     # - tests for normalisations in cm3
     def test_lp_integral_norm_cm3(self):
         """test if the integral norm in cm-3 is correctly set"""
-        lp_blob_test.set_n_e(spectrum_norm_test, lp_dict_test, "integral")
+        lp_blob_test.set_spectrum(spectrum_norm_test, lp_dict_test, "integral")
         assert u.allclose(
             lp_blob_test.n_e_tot,
             spectrum_norm_test,
@@ -202,7 +202,7 @@ class TestBlob:
 
     def test_lp_differential_norm_cm3(self):
         """test if the differential norm in cm-3 is correctly set"""
-        lp_blob_test.set_n_e(spectrum_norm_test, lp_dict_test, "differential")
+        lp_blob_test.set_spectrum(spectrum_norm_test, lp_dict_test, "differential")
         assert u.allclose(
             lp_blob_test.n_e.k_e,
             spectrum_norm_test,
@@ -212,7 +212,7 @@ class TestBlob:
 
     def test_lp_gamma_1_norm_cm3(self):
         """test if the norm at gamma = 1 in cm-3 is correctly set"""
-        lp_blob_test.set_n_e(spectrum_norm_test, lp_dict_test, "gamma=1")
+        lp_blob_test.set_spectrum(spectrum_norm_test, lp_dict_test, "gamma=1")
         assert u.allclose(
             lp_blob_test.n_e(1), spectrum_norm_test, atol=0 * u.Unit("cm-3"), rtol=1e-2
         )
@@ -221,7 +221,7 @@ class TestBlob:
     def test_lp_integral_norm_erg_cm3(self):
         """test if the integral norm in erg cm-3 is correctly set"""
         u_e = 3e-4 * u.Unit("erg cm-3")
-        lp_blob_test.set_n_e(u_e, lp_dict_test, "integral")
+        lp_blob_test.set_spectrum(u_e, lp_dict_test, "integral")
         assert u.allclose(
             lp_blob_test.u_e, u_e, atol=0 * u.Unit("erg cm-3"), rtol=1e-2,
         )
@@ -229,7 +229,7 @@ class TestBlob:
     def test_lp_integral_norm_erg(self):
         """test if the integral norm in erg is correctly set"""
         W_e = 1e48 * u.erg
-        lp_blob_test.set_n_e(W_e, lp_dict_test, "integral")
+        lp_blob_test.set_spectrum(W_e, lp_dict_test, "integral")
         assert u.allclose(pwl_blob_test.W_e, W_e, atol=0 * u.erg, rtol=1e-2)
 
     # test if mismatching unit and normalisation type raises a NameError
@@ -246,7 +246,7 @@ class TestBlob:
         """check that the spectrum_norm_type 'differential' and 'gamma=1' 
         raise a NameError for a spectrum_norm in erg or erg cm-3"""
         with pytest.raises(NameError):
-            pwl_blob_test.set_n_e(spectrum_norm, pwl_dict_test, spectrum_norm_type)
+            pwl_blob_test.set_spectrum(spectrum_norm, pwl_dict_test, spectrum_norm_type)
 
     # test on blob properties
     def test_set_delta_D(self):
@@ -259,7 +259,7 @@ class TestBlob:
 
     def test_N_e(self):
         """check that N_e is n_e * V_b i.e. test their ratio to be V_b"""
-        pwl_blob_test.set_n_e(spectrum_norm_test, pwl_dict_test, "differential")
+        pwl_blob_test.set_spectrum(spectrum_norm_test, pwl_dict_test, "differential")
         n_e = pwl_blob_test.n_e(pwl_blob_test.gamma)
         N_e = pwl_blob_test.N_e(pwl_blob_test.gamma)
         assert u.allclose(N_e / n_e, V_b_test, atol=0 * u.Unit("cm3"), rtol=1e-3)
