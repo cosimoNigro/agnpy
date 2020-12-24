@@ -62,10 +62,9 @@ def make_comparison_plot(
     nu: :class:`~astropy.units.Quantity`
         frequencies over which the comparison plot has to be plotted
     y_comp: :class:`~astropy.units.Quantity` or :class:`~numpy.ndarray`
-        SED or gamma-gamma absorption to compare with (usually agnpy)
+        SED or gamma-gamma absorption to be compared (usually agnpy)
     y_ref: :class:`~astropy.units.Quantity` or :class:`~numpy.ndarray`
-        SED or gamma-gamma absorption to be compare with (from literature or
-        another code)
+        reference SED or gamma-gamma absorption (from literature or another code)
     ref_label : `string`
         label of the reference model
     comp_label : `string`
@@ -106,8 +105,10 @@ def make_comparison_plot(
     )
     # plot the SEDs or TAUs in the upper panel
     # plot the reference sed with a continuous line and agnpy sed with a dashed one
-    ax[0].loglog(nu, y_ref, marker="o", ls="-", lw=1.5, label=ref_label)
-    ax[0].loglog(nu, y_comp, marker=".", ls="--", lw=1.5, label=comp_label)
+    ax[0].loglog(nu, y_ref, marker=".", ls="-", color="k", lw=1.5, label=ref_label)
+    ax[0].loglog(
+        nu, y_comp, marker=".", ls="--", color="crimson", lw=1.5, label=comp_label
+    )
     ax[0].set_ylabel(y_label)
     ax[0].set_title(fig_title)
     ax[0].legend(loc="best")
@@ -122,7 +123,13 @@ def make_comparison_plot(
     ax[1].axhline(-0.3, ls=":", color="darkgray")
     ax[1].set_ylim([-0.5, 0.5])
     ax[1].semilogx(
-        nu, deviation, marker=".", ls="--", color="C1", lw=1.5, label=deviation_label
+        nu,
+        deviation,
+        marker=".",
+        ls="--",
+        color="crimson",
+        lw=1.5,
+        label=deviation_label,
     )
     ax[1].set_xlabel(x_label)
     ax[1].legend(loc="best")
