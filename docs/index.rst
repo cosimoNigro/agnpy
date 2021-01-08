@@ -60,7 +60,7 @@ Overview
    tutorials/external_compton.ipynb
    absorption
    derivations
-   tutorials/ssc_sherpa_fitipynb
+   tutorials/ssc_sherpa_fit.ipynb
    bibliography
    agnpy
 
