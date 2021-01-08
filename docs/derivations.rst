@@ -1,4 +1,4 @@
-.. _calc_targets:
+.. _derivations:
 
 =======================================================================================================
 Calculations of Energy Densities, Inverse Compton SEDs and :math:`\gamma`-:math:`\gamma` optical depths
