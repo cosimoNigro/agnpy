@@ -59,7 +59,8 @@ Overview
    tutorials/synchrotron_self_compton.ipynb
    tutorials/external_compton.ipynb
    absorption
-   calc_targets
+   derivations
+   tutorials/ssc_sherpa_fitipynb
    bibliography
    agnpy
 
