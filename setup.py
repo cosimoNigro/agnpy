@@ -15,6 +15,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     package_data={
         "agnpy": [
+            "data/mwl_seds/*.ecsv",
             "data/sampled_seds/*.txt",
             "data/sampled_taus/*.txt",
             "data/ebl_models/*.fits.gz",

@@ -1,4 +1,17 @@
-E[eV] flux[TeVcm^-2s^-1]-deabs dflux_low[TeVcm^-2s^-1] dflux_high[TeVcm^-2s^-1]
+# %ECSV 0.9
+# ---
+# datatype:
+# - {name: E, unit: eV, datatype: float64}
+# - {name: nuFnu, unit: TeV/(cm2 s), datatype: float64}
+# - {name: nuFnu_err_lo, unit: TeV/(cm2 s), datatype: float64}
+# - {name: nuFnu_err_hi, unit: TeV/(cm2 s), datatype: float64}
+# meta: !!omap
+# - {z: 0.36}
+# - {restframe: obs}
+# - {data_scale: lin-lin}
+# - {obj_name: 'PKS1510-089'}
+# schema: astropy-2.0
+E nuFnu nuFnu_err_lo nuFnu_err_hi 
 0.000153032 6.99043e-13 3.2562e-14 3.2562e-14
 1.01705 2.10364e-11 9.68761e-14 9.68761e-14
 1.01705 1.66024e-11 1.52914e-14 1.52914e-14
