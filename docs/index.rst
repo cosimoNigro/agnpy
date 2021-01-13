@@ -46,6 +46,7 @@ The only dependencies are:
 
 Overview
 --------
+The documentation includes several tutorial jupyter notebooks providing examples of applications of the code functionalities.
 
 .. toctree::
    :maxdepth: 2
@@ -60,7 +61,9 @@ Overview
    tutorials/external_compton.ipynb
    absorption
    derivations
+   spectral_constraints
    tutorials/ssc_sherpa_fit.ipynb
+   tutorials/ec_dt_sherpa_fit.ipynb
    bibliography
    agnpy
 
