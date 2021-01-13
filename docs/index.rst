@@ -60,7 +60,9 @@ Overview
    tutorials/external_compton.ipynb
    absorption
    derivations
+   spectral_constraints
    tutorials/ssc_sherpa_fit.ipynb
+   tutorials/ec_dt_sherpa_fit.ipynb
    bibliography
    agnpy
 
