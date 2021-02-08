@@ -320,7 +320,7 @@ class SSDisk:
         L_Edd = 1.26 * 1e46 * M_8 << u.Unit("erg s-1")
         l_Edd = (L_disk / L_Edd).to_value("")
         xi = np.power(l_Edd / (M_8 * eta), 1 / 4)
-        return 2.7e-4 * xi * np.power(R_tilde, -3 / 4)
+        return 2.7 * 1e-4 * xi * np.power(R_tilde, -3 / 4)
 
     @staticmethod
     def evaluate_epsilon_mu(L_disk, M_BH, eta, mu, r_tilde):

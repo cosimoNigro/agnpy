@@ -26,7 +26,7 @@ def B_to_cgs(B):
     return B.to(Gauss_cgs_unit, equivalencies=Gauss_cgs_equivalency)
 
 
-def r_to_R_g_units(r, M):
+def to_R_g_units(r, M):
     """convert a distance in graviational radii units"""
     R_g = G * M / c ** 2
     return (r / R_g).to("")
