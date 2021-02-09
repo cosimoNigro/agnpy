@@ -9,7 +9,7 @@ from ..utils.math import (
     mu_to_integrate,
     phi_to_integrate,
 )
-from ..utils.conversion import nu_to_epsilon_prime, r_to_R_g_units
+from ..utils.conversion import nu_to_epsilon_prime, to_R_g_units
 from ..utils.geometry import x_re_shell, mu_star_shell, x_re_ring
 from ..targets import (
     CMB,
@@ -344,9 +344,9 @@ class ExternalCompton:
         """
         # conversions
         epsilon_s = nu_to_epsilon_prime(nu, z)
-        r_tilde = r_to_R_g_units(r, M_BH)
-        R_in_tilde = r_to_R_g_units(R_in, M_BH)
-        R_out_tilde = r_to_R_g_units(R_out, M_BH)
+        r_tilde = to_R_g_units(r, M_BH)
+        R_in_tilde = to_R_g_units(R_in, M_BH)
+        R_out_tilde = to_R_g_units(R_out, M_BH)
         m_dot = (L_disk / (eta * np.power(c, 2))).to("g / s")
         # multidimensional integration
         # for the disk we do not integrate mu from -1 to 1 but choose the range

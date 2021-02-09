@@ -24,17 +24,6 @@ In the following example we compute the optical depth produced by the disk, the 
 	from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
 	from agnpy.absorption import Absorption
 
-	# define the blob
-	spectrum_norm = 1e47 * u.erg
-	parameters = {"p": 2.8, "gamma_min": 10, "gamma_max": 1e6}
-	spectrum_dict = {"type": "PowerLaw", "parameters": parameters}
-	R_b = 1e16 * u.cm
-	B = 0.56 * u.G
-	z = 0
-	delta_D = 40
-	Gamma = 40
-	blob = Blob(R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict)
-
 	# disk parameters
 	M_BH = 1.2 * 1e9 * const.M_sun.cgs
 	L_disk = 2 * 1e46 * u.Unit("erg s-1")
@@ -45,7 +34,7 @@ In the following example we compute the optical depth produced by the disk, the 
 
 	# blr definition
 	csi_line = 0.024
-	R_line = 1e17 * u.cm
+	R_line = 1.1e17 * u.cm
 	blr = SphericalShellBLR(L_disk, csi_line, "Lyalpha", R_line)
 
 	# dust torus definition
@@ -53,20 +42,22 @@ In the following example we compute the optical depth produced by the disk, the 
 	csi_dt = 0.1
 	dt = RingDustTorus(L_disk, csi_dt, T_dt)
 
-as for the :class:`~agnpy.compton.ExternalCompton` radiation, the absortpion can 
-be computed passing to the :class:`~agnpy.absorption.Absorption` class the 
-:class:`~agnpy.emission_regions.Blob` and :class:`~agnpy.targets.SSDisk` 
-(or any other target) instances. 
-Remember also to set the distance between the blob and the target photon field (:math:`r`)
+The :class:`~agnpy.absorption.Absorption` requires as input the type of target, :class:`~agnpy.targets`, 
+the distance between the blob and the target photon field (:math:`r`) and (optionally) the redshift of 
+the source to correct the observed energies and the cosine of the angle between the jet axis and the observer
+:math:`\mu_s`
 
 .. code-block:: python
 
-	# consider a fixed distance of the blob from the target fields 
+	# consider the 3C 454.3 example of Finke 2016
+	z = 0.859 
+	# consider a fixed distance of the blob from the target fields
 	r = 1.1e16 * u.cm
 
-	absorption_disk = Absorption(blob, disk, r=r)
-	absorption_blr = Absorption(blob, blr, r=r)
-	absorption_dt = Absorption(blob, dt, r=r)
+	# we assume mu_s=1
+	absorption_disk = Absorption(disk, r=r, z=z)
+	absorption_blr = Absorption(blr, r=r, z=z)
+	absorption_dt = Absorption(dt, r=r, z=z)
 
 	E = np.logspace(0, 5) * u.GeV
 	nu = E.to("Hz", equivalencies=u.spectral())
@@ -74,7 +65,6 @@ Remember also to set the distance between the blob and the target photon field (
 	tau_disk = absorption_disk.tau(nu)
 	tau_blr = absorption_blr.tau(nu)
 	tau_dt = absorption_dt.tau(nu)
-
 
 	# plot the absorption
 	import matplotlib.pyplot as plt
@@ -106,7 +96,6 @@ The absorption values are interpolated by `agnpy` and can be later evaluated for
 
 .. plot:: snippets/ebl_models.py
     :include-source:
-   
 
 
 API

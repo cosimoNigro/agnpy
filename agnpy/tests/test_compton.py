@@ -18,7 +18,9 @@ agnpy_dir = Path(__file__).parent.parent
 data_dir = agnpy_dir / "data"
 # where to save figures
 figures_dir = agnpy_dir.parent / "crosschecks/figures/compton"
-figures_dir.mkdir(parents=True, exist_ok=True)
+Path(figures_dir / "ssc").mkdir(parents=True, exist_ok=True)
+for subdir in ["disk", "blr", "dt"]:
+    Path(figures_dir / "ec" / subdir).mkdir(parents=True, exist_ok=True)
 
 # variables with _test are global and meant to be used in all tests
 pwl_spectrum_norm_test = 1e48 * u.Unit("erg")
@@ -97,7 +99,7 @@ class TestSynchrotronSelfCompton:
             "agnpy",
             "Figure 7.4, Dermer and Menon (2009)",
             "Synchrotron Self Compton, " + r"$\gamma_{max} = $" + gamma_max,
-            f"{figures_dir}/ssc_comparison_gamma_max_{gamma_max}_figure_7_4_dermer_menon_2009.png",
+            f"{figures_dir}/ssc/comparison_gamma_max_{gamma_max}_figure_7_4_dermer_menon_2009.png",
             "sed",
             y_range=[1e-13, 1e-9],
             comparison_range=nu_range.to_value("Hz"),
@@ -124,7 +126,7 @@ class TestSynchrotronSelfCompton:
             "trapezoidal log-log integration",
             "trapezoidal integration",
             "Synchrotron Self Compton",
-            f"{figures_dir}/ssc_comparison_integration_methods.png",
+            f"{figures_dir}/ssc/comparison_integration_methods.png",
             "sed",
             comparison_range=nu_range.to_value("Hz"),
         )
@@ -157,7 +159,7 @@ class TestExternalCompton:
             "agnpy",
             "Figure 8, Finke (2016)",
             f"External Compton on Shakura Sunyaev Disk, r = {r} cm",
-            f"{figures_dir}/ec_disk_comparison_r_{r}_cm_figure_8_finke_2016.png",
+            f"{figures_dir}/ec/disk/comparison_r_{r}_cm_figure_8_finke_2016.png",
             "sed",
             comparison_range=nu_range.to_value("Hz"),
         )
@@ -184,7 +186,7 @@ class TestExternalCompton:
             "trapezoidal log-log integration",
             "trapezoidal integration",
             "External Compton on Shakura Sunyaev Disk",
-            f"{figures_dir}/ec_disk_comparison_integration_methods.png",
+            f"{figures_dir}/ec/disk/comparison_integration_methods.png",
             "sed",
         )
         # requires that the SED points deviate less than 20%
@@ -212,7 +214,7 @@ class TestExternalCompton:
             "agnpy",
             "Figure 10, Finke (2016)",
             f"External Compton on Spherical Shell BLR, r = {r} cm",
-            f"{figures_dir}/ec_blr_comparison_r_{r}_cm_figure_10_finke_2016.png",
+            f"{figures_dir}/ec/blr/comparison_r_{r}_cm_figure_10_finke_2016.png",
             "sed",
             comparison_range=nu_range.to_value("Hz"),
         )
@@ -238,7 +240,7 @@ class TestExternalCompton:
             "trapezoidal log-log integration",
             "trapezoidal integration",
             "External Compton on Spherical Shell Broad Line Region",
-            f"{figures_dir}/ec_blr_comparison_integration_methods.png",
+            f"{figures_dir}/ec/blr/comparison_integration_methods.png",
             "sed",
         )
         # requires that the SED points deviate less than 30%
@@ -266,7 +268,7 @@ class TestExternalCompton:
             "agnpy",
             "Figure 11, Finke (2016)",
             f"External Compton on Ring Dust Torus, r = {r} cm",
-            f"{figures_dir}/ec_dt_r_{r}_cm_comparison_figure_11_finke_2016.png",
+            f"{figures_dir}/ec/dt/comparison_r_{r}_cm_figure_11_finke_2016.png",
             "sed",
             comparison_range=nu_range.to_value("Hz"),
         )
@@ -291,7 +293,7 @@ class TestExternalCompton:
             "trapezoidal log-log integration",
             "trapezoidal integration",
             "External Compton on Ring Dust Torus",
-            f"{figures_dir}/ec_dt_comparison_integration_methods.png",
+            f"{figures_dir}/ec/dt/comparison_integration_methods.png",
             "sed",
         )
         # requires that the SED points deviate less than 20%
@@ -322,7 +324,7 @@ class TestExternalCompton:
             "spherical shell BLR",
             "External Compton on Spherical Shell BLR, "
             + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm line}$",
-            f"{figures_dir}/ec_blr_point_source_comparison.png",
+            f"{figures_dir}/ec/blr/comparison_point_source.png",
             "sed",
         )
         # requires a 20% deviation from the two SED points
@@ -349,7 +351,7 @@ class TestExternalCompton:
             "ring Dust Torus",
             "External Compton on Ring Dust Torus, "
             + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm dt}$",
-            f"{figures_dir}/ec_dt_point_source_comparison.png",
+            f"{figures_dir}/ec/dt/comparison_point_source.png",
             "sed",
         )
         # requires a 20% deviation from the two SED points
