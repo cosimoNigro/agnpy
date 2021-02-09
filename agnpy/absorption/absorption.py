@@ -63,15 +63,7 @@ class Absorption:
         self.phi = np.linspace(0, 2 * np.pi, self.phi_size)
 
     def set_l(self, l_size=50):
-        """set an array of distances over which to integrate
-        integrate up to 100 kpc"""
-        max_l = 100 * u.kpc
-        self.l = (
-            np.logspace(
-                np.log10(self.r.to_value("cm")), np.log10(max_l.to_value("cm")), l_size
-            )
-            * u.cm
-        )
+        self.l_size = l_size
 
     @staticmethod
     def evaluate_tau_ps_behind_blob(nu, z, mu_s, epsilon_0, L_0, r):
@@ -177,7 +169,7 @@ class Absorption:
             R_tilde, phi, l_tilde, epsilon_1
         )
         _epsilon = SSDisk.evaluate_epsilon(L_disk, M_BH, eta, _R_tilde)
-        _phi_disk = 1 - (R_in_tilde / _R_tilde) ** (-1 / 2)
+        _phi_disk = 1 - (R_in_tilde / _R_tilde) ** (1 / 2)
         _mu = (1 + (_R_tilde ** 2 / _l_tilde ** 2)) ** (-1 / 2)
         _cos_psi = cos_psi(mu_s, _mu, _phi)
         s = _epsilon * _epsilon_1 * (1 - _cos_psi) / 2
@@ -210,6 +202,9 @@ class Absorption:
             self.target.R_in,
             self.target.R_out,
             self.r,
+            R_tilde_size=100,
+            l_tilde_size=self.l_size,
+            phi=self.phi,
         )
 
     @staticmethod
@@ -222,7 +217,7 @@ class Absorption:
         epsilon_line,
         R_line,
         r,
-        l_tilde_size=50,
+        l_size=50,
         mu=mu_to_integrate,
         phi=phi_to_integrate,
     ):
@@ -248,7 +243,7 @@ class Absorption:
             radius of the BLR spherical shell
         r : :class:`~astropy.units.Quantity`
             distance between the Broad Line Region and the blob
-        l_tilde_size : int
+        l_size : int
             size of the array of distances from the BH to integrate over
         mu, phi : :class:`~numpy.ndarray`
             arrays of cosine of zenith and azimuth angles to integrate over
@@ -261,7 +256,7 @@ class Absorption:
         # conversions
         epsilon_1 = nu_to_epsilon_prime(nu, z)
         # multidimensional integration
-        l = np.logspace(0, 5, l_tilde_size) * r
+        l = np.logspace(0, 5, l_size) * r
         _mu, _phi, _l, _epsilon_1 = axes_reshaper(mu, phi, l, epsilon_1)
         x = x_re_shell(_mu, R_line, _l)
         _mu_star = mu_star_shell(_mu, R_line, _l)
@@ -290,6 +285,9 @@ class Absorption:
             self.target.epsilon_line,
             self.target.R_line,
             self.r,
+            l_size=self.l_size,
+            mu=self.mu,
+            phi=self.phi,
         )
 
     @staticmethod
@@ -302,7 +300,7 @@ class Absorption:
         epsilon_dt,
         R_dt,
         r,
-        l_tilde_size=50,
+        l_size=50,
         phi=phi_to_integrate,
     ):
         r"""Evaluates the gamma-gamma absorption produced by a ring dust torus
@@ -326,12 +324,10 @@ class Absorption:
             radius of the ting-like torus
         r : :class:`~astropy.units.Quantity`
             distance between the dust torus and the blob
-        l_tilde_size : int
+        l_size : int
             size of the array of distances from the BH to integrate over
         phi : :class:`~numpy.ndarray`
             arrays of azimuth angles to integrate over
-
-        **Note** arguments after *args are keyword-only arguments
 
         Returns
         -------
@@ -341,7 +337,7 @@ class Absorption:
         # conversions
         epsilon_1 = nu_to_epsilon_prime(nu, z)
         # multidimensional integration
-        l = np.logspace(0, 5, l_tilde_size) * r
+        l = np.logspace(0, 5, l_size) * r
         _phi, _l, _epsilon_1 = axes_reshaper(phi, l, epsilon_1)
         x = x_re_ring(R_dt, _l)
         _mu = _l / x
@@ -365,6 +361,8 @@ class Absorption:
             self.target.epsilon_dt,
             self.target.R_dt,
             self.r,
+            l_size=self.l_size,
+            phi=self.phi,
         )
 
     def tau(self, nu):

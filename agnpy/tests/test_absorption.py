@@ -61,7 +61,7 @@ class TestAbsorption:
             f"Absorption Shakura Sunyaev Disk, r = {r} R(Ly alpha)",
             f"{figures_dir}/disk/tau_disk_comparison_r_{r}_R_Ly_alpha_figure_14_finke_2016.png",
             "tau",
-            y_range=[1e-5, 1e5]
+            y_range=[1e-10, 1e5],
         )
         assert True
 
@@ -96,7 +96,7 @@ class TestAbsorption:
             f"Absorption on Spherical Shell BLR, r = {r} R(Ly alpha)",
             f"{figures_dir}/blr/tau_blr_Ly_alpha_comprison_r_{r}_R_Ly_alpha_figure_14_finke_2016.png",
             "tau",
-            y_range=[1e-5, 1e5]
+            y_range=[1e-5, 1e5],
         )
         assert True
 
@@ -131,7 +131,7 @@ class TestAbsorption:
             f"Absorption on Dust Torus, r = {r} R(Ly alpha)",
             f"{figures_dir}/dt/tau_dt_comprison_r_{r}_R_Ly_alpha_figure_14_finke_2016.png",
             "tau",
-            y_range=[1e-5, 1e5]
+            y_range=[1e-5, 1e5],
         )
         assert True
 
