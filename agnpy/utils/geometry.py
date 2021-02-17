@@ -15,7 +15,7 @@ def cos_psi(mu_s, mu, phi):
 def x_re_shell(mu, R_re, r):
     """distance between the blob and a spherical reprocessing material,
     see Fig. 9 and Eq. 76 in [Finke2016]_.
-    
+
     Parameters
     ----------
     mu : :class:`~numpy.ndarray`
@@ -29,20 +29,26 @@ def x_re_shell(mu, R_re, r):
 
 
 def mu_star_shell(mu, R_re, r):
-    """cosine of the angle between the blob and a sphere of reprocessing 
-    material, see Fig. 9 and Eq. 76 in [Finke2016]_.
+    """cosine of the angle between the blob and a sphere of reprocessing
+    material, see Fig. 9 and Eq. 78 in [Finke2016]_.
+    works only if the blob is at the jet axis
 
     Parameters
     ----------
     mu : :class:`~numpy.ndarray`
         (array of) cosine of the zenith angle subtended by the target
-    R_re : :class:`~astropy.units.Quantity` 
+    R_re : :class:`~astropy.units.Quantity`
         distance (in cm) from the BH to the reprocessing material
     r : :class:`~astropy.units.Quantity`
         height (in cm) of the emission region in the jet
     """
     addend = np.power(R_re / x_re_shell(mu, R_re, r), 2) * (1 - np.power(mu, 2))
-    return np.sqrt(1 - addend)
+    mu_star = np.sqrt(1 - addend)
+
+    # if r<mu*R_re you need to multiply by -1 because the blob is before the shell element
+    mu_sign = ((r > mu * R_re) - 0.5) * 2
+    mu_star *= mu_sign
+    return mu_star
 
 
 def x_re_ring(R_re, r):
