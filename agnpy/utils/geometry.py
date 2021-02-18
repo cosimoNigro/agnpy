@@ -54,3 +54,55 @@ def mu_star_shell(mu, R_re, r):
 def x_re_ring(R_re, r):
     """distance between the blob and a ring of reprocessing material"""
     return np.sqrt(np.power(R_re, 2) + np.power(r, 2))
+
+def x_re_ring_mu_s(R_re, r, phi_re, u, mu_s):
+    """distance between the blob and a ring of reprocessing material
+    if the photon moved u along the mu_s direction starting from r position
+
+    Parameters
+    ----------
+    R_re : :class:`~astropy.units.Quantity`
+        distance (in cm) from the BH to the reprocessing material
+    r : :class:`~astropy.units.Quantity`
+        distance (in cm) from the BH to the starting place of the photon
+    phi_re : :class:`~numpy.ndarray`
+        (array of) azimuth angle of the reprocessing material 
+    u : :class:`~numpy.ndarray`
+        (array of) distances (in cm) that the gamma ray has travelled 
+    mu_s : :class:`~astropy.units.Quantity`
+        direction of gamma ray  motion: cos angle to the jet axis. 
+        The gamma ray is moving in the direction of phi_re=0
+    """
+    
+    sin_theta_s = np.sqrt(1-mu_s*mu_s)
+    x2 = u*u+R_re*R_re+r*r-2*u*R_re*sin_theta_s*np.cos(phi_re)+2*r*u*mu_s
+    return np.sqrt(x2)
+
+def phi_mu_re_ring(R_re, r, phi_re, u, mu_s):
+    """azimuth and  angle of the soft photon produced from  DT/BLR ring
+    photon is produced at (R_re*cos(phi_re), R_re*sin(phi_re),0)
+    and reached gamma ray at (u*sin(theta_s), 0, r+u*mu_s) distance between the blob and a ring of reprocessing material
+    if the photon moved u along the mu_s direction starting from r position
+
+    Parameters
+    ----------
+    R_re : :class:`~astropy.units.Quantity`
+        distance (in cm) from the BH to the reprocessing material
+    r : :class:`~astropy.units.Quantity`
+        distance (in cm) from the BH to the starting place of the photon
+    phi_re : :class:`~numpy.ndarray`
+        (array of) azimuth angle of the reprocessing material 
+    u : :class:`~numpy.ndarray`
+        (array of) distances (in cm) that the gamma ray has travelled 
+    mu_s : :class:`~astropy.units.Quantity`
+        direction of gamma ray  motion: cos angle to the jet axis. 
+        The gamma ray is moving in the direction of phi_re=0
+    """
+    sin_theta_s = np.sqrt(1-mu_s*mu_s)
+    dx = u*sin_theta_s - R_re*np.cos(phi_re)
+    dy = 0-R_re*np.sin(phi_re)
+    dz = r+u*mu_s
+    phi = np.arctan2(dy,dx)
+    x = x_re_ring_mu_s(R_re, r, phi_re, u, mu_s)
+    mu = dz/x
+    return phi,mu

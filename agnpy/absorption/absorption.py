@@ -6,7 +6,7 @@ from astropy.io import fits
 from astropy.constants import c, G, h, m_e, M_sun, sigma_T
 from scipy.interpolate import interp2d
 from ..utils.math import axes_reshaper, log, mu_to_integrate, phi_to_integrate
-from ..utils.geometry import cos_psi, x_re_shell, mu_star_shell, x_re_ring
+from ..utils.geometry import cos_psi, x_re_shell, mu_star_shell, x_re_ring, x_re_ring_mu_s, phi_mu_re_ring
 from ..utils.conversion import nu_to_epsilon_prime, to_R_g_units
 from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
 
@@ -350,6 +350,71 @@ class Absorption:
         prefactor = (L_disk * xi_dt) / (8 * np.pi ** 2 * epsilon_dt * m_e * c ** 3)
         return (prefactor * integral).to_value("")
 
+    @staticmethod
+    def evaluate_tau_dt_mu_s(
+        nu,
+        z,
+        mu_s,
+        L_disk,
+        xi_dt,
+        epsilon_dt,
+        R_dt,
+        r,
+        u_size=100,
+        phi_re=phi_to_integrate,
+    ):
+        r"""Evaluates the gamma-gamma absorption produced by a ring dust torus
+        for the case of photon moving at an angle to the jet 
+
+        Parameters
+        ----------
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed 
+            **note** these are observed frequencies (observer frame)
+        z : float
+            redshift of the source
+        mu_s : float
+            cosine of the angle between the blob motion and the jet axis
+        L_disk : :class:`~astropy.units.Quantity`
+            Luminosity of the disk whose radiation is being reprocessed by the BLR
+        xi_dt : float
+            fraction of the disk radiation reprocessed by the disk
+        epsilon_dt : string
+            peak (dimensionless) energy of the black body radiated by the torus 
+        R_dt : :class:`~astropy.units.Quantity`
+            radius of the ting-like torus
+        r : :class:`~astropy.units.Quantity`
+            distance between the dust torus and the blob
+        u_size : int
+            size of the array of distances from the photon origin to integrate over
+        phi_re : :class:`~numpy.ndarray`
+            arrays of azimuth angles of the dust torus to integrate over
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            array of the SED values corresponding to each frequency
+        """
+        # conversions
+        epsilon_1 = nu_to_epsilon_prime(nu, z)
+        # multidimensional integration
+        # here u is the distance that the photon traversed 
+        u = np.logspace(-5, 5, u_size) * r
+        _phi_re, _u, _epsilon_1 = axes_reshaper(phi_re, u, epsilon_1)
+        # distance between soft photon and gamma ray
+        x = x_re_ring_mu_s(R_dt, r, _phi_re, _u, mu_s)
+        # convert the phi angles of the ring into the actual phi angles
+        # of the soft photon catching up with the gamma ray
+        _phi, _mu =phi_mu_re_ring(R_dt, r, _phi_re, _u, mu_s)
+        _cos_psi = cos_psi(mu_s, _mu, _phi)
+        s = _epsilon_1 * epsilon_dt * (1 - _cos_psi) / 2
+        integrand = (1 - _cos_psi) / x ** 2 * sigma(s)
+        # integrate
+        integral_phi = np.trapz(integrand, phi_re, axis=0)
+        integral = np.trapz(integral_phi, u, axis=0)
+        prefactor = (L_disk * xi_dt) / (8 * np.pi ** 2 * epsilon_dt * m_e * c ** 3)
+        return (prefactor * integral).to_value("")
+    
     def tau_dt(self, nu):
         """evaluates the gamma-gamma absorption produced by a ring dust torus"""
         return self.evaluate_tau_dt(
@@ -365,6 +430,21 @@ class Absorption:
             phi=self.phi,
         )
 
+    def tau_dt_mu_s(self, nu):
+        """evaluates the gamma-gamma absorption produced by a ring dust torus"""
+        return self.evaluate_tau_dt_mu_s(
+            nu,
+            self.z,
+            self.mu_s,
+            self.target.L_disk,
+            self.target.xi_dt,
+            self.target.epsilon_dt,
+            self.target.R_dt,
+            self.r,
+            u_size=self.l_size,
+            phi_re=self.phi,
+        )
+    
     def tau(self, nu):
         """optical depth
 
@@ -386,6 +466,27 @@ class Absorption:
         if isinstance(self.target, RingDustTorus):
             return self.tau_dt(nu)
 
+    def tau_mu_s(self, nu):
+        """optical depth if moving at cos angle mu_s to the jet axis
+
+        .. math::
+            \\tau_{\\gamma \\gamma}(\\nu)
+
+        Parameters
+        ----------
+        nu : `~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the opacity, **note** these are
+            observed frequencies (observer frame).
+        """
+#        if isinstance(self.target, PointSourceBehindJet):
+#            return self.tau_ps_behind_blob(nu)
+#        if isinstance(self.target, SSDisk):
+#            return self.tau_ss_disk(nu)
+#        if isinstance(self.target, SphericalShellBLR):
+#            return self.tau_blr(nu)
+        if isinstance(self.target, RingDustTorus):
+            return self.tau_dt_mu_s(nu)
+        
     def absorption(self, nu):
         return np.exp(-self.tau(nu))
 
