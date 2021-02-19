@@ -27,6 +27,8 @@ The only dependencies are:
 
 * [matplotlib](https://matplotlib.org) for visualisation and reproduction of the tutorials.
 
+* [scipy](https://www.scipy.org/) for interpolation 
+
 ## installation
 The code is available in the [python package index](https://pypi.org/project/agnpy/) and can be installed via `pip`
 
