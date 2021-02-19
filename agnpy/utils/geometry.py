@@ -55,6 +55,7 @@ def x_re_ring(R_re, r):
     """distance between the blob and a ring of reprocessing material"""
     return np.sqrt(np.power(R_re, 2) + np.power(r, 2))
 
+
 def x_re_ring_mu_s(R_re, r, phi_re, u, mu_s):
     """distance between the blob and a ring of reprocessing material
     if the photon moved u along the mu_s direction starting from r position
@@ -73,10 +74,17 @@ def x_re_ring_mu_s(R_re, r, phi_re, u, mu_s):
         direction of gamma ray  motion: cos angle to the jet axis. 
         The gamma ray is moving in the direction of phi_re=0
     """
-    
-    sin_theta_s = np.sqrt(1-mu_s*mu_s)
-    x2 = u*u+R_re*R_re+r*r-2*u*R_re*sin_theta_s*np.cos(phi_re)+2*r*u*mu_s
+
+    sin_theta_s = np.sqrt(1 - mu_s * mu_s)
+    x2 = (
+        u * u
+        + R_re * R_re
+        + r * r
+        - 2 * u * R_re * sin_theta_s * np.cos(phi_re)
+        + 2 * r * u * mu_s
+    )
     return np.sqrt(x2)
+
 
 def phi_mu_re_ring(R_re, r, phi_re, u, mu_s):
     """azimuth and  angle of the soft photon produced from  DT/BLR ring
@@ -98,11 +106,11 @@ def phi_mu_re_ring(R_re, r, phi_re, u, mu_s):
         direction of gamma ray  motion: cos angle to the jet axis. 
         The gamma ray is moving in the direction of phi_re=0
     """
-    sin_theta_s = np.sqrt(1-mu_s*mu_s)
-    dx = u*sin_theta_s - R_re*np.cos(phi_re)
-    dy = 0-R_re*np.sin(phi_re)
-    dz = r+u*mu_s
-    phi = np.arctan2(dy,dx)
+    sin_theta_s = np.sqrt(1 - mu_s * mu_s)
+    dx = u * sin_theta_s - R_re * np.cos(phi_re)
+    dy = 0 - R_re * np.sin(phi_re)
+    dz = r + u * mu_s
+    phi = np.arctan2(dy, dx)
     x = x_re_ring_mu_s(R_re, r, phi_re, u, mu_s)
-    mu = dz/x
-    return phi,mu
+    mu = dz / x
+    return phi, mu
