@@ -53,7 +53,7 @@ class TestUtilsGeometry:
     @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
     @pytest.mark.parametrize("uu", [5.0e16 * u.cm, 4.0e17 * u.cm])
     @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
-    def test_phi_mu_re_ring_1(self, R_re, r, uu, phi_re):
+    def test_phi_mu_re_ring_0(self, R_re, r, uu, phi_re):
         """test for mu_s =~ 0"""
         mu_s = 0.001
         twopi = 2 * np.pi
