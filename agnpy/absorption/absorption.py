@@ -113,6 +113,61 @@ class Absorption:
         )
 
     @staticmethod
+    def evaluate_tau_ps_behind_blob_mu_s(nu, z, mu_s, epsilon_0, L_0, r, u_size=100):
+        r"""Evaluates the absorption produced by the photon field of a point 
+        source of photons behind the blob, for a general set of model parameters
+
+        Parameters
+        ----------
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the opacity 
+            **note** these are observed frequencies (observer frame)
+        z : float
+            redshift of the source
+        mu_s : float
+            cosine of the angle between the blob motion and the jet axis
+        epsilon_0 : float
+            dimensionless energy (in electron rest mass energy units) of the
+            target photon field
+        L_0 : :class:`~astropy.units.Quantity`
+            luminosity [erg cm-3] of the point source behind the jet
+        r : :class:`~astropy.units.Quantity`
+            distance between the point source and the blob
+        u_size : int
+            size of the array of distances from the photon origin to integrate over
+        
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            array of the tau values corresponding to each frequency
+        """
+        epsilon_1 = nu_to_epsilon_prime(nu, z)
+
+        uu = np.logspace(-5, 5, u_size) * r
+        _u, _epsilon_1 = axes_reshaper(uu, epsilon_1)
+        # distance between soft photon and gamma ray
+        x = np.sqrt(r * r + _u * _u + 2 * _u * r * mu_s)
+
+        # cos angle of the soft photon to the z axis
+        _mu = (r + _u * mu_s) / x
+        phi = 0  # the value does not matter due to symmetry
+        _cos_psi = cos_psi(mu_s, _mu, phi)
+        s = _epsilon_1 * epsilon_0 * (1 - _cos_psi) / 2
+
+        integrand = (1 - _cos_psi) / x ** 2 * sigma(s)
+        # integrate
+        integral = np.trapz(integrand, uu, axis=0)
+        prefactor = L_0 / (4 * np.pi * epsilon_0 * m_e * c ** 3)
+        return (prefactor * integral).to_value("")
+
+    def tau_ps_behind_blob_mu_s(self, nu):
+        """Evaluates the absorption produced by the photon field of a point 
+        source of photons behind the blob"""
+        return self.evaluate_tau_ps_behind_blob_mu_s(
+            nu, self.z, self.mu_s, self.target.epsilon_0, self.target.L_0, self.r
+        )
+
+    @staticmethod
     def evaluate_tau_ss_disk(
         nu,
         z,
@@ -464,35 +519,26 @@ class Absorption:
             array of frequencies, in Hz, to compute the opacity, **note** these are
             observed frequencies (observer frame).
         """
-        if isinstance(self.target, PointSourceBehindJet):
-            return self.tau_ps_behind_blob(nu)
-        if isinstance(self.target, SSDisk):
-            return self.tau_ss_disk(nu)
-        if isinstance(self.target, SphericalShellBLR):
-            return self.tau_blr(nu)
-        if isinstance(self.target, RingDustTorus):
-            return self.tau_dt(nu)
 
-    def tau_mu_s(self, nu):
-        """optical depth if moving at cos angle mu_s to the jet axis
-
-        .. math::
-            \\tau_{\\gamma \\gamma}(\\nu)
-
-        Parameters
-        ----------
-        nu : `~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the opacity, **note** these are
-            observed frequencies (observer frame).
-        """
-        #        if isinstance(self.target, PointSourceBehindJet):
-        #            return self.tau_ps_behind_blob(nu)
-        #        if isinstance(self.target, SSDisk):
-        #            return self.tau_ss_disk(nu)
-        #        if isinstance(self.target, SphericalShellBLR):
-        #            return self.tau_blr(nu)
-        if isinstance(self.target, RingDustTorus):
-            return self.tau_dt_mu_s(nu)
+        if self.mu_s == 1:  # default value
+            if isinstance(self.target, PointSourceBehindJet):
+                return self.tau_ps_behind_blob(nu)  # this is always 0 for mu_s=1!
+            if isinstance(self.target, SSDisk):
+                return self.tau_ss_disk(nu)
+            if isinstance(self.target, SphericalShellBLR):
+                return self.tau_blr(nu)
+            if isinstance(self.target, RingDustTorus):
+                return self.tau_dt(nu)
+        else:
+            if isinstance(self.target, PointSourceBehindJet):
+                return self.tau_ps_behind_blob_mu_s(nu)
+            # those are yet to be implemented
+            # if isinstance(self.target, SSDisk):
+            #    return self.tau_ss_disk(nu)
+            # if isinstance(self.target, SphericalShellBLR):
+            #    return self.tau_blr(nu)
+            if isinstance(self.target, RingDustTorus):
+                return self.tau_dt_mu_s(nu)
 
     def absorption(self, nu):
         return np.exp(-self.tau(nu))
