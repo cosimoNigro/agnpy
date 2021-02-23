@@ -150,7 +150,7 @@ class Absorption:
 
         # cos angle of the soft photon to the z axis
         _mu = (r + _u * mu_s) / x
-        phi = 0  # the value does not matter due to symmetry
+        phi = 0  # both gamma ray and soft photon move in XZ plane
         _cos_psi = cos_psi(mu_s, _mu, phi)
         s = _epsilon_1 * epsilon_0 * (1 - _cos_psi) / 2
 
