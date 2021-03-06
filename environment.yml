@@ -1,6 +1,7 @@
 name: agnpy
 
 channels:
+  - conda-forge
   - sherpa
 
 dependencies:
@@ -11,4 +12,5 @@ dependencies:
   - scipy>=1.2
   - matplotlib
   - sherpa
+  - agnpy
   
