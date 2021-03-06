@@ -1,0 +1,14 @@
+name: agnpy
+
+channels:
+  - sherpa
+
+dependencies:
+  - python==3.7
+  - pip
+  - numpy>=1.17
+  - astropy>=4.0
+  - scipy>=1.2
+  - matplotlib
+  - sherpa
+  
