@@ -13,5 +13,6 @@ dependencies:
   - pyyaml # needed to read astropy ecsv file
   - matplotlib
   - sherpa
-  - agnpy
+  - pip:
+    - agnpy
   
