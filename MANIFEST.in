@@ -1,6 +1,7 @@
 include README.md
 include LICENSE
-include docs
-include agnpy/data
-
-
+recursive-include agnpy/data/ebl_models *.fits.gz
+recursive-include agnpy/data/mwl_seds/ *.ecsv
+recursive-include agnpy/data/reference_seds/*/* *.txt
+recursive-include agnpy/data/reference_seds/* *.txt
+recursive-include agnpy/data/reference_taus/*/* *.txt
