@@ -12,20 +12,20 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/cosimoNigro/agnpy",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages("agnpy"),  
+    package_dir={"": "agnpy"},  
     package_data={
-        "agnpy": [
-            "data/mwl_seds/*.ecsv",
-            "data/sampled_seds/*.txt",
-            "data/sampled_taus/*.txt",
-            "data/ebl_models/*.fits.gz",
-        ]
+        "": ["*.txt", "*.ecsv"],
+        "data": ["reference_seds/*/*.txt"],
+        "data": ["reference_seds/*/*/*.txt"],
+        "data": ["reference_taus/*/*/*.txt"],
     },
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-        "Operating System :: OS Independent",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: BSD License",
+        "Operating System :: OS Independent"
     ],
     install_requires=["astropy>=4.0", "numpy>=1.17", "scipy>=1.2", "matplotlib"],
     python_requires=">=3.6",

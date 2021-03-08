@@ -8,8 +8,9 @@ dependencies:
   - python
   - pip
   - numpy
-  - astropy
   - scipy
+  - astropy
+  - pyyaml # needed to read astropy ecsv file
   - matplotlib
   - sherpa
   - agnpy
