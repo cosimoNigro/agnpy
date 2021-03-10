@@ -12,7 +12,9 @@ from ..utils.geometry import (
     mu_star_shell,
     x_re_ring,
     x_re_ring_mu_s,
+    phi_mu_re_shell,
     phi_mu_re_ring,
+    x_re_shell_mu_s,
 )
 from ..utils.conversion import nu_to_epsilon_prime, to_R_g_units
 from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
@@ -334,6 +336,79 @@ class Absorption:
         )
         return (prefactor * integral).to_value("")
 
+    @staticmethod
+    def evaluate_tau_blr_mu_s(
+        nu,
+        z,
+        mu_s,
+        L_disk,
+        xi_line,
+        epsilon_line,
+        R_line,
+        r,
+        u_size=100,
+        mu=mu_to_integrate,
+        phi=phi_to_integrate,
+    ):
+        """Evaluates the gamma-gamma absorption produced by a spherical shell 
+        BLR for a general set of model parameters and arbitrary mu_s
+
+        Parameters
+        ----------
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the tau 
+            **note** these are observed frequencies (observer frame)
+        z : float
+            redshift of the source
+        mu_s : float
+            cosine of the angle between the blob motion and the jet axis
+        L_disk : :class:`~astropy.units.Quantity`
+            Luminosity of the disk whose radiation is being reprocessed by the BLR
+        xi_line : float
+            fraction of the disk radiation reprocessed by the BLR
+        epsilon_line : string
+            dimensionless energy of the emitted line
+        R_line : :class:`~astropy.units.Quantity`
+            radius of the BLR spherical shell
+        r : :class:`~astropy.units.Quantity`
+            distance between the Broad Line Region and the blob
+        l_size : int
+            size of the array of distances from the BH to integrate over
+        mu, phi : :class:`~numpy.ndarray`
+            arrays of cosine of zenith and azimuth angles to integrate over
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            array of the tau values corresponding to each frequency
+        """
+        # conversions
+        epsilon_1 = nu_to_epsilon_prime(nu, z)
+        # multidimensional integration
+        # here uu is the distance that the photon traversed
+        uu = np.logspace(-5, 5, u_size) * r
+        _mu_re, _phi_re, _u, _epsilon_1 = axes_reshaper(mu, phi, uu, epsilon_1)
+
+        # distance between soft photon and gamma ray
+        x = x_re_shell_mu_s(R_line, r, _phi_re, _mu_re, _u, mu_s)
+
+        # convert the phi and mu angles of the position in the sphere into the actual phi and mu angles
+        # the actual phi and mu angles of the soft photon catching up with the gamma ray
+        _phi, _mu_star = phi_mu_re_shell(R_line, r, _phi_re, _mu_re, _u, mu_s)
+
+        # angle between the soft photon and gamma ray
+        _cos_psi = cos_psi(mu_s, _mu_star, _phi)
+        s = _epsilon_1 * epsilon_line * (1 - _cos_psi) / 2
+        integrand = (1 - _cos_psi) / x ** 2 * sigma(s)
+        # integrate
+        integral_mu = np.trapz(integrand, mu, axis=0)
+        integral_phi = np.trapz(integral_mu, phi, axis=0)
+        integral = np.trapz(integral_phi, uu, axis=0)
+        prefactor = (L_disk * xi_line) / (
+            (4 * np.pi) ** 2 * epsilon_line * m_e * c ** 3
+        )
+        return (prefactor * integral).to_value("")
+
     def tau_blr(self, nu):
         """Evaluates the gamma-gamma absorption produced by a spherical shell 
         BLR for a general set of model parameters
@@ -348,6 +423,24 @@ class Absorption:
             self.target.R_line,
             self.r,
             l_size=self.l_size,
+            mu=self.mu,
+            phi=self.phi,
+        )
+
+    def tau_blr_mu_s(self, nu):
+        """Evaluates the gamma-gamma absorption produced by a spherical shell 
+        BLR for a general set of model parameters and arbitrary mu_s
+        """
+        return self.evaluate_tau_blr_mu_s(
+            nu,
+            self.z,
+            self.mu_s,
+            self.target.L_disk,
+            self.target.xi_line,
+            self.target.epsilon_line,
+            self.target.R_line,
+            self.r,
+            u_size=2 * self.l_size,
             mu=self.mu,
             phi=self.phi,
         )
@@ -503,7 +596,7 @@ class Absorption:
             self.target.epsilon_dt,
             self.target.R_dt,
             self.r,
-            u_size=self.l_size,
+            u_size=2 * self.l_size,
             phi_re=self.phi,
         )
 
@@ -535,8 +628,8 @@ class Absorption:
             # those are yet to be implemented
             # if isinstance(self.target, SSDisk):
             #    return self.tau_ss_disk(nu)
-            # if isinstance(self.target, SphericalShellBLR):
-            #    return self.tau_blr(nu)
+            if isinstance(self.target, SphericalShellBLR):
+                return self.tau_blr_mu_s(nu)
             if isinstance(self.target, RingDustTorus):
                 return self.tau_dt_mu_s(nu)
 
