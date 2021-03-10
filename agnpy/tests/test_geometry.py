@@ -78,3 +78,43 @@ class TestUtilsGeometry:
         phi, mu = geom.phi_mu_re_ring(R_re, r, phi_re, uu, mu_s)
         cospsi = geom.cos_psi(mu_s, mu, phi)
         assert np.isclose(cospsi, 1, atol=0.01, rtol=0)
+
+    @pytest.mark.parametrize("R_re", [1e16 * u.cm, 1e17 * u.cm])
+    @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
+    @pytest.mark.parametrize("uu", [5.0e16 * u.cm, 4.0e17 * u.cm])
+    @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
+    @pytest.mark.parametrize("mu_s", np.linspace(0, 1, 5))
+    def test_x_re_shell_mu_s_vs_ring(self, R_re, r, phi_re, uu, mu_s):
+        """Test that for mu_re=0. x_re_shell_mu_s gives the same results as 
+        x_re_ring_mu_s"""
+
+        x_ring = geom.x_re_ring_mu_s(R_re, r, phi_re, uu, mu_s)
+        mu_re = 0.01
+        x_shell = geom.x_re_shell_mu_s(R_re, r, phi_re, mu_re, uu, mu_s)
+        assert np.isclose(x_shell, x_ring, atol=0, rtol=0.01)
+
+    @pytest.mark.parametrize("R_re", [1e17 * u.cm])
+    @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
+    @pytest.mark.parametrize("uu", [1.0e16 * u.cm, 4.0e17 * u.cm])
+    @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
+    @pytest.mark.parametrize("mu_re", np.linspace(-1, 1, 4))
+    def test_x_re_shell_mu_s_vs_on_axis(self, R_re, r, phi_re, mu_re, uu):
+        """Test that for mu_s=1. x_re_shell_mu_s gives the same results as 
+        x_re_shell"""
+        mu_s = 0.9999
+        x_on_axis = geom.x_re_shell(mu_re, R_re, r + uu)
+        x_shell = geom.x_re_shell_mu_s(R_re, r, phi_re, mu_re, uu, mu_s)
+        assert np.isclose(x_shell, x_on_axis, atol=0, rtol=0.01)
+
+    @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
+    def test_x_re_shell_mu_s(self, phi_re):
+        """Test that for a few simple cases x_re_shell_mu_s gives correct results"""
+
+        R_re = 1e17 * u.cm
+        r = 3e17 * u.cm
+        uu = 5e17 * u.cm
+        mu_re = 0.999
+        mu_s = 0.001
+        x_true = np.sqrt((r - R_re) ** 2 + uu ** 2)
+        x_shell = geom.x_re_shell_mu_s(R_re, r, phi_re, mu_re, uu, mu_s)
+        assert np.isclose(x_shell, x_true, atol=0, rtol=0.01)

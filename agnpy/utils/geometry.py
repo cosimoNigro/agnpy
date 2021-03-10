@@ -114,3 +114,38 @@ def phi_mu_re_ring(R_re, r, phi_re, u, mu_s):
     x = x_re_ring_mu_s(R_re, r, phi_re, u, mu_s)
     mu = dz / x
     return phi, mu
+
+
+def x_re_shell_mu_s(R_re, r, phi_re, mu_re, u, mu_s):
+    """distance between the blob and a spherical reprocessing material,
+    if the photon moved u along the mu_s direction starting from r position
+
+    Parameters
+    ----------
+    R_re : :class:`~astropy.units.Quantity`
+        distance from the BH to the reprocessing material
+    r : :class:`~astropy.units.Quantity`
+        distance (in cm) from the BH to the starting place of the photon
+    phi_re : :class:`~numpy.ndarray`
+        (array of) azimuth angle of the reprocessing material 
+    mu_re : :class:`~numpy.ndarray`
+        (array of) cos of zenith angle of the reprocessing material 
+    u : :class:`~numpy.ndarray`
+        (array of) distances (in cm) that the gamma ray has travelled 
+    mu_s : :class:`~astropy.units.Quantity`
+        direction of gamma ray  motion: cos angle to the jet axis. 
+        The gamma ray is moving in the direction of phi_re=0
+    """
+
+    sin_re = np.sqrt(1 - mu_re * mu_re)
+    sin_s = np.sqrt(1 - mu_s * mu_s)
+    x2 = (
+        R_re * R_re
+        + u * u
+        + r * r
+        - 2 * R_re * u * sin_re * np.cos(phi_re) * sin_s
+        - 2 * R_re * mu_re * (r + u * mu_s)
+        + 2 * r * u * mu_s
+    )
+
+    return np.sqrt(x2)
