@@ -137,9 +137,7 @@ class TestAbsorption:
         )
         assert True
 
-    # FIXME: test is temporarily disabled because BLR
-    # absorption has to be rechecked for the mu_s != 1 case
-    def _test_abs_blr_vs_point_source(self):
+    def test_abs_blr_vs_point_source(self):
         """check if in the limit of large distances the gamma-gamma optical depth 
         on the BLR tends to the one of a point-like source approximating it"""
         # broad line region
@@ -228,7 +226,7 @@ class TestAbsorptionMuS:
     def test_tau_dt_mu_s_simple(self):
         """
         order of magnitude test comparing with simplified calculations
-        the case of a perpendicularly moving photon starting at r~R_re
+        the case of a perpendicularly moving photon starting at r~0.5 * R_re
         """
         r = 1.0e17 * u.cm  # distance at which the photon starts
         mu_s = 0.0  # angle of propagation
@@ -236,10 +234,10 @@ class TestAbsorptionMuS:
         L_disk = 2e46 * u.Unit("erg s-1")
         xi_DT = 0.1
         temp = 1000 * u.K
-        R_DT = r  # radius of DT: assume the same as the distance r
+        R_DT = 2 * r  # radius of DT: assume the same as the distance r
         dt = RingDustTorus(L_disk, xi_DT, temp, R_dt=R_DT)
 
-        nu_ref = np.logspace(26, 32, 60) * u.Hz
+        nu_ref = np.logspace(26, 32, 120) * u.Hz
 
         # absorption at mu_s
         abs_dt_mu_s = Absorption(dt, r, z=0, mu_s=mu_s)
@@ -254,8 +252,8 @@ class TestAbsorptionMuS:
         beta2 = 1 - 2 * mec2 ** 2 / (E * eps * (1 - cospsi))
         beta2[beta2 < 0] = 0  # below the threshold
         # for tau calculations we assume that gamma ray moves
-        # roughtly the characteristic distance of ~r~R_DT
-        tau_my = (sigma_pp(np.sqrt(beta2)) * nph * r * (1 - cospsi)).to("")
+        # roughtly the characteristic distance of ~R_DT
+        tau_my = (sigma_pp(np.sqrt(beta2)) * nph * R_DT * (1 - cospsi)).to("")
 
         max_agnpy = max(tau_dt_mu_s)
         max_my = max(tau_my)
@@ -314,6 +312,49 @@ class TestAbsorptionMuS:
         # if r>>R_re this should be pretty precise, allowing for 10% accuracy
         assert np.isclose(max_agnpy, max_my, atol=0, rtol=0.1)
         assert np.isclose(max_pos_agnpy, max_pos_my, atol=0, rtol=0.1)
+
+    @pytest.mark.parametrize("r_to_R", ["0.11", "10."])
+    def test_abs_blr_mu_s_vs_on_axis(self, r_to_R):
+        """check if the codes computing absorption on BLR for mu_s = 1 and !=1 cases are consistent """
+        # broad line region
+        L_disk = 2e46 * u.Unit("erg s-1")
+        xi_line = 0.024
+        R_line = 1e17 * u.cm
+        blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
+        r = r_to_R * R_line
+        z = 0.859
+
+        abs_blr = Absorption(blr, r, z, mu_s=0.9999)
+        abs_blr_on_axis = Absorption(blr, r, z)
+        abs_blr.set_l(50)
+        abs_blr_on_axis.set_l(50)
+
+        # taus
+        E = np.logspace(0, 6) * u.GeV
+        nu = E.to("Hz", equivalencies=u.spectral())
+        tau_blr = abs_blr.tau(nu)
+        tau_blr_on_axis = abs_blr_on_axis.tau(nu)
+        # sed comparison plot
+        make_comparison_plot(
+            nu,
+            tau_blr_on_axis,
+            tau_blr,
+            "on-axis calculations",
+            "general",
+            "Absorption on Spherical Shell BLR, " + r"$r/R_{\rm line}=$" + f"{r_to_R}",
+            f"{figures_dir}/blr/tau_blr_on_axis_vs_general_r_{r_to_R}_R_line_comparison.png",
+            "tau",
+        )
+
+        # only check in there range with measurable absorption
+        xmin = min(nu[tau_blr_on_axis > 1.0e-4])
+        xmax = max(nu[tau_blr_on_axis > 1.0e-4])
+        xrange = (xmin, xmax)
+        print(xrange)
+
+        # close to the threshold there are some differences up to ~25%
+        # which are probably due to numerical uncertainties in the integrals
+        assert check_deviation(nu, tau_blr, tau_blr_on_axis, 0.25, x_range=xrange)
 
 
 class TestEBL:
