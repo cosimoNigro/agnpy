@@ -358,8 +358,6 @@ class TestPowerLawExpCutOff:
         # check that outside the boundaries values are all 0
         assert not np.all(values[~condition])
 
-    @pytest.mark.parametrize("p", [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
-    @pytest.mark.parametrize("integrator", [np.trapz, trapz_loglog])
 
     def test_from_normalised_density(self):
         """test the intialisation of the power law from the total particle 
@@ -387,8 +385,9 @@ class TestPowerLawExpCutOff:
         )
         # calculate u_e
         u_e_calc = mec2 * pwlec.integral(
-            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=1
-        )
+            gamma_low=gamma_min_test, gamma_up=gamma_max_test, gamma_power=1)
+        print(u_e)
+        print(u_e_calc)
         assert u.isclose(u_e, u_e_calc, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
     def test_from_norm_at_gamma_1(self):
@@ -396,6 +395,6 @@ class TestPowerLawExpCutOff:
         gamma = 1"""
         norm = 1e-13 * u.Unit("cm-3")
         pwlec = PowerLawExpCutOff.from_norm_at_gamma_1(
-            norm=norm, p=p_test, gamma_min=1, gamma_max=gamma_max_test
+            norm=norm, p=p_test, gamma_c=gamma_c_test, gamma_min=1, gamma_max=gamma_max_test
         )
         assert u.isclose(norm, pwlec(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
