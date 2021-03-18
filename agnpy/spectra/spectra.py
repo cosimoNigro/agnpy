@@ -236,7 +236,8 @@ class PowerLawExpCutOff(ElectronDistribution):
     def evaluate_SSA_integrand(gamma, k_e, p, gamma_c, gamma_min, gamma_max):
         r"""(analytical) integrand for the synchrotron self-absorption:
         :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`"""
-        prefactor = -(p + 2) / gamma + (-gamma / gamma_c) 
+        prefactor = -(p + 2) / gamma + (-1 / gamma_c)
+
         return prefactor * PowerLawExpCutOff.evaluate(
             gamma, k_e, p, gamma_c, gamma_min, gamma_max
         )
