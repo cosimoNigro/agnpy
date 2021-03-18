@@ -252,7 +252,7 @@ class PowerLawExpCutOff(ElectronDistribution):
             + f" - power law\n"
             + f" - k_e: {self.k_e:.2e}\n"
             + f" - p: {self.p:.2f}\n"
-            + f" - p: {self.gamma_c:.2f}\n"
+            + f" - gamma_c: {self.gamma_c:.2f}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
             + f" - gamma_max: {self.gamma_max:.2e}\n"
         )
