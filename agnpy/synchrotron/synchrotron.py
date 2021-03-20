@@ -2,7 +2,6 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import e, h, c, m_e, sigma_T
-from ..spectra import PowerLaw
 from ..utils.math import axes_reshaper, gamma_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
 
