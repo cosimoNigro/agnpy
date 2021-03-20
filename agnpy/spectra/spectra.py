@@ -7,6 +7,7 @@ from ..utils.conversion import mec2
 __all__ = [
     "ElectronDistribution",
     "PowerLaw",
+    "PowerLawExpCutOff",
     "BrokenPowerLaw",
     "LogParabola",
 ]
@@ -178,6 +179,85 @@ class PowerLaw(ElectronDistribution):
             + f" - gamma_min: {self.gamma_min:.2e}\n"
             + f" - gamma_max: {self.gamma_max:.2e}\n"
         )
+
+class PowerLawExpCutOff(ElectronDistribution):
+    r"""Class for power-law with an exponetial cutoff particle spectrum. 
+    When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
+
+    .. math::
+        n_e(\gamma') = k_e \, \gamma'^{-p} exp(-\gamma'/\gamma_c) \, H(\gamma'; \gamma'_{\rm min}, \gamma'_{\rm max}) 
+
+    Parameters
+    ----------
+    k_e : :class:`~astropy.units.Quantity`
+        spectral normalisation
+    p : float
+        spectral index, note it is positive by definition, will change sign in the function
+    gamma_c : float
+        cutoff Lorentz factor of the electron distribution
+    gamma_min : float
+        minimum Lorentz factor of the electron distribution
+    gamma_max : float
+        maximum Lorentz factor of the electron distribution
+    integrator: func
+        function to be used for integration, default is :class:`~numpy.trapz`
+    """
+
+    def __init__(
+        self,
+        k_e=1e-13 * u.Unit("cm-3"),
+        p=2.1,
+        gamma_c=1e3,
+        gamma_min=10,
+        gamma_max=1e5,
+        integrator=np.trapz,
+    ):
+        super().__init__(integrator)
+        self.k_e = k_e
+        self.p = p
+        self.gamma_c = gamma_c
+        self.gamma_min = gamma_min
+        self.gamma_max = gamma_max
+
+    @property
+    def parameters(self):
+        return [self.k_e, self.p, self.gamma_c, self.gamma_min, self.gamma_max]
+
+    @staticmethod
+    def evaluate(gamma, k_e, p, gamma_c, gamma_min, gamma_max):
+        return np.where(
+            (gamma_min <= gamma) * (gamma <= gamma_max), k_e * gamma ** (-p) *np.exp( -gamma / gamma_c) , 0
+        )
+
+    def __call__(self, gamma):
+        return self.evaluate(gamma, self.k_e, self.p, self.gamma_c , self.gamma_min, self.gamma_max)
+
+    @staticmethod
+    def evaluate_SSA_integrand(gamma, k_e, p, gamma_c, gamma_min, gamma_max):
+        r"""(analytical) integrand for the synchrotron self-absorption:
+        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`"""
+        prefactor = -(p + 2) / gamma + (-1 / gamma_c)
+
+        return prefactor * PowerLawExpCutOff.evaluate(
+            gamma, k_e, p, gamma_c, gamma_min, gamma_max
+        )
+
+    def SSA_integrand(self, gamma):
+        return self.evaluate_SSA_integrand(
+            gamma, self.k_e, self.p, self.gamma_c, self.gamma_min, self.gamma_max
+        )
+
+    def __str__(self):
+        return (
+            f"* electron spectrum\n"
+            + f" - power law\n"
+            + f" - k_e: {self.k_e:.2e}\n"
+            + f" - p: {self.p:.2f}\n"
+            + f" - gamma_c: {self.gamma_c:.2f}\n"
+            + f" - gamma_min: {self.gamma_min:.2e}\n"
+            + f" - gamma_max: {self.gamma_max:.2e}\n"
+        )
+
 
 
 class BrokenPowerLaw(ElectronDistribution):
