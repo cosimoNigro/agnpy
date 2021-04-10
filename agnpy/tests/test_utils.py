@@ -6,7 +6,7 @@ import agnpy.utils.math as math
 import agnpy.utils.geometry as geom
 
 
-twopi  =2 * pi
+twopi = 2 * np.pi
 
 
 def line_loglog(x, m, n):
@@ -25,6 +25,7 @@ def integral_line_loglog(x_min, x_max, m, n):
 
 class TestMathUtils:
     """test uitls.math"""
+
     @pytest.mark.parametrize("m", np.arange(-2, 2.5, 0.5))
     @pytest.mark.parametrize("n", np.arange(-2, 2.5, 0.5))
     def test_trapz_log_log(self, m, n):
@@ -39,6 +40,7 @@ class TestMathUtils:
 
 class TestUtilsGeometry:
     """test utils.geometry"""
+
     @pytest.mark.parametrize("R_re", [1e16 * u.cm, 1e17 * u.cm])
     @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
     @pytest.mark.parametrize("uu", [5.0e16 * u.cm, 4.0e17 * u.cm])
@@ -116,7 +118,6 @@ class TestUtilsGeometry:
     def test_x_re_shell_mu_s_vs_ring(self, R_re, r, phi_re, uu, mu_s):
         """Test that for mu_re=0. x_re_shell_mu_s gives the same results as 
         x_re_ring_mu_s"""
-
         x_ring = geom.x_re_ring_mu_s(R_re, r, phi_re, uu, mu_s)
         mu_re = 0.01
         x_shell = geom.x_re_shell_mu_s(R_re, r, phi_re, mu_re, uu, mu_s)
@@ -138,7 +139,6 @@ class TestUtilsGeometry:
     @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
     def test_x_re_shell_mu_s(self, phi_re):
         """Test that for a simple case that  x_re_shell_mu_s gives correct results"""
-
         R_re = 1e17 * u.cm
         r = 3e17 * u.cm
         uu = 5e17 * u.cm
@@ -156,7 +156,6 @@ class TestUtilsGeometry:
     def test_phi_mu_re_shell_vs_ring(self, R_re, r, phi_re, uu, mu_s):
         """Test that for mu_re=0 phi_mu_re_shell gives the same results as 
         phi_mu_re_ring"""
-
         phi_ring, mu_ring = geom.phi_mu_re_ring(R_re, r, phi_re, uu, mu_s)
         mu_re = 0.001
         phi_shell, mu_shell = geom.phi_mu_re_shell(R_re, r, phi_re, mu_re, uu, mu_s)
@@ -173,10 +172,8 @@ class TestUtilsGeometry:
     @pytest.mark.parametrize("mu_s", np.linspace(0, 0.9, 5))
     def test_phi_mu_re_shell(self, R_re, r, phi_re, uu, mu_s):
         """Test that for mu_re=1 phi_mu_re_shell gives correct result"""
-
         mu_re = 0.99999
         phi_shell, mu_shell = geom.phi_mu_re_shell(R_re, r, phi_re, mu_re, uu, mu_s)
-
         phi_true = 0  # unless mu_s = 1 in which case phi_true can be whatever
         dx = uu * np.sqrt(1 - mu_s ** 2)
         dz = r - R_re + uu * mu_s
