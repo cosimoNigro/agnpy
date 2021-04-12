@@ -2,6 +2,12 @@ import astropy.units as u
 from astropy.coordinates import Distance
 from agnpy.emission_regions import Blob
 import matplotlib.pyplot as plt
+from agnpy.utils.plot import load_mpl_rc
+
+
+# matplotlib adjustments
+load_mpl_rc()
+
 
 # set the spectrum normalisation (total energy in electrons in this case)
 spectrum_norm = 1e48 * u.Unit("erg")

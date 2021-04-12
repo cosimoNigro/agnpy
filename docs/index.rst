@@ -60,6 +60,7 @@ The documentation includes several tutorial jupyter notebooks providing examples
    tutorials/synchrotron_self_compton.ipynb
    tutorials/external_compton.ipynb
    absorption
+   tutorials/absorption_targets.ipynb
    derivations
    spectral_constraints
    tutorials/ssc_sherpa_fit.ipynb
