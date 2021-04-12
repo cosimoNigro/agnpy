@@ -1,7 +1,12 @@
 # tests on the utils module
 import pytest
 import numpy as np
-from agnpy.utils.math import trapz_loglog
+import astropy.units as u
+import agnpy.utils.math as math
+import agnpy.utils.geometry as geom
+
+
+twopi = 2 * np.pi
 
 
 def line_loglog(x, m, n):
@@ -28,6 +33,154 @@ class TestMathUtils:
         # generate syntethic power-law like data by defining a straight line
         y = line_loglog(x, m, n)
         trapz_integral = np.trapz(y, x, axis=0)
-        trapz_loglog_integral = trapz_loglog(y, x, axis=0)
+        trapz_loglog_integral = math.trapz_loglog(y, x, axis=0)
         analytical_integral = integral_line_loglog(x[0], x[-1], m, n)
         assert np.isclose(trapz_loglog_integral, analytical_integral, atol=0, rtol=0.01)
+
+
+class TestUtilsGeometry:
+    """test utils.geometry"""
+
+    @pytest.mark.parametrize("R_re", [1e16 * u.cm, 1e17 * u.cm])
+    @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
+    @pytest.mark.parametrize("uu", [5.0e16 * u.cm, 4.0e17 * u.cm])
+    @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
+    def test_x_re_ring_vs_x_re_ring_mu_s(self, R_re, r, uu, phi_re):
+        """test consistency of both methods if mu_s ~ 1"""
+        x1 = geom.x_re_ring(R_re, r + uu)
+        x2 = geom.x_re_ring_mu_s(R_re, r, phi_re, uu, 0.9999)
+        assert np.isclose(x1, x2, atol=0, rtol=0.01)
+
+    @pytest.mark.parametrize("R_re", [1e16 * u.cm, 1e17 * u.cm])
+    @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
+    @pytest.mark.parametrize("uu", [5.0e16 * u.cm, 4.0e17 * u.cm])
+    @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
+    def test_x_re_ring_mu_s_perp(self, R_re, r, uu, phi_re):
+        """test if the calculations are fine for mu_s ~=0"""
+        mu_s = 0.01
+        x1 = geom.x_re_ring_mu_s(R_re, r, phi_re, uu, mu_s)
+        x2 = np.sqrt(
+            r ** 2 + (uu - R_re * np.cos(phi_re)) ** 2 + (R_re * np.sin(phi_re)) ** 2
+        )
+        assert np.isclose(x1, x2, atol=0, rtol=0.01)
+
+    @pytest.mark.parametrize("R_re", [1e17 * u.cm])
+    @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
+    @pytest.mark.parametrize("uu", [5.0e16 * u.cm, 4.0e17 * u.cm])
+    @pytest.mark.parametrize("phi_re", np.linspace(0 + 0.1, 2 * np.pi - 0.1, 5))
+    def test_phi_mu_re_ring_1(self, R_re, r, uu, phi_re):
+        """test for mu_s = 1"""
+        mu_s = 0.99999
+        x_re = geom.x_re_ring_mu_s(R_re, r, phi_re, uu, mu_s)
+        phi, mu = geom.phi_mu_re_ring(R_re, r, phi_re, uu, mu_s)
+        mu2 = (r + uu) / x_re
+        assert np.isclose(mu, mu2, atol=0.01, rtol=0)
+
+        # there is a pi of difference between phi and phi_re
+        dphi = np.mod(phi.value - phi_re + twopi, twopi)
+        # this one fails unless mu_s is very close to one, or uu << R_re
+        assert np.isclose(dphi, np.pi, atol=0.1, rtol=0)
+
+    @pytest.mark.parametrize("R_re", [1e16 * u.cm, 1e17 * u.cm])
+    @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
+    @pytest.mark.parametrize("uu", [5.0e16 * u.cm, 4.0e17 * u.cm])
+    @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
+    def test_phi_mu_re_ring_0(self, R_re, r, uu, phi_re):
+        """test for mu_s =~ 0"""
+        mu_s = 0.001
+        x_re = geom.x_re_ring_mu_s(R_re, r, phi_re, uu, mu_s)
+        phi, mu = geom.phi_mu_re_ring(R_re, r, phi_re, uu, mu_s)
+        mu2 = r / x_re
+        assert np.isclose(mu, mu2, atol=0.01, rtol=0)
+
+        phi2 = np.arctan2(-R_re * np.sin(phi_re), uu - R_re * np.cos(phi_re)).value
+
+        # here we add on purpose pi to avoid slightly negative differences
+        dphi = np.mod(phi.value - phi2 + 3 * np.pi, twopi)
+        assert np.isclose(dphi, np.pi, atol=0.1, rtol=0)
+
+    @pytest.mark.parametrize("R_re", [1e16 * u.cm, 1e17 * u.cm])
+    @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
+    @pytest.mark.parametrize("uu", [1.0e19 * u.cm])
+    @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
+    @pytest.mark.parametrize("mu_s", np.linspace(0, 1, 5))
+    def test_phi_mu_infty(self, R_re, r, uu, phi_re, mu_s):
+        """test that for uu >> R_re for mu_s =~ 0"""
+        phi, mu = geom.phi_mu_re_ring(R_re, r, phi_re, uu, mu_s)
+        cospsi = geom.cos_psi(mu_s, mu, phi)
+        assert np.isclose(cospsi, 1, atol=0.01, rtol=0)
+
+    @pytest.mark.parametrize("R_re", [1e16 * u.cm, 1e17 * u.cm])
+    @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
+    @pytest.mark.parametrize("uu", [5.0e16 * u.cm, 4.0e17 * u.cm])
+    @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
+    @pytest.mark.parametrize("mu_s", np.linspace(0, 1, 5))
+    def test_x_re_shell_mu_s_vs_ring(self, R_re, r, phi_re, uu, mu_s):
+        """Test that for mu_re=0. x_re_shell_mu_s gives the same results as 
+        x_re_ring_mu_s"""
+        x_ring = geom.x_re_ring_mu_s(R_re, r, phi_re, uu, mu_s)
+        mu_re = 0.01
+        x_shell = geom.x_re_shell_mu_s(R_re, r, phi_re, mu_re, uu, mu_s)
+        assert np.isclose(x_shell, x_ring, atol=0, rtol=0.01)
+
+    @pytest.mark.parametrize("R_re", [1e17 * u.cm])
+    @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
+    @pytest.mark.parametrize("uu", [1.0e16 * u.cm, 4.0e17 * u.cm])
+    @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
+    @pytest.mark.parametrize("mu_re", np.linspace(-1, 1, 4))
+    def test_x_re_shell_mu_s_vs_on_axis(self, R_re, r, phi_re, mu_re, uu):
+        """Test that for mu_s=1. x_re_shell_mu_s gives the same results as 
+        x_re_shell"""
+        mu_s = 0.9999
+        x_on_axis = geom.x_re_shell(mu_re, R_re, r + uu)
+        x_shell = geom.x_re_shell_mu_s(R_re, r, phi_re, mu_re, uu, mu_s)
+        assert np.isclose(x_shell, x_on_axis, atol=0, rtol=0.01)
+
+    @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
+    def test_x_re_shell_mu_s(self, phi_re):
+        """Test that for a simple case that  x_re_shell_mu_s gives correct results"""
+        R_re = 1e17 * u.cm
+        r = 3e17 * u.cm
+        uu = 5e17 * u.cm
+        mu_re = 0.999
+        mu_s = 0.001
+        x_true = np.sqrt((r - R_re) ** 2 + uu ** 2)
+        x_shell = geom.x_re_shell_mu_s(R_re, r, phi_re, mu_re, uu, mu_s)
+        assert np.isclose(x_shell, x_true, atol=0, rtol=0.01)
+
+    @pytest.mark.parametrize("R_re", [1e16 * u.cm, 1e17 * u.cm])
+    @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
+    @pytest.mark.parametrize("uu", [5.0e16 * u.cm, 4.0e17 * u.cm])
+    @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
+    @pytest.mark.parametrize("mu_s", np.linspace(0, 1, 5))
+    def test_phi_mu_re_shell_vs_ring(self, R_re, r, phi_re, uu, mu_s):
+        """Test that for mu_re=0 phi_mu_re_shell gives the same results as 
+        phi_mu_re_ring"""
+        phi_ring, mu_ring = geom.phi_mu_re_ring(R_re, r, phi_re, uu, mu_s)
+        mu_re = 0.001
+        phi_shell, mu_shell = geom.phi_mu_re_shell(R_re, r, phi_re, mu_re, uu, mu_s)
+        assert np.isclose(mu_shell, mu_ring, atol=0.01, rtol=0)
+
+        # here we add on purpose pi to avoid slightly negative differences
+        dphi = np.mod(phi_shell.value - phi_ring.value + 3 * np.pi, twopi)
+        assert np.isclose(dphi, np.pi, atol=0.01, rtol=0)
+
+    @pytest.mark.parametrize("R_re", [1e17 * u.cm])
+    @pytest.mark.parametrize("r", [3.0e16 * u.cm, 2.0e17 * u.cm])
+    @pytest.mark.parametrize("uu", [5.0e16 * u.cm, 4.0e17 * u.cm])
+    @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
+    @pytest.mark.parametrize("mu_s", np.linspace(0, 0.9, 5))
+    def test_phi_mu_re_shell(self, R_re, r, phi_re, uu, mu_s):
+        """Test that for mu_re=1 phi_mu_re_shell gives correct result"""
+        mu_re = 0.99999
+        phi_shell, mu_shell = geom.phi_mu_re_shell(R_re, r, phi_re, mu_re, uu, mu_s)
+        phi_true = 0  # unless mu_s = 1 in which case phi_true can be whatever
+        dx = uu * np.sqrt(1 - mu_s ** 2)
+        dz = r - R_re + uu * mu_s
+        mu_true = dz / np.sqrt(dx ** 2 + dz ** 2)
+        assert np.isclose(mu_shell, mu_true, atol=0.01, rtol=0)
+        print(phi_true, phi_shell, R_re, r, phi_re, uu, mu_s)
+
+        # here we add on purpose pi to avoid slightly negative differences
+        dphi = np.mod(phi_shell.value - phi_true + 3 * np.pi, twopi)
+        assert np.isclose(dphi, np.pi, atol=0.03, rtol=0)
