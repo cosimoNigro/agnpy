@@ -454,7 +454,7 @@ class ExpCutoffPowerLaw(ElectronDistribution):
         :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`"""
         prefactor = -(p + 2) / gamma + (-1 / gamma_c)
 
-        return prefactor * PowerLawExpCutOff.evaluate(
+        return prefactor * ExpCutoffPowerLaw.evaluate(
             gamma, k_e, p, gamma_c, gamma_min, gamma_max
         )
 
