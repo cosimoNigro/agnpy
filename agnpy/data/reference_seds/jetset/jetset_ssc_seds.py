@@ -22,7 +22,7 @@ pwl_jet.set_par("z_cosm", 0.07)
 pwl_jet.spectral_components.Sync.state = "on"
 
 # synchrotron emission
-pwl_jet.set_nu_grid(1e10, 1e19, 50)
+pwl_jet.set_nu_grid(1e9, 1e19, 100)
 pwl_jet.show_model()
 pwl_jet.eval()
 
@@ -37,7 +37,7 @@ sed = synch_sed.value[condition]
 np.savetxt("synch_pwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
 
 # SSC emission
-pwl_jet.set_nu_grid(1e15, 1e26, 50)
+pwl_jet.set_nu_grid(1e14, 1e26, 100)
 pwl_jet.show_model()
 pwl_jet.eval()
 
