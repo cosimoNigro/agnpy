@@ -30,7 +30,7 @@ for subdir in ["ebl", "disk", "blr", "dt"]:
 class TestAbsorption:
     """class grouping all tests related to the Absorption class"""
 
-    @pytest.mark.parametrize("r", ["1e-1", "1e0", "1e1"])
+    @pytest.mark.parametrize("r", ["1e-1", "1e0", "1e1", "1e2"])
     def test_absorption_disk_reference_tau(self, r):
         """test agnpy gamma-gamma optical depth for Disk against the one in 
         Figure 14 of Finke 2016"""
@@ -67,7 +67,7 @@ class TestAbsorption:
         )
         assert True
 
-    @pytest.mark.parametrize("r", ["1e-1", "1e0", "1e1"])
+    @pytest.mark.parametrize("r", ["1e-1", "1e0", "1e1", "1e2"])
     def test_absorption_blr_reference_tau(self, r):
         """test agnpy gamma-gamma optical depth for a Lyman alpha BLR against 
         the one in Figure 14 of Finke 2016"""
