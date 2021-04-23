@@ -184,7 +184,7 @@ class TestAbsorption:
             "point source approximating the BLR",
             "spherical shell BLR",
             "Absorption on Spherical Shell BLR, "
-            + r"$r = 10^{20}\,{\rm cm} \gg R_{\rm line}$",
+            + r"$r = 10^{20}\,{\rm cm} \gg R_{\rm line},\,\theta_s=10^{\circ}$",
             f"{figures_dir}/blr/tau_blr_point_source_comparison.png",
             "tau",
         )
@@ -219,7 +219,7 @@ class TestAbsorption:
             "point source approximating the DT",
             "ring dust torus",
             "Absorption on Ring Dust Torus, "
-            + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm dt}$",
+            + r"$r = 10^{22}\,{\rm cm} \gg R_{\rm dt}\,\theta_s=10^{\circ}$",
             f"{figures_dir}/dt/tau_dt_point_source_comparison.png",
             "tau",
         )
