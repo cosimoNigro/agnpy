@@ -44,8 +44,7 @@ def mu_star_shell(mu, R_re, r):
     """
     addend = np.power(R_re / x_re_shell(mu, R_re, r), 2) * (1 - np.power(mu, 2))
     mu_star = np.sqrt(1 - addend)
-
-    # if r<mu*R_re you need to multiply by -1 because the blob is before the shell element
+    # if r < mu * R_re you need to multiply by -1 because the blob is before the shell element
     mu_sign = ((r > mu * R_re) - 0.5) * 2
     mu_star *= mu_sign
     return mu_star
