@@ -67,8 +67,10 @@ class TestAbsorption:
         )
         assert True
 
-    @pytest.mark.parametrize("r", ["1e-1", "1e0", "1e1", "1e2"])
-    def test_absorption_blr_reference_tau(self, r):
+    @pytest.mark.parametrize(
+        "r,nu_min", [("1e-1", 5e24), ("1e0.5", 2e26), ("1e1", 2.3e27)]
+    )
+    def test_absorption_blr_reference_tau(self, r, nu_min):
         """test agnpy gamma-gamma optical depth for a Lyman alpha BLR against 
         the one in Figure 14 of Finke 2016"""
         # reference tau
@@ -76,34 +78,43 @@ class TestAbsorption:
             f"{data_dir}/reference_taus/finke_2016/figure_14_left/tau_BLR_Ly_alpha_r_{r}_R_Ly_alpha.txt",
             "GeV",
         )
-        nu_ref = E_ref.to("Hz", equivalencies=u.spectral())
-        # target
-        L_disk = 2e46 * u.Unit("erg s-1")
-        xi_line = 0.024
-        R_line = 1e17 * u.cm
-        blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
-        R_Ly_alpha = 1.1e17 * u.cm
-        _r = float(r) * R_Ly_alpha
-        # recompute the tau, use the full energy range of figure 14
+        # Finke's frequencies are not corrected for the redshift
         z = 0.859
-        ec_blr = Absorption(blr, _r, z)
-        tau_agnpy = ec_blr.tau(nu_ref)
-        # comparison plot
+        nu_ref = E_ref.to("Hz", equivalencies=u.spectral()) / (1 + z)
+        # target
+        L_disk = 2 * 1e46 * u.Unit("erg s-1")
+        xi_line = 0.024
+        R_Ly_alpha = 1.1 * 1e17 * u.cm
+        blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_Ly_alpha)
+        # parse the string providing the distance in units of R_Ly_alpha
+        # numbers as 1e1.5 cannot be directly converted to float
+        num = r.split("e")
+        Ly_alpha_units = (float(num[0]) * 10) ** (float(num[-1]))
+        _r = Ly_alpha_units * R_Ly_alpha
+        # recompute the tau, use the full energy range of figure 14
+        abs_blr = Absorption(blr, _r, z)
+        tau_agnpy = abs_blr.tau(nu_ref)
+        # check in a restricted energy range
+        nu_range = [nu_min, 3e28] * u.Hz
         make_comparison_plot(
             nu_ref,
             tau_agnpy,
             tau_ref,
             "agnpy",
             "Figure 14, Finke (2016)",
-            f"Absorption on Spherical Shell BLR, r = {r} R(Ly alpha)",
+            f"Absorption on Spherical Shell BLR, r = {Ly_alpha_units:.2e} R(Ly alpha)",
             f"{figures_dir}/blr/tau_blr_Ly_alpha_comprison_r_{r}_R_Ly_alpha_figure_14_finke_2016.png",
             "tau",
-            y_range=[1e-5, 1e5],
+            comparison_range=nu_range.to_value("Hz"),
+            y_range=[1e-6, 1e3],
         )
-        assert True
+        # requires that the SED points deviate less than 35 % from those of the reference figure
+        assert check_deviation(nu_ref, tau_agnpy, tau_ref, 0.35, nu_range)
 
-    @pytest.mark.parametrize("r", ["1e-1", "1e0", "1e1", "1e2"])
-    def test_absorption_dt_reference_tau(self, r):
+    @pytest.mark.parametrize(
+        "r,nu_min", [("1e-1", 3.3e26), ("1e0", 3.3e26), ("1e1", 3.3e26), ("1e2", 8e26)]
+    )
+    def test_absorption_dt_reference_tau(self, r, nu_min):
         """test agnpy gamma-gamma optical depth for DT against the one in 
         Figure 14 of Finke 2016"""
         # reference tau
@@ -113,29 +124,36 @@ class TestAbsorption:
         )
         nu_ref = E_ref.to("Hz", equivalencies=u.spectral())
         # target
-        L_disk = 2e46 * u.Unit("erg s-1")
+        L_disk = 2 * 1e46 * u.Unit("erg s-1")
         T_dt = 1e3 * u.K
         csi_dt = 0.1
         dt = RingDustTorus(L_disk, csi_dt, T_dt)
-        R_Ly_alpha = 1.1e17 * u.cm
-        _r = float(r) * R_Ly_alpha
+        R_Ly_alpha = 1.1 * 1e17 * u.cm
+        # parse the string providing the distance in units of R_Ly_alpha
+        # numbers as 1e1.5 cannot be directly converted to float
+        num = r.split("e")
+        Ly_alpha_units = (float(num[0]) * 10) ** (float(num[-1]))
+        _r = Ly_alpha_units * R_Ly_alpha
         # recompute the tau, use the full energy range of figure 14
         z = 0.859
-        ec_dt = Absorption(dt, _r, z)
-        tau_agnpy = ec_dt.tau(nu_ref)
-        # comparison plot
+        abs_dt = Absorption(dt, _r, z)
+        tau_agnpy = abs_dt.tau(nu_ref)
+        # check in a restricted energy range
+        nu_range = [nu_min, 3e28] * u.Hz
         make_comparison_plot(
             nu_ref,
             tau_agnpy,
             2 * tau_ref,
             "agnpy",
             "Figure 14, Finke (2016)",
-            f"Absorption on Dust Torus, r = {r} R(Ly alpha)",
+            f"Absorption on Dust Torus, r = {Ly_alpha_units:.2e} R(Ly alpha)",
             f"{figures_dir}/dt/tau_dt_comprison_r_{r}_R_Ly_alpha_figure_14_finke_2016.png",
             "tau",
-            y_range=[1e-5, 1e5],
+            comparison_range=nu_range.to_value("Hz"),
+            y_range=[1e-6, 1e3],
         )
-        assert True
+        # requires that the SED points deviate less than 20 % from those of the reference figure
+        assert check_deviation(nu_ref, tau_agnpy, 2 * tau_ref, 0.20, nu_range)
 
     def test_abs_blr_vs_point_source(self):
         """check if in the limit of large distances the gamma-gamma optical depth 
