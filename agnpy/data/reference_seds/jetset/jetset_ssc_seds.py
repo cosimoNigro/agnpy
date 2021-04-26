@@ -38,6 +38,7 @@ np.savetxt("synch_pwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
 
 # SSC emission
 pwl_jet.set_nu_grid(1e14, 1e26, 100)
+pwl_jet.set_IC_nu_size(100)
 pwl_jet.show_model()
 pwl_jet.eval()
 
