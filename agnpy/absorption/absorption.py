@@ -5,7 +5,13 @@ import astropy.units as u
 from astropy.io import fits
 from astropy.constants import c, G, h, m_e, M_sun, sigma_T
 from scipy.interpolate import interp2d
-from ..utils.math import axes_reshaper, log, mu_to_integrate, phi_to_integrate
+from ..utils.math import (
+    axes_reshaper,
+    log,
+    mu_to_integrate,
+    phi_to_integrate,
+    min_rel_distance,
+)
 from ..utils.geometry import (
     cos_psi,
     x_re_shell,
@@ -321,6 +327,12 @@ class Absorption:
         epsilon_1 = nu_to_epsilon_prime(nu, z)
         # multidimensional integration
         l = np.logspace(0, 5, l_size) * r
+
+        # check if any point is too close to R_line, the function works only for mu=1, so
+        # we can check directly if R_line is within 'l' array
+        idx = np.isclose(l, R_line, rtol=min_rel_distance)
+        l[idx] += min_rel_distance * R_line
+
         _mu, _phi, _l, _epsilon_1 = axes_reshaper(mu, phi, l, epsilon_1)
         x = x_re_shell(_mu, R_line, _l)
         _mu_star = mu_star_shell(_mu, R_line, _l)
@@ -387,6 +399,16 @@ class Absorption:
         # multidimensional integration
         # here uu is the distance that the photon traversed
         uu = np.logspace(-5, 5, u_size) * r
+
+        # check if for any uu value the position of the photon is too close to the BLR
+        x_cross = np.sqrt(r ** 2 + uu ** 2 + 2 * uu * r * mu_s)
+        idx = np.isclose(x_cross, R_line, rtol=min_rel_distance)
+        if idx.any():
+            uu[idx] += min_rel_distance * R_line
+            # it might happen that some of the points get more shifted then the next one,
+            # possibly making integration messy, so we sort the points
+            uu = np.sort(uu)
+
         _mu_re, _phi_re, _u, _epsilon_1 = axes_reshaper(mu, phi, uu, epsilon_1)
 
         # distance between soft photon and gamma ray

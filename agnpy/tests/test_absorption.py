@@ -374,6 +374,62 @@ class TestAbsorptionMuS:
         # which are probably due to numerical uncertainties in the integrals
         assert check_deviation(nu, tau_blr, tau_blr_on_axis, 0.25, x_range=xrange)
 
+    @pytest.mark.parametrize("r_R_line", [1, 1.0e5 ** (-10.0 / 49)])
+    def test_tau_blr_Rline(self, r_R_line):
+        """
+        Checks if absorption on BLR works also fine
+        if one of the integration points falls on R_line
+        """
+        L_disk = 2 * 1e46 * u.Unit("erg s-1")
+        xi_line = 0.024
+        R_line = 1.1 * 1e17 * u.cm
+        blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
+
+        abs_blr = Absorption(blr, r=r_R_line * R_line)
+
+        # reference (without problem)
+        abs_blr0 = Absorption(blr, r=r_R_line * R_line * 1.001)
+
+        nu = np.logspace(22, 28) * u.Hz
+        tau_blr = abs_blr.tau(nu)
+        tau_blr0 = abs_blr0.tau(nu)
+
+        # the current integrals are not very precise, and this includes
+        # tricky part to integrate, so allowing for rather large error margin
+        assert np.allclose(tau_blr, tau_blr0, atol=0.01, rtol=0.04)
+
+    def find_r_for_x_cross(mu_s, ipoint, npoints):
+        """
+        Finding which r should be used to fall with one of the points on top of BLR sphere.
+        """
+        # u = alpha * r
+        alpha = 1.0e-5 * 1.0e10 ** (ipoint / (npoints - 1.0))
+        return 1 / np.sqrt(alpha ** 2 + 2 * alpha * mu_s + 1)
+
+    @pytest.mark.parametrize("r_R_line", [1, find_r_for_x_cross(0.99, 60, 100)])
+    def test_tau_blr_mus_Rline(self, r_R_line):
+        """
+        Checks if absorption on BLR works also fine
+        if one of the integration points falls on R_line
+        """
+        L_disk = 2 * 1e46 * u.Unit("erg s-1")
+        xi_line = 0.024
+        R_line = 1.1 * 1e17 * u.cm
+        blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
+
+        abs_blr = Absorption(blr, r=r_R_line * R_line, mu_s=0.99)
+
+        # reference (without problem)
+        abs_blr0 = Absorption(blr, r=r_R_line * R_line * 1.001, mu_s=0.99)
+
+        nu = np.logspace(22, 28) * u.Hz
+        tau_blr = abs_blr.tau(nu)
+        tau_blr0 = abs_blr0.tau(nu)
+
+        # the current integrals are not very precise, and this includes
+        # tricky part to integrate, so allowing for rather large error margin
+        assert np.allclose(tau_blr, tau_blr0, atol=0.01, rtol=1.04)
+
 
 class TestEBL:
     """class grouping all tests related to the EBL class"""
