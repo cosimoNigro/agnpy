@@ -7,6 +7,7 @@ from ..utils.conversion import mec2, lambda_c, nu_to_epsilon_prime
 
 
 __all__ = [
+    "lines_dictionary",
     "CMB",
     "SSDisk",
     "PointSourceBehindJet",
