@@ -3,7 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 # axes labels
-sed_x_label = r"$\nu\,/\,Hz$"
+sed_x_label = r"$\nu\,/\,\mathrm{Hz}$"
 sed_y_label = r"$\nu F_{\nu}\,/\,(\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1})$"
 
 mpl_linewidth = 1.6
