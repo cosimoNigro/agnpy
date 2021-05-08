@@ -32,6 +32,8 @@ class ExternalCompton:
         class describing the target photon field    
     r : :class:`~astropy.units.Quantity`
         distance of the blob from the Black Hole (i.e. from the target photons)
+    integrator : func
+        function to be used for integration (default = `np.trapz`)
     """
 
     def __init__(self, blob, target, r=None, integrator=np.trapz):

@@ -80,8 +80,8 @@ class Synchrotron:
         :func:`~agnpy.synchrotron.Synchrotron.com_sed_emissivity`, in order to be
         propagated to :func:`~agnpy.synchrotron.Synchrotron.sed_luminosity` and
         :func:`~agnpy.synchrotron.Synchrotron.sed_flux`.
-    integrator : (`~agnpy.math.utils.trapz_loglog`, `~numpy.trapz`)
-        function to be used for the integration
+    integrator : func
+        function to be used for integration (default = `np.trapz`)
 	"""
 
     def __init__(self, blob, ssa=False, integrator=np.trapz):

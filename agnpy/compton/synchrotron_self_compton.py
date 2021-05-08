@@ -24,8 +24,8 @@ class SynchrotronSelfCompton:
         emission region and electron distribution hitting the photon target
     synchrotron : :class:`~agnpy.synchrotron.Synchrotron`
         class describing the synchrotron photons target
-    integrator : (`~agnpy.math.utils.trapz_loglog`, `~numpy.trapz`)
-        function to be used for the integration
+    integrator : func
+        function to be used for integration (default = `np.trapz`)
     """
 
     def __init__(self, blob, ssa=False, integrator=np.trapz):
