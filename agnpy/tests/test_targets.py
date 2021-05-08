@@ -172,7 +172,7 @@ class TestSSDisk:
         assert u.isclose(disk_test.T(R), T_expected, atol=0 * u.K, rtol=1e-2)
 
     @pytest.mark.parametrize("R_out", [1e2, 1e3, 1e4])
-    def test_sed_luminosity(self, R_out):
+    def test_bb_sed_luminosity(self, R_out):
         """test that the luminosity of the disk BB SED is the same as L_disk,
         create disks with different outer radii"""
         disk = SSDisk(M_BH_test, L_disk_test, 1 / 12, 6, R_out, R_g_units=True)
@@ -286,6 +286,23 @@ class TestRingDustTorus:
         """check that, when passed manually, the radius is correctly set"""
         dt = RingDustTorus(L_disk_test, 0.1, 1e3 * u.K, 1e19 * u.cm)
         assert u.allclose(dt.R_dt, 1e19 * u.cm, atol=0 * u.cm)
+
+    @pytest.mark.parametrize("T_dt", [1e3, 2e3, 5e3] * u.K)
+    def test_bb_sed_luminosity(self, T_dt):
+        """test that the luminosity of the DT BB SED is the same as xi_dt * L_disk,
+        create DTs with different temperatrues (and radii)"""
+        xi_dt = 0.5
+        L_dt = xi_dt * L_disk_test
+        dt = RingDustTorus(L_disk_test, xi_dt, T_dt)
+        # compute the SEDs, assume a random redshift
+        z = 0.23
+        nu = np.logspace(10, 20, 100) * u.Hz
+        sed = dt.sed_flux(nu, z)
+        # compute back the luminosity
+        d_L = Distance(z=z).to("cm")
+        F_nu = sed / nu
+        L = 4 * np.pi * np.power(d_L, 2) * np.trapz(F_nu, nu, axis=0)
+        assert u.isclose(L, L_dt, atol=0 * u.Unit("erg s-1"), rtol=1e-2)
 
     def test_u(self):
         """test u in the stationary reference frame"""
