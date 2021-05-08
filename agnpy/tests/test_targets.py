@@ -158,20 +158,33 @@ class TestSSDisk:
         assert np.allclose(epsilon_disk, epsilon_disk_expected, atol=0, rtol=1e-2)
 
     def test_T(self):
-        R_tilde = 10
         R = 10 * R_g_test
-        phi_expected = 0.225
-        # Eq. 64 [Dermer2009]
+        phi = 1 - np.sqrt((disk_test.R_in / R).to(""))
         T_expected = np.power(
-            3 * G * M_BH_test * m_dot_test / (8 * np.pi * np.power(R, 3) * sigma_sb),
+            3
+            * G
+            * M_BH_test
+            * m_dot_test
+            * phi
+            / (8 * np.pi * np.power(R, 3) * sigma_sb),
             1 / 4,
         ).to("K")
-        assert u.isclose(disk_test.T(R_tilde), T_expected, atol=0 * u.K, rtol=1e-2)
+        assert u.isclose(disk_test.T(R), T_expected, atol=0 * u.K, rtol=1e-2)
 
-    def test_Theta(R_tilde):
-        R_tilde = 10
-        epsilon = disk_test.epsilon(R_tilde)
-        assert np.isclose(epsilon, 2.7 * disk_test.Theta(R_tilde), atol=0, rtol=1e-2)
+    @pytest.mark.parametrize("R_out", [1e2, 1e3, 1e4])
+    def test_sed_luminosity(self, R_out):
+        """test that the luminosity of the disk BB SED is the same as L_disk,
+        create disks with different outer radii"""
+        disk = SSDisk(M_BH_test, L_disk_test, 1 / 12, 6, R_out, R_g_units=True)
+        # compute the SEDs, assume a random redshift
+        z = 0.23
+        nu = np.logspace(10, 20, 100) * u.Hz
+        sed = disk.sed_flux(nu, z)
+        # compute back the luminosity
+        d_L = Distance(z=z).to("cm")
+        F_nu = sed / nu
+        L = 4 * np.pi * np.power(d_L, 2) * np.trapz(F_nu, nu, axis=0)
+        assert u.isclose(L, L_disk_test, atol=0 * u.Unit("erg s-1"), rtol=1e-2)
 
 
 class TestSphericalShellBLR:

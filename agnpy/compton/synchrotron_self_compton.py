@@ -5,8 +5,6 @@ import astropy.units as u
 from .kernels import isotropic_kernel
 from ..synchrotron import Synchrotron
 from ..utils.math import (
-    trapz_loglog,
-    log,
     axes_reshaper,
     gamma_to_integrate,
     nu_to_integrate,
@@ -49,10 +47,11 @@ class SynchrotronSelfCompton:
         integrator=np.trapz,
         gamma=gamma_to_integrate,
     ):
-        r"""Evaluates the SSC flux SED,
-        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
-        for a general set of model parameters. Eq. 21 in [Finke2008]_.
-        
+        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for synchrotron self-Compton,
+        for a general set of model parameters. Eq. 9 in [Finke2008]_.
+
+        **Note** parameters after \*args need to be passed with a keyword
+
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
@@ -62,7 +61,7 @@ class SynchrotronSelfCompton:
             redshift of the source
         d_L : :class:`~astropy.units.Quantity` 
             luminosity distance of the source
-        delta_D: float
+        delta_D : float
             Doppler factor of the relativistic outflow
         B : :class:`~astropy.units.Quantity`
             magnetic field in the blob 
@@ -70,7 +69,7 @@ class SynchrotronSelfCompton:
             size of the emitting region (spherical blob assumed)
         n_e : :class:`~agnpy.spectra.ElectronDistribution`
             electron energy distribution
-        *args
+        \*args
             parameters of the electron energy distribution (k_e, p, ...)
         ssa : bool
             whether to consider or not the self-absorption, default false
@@ -79,8 +78,6 @@ class SynchrotronSelfCompton:
         gamma : :class:`~numpy.ndarray`
             array of Lorentz factor over which to integrate the electron 
             distribution
-        
-        **Note** arguments after *args are keyword-only arguments
 
         Returns
         -------
