@@ -337,7 +337,7 @@ class SSDisk:
         return 1 - np.sqrt(self.R_in_tilde / R_tilde)
 
     def T(self, R):
-        r"""temperature of the disk at radius :math:`\tilde{R}`. 
+        r"""temperature of the disk at radius :math:`R`. 
         Eq. 64 in [Dermer2009]_."""
         return self.evaluate_T(R, self.M_BH, self.m_dot, self.R_in)
 
@@ -346,9 +346,10 @@ class SSDisk:
         r"""evaluate a multi-temperature black body SED in the case of the SS Disk.
         
         .. math::
-            \nu F_{\nu} &= \nu \int_{\Omega_s} {\rm d}\Omega \mu I_{\nu}(T(R)) \\
-            &= \nu 2 \pi \int_{\mu_{\rm min}}^{\mu_{\rm max}} {\rm d}\mu \mu I_{\nu}(T(R)) \\
-            &= \nu 2 \pi \int_{R_{\rm in}}^{R_{\rm out}}{\rm d}R \left( 1 + \frac{R^2}{d_L^2}\right)\frac{R}{d_L^2} I_{\nu}(T(R)),\\     
+            \nu F_{\nu} &= \nu \int_{\Omega_s} {\rm d}\Omega \, \mu I_{\nu}(T(R)) \\
+            &= \nu 2 \pi \int_{\mu_{\rm min}}^{\mu_{\rm max}} {\rm d}\mu \, \mu I_{\nu}(T(R)) \\
+            &= \nu 2 \pi \int_{R_{\rm in}}^{R_{\rm out}}{\rm d}R \,
+            \left( 1 + \frac{R^2}{d_L^2}\right)\frac{R}{d_L^2} I_{\nu}(T(R)),\\     
         
         where :math:`I_{\nu}` is Planck's law, :math:`R` the radial coordinate along the disk,
         and :math:`d_L` the luminosity distance.
