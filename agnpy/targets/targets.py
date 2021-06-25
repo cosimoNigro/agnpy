@@ -346,18 +346,39 @@ class SSDisk:
 
     @staticmethod
     def evaluate_multi_T_bb_sed(nu, z, M_BH, m_dot, R_in, R_out, d_L, mu_s=1):
-        r"""evaluate a multi-temperature black body SED in the case of the SS Disk.
-        
+        r"""Evaluate a multi-temperature black body SED in the case of the SS Disk.
+        The SED is calculated for an observer far away from the disk with the
+        following:
+
         .. math::
-            \nu F_{\nu} &= \nu \int_{\Omega_s} {\rm d}\Omega \, \mu I_{\nu}(T(R)) \\
-            &= \nu 2 \pi \int_{\mu_{\rm min}}^{\mu_{\rm max}} {\rm d}\mu \, \mu I_{\nu}(T(R)) \\
-            &= \nu 2 \pi \int_{R_{\rm in}}^{R_{\rm out}}{\rm d}R \,
+            \nu F_{\nu} &= \mu_s \, \nu \int_{\Omega_s} {\rm d}\Omega \, \mu I_{\nu}(T(R)) \\
+            &= \mu_s \, \nu 2 \pi \int_{\mu_{\rm min}}^{\mu_{\rm max}} {\rm d}\mu \, \mu I_{\nu}(T(R)) \\
+            &= \mu_s \, \nu 2 \pi \int_{R_{\rm in}}^{R_{\rm out}}{\rm d}R \,
             \left( 1 + \frac{R^2}{d_L^2}\right)\frac{R}{d_L^2} I_{\nu}(T(R)),\\     
-        
-        where :math:`I_{\nu}` is Planck's law, :math:`R` the radial coordinate along the disk,
-        and :math:`d_L` the luminosity distance.
-        The SED is multiplied by the cosine of the viewing angle, :math:`\mu_s` 
-        if the observer is inclined w.r.t. the disk axis.
+
+        where :math:`I_{\nu}` is Planck's law, :math:`R` the radial coordinate 
+        along the disk, and :math:`d_L` the luminosity distance. :math:`\mu_s` 
+        is the cosine of the angle between the disk axis and the observer's line of sight.
+
+        Parameters
+        ----------
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed 
+            **note** these are observed frequencies (observer frame)
+        z : float
+            redshift of the source
+        M_BH : :class:`~astropy.units.Quantity`
+            Black Hole mass    
+        m_dot : float
+            mass accretion rate
+        R_in : :class:`~astropy.units.Quantity`
+            inner disk radius
+        R_out : :class:`~astropy.units.Quantity`
+            outer disk radius
+        d_L : :class:`~astropy.units.Quantity` 
+            luminosity of the source
+        mu_s : float
+            cosine of the angle between the observer line of sight and the disk axis
         """
         # correct for redshift
         nu *= 1 + z
@@ -374,8 +395,9 @@ class SSDisk:
     def evaluate_multi_T_bb_norm_sed(
         nu, z, L_disk, M_BH, m_dot, R_in, R_out, d_L, mu_s=1
     ):
-        """evaluate a normalised, multi-temperature black body SED. 
-        The integral luminosity is equal to the disk luminosity in `L_disk`"""
+        """Evaluate a normalised, multi-temperature black body SED as in
+        :func:`~targets.SSDisk.evaluate_multi_T_bb_sed`, but the integral luminosity 
+        is set to be equal to `L_disk`."""
         sed_disk = SSDisk.evaluate_multi_T_bb_sed(
             nu, z, M_BH, m_dot, R_in, R_out, d_L, mu_s
         )
@@ -385,7 +407,10 @@ class SSDisk:
         return norm * sed_disk
 
     def sed_flux(self, nu, z, mu_s=1):
-        """evaluate the multi-temperature black body SED for this SS Disk"""
+        r"""evaluate the multi-temperature black body SED for this SS Disk, refer
+        to :func:`~targets.SSDisk.evaluate_multi_T_bb_sed` and to 
+        :func:`~targets.SSDisk.evaluate_multi_T_bb_norm_sed`
+        """
         d_L = Distance(z=z).to("cm")
         return SSDisk.evaluate_multi_T_bb_norm_sed(
             nu, z, self.L_disk, self.M_BH, self.m_dot, self.R_in, self.R_out, d_L, mu_s
