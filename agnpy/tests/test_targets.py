@@ -183,7 +183,8 @@ class TestSSDisk:
         # compute back the luminosity
         d_L = Distance(z=z).to("cm")
         F_nu = sed / nu
-        L = 4 * np.pi * np.power(d_L, 2) * np.trapz(F_nu, nu, axis=0)
+        # renormalise, the factor 2 includes the two sides of the Disk
+        L = 2 * (4 * np.pi * np.power(d_L, 2) * np.trapz(F_nu, nu, axis=0))
         assert u.isclose(L, L_disk_test, atol=0 * u.Unit("erg s-1"), rtol=1e-2)
 
 

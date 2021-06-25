@@ -342,7 +342,7 @@ class SSDisk:
         return self.evaluate_T(R, self.M_BH, self.m_dot, self.R_in)
 
     @staticmethod
-    def evaluate_multi_T_bb_sed(nu, z, M_BH, m_dot, R_in, R_out, d_L):
+    def evaluate_multi_T_bb_sed(nu, z, M_BH, m_dot, R_in, R_out, d_L, mu_s=1):
         r"""evaluate a multi-temperature black body SED in the case of the SS Disk.
         
         .. math::
@@ -353,6 +353,8 @@ class SSDisk:
         
         where :math:`I_{\nu}` is Planck's law, :math:`R` the radial coordinate along the disk,
         and :math:`d_L` the luminosity distance.
+        The SED is multiplied by the cosine of the viewing angle, :math:`\mu_s` 
+        if the observer is inclined w.r.t. the disk axis.
         """
         # correct for redshift
         nu *= 1 + z
@@ -363,15 +365,15 @@ class SSDisk:
         _I_nu = BlackBody().evaluate(_nu, _T, scale=1)
         integrand = (1 + np.power(_R / d_L, 2)) * _R / np.power(d_L, 2) * _I_nu * u.sr
         F_nu = 2 * np.pi * np.trapz(integrand, R, axis=0)
-        return (nu * F_nu).to("erg cm-2 s-1")
+        return mu_s * (nu * F_nu).to("erg cm-2 s-1")
 
     @staticmethod
     def evaluate_multi_T_bb_norm_sed(nu, z, L_disk, M_BH, m_dot, R_in, R_out, d_L):
         """evaluate a normalised, multi-temperature black body SED. 
         The integral luminosity is equal to the disk luminosity in `L_disk`"""
         sed_disk = SSDisk.evaluate_multi_T_bb_sed(nu, z, M_BH, m_dot, R_in, R_out, d_L)
-        # renormalise
-        L = (np.trapz(sed_disk / nu, nu) * 4 * np.pi * d_L ** 2).to("erg s-1")
+        # renormalise, the factor 2 includes the two sides of the Disk
+        L = 2 * (np.trapz(sed_disk / nu, nu) * 4 * np.pi * d_L ** 2).to("erg s-1")
         norm = (L_disk / L).to_value("")
         return norm * sed_disk
 
