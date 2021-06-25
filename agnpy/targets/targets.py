@@ -347,14 +347,12 @@ class SSDisk:
     @staticmethod
     def evaluate_multi_T_bb_sed(nu, z, M_BH, m_dot, R_in, R_out, d_L, mu_s=1):
         r"""Evaluate a multi-temperature black body SED in the case of the SS Disk.
-        The SED is calculated for an observer far away from the disk with the
-        following:
+        The SED is calculated for an observer far away from the disk (:math:`d_L \gg R`) 
+        with the following:
 
         .. math::
-            \nu F_{\nu} &= \mu_s \, \nu \int_{\Omega_s} {\rm d}\Omega \, \mu I_{\nu}(T(R)) \\
-            &= \mu_s \, \nu 2 \pi \int_{\mu_{\rm min}}^{\mu_{\rm max}} {\rm d}\mu \, \mu I_{\nu}(T(R)) \\
-            &= \mu_s \, \nu 2 \pi \int_{R_{\rm in}}^{R_{\rm out}}{\rm d}R \,
-            \left( 1 + \frac{R^2}{d_L^2}\right)\frac{R}{d_L^2} I_{\nu}(T(R)),\\     
+            \nu F_{\nu} \approx \mu_s \, \nu \frac{2 \pi}{d_L^2} 
+            \int_{R_{\rm in}}^{R_{\rm out}}{\rm d}R \, R \, I_{\nu}(T(R)),
 
         where :math:`I_{\nu}` is Planck's law, :math:`R` the radial coordinate 
         along the disk, and :math:`d_L` the luminosity distance. :math:`\mu_s` 
@@ -387,7 +385,7 @@ class SSDisk:
         _R, _nu = axes_reshaper(R, nu)
         _T = SSDisk.evaluate_T(_R, M_BH, m_dot, R_in)
         _I_nu = BlackBody().evaluate(_nu, _T, scale=1)
-        integrand = (1 + np.power(_R / d_L, 2)) * _R / np.power(d_L, 2) * _I_nu * u.sr
+        integrand = _R / np.power(d_L, 2) * _I_nu * u.sr
         F_nu = 2 * np.pi * np.trapz(integrand, R, axis=0)
         return mu_s * (nu * F_nu).to("erg cm-2 s-1")
 
