@@ -45,7 +45,11 @@ lines_dictionary = {
         "R_Hbeta_ratio": 1.2,
         "L_Hbeta_ratio": 1.1,
     },
-    "OVI": {"lambda": 1033.83 * u.Angstrom, "R_Hbeta_ratio": 1.2, "L_Hbeta_ratio": 1.1},
+    "OVI": {
+        "lambda": 1033.83 * u.Angstrom,
+        "R_Hbeta_ratio": 1.2,
+        "L_Hbeta_ratio": 1.1,
+    },
     "ArI": {
         "lambda": 1066.66 * u.Angstrom,
         "R_Hbeta_ratio": 4.5,
@@ -56,7 +60,11 @@ lines_dictionary = {
         "R_Hbeta_ratio": 0.27,
         "L_Hbeta_ratio": 12,
     },
-    "OI": {"lambda": 1304.35 * u.Angstrom, "R_Hbeta_ratio": 4.0, "L_Hbeta_ratio": 0.23},
+    "OI": {
+        "lambda": 1304.35 * u.Angstrom,
+        "R_Hbeta_ratio": 4.0,
+        "L_Hbeta_ratio": 0.23,
+    },
     "SiII": {
         "lambda": 1306.82 * u.Angstrom,
         "R_Hbeta_ratio": 4.0,
@@ -101,11 +109,6 @@ lines_dictionary = {
         "lambda": 2798.75 * u.Angstrom,
         "R_Hbeta_ratio": 0.45,
         "L_Hbeta_ratio": 1.7,
-    },
-    "HeI": {
-        "lambda": 3188.67 * u.Angstrom,
-        "R_Hbeta_ratio": 4.3,
-        "L_Hbeta_ratio": 0.051,
     },
     "Hdelta": {
         "lambda": 4102.89 * u.Angstrom,
