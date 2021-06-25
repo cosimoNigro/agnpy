@@ -1,9 +1,11 @@
 # module containing the targets for the external compton radiation
 import numpy as np
-from astropy.constants import m_e, h, c, k_B, M_sun, G
+from astropy.constants import c, G, M_sun, k_B, sigma_sb
 import astropy.units as u
 from astropy.coordinates import Distance
-from ..utils.conversion import mec2, lambda_c, nu_to_epsilon_prime
+from astropy.modeling.models import BlackBody
+from ..utils.conversion import mec2, nu_to_epsilon_prime
+from ..utils.math import axes_reshaper
 
 
 __all__ = [
@@ -43,7 +45,11 @@ lines_dictionary = {
         "R_Hbeta_ratio": 1.2,
         "L_Hbeta_ratio": 1.1,
     },
-    "OVI": {"lambda": 1033.83 * u.Angstrom, "R_Hbeta_ratio": 1.2, "L_Hbeta_ratio": 1.1},
+    "OVI": {
+        "lambda": 1033.83 * u.Angstrom,
+        "R_Hbeta_ratio": 1.2,
+        "L_Hbeta_ratio": 1.1,
+    },
     "ArI": {
         "lambda": 1066.66 * u.Angstrom,
         "R_Hbeta_ratio": 4.5,
@@ -54,7 +60,11 @@ lines_dictionary = {
         "R_Hbeta_ratio": 0.27,
         "L_Hbeta_ratio": 12,
     },
-    "OI": {"lambda": 1304.35 * u.Angstrom, "R_Hbeta_ratio": 4.0, "L_Hbeta_ratio": 0.23},
+    "OI": {
+        "lambda": 1304.35 * u.Angstrom,
+        "R_Hbeta_ratio": 4.0,
+        "L_Hbeta_ratio": 0.23,
+    },
     "SiII": {
         "lambda": 1306.82 * u.Angstrom,
         "R_Hbeta_ratio": 4.0,
@@ -100,11 +110,6 @@ lines_dictionary = {
         "R_Hbeta_ratio": 0.45,
         "L_Hbeta_ratio": 1.7,
     },
-    "HeI": {
-        "lambda": 3188.67 * u.Angstrom,
-        "R_Hbeta_ratio": 4.3,
-        "L_Hbeta_ratio": 0.051,
-    },
     "Hdelta": {
         "lambda": 4102.89 * u.Angstrom,
         "R_Hbeta_ratio": 3.4,
@@ -141,22 +146,6 @@ lines_dictionary = {
         "L_Hbeta_ratio": 3.6,
     },
 }
-
-
-def I_epsilon_bb(epsilon, Theta):
-    r"""Black-Body intensity :math:`I_{\nu}^{bb}`, Eq. 5.15 of [DermerMenon2009]_.
-
-    Parameters
-    ----------
-    epsilon : :class:`~numpy.ndarray`
-        array of dimensionless energies (in electron rest mass units) 
-    Theta : float 
-        dimensionless temperature of the Black Body 
-    """
-    num = 2 * m_e * np.power(c, 3) * np.power(epsilon, 3)
-    denum = np.power(lambda_c, 3) * (np.exp(epsilon / Theta) - 1)
-    I = num / denum
-    return I.to("erg cm-2 s-1")
 
 
 class CMB:
@@ -227,7 +216,7 @@ class PointSourceBehindJet:
 
 
 class SSDisk:
-    """[Shakura1973]_ accretion disk.
+    """[Shakura1973]_ accretion disk as modeled by [Dermer2002]_
 
     Parameters
     ----------
@@ -330,6 +319,13 @@ class SSDisk:
         R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
         return SSDisk.evaluate_epsilon(L_disk, M_BH, eta, R_tilde)
 
+    @staticmethod
+    def evaluate_T(R, M_BH, m_dot, R_in):
+        """black body temperature (K) at the radial coordinate R"""
+        phi = 1 - np.sqrt((R_in / R).to_value(""))
+        val = (3 * G * M_BH * m_dot * phi) / (8 * np.pi * np.power(R, 3) * sigma_sb)
+        return np.power(val, 1 / 4).to("K")
+
     def epsilon_mu(self, mu, r_tilde):
         return self.evaluate_epsilon_mu(self.L_disk, self.M_BH, self.eta, mu, r_tilde)
 
@@ -343,17 +339,80 @@ class SSDisk:
     def phi_disk(self, R_tilde):
         return 1 - np.sqrt(self.R_in_tilde / R_tilde)
 
-    def T(self, R_tilde):
-        r"""temperature of the disk at radius :math:`\tilde{R}`. 
+    def T(self, R):
+        r"""temperature of the disk at radius :math:`R`. 
         Eq. 64 in [Dermer2009]_."""
-        value = mec2 / (2.7 * k_B) * self.epsilon(R_tilde)
-        return value.to("K")
+        return self.evaluate_T(R, self.M_BH, self.m_dot, self.R_in)
 
-    def Theta(self, R_tilde):
-        r"""dimensionless temperature of the black body at radius
-        :math:`\tilde{R}`"""
-        theta = k_B * self.T(R_tilde) / mec2
-        return theta.to_value("")
+    @staticmethod
+    def evaluate_multi_T_bb_sed(nu, z, M_BH, m_dot, R_in, R_out, d_L, mu_s=1):
+        r"""Evaluate a multi-temperature black body SED in the case of the SS Disk.
+        The SED is calculated for an observer far away from the disk (:math:`d_L \gg R`) 
+        with the following:
+
+        .. math::
+            \nu F_{\nu} \approx \mu_s \, \nu \frac{2 \pi}{d_L^2} 
+            \int_{R_{\rm in}}^{R_{\rm out}}{\rm d}R \, R \, I_{\nu}(T(R)),
+
+        where :math:`I_{\nu}` is Planck's law, :math:`R` the radial coordinate 
+        along the disk, and :math:`d_L` the luminosity distance. :math:`\mu_s` 
+        is the cosine of the angle between the disk axis and the observer's line of sight.
+
+        Parameters
+        ----------
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the sed 
+            **note** these are observed frequencies (observer frame)
+        z : float
+            redshift of the source
+        M_BH : :class:`~astropy.units.Quantity`
+            Black Hole mass    
+        m_dot : float
+            mass accretion rate
+        R_in : :class:`~astropy.units.Quantity`
+            inner disk radius
+        R_out : :class:`~astropy.units.Quantity`
+            outer disk radius
+        d_L : :class:`~astropy.units.Quantity` 
+            luminosity of the source
+        mu_s : float
+            cosine of the angle between the observer line of sight and the disk axis
+        """
+        # correct for redshift
+        nu *= 1 + z
+        # array to integrate R
+        R = np.linspace(R_in, R_out, 100)
+        _R, _nu = axes_reshaper(R, nu)
+        _T = SSDisk.evaluate_T(_R, M_BH, m_dot, R_in)
+        _I_nu = BlackBody().evaluate(_nu, _T, scale=1)
+        integrand = _R / np.power(d_L, 2) * _I_nu * u.sr
+        F_nu = 2 * np.pi * np.trapz(integrand, R, axis=0)
+        return mu_s * (nu * F_nu).to("erg cm-2 s-1")
+
+    @staticmethod
+    def evaluate_multi_T_bb_norm_sed(
+        nu, z, L_disk, M_BH, m_dot, R_in, R_out, d_L, mu_s=1
+    ):
+        """Evaluate a normalised, multi-temperature black body SED as in
+        :func:`~targets.SSDisk.evaluate_multi_T_bb_sed`, but the integral luminosity 
+        is set to be equal to `L_disk`."""
+        sed_disk = SSDisk.evaluate_multi_T_bb_sed(
+            nu, z, M_BH, m_dot, R_in, R_out, d_L, mu_s
+        )
+        # renormalise, the factor 2 includes the two sides of the Disk
+        L = 2 * (np.trapz(sed_disk / nu, nu) * 4 * np.pi * d_L ** 2).to("erg s-1")
+        norm = (L_disk / L).to_value("")
+        return norm * sed_disk
+
+    def sed_flux(self, nu, z, mu_s=1):
+        r"""evaluate the multi-temperature black body SED for this SS Disk, refer
+        to :func:`~targets.SSDisk.evaluate_multi_T_bb_sed` and to 
+        :func:`~targets.SSDisk.evaluate_multi_T_bb_norm_sed`
+        """
+        d_L = Distance(z=z).to("cm")
+        return SSDisk.evaluate_multi_T_bb_norm_sed(
+            nu, z, self.L_disk, self.M_BH, self.m_dot, self.R_in, self.R_out, d_L, mu_s
+        )
 
     def u(self, r, blob=None):
         """integral energy density of radiation produced by the Disk at the distance 
@@ -393,60 +452,6 @@ class SSDisk:
 
         integral = np.trapz(integrand, mu, axis=0)
         return (prefactor * integral).to("erg cm-3")
-
-    def sed_flux(self, nu, z):
-        r"""Black Body SED generated by the SS Disk, considered as a 
-        multi-dimensional black body. I obtain the formula following 
-        Chapter 5 of [DermerMenon2009]_
-
-        .. math::
-            f_{\epsilon} (= \nu F_{\nu}) &= 
-            \epsilon \, \int_{\Omega_s} \mu I_{\epsilon} \mathrm{d}\Omega \\\\
-            &= \epsilon \, 2 \pi \int_{\mu_{\mathrm{min}}}^{\mu_{\mathrm{max}}}
-            \mu I_{\epsilon} \mathrm{d}\mu
-
-        where the cosine of the angle under which an observer at :math:`d_L` 
-        sees the disk is :math:`\mu = 1 / \sqrt{1 + (R / d_L)^2}`, integrating
-        over :math:`R` rather than :math:`\mu`
-
-        .. math::
-            f_{\epsilon} &= \epsilon \, 2 \pi \int_{R_{\mathrm{in}}}^{R_{\mathrm{out}}}
-            (1 + R^2 / d_L^2)^{-3/2} \frac{R}{d_L^2} \, I_{\epsilon}(R) \, \mathrm{d}R \\\\
-            &= \epsilon \, 2 \pi \frac{R_g^2}{d_L^2} 
-            \int_{\\tilde{R}_{\mathrm{in}}}^{\tilde{R}_{\mathrm{out}}}
-            \left(1 + \\tilde{R}^2 / \tilde{d_L}^2 \right)^{-3/2} \, 
-            \tilde{R} \, I_{\epsilon}(\tilde{R}) \, \mathrm{d}\tilde{R}
-      
-        where in the last integral distances with :math:`\tilde{}` have been 
-        scaled to the gravitational radius :math:`R_g`.
-
-        Parameters
-        ----------
-        nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed, **note** these are 
-            observed frequencies (observer frame).
-        z : float
-            redshift of the galaxy, to correct the observed frequencies and to 
-            compute the flux once the distance is obtained
-        """
-        epsilon = nu_to_epsilon_prime(nu, z)
-        d_L = Distance(z=z).to("cm")
-        d_L_tilde = (d_L / self.R_g).to_value("")
-        Theta = self.Theta(self.R_tilde)
-        # for multidimensional integration
-        # axis 0: radiuses (and temperatures)
-        # axis 1: photons epsilon
-        _R_tilde = np.reshape(self.R_tilde, (self.R_tilde.size, 1))
-        _Theta = np.reshape(Theta, (Theta.size, 1))
-        _epsilon = np.reshape(epsilon, (1, epsilon.size))
-        _integrand = (
-            np.power(1 + np.power(_R_tilde / d_L_tilde, 2), -3 / 2)
-            * _R_tilde
-            * I_epsilon_bb(_epsilon, _Theta)
-        )
-        prefactor = 2 * np.pi * np.power(self.R_g, 2) / np.power(d_L, 2)
-        sed = epsilon * prefactor * np.trapz(_integrand, self.R_tilde, axis=0)
-        return sed.to("erg cm-2 s-1")
 
 
 class SphericalShellBLR:
@@ -573,6 +578,33 @@ class RingDustTorus:
             + f" - R_dt (radius of the torus): {self.R_dt.cgs:.2e}\n"
         )
 
+    @staticmethod
+    def evaluate_bb_sed(nu, z, T_dt, R_dt, d_L):
+        """evaluate the black body SED corresponding to the torus temperature"""
+        nu *= 1 + z
+        # geometrical factor for a source of size R_dt at distance d_L
+        prefactor = np.pi * np.power((R_dt / d_L).to_value(""), 2) * u.sr
+        I_nu = BlackBody().evaluate(nu, T_dt, scale=1)
+        return (prefactor * nu * I_nu).to("erg cm-2 s-1")
+
+    @staticmethod
+    def evaluate_bb_norm_sed(nu, z, L_dt, T_dt, R_dt, d_L):
+        """evaluate the torus black-body SED such that its integral luminosity 
+        is equal to the torus luminosity (`xi_dt * L_disk`)"""
+        sed_dt = RingDustTorus.evaluate_bb_sed(nu, z, T_dt, R_dt, d_L)
+        # renormalise
+        L = (np.trapz(sed_dt / nu, nu) * 4 * np.pi * d_L ** 2).to("erg s-1")
+        norm = (L_dt / L).to_value("")
+        return norm * sed_dt
+
+    def sed_flux(self, nu, z):
+        """evaluate the black-body SED for the Dust Torus"""
+        d_L = Distance(z=z).to("cm")
+        L_dt = self.xi_dt * self.L_disk
+        return RingDustTorus.evaluate_bb_norm_sed(
+            nu, z, L_dt, self.T_dt, self.R_dt, d_L
+        )
+
     def u(self, r, blob=None):
         r"""Density of radiation produced by the Torus at the distance r along the 
         jet axis. Integral over the solid angle of Eq. 85 in [Finke2016]_
@@ -592,23 +624,3 @@ class RingDustTorus:
             mu = (r / x).to_value("")
             integral *= np.power(blob.Gamma * (1 - blob.Beta * mu), 2)
         return integral.to("erg cm-3")
-
-    def sed_flux(self, nu, z):
-        r"""Black Body SED generated by the Dust Torus:
-
-        .. math::
-            \nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]
-        
-        ----------
-        nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed, **note** these are 
-            observed frequencies (observer frame).
-        z : float
-            redshift of the galaxy, to correct the observed frequencies and to 
-            compute the flux once the distance is obtained
-        """
-        epsilon = nu_to_epsilon_prime(nu, z)
-        d_L = Distance(z=z).to("cm")
-        prefactor = np.pi * np.power((self.R_dt / d_L).to_value(""), 2)
-        sed = prefactor * epsilon * I_epsilon_bb(epsilon, self.Theta)
-        return sed * u.Unit("erg cm-2 s-1")

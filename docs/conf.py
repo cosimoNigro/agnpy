@@ -37,6 +37,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.extlinks",
     "sphinx.ext.mathjax",
+    "sphinx.ext.viewcode",
     "nbsphinx",
     "matplotlib.sphinxext.plot_directive",
     "IPython.sphinxext.ipython_directive",

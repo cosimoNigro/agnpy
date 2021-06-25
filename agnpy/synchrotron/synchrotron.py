@@ -80,8 +80,8 @@ class Synchrotron:
         :func:`~agnpy.synchrotron.Synchrotron.com_sed_emissivity`, in order to be
         propagated to :func:`~agnpy.synchrotron.Synchrotron.sed_luminosity` and
         :func:`~agnpy.synchrotron.Synchrotron.sed_flux`.
-    integrator : (`~agnpy.math.utils.trapz_loglog`, `~numpy.trapz`)
-        function to be used for the integration
+    integrator : func
+        function to be used for integration (default = `np.trapz`)
 	"""
 
     def __init__(self, blob, ssa=False, integrator=np.trapz):
@@ -103,10 +103,8 @@ class Synchrotron:
         gamma=gamma_to_integrate,
     ):
         """Computes the syncrotron self-absorption opacity for a general set
-        of model parameters, see 
-        :func:`~agnpy:sycnhrotron.Synchrotron.evaluate_sed_flux`
-        for parameters defintion.
-        Eq. before 7.122 in [DermerMenon2009]_."""
+        of model parameters, see :func:`~agnpy:sycnhrotron.Synchrotron.evaluate_sed_flux`
+        for parameters defintion. Eq. before 7.122 in [DermerMenon2009]_."""
         # conversions
         epsilon = nu_to_epsilon_prime(nu, z, delta_D)
         B_cgs = B_to_cgs(B)
@@ -135,10 +133,11 @@ class Synchrotron:
         integrator=np.trapz,
         gamma=gamma_to_integrate,
     ):
-        r"""Evaluates the synchrotron flux SED,
-        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
+        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) due to synchrotron radiation,
         for a general set of model parameters. Eq. 21 in [Finke2008]_.
-        
+
+        **Note** parameters after \*args need to be passed with a keyword
+
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
@@ -148,7 +147,7 @@ class Synchrotron:
             redshift of the source
         d_L : :class:`~astropy.units.Quantity` 
             luminosity distance of the source
-        delta_D: float
+        delta_D : float
             Doppler factor of the relativistic outflow
         B : :class:`~astropy.units.Quantity`
             magnetic field in the blob 
@@ -156,7 +155,7 @@ class Synchrotron:
             size of the emitting region (spherical blob assumed)
         n_e : :class:`~agnpy.spectra.ElectronDistribution`
             electron energy distribution
-        *args
+        \*args
             parameters of the electron energy distribution (k_e, p, ...)
         ssa : bool
             whether to consider or not the self-absorption, default false
@@ -166,8 +165,6 @@ class Synchrotron:
             array of Lorentz factor over which to integrate the electron 
             distribution
         
-        **Note** arguments after *args are keyword-only arguments
-
         Returns
         -------
         :class:`~astropy.units.Quantity`

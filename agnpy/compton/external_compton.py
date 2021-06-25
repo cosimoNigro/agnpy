@@ -2,8 +2,6 @@
 import numpy as np
 from astropy.constants import c, sigma_T, G
 from ..utils.math import (
-    trapz_loglog,
-    log,
     axes_reshaper,
     gamma_to_integrate,
     mu_to_integrate,
@@ -18,7 +16,7 @@ from ..targets import (
     SphericalShellBLR,
     RingDustTorus,
 )
-from .kernels import isotropic_kernel, compton_kernel
+from .kernels import compton_kernel
 
 __all__ = ["ExternalCompton"]
 
@@ -34,6 +32,8 @@ class ExternalCompton:
         class describing the target photon field    
     r : :class:`~astropy.units.Quantity`
         distance of the blob from the Black Hole (i.e. from the target photons)
+    integrator : func
+        function to be used for integration (default = `np.trapz`)
     """
 
     def __init__(self, blob, target, r=None, integrator=np.trapz):
@@ -79,10 +79,10 @@ class ExternalCompton:
         mu=mu_to_integrate,
         phi=phi_to_integrate
     ):
-        r"""Evaluates the flux SED,
-        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
-        for External Compton on a monochromatic isotropic target photon field
-        for a general set of model parameters
+        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for external Compton 
+        on a monochromatic isotropic target photon field, for a general set of model parameters
+
+        **Note** parameters after \*args need to be passed with a keyword
 
         Parameters
         ----------
@@ -93,7 +93,7 @@ class ExternalCompton:
             redshift of the source
         d_L : :class:`~astropy.units.Quantity` 
             luminosity distance of the source
-        delta_D: float
+        delta_D : float
             Doppler factor of the relativistic outflow
         mu_s : float
             cosine of the angle between the blob motion and the jet axis
@@ -106,10 +106,8 @@ class ExternalCompton:
             energy density [erg cm-3] of the target photon field
         n_e : :class:`~agnpy.spectra.ElectronDistribution`
             electron energy distribution
-        *args
+        \*args
             parameters of the electron energy distribution (k_e, p, ...)
-        ssa : bool
-            whether to consider or not the self-absorption, default false
         integrator : func
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
@@ -117,8 +115,6 @@ class ExternalCompton:
             distribution
         mu, phi : :class:`~numpy.ndarray`
             arrays of cosine of zenith and azimuth angles to integrate over
-
-        **Note** arguments after *args are keyword-only arguments
 
         Returns
         -------
@@ -182,10 +178,10 @@ class ExternalCompton:
         integrator=np.trapz,
         gamma=gamma_to_integrate
     ):
-        r"""Evaluates the flux SED,
-        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
-        for External Compton on a point source of photons behind the jet 
-        for a general set of model parameters
+        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for external Compton 
+        on a point source of photons behind the jet, for a general set of model parameters
+
+        **Note** parameters after \*args need to be passed with a keyword
 
         Parameters
         ----------
@@ -196,7 +192,7 @@ class ExternalCompton:
             redshift of the source
         d_L : :class:`~astropy.units.Quantity` 
             luminosity distance of the source
-        delta_D: float
+        delta_D : float
             Doppler factor of the relativistic outflow
         mu_s : float
             cosine of the angle between the blob motion and the jet axis
@@ -211,17 +207,13 @@ class ExternalCompton:
             distance between the point source and the blob
         n_e : :class:`~agnpy.spectra.ElectronDistribution`
             electron energy distribution
-        *args
+        \*args
             parameters of the electron energy distribution (k_e, p, ...)
-        ssa : bool
-            whether to consider or not the self-absorption, default false
         integrator : func
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
             array of Lorentz factor over which to integrate the electron 
             distribution
-
-        **Note** arguments after *args are keyword-only arguments
 
         Returns
         -------
@@ -289,10 +281,10 @@ class ExternalCompton:
         mu_size=100,
         phi=phi_to_integrate
     ):
-        r"""Evaluates the flux SED,
-        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
-        for External Compton on a monochromatic isotropic target photon field
-        for a general set of model parameters
+        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for external Compton 
+        on the photon field of a Shakura Sunyaev disk, for a general set of model parameters
+
+        **Note** parameters after \*args need to be passed with a keyword
 
         Parameters
         ----------
@@ -323,19 +315,17 @@ class ExternalCompton:
             distance between the disk and the blob
         n_e : :class:`~agnpy.spectra.ElectronDistribution`
             electron energy distribution
-        *args
+        \*args
             parameters of the electron energy distribution (k_e, p, ...)
-        ssa : bool
-            whether to consider or not the self-absorption, default false
         integrator : func
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
             array of Lorentz factor over which to integrate the electron 
             distribution
-        mu, phi : :class:`~numpy.ndarray`
-            arrays of cosine of zenith and azimuth angles to integrate over
-
-        **Note** arguments after *args are keyword-only arguments
+        mu_size : int
+            size of the array of zenith angles to integrate over 
+        phi : :class:`~numpy.ndarray`
+            arrays of azimuth angles to integrate over
 
         Returns
         -------
@@ -351,7 +341,7 @@ class ExternalCompton:
         # multidimensional integration
         # for the disk we do not integrate mu from -1 to 1 but choose the range
         # of zenith angles subtended from a given distance
-        mu = SSDisk.evaluate_mu_from_r_tilde(R_in_tilde, R_out_tilde, r_tilde)
+        mu = SSDisk.evaluate_mu_from_r_tilde(R_in_tilde, R_out_tilde, r_tilde, mu_size)
         _gamma, _mu, _phi, _epsilon_s = axes_reshaper(gamma, mu, phi, epsilon_s)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
         N_e = V_b * n_e.evaluate(_gamma / delta_D, *args)
@@ -427,10 +417,10 @@ class ExternalCompton:
         mu=mu_to_integrate,
         phi=phi_to_integrate
     ):
-        r"""Evaluates the flux SED,
-        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
-        for External Compton on a monochromatic isotropic target photon field
-        for a general set of model parameters
+        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for External Compton on 
+        the photon field of a spherical shell BLR, for a general set of model parameters
+
+        **Note** parameters after \*args need to be passed with a keyword
 
         Parameters
         ----------
@@ -457,10 +447,8 @@ class ExternalCompton:
             distance between the Broad Line Region and the blob
         n_e : :class:`~agnpy.spectra.ElectronDistribution`
             electron energy distribution
-        *args
+        \*args
             parameters of the electron energy distribution (k_e, p, ...)
-        ssa : bool
-            whether to consider or not the self-absorption, default false
         integrator : func
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
@@ -468,8 +456,6 @@ class ExternalCompton:
             distribution
         mu, phi : :class:`~numpy.ndarray`
             arrays of cosine of zenith and azimuth angles to integrate over
-
-        **Note** arguments after *args are keyword-only arguments
 
         Returns
         -------
@@ -546,10 +532,10 @@ class ExternalCompton:
         gamma=gamma_to_integrate,
         phi=phi_to_integrate
     ):
-        r"""Evaluates the flux SED,
-        :math:`\nu F_{\nu} \, [\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}]`,
-        for External Compton on a monochromatic isotropic target photon field
-        for a general set of model parameters
+        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for External Compton on 
+        the photon field of a ring dust torus, for a general set of model parameters
+
+        **Note** parameters after \*args need to be passed with a keyword
 
         Parameters
         ----------
@@ -576,10 +562,8 @@ class ExternalCompton:
             distance between the Broad Line Region and the blob
         n_e : :class:`~agnpy.spectra.ElectronDistribution`
             electron energy distribution
-        *args
+        \*args
             parameters of the electron energy distribution (k_e, p, ...)
-        ssa : bool
-            whether to consider or not the self-absorption, default false
         integrator : func
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
@@ -587,8 +571,6 @@ class ExternalCompton:
             distribution
         mu, phi : :class:`~numpy.ndarray`
             arrays of cosine of zenith and azimuth angles to integrate over
-
-        **Note** arguments after *args are keyword-only arguments
 
         Returns
         -------
