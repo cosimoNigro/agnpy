@@ -2,7 +2,6 @@
     "title": "agnpy",
     "description": "*agnpy* focuses on the computation of the photon spectra produced by the radiative processes in jetted Active Galactic Nuclei (AGN).",   
     "license": "BSD 3",
-    "language": "python",
     "keywords": [
       "radiative processes",
       "blazars",
@@ -14,8 +13,10 @@
       "numpy",
       "python"
     ],
-    "upload_type": "software",
     "access_right": "open",
+    "upload_type": "software",
+    "language": "python",
+    "version": "0.0.8",
     "creators": [
       {
         "affiliation": "Institut de F\u00edsica d'Altes Energies (IFAE), The Barcelona Institute of Science and Technology, Campus UAB, 08193 Bellaterra (Barcelona), Spain",
@@ -43,6 +44,5 @@
         "name": "Craig, Matthew",
         "orcid": "0000-0002-4183-391X"
       }
-    ],
-    "version": "0.0.8"
+    ]
   }
