@@ -371,20 +371,24 @@ class SSDisk:
         return mu_s * (nu * F_nu).to("erg cm-2 s-1")
 
     @staticmethod
-    def evaluate_multi_T_bb_norm_sed(nu, z, L_disk, M_BH, m_dot, R_in, R_out, d_L):
+    def evaluate_multi_T_bb_norm_sed(
+        nu, z, L_disk, M_BH, m_dot, R_in, R_out, d_L, mu_s=1
+    ):
         """evaluate a normalised, multi-temperature black body SED. 
         The integral luminosity is equal to the disk luminosity in `L_disk`"""
-        sed_disk = SSDisk.evaluate_multi_T_bb_sed(nu, z, M_BH, m_dot, R_in, R_out, d_L)
+        sed_disk = SSDisk.evaluate_multi_T_bb_sed(
+            nu, z, M_BH, m_dot, R_in, R_out, d_L, mu_s
+        )
         # renormalise, the factor 2 includes the two sides of the Disk
         L = 2 * (np.trapz(sed_disk / nu, nu) * 4 * np.pi * d_L ** 2).to("erg s-1")
         norm = (L_disk / L).to_value("")
         return norm * sed_disk
 
-    def sed_flux(self, nu, z):
+    def sed_flux(self, nu, z, mu_s=1):
         """evaluate the multi-temperature black body SED for this SS Disk"""
         d_L = Distance(z=z).to("cm")
         return SSDisk.evaluate_multi_T_bb_norm_sed(
-            nu, z, self.L_disk, self.M_BH, self.m_dot, self.R_in, self.R_out, d_L
+            nu, z, self.L_disk, self.M_BH, self.m_dot, self.R_in, self.R_out, d_L, mu_s
         )
 
     def u(self, r, blob=None):

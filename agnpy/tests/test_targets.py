@@ -172,14 +172,15 @@ class TestSSDisk:
         assert u.isclose(disk_test.T(R), T_expected, atol=0 * u.K, rtol=1e-2)
 
     @pytest.mark.parametrize("R_out", [1e2, 1e3, 1e4])
-    def test_bb_sed_luminosity(self, R_out):
+    @pytest.mark.parametrize("mu_s", [0.5, 0.8, 1.0])
+    def test_bb_sed_luminosity(self, R_out, mu_s):
         """test that the luminosity of the disk BB SED is the same as L_disk,
         create disks with different outer radii"""
         disk = SSDisk(M_BH_test, L_disk_test, 1 / 12, 6, R_out, R_g_units=True)
         # compute the SEDs, assume a random redshift
         z = 0.23
         nu = np.logspace(10, 20, 100) * u.Hz
-        sed = disk.sed_flux(nu, z)
+        sed = disk.sed_flux(nu, z, mu_s)
         # compute back the luminosity
         d_L = Distance(z=z).to("cm")
         F_nu = sed / nu
