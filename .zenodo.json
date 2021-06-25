@@ -1,0 +1,48 @@
+{
+    "title": "agnpy",
+    "description": "*agnpy* focuses on the computation of the photon spectra produced by the radiative processes in jetted Active Galactic Nuclei (AGN).",   
+    "license": "BSD 3",
+    "keywords": [
+      "radiative processes",
+      "blazars",
+      "radio galaxies",
+      "AGN",
+      "jets",
+      "MWL",
+      "astropy",
+      "numpy",
+      "python"
+    ],
+    "access_right": "open",
+    "upload_type": "software",
+    "language": "python",
+    "version": "0.0.8",
+    "creators": [
+      {
+        "affiliation": "Institut de F\u00edsica d'Altes Energies (IFAE), The Barcelona Institute of Science and Technology, Campus UAB, 08193 Bellaterra (Barcelona), Spain",
+        "name": "Nigro, Cosimo",
+        "orcid": "0000-0001-8375-1907"
+      }
+    ],
+    "contributors": [
+      {
+        "affiliation": "University of Lodz, Faculty of Physics and Applied Informatics, Department of Astrophysics, 90-236 Lodz, Poland",
+        "name": "Sitarek, Julian",
+        "orcid": "0000-0002-1659-5374"
+      },
+      {
+        "affiliation": "University of Lodz, Faculty of Physics and Applied Informatics, Department of Astrophysics, 90-236 Lodz, Poland",
+        "name": "Gliwny, Pawe\u0142",
+        "orcid": "0000-0002-4183-391X"
+      },
+      {
+        "affiliation": "Laboratoire d'Annecy de Physique des Particules, Univ. Grenoble Alpes, Univ.  Savoie  Mont Blanc,  CNRS,  LAPP,  74000  Annecy, France",
+        "name": "Sanchez, David"
+      },
+      {
+        "affiliation":"Minnesota State University Moorhead, Moorhead, Minnesota, US",
+        "name": "Craig, Matthew",
+        "orcid": "0000-0002-4183-391X"
+      }
+    ]
+  }
