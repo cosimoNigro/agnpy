@@ -1,6 +1,6 @@
 {
-    "title": "agnpy",
-    "description": "*agnpy* is a python package focusing on the computation of the photon spectra produced by the radiative processes in jetted Active Galactic Nuclei (AGN). It includes classes describing the galaxy components responsible for line and thermal emission and calculates the absorption due to gamma-gamma pair production on soft (IR-UV) photon fields.",   
+    "title": "agnpy: Modelling Active Galactic Nuclei radiative processes with python.",
+    "description": "agnpy is a python package focusing on the computation of the radiative processes of relativistic particles accelerated in the jets of Active Galactic Nuclei (AGN). It includes classes describing the galaxy components responsibles for line and thermal emission and calculates the absorption due to gamma-gamma pair production on soft (IR-UV) photon fields.",   
     "keywords": [
       "radiative processes",
       "blazars",
