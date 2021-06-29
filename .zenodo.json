@@ -1,6 +1,6 @@
 {
     "title": "agnpy",
-    "description": "*agnpy* focuses on the computation of the photon spectra produced by the radiative processes in jetted Active Galactic Nuclei (AGN).",   
+    "description": "*agnpy* is a python package focusing on the computation of the photon spectra produced by the radiative processes in jetted Active Galactic Nuclei (AGN). It includes classes describing the galaxy components responsible for line and thermal emission and calculates the absorption due to gamma-gamma pair production on soft (IR-UV) photon fields.",   
     "license": "BSD 3",
     "keywords": [
       "radiative processes",
@@ -15,24 +15,21 @@
     ],
     "access_right": "open",
     "upload_type": "software",
-    "language": "python",
     "version": "0.1.0",
     "creators": [
       {
         "affiliation": "Institut de F\u00edsica d'Altes Energies (IFAE), The Barcelona Institute of Science and Technology, Campus UAB, 08193 Bellaterra (Barcelona), Spain",
-        "name": "Nigro, Cosimo",
+        "name": "Cosimo Nigro",
         "orcid": "0000-0001-8375-1907"
-      }
-    ],
-    "contributors": [
+      },
       {
         "affiliation": "University of Lodz, Faculty of Physics and Applied Informatics, Department of Astrophysics, 90-236 Lodz, Poland",
-        "name": "Sitarek, Julian",
+        "name": "Julian Sitarek",
         "orcid": "0000-0002-1659-5374"
       },
       {
         "affiliation": "University of Lodz, Faculty of Physics and Applied Informatics, Department of Astrophysics, 90-236 Lodz, Poland",
-        "name": "Gliwny, Pawe\u0142",
+        "name": "Pawe\u0142 Gliwny",
         "orcid": "0000-0002-4183-391X"
       },
       {
@@ -41,7 +38,7 @@
       },
       {
         "affiliation":"Minnesota State University Moorhead, Moorhead, Minnesota, US",
-        "name": "Craig, Matthew",
+        "name": "Matthew Craig",
         "orcid": "0000-0002-4183-391X"
       }
     ]
