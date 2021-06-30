@@ -72,7 +72,7 @@ class Absorption:
         self.set_phi()
         self.set_l()
         # r can be only ignored for absorption on synchrotron radiation
-        if r == None and not isinstance(self.target, Blob):
+        if r is None and not isinstance(self.target, Blob):
             raise ValueError(
                 "No distance provided for absorption on "
                 + str(target.__class__)
@@ -693,10 +693,7 @@ class Absorption:
         _s = _epsilon * _epsilon1 / 2
         _n_synch = n_synch[..., np.newaxis]
 
-        # integration in distance is over diameter of the blob
-        tau = (2 * blob.R_b * np.trapz(_n_synch * sigma(_s), epsilon, axis=0)).to("")
-
-        return tau
+        return (2 * blob.R_b * np.trapz(_n_synch * sigma(_s), epsilon, axis=0)).to("")
 
     def tau(self, nu):
         """optical depth
