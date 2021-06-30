@@ -6,6 +6,7 @@ from astropy.constants import m_e, c, M_sun, sigma_T, k_B
 from astropy.coordinates import Distance
 from pathlib import Path
 from agnpy.emission_regions import Blob
+from agnpy.synchrotron import Synchrotron
 from agnpy.targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
 from agnpy.absorption import Absorption, EBL, ebl_files_dict
 from agnpy.utils.math import axes_reshaper
@@ -429,6 +430,106 @@ class TestAbsorptionMuS:
         # the current integrals are not very precise, and this includes
         # tricky part to integrate, so allowing for rather large error margin
         assert np.allclose(tau_blr, tau_blr0, atol=0.01, rtol=1.04)
+
+    def test_absorption_failing_without_r(self):
+        """Tests that you cannot run absorption on "fixed" targets
+        (like BLR, DT or the disk)  without specifying distance"""
+
+        L_disk = 2 * 1e46 * u.Unit("erg s-1")
+        xi_line = 0.024
+        R_line = 1.1 * 1e17 * u.cm
+        blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
+
+        # no distance specified, should fail
+        with pytest.raises(ValueError):
+            abs_blr = Absorption(blr)
+
+    def test_tau_on_synchrotron_compare_with_delta_approximation(self):
+        """Compare the output of the calculation of absorption of gamma rays
+        in synchrotron radiation and compare it with simplified delta approximation.
+        """
+
+        # create a test blob
+        r_b = 1.0e16 * u.cm
+        z = 2.01
+        delta_D = 10.1
+        Gamma = 10.05
+        B0 = 1.1 * u.G
+        gmin = 10
+        gbreak = 1.0e3
+        gmax = 1.0e5
+        spectrum_norm = 0.1 * u.Unit("erg cm-3")
+        parameters = {
+            "p1": 1.5,
+            "p2": 2.5,
+            "gamma_b": gbreak,
+            "gamma_min": gmin,
+            "gamma_max": gmax,
+        }
+        spectrum_dict = {"type": "BrokenPowerLaw", "parameters": parameters}
+        blob = Blob(r_b, z, delta_D, Gamma, B0, spectrum_norm, spectrum_dict)
+
+        nu_tau = np.logspace(22, 34, 100) * u.Hz  # for absorption calculations
+        e_tau = nu_tau.to("eV", equivalencies=u.spectral())
+
+        # full calculations
+        absorb = Absorption(blob)
+        tau = absorb.tau(nu_tau)
+
+        # now simplified calculations using Eq. 37 of Finke 2008
+        mec2 = (m_e * c ** 2).to("eV")
+        eps1 = e_tau / mec2
+        eps1p = eps1 * (1 + z) / blob.delta_D
+        eps_bar = 2 * blob.delta_D ** 2 / (1 + z) ** 2 / eps1
+        nu_bar = (eps_bar * mec2).to("Hz", equivalencies=u.spectral())
+        synch = Synchrotron(blob, ssa=True)
+        synch_sed_ebar = synch.sed_flux(nu_bar)
+
+        tau_delta = (
+            synch_sed_ebar
+            * sigma_T
+            * Distance(z=z) ** 2
+            * eps1p
+            / (2 * m_e * c ** 3 * blob.R_b * blob.delta_D ** 4)
+        )
+        tau_delta = tau_delta.to("")
+
+        # the delta approximation does not work well with sharp cut-offs of synchrotron SED.
+        # We first find the peak of the synchr SED
+        maxidx = np.where(synch_sed_ebar == np.amax(synch_sed_ebar))[0][0]
+        # and only take energies below the peak, (note that energies are ordered
+        # in reversed order), and  take only those that are at least 1% of the peak
+        idxs = synch_sed_ebar[maxidx:] > 1.0e-2 * synch_sed_ebar[maxidx]
+
+        # if there are not many points something went wrong with the test
+        assert sum(idxs) > 10
+
+        # the agreement in the middle range is pretty good, but at the edges
+        # of energy range it spoils very fast, so only rough agreement is checked
+        # (0.6 in the log space)
+        assert np.allclose(
+            np.log(tau)[maxidx:][idxs], np.log(tau_delta)[maxidx:][idxs], atol=0.6
+        )
+
+    def test_absorption_pointlike_and_homogeneous(self):
+        """Simple test for checking the attenuation factors in both considered cases."""
+
+        blob = Blob()
+        absorb = Absorption(blob)
+
+        nu_tau = np.logspace(22, 34, 100) * u.Hz  # for absorption calculations
+
+        tau = absorb.tau(nu_tau)
+        abs_pointlike = absorb.absorption(nu_tau)
+        abs_homogeneous = absorb.absorption_homogeneous(nu_tau)
+        # select good points (to avoid division by zero)
+        idxs = tau > 1.0e-3
+        # if this fails something is wrong with the test itself (e.g. default parameters of the blob)
+        assert sum(idxs) > 10
+
+        # the formulas reproduce what should be in the function, so the agreement should be down to numerical accuracy
+        assert np.allclose(np.exp(-tau), abs_pointlike, atol=1.0e-5)
+        assert np.allclose((1 - np.exp(-tau)) / tau, abs_homogeneous, atol=1.0e-5)
 
 
 class TestEBL:
