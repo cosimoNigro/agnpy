@@ -24,6 +24,8 @@ from ..utils.geometry import (
 )
 from ..utils.conversion import nu_to_epsilon_prime, to_R_g_units
 from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
+from ..emission_regions import Blob
+from ..synchrotron import nu_synch_peak, Synchrotron
 
 
 __all__ = ["sigma", "Absorption", "ebl_files_dict", "EBL"]
@@ -54,13 +56,14 @@ class Absorption:
     ----------
     blob : :class:`~agnpy.emission_regions.Blob`
         emission region and electron distribution hitting the photon target
-    target : :class:`~agnpy.targets`
+    target : :class:`~agnpy.targets` or class:`~agnpy.emission_regions.Blob`
         class describing the target photon field
     r : :class:`~astropy.units.Quantity`
         distance of the blob from the Black Hole (i.e. from the target photons)
+        the distance is irrelevant in the case of absorption
     """
 
-    def __init__(self, target, r, z=0, mu_s=1):
+    def __init__(self, target, r=None, z=0, mu_s=1):
         self.target = target
         self.r = r
         self.z = z
@@ -68,6 +71,13 @@ class Absorption:
         self.set_mu()
         self.set_phi()
         self.set_l()
+        # r can be only ignored for absorption on synchrotron radiation
+        if r is None and not isinstance(self.target, Blob):
+            raise ValueError(
+                "No distance provided for absorption on "
+                + str(target.__class__)
+                + ", this can be only done for Blob class"
+            )
 
     def set_mu(self, mu_size=100):
         self.mu_size = mu_size
@@ -622,6 +632,69 @@ class Absorption:
             phi_re=self.phi,
         )
 
+    def tau_on_synchrotron(self, blob, nu, nu_s_size=200):
+        r"""Optical depth for absorption of gamma rays in synchrotron radiation of the blob.
+        It assumes the same radiation field as the SSC class.
+
+        Parameters
+        ----------
+        blob : :class:`~agnpy.emission_regions.Blob`
+            emission region and electron distribution hitting the photon target
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the opacity
+            **note** these are observed frequencies (observer frame)
+        nu_s_size : int
+            size of the array over the synchrotron frequencies
+        """
+        # energy of the gamma rays in blob frame
+        epsilon1 = nu_to_epsilon_prime(nu, blob.z, blob.delta_D)
+
+        # first derive the ranges of the synchrotron spectrum using delta approximation
+        # add two orders of magnitude on both sides to allow for the energy distribution
+        nu_s_min = nu_synch_peak(blob.B, blob.gamma_min) * 1.0e-2
+        nu_s_max = nu_synch_peak(blob.B, blob.gamma_max) * 1.0e2
+
+        # frequencies in the blob frame
+        nu_s = (
+            np.logspace(
+                np.log10(nu_s_min.to_value("Hz")),
+                np.log10(nu_s_max.to_value("Hz")),
+                nu_s_size,
+            )
+            * u.Hz
+        )
+
+        # and in observers frame
+        nu_s_obs = nu_s * blob.delta_D / (1 + blob.z)
+        # energy of the synchrotron photons in blob frame
+        epsilon = nu_to_epsilon_prime(nu_s_obs, blob.z, blob.delta_D)
+
+        synch = Synchrotron(blob, ssa=True)
+        sed_synch = synch.sed_flux(nu_s_obs)
+
+        # Eq. 8 [Finke2008]_ divided by extra epsilon mc^2
+        n_synch = (
+            (3 * np.power(blob.d_L, 2) * sed_synch)
+            / (
+                c
+                * np.power(blob.R_b, 2)
+                * np.power(blob.delta_D, 4)
+                * epsilon ** 2
+                * m_e
+                * c ** 2
+            )
+        ).to("cm-3")
+
+        # factor 3 / 4 accounts for averaging in a sphere
+        # not included in Dermer and Finke's papers
+        n_synch *= 3 / 4
+
+        _epsilon, _epsilon1 = axes_reshaper(epsilon, epsilon1)
+        _s = _epsilon * _epsilon1 / 2
+        _n_synch = n_synch[..., np.newaxis]
+
+        return (2 * blob.R_b * np.trapz(_n_synch * sigma(_s), epsilon, axis=0)).to("")
+
     def tau(self, nu):
         """optical depth
 
@@ -634,6 +707,9 @@ class Absorption:
             array of frequencies, in Hz, to compute the opacity, **note** these are
             observed frequencies (observer frame).
         """
+
+        if isinstance(self.target, Blob):
+            return self.tau_on_synchrotron(self.target, nu)
 
         if self.mu_s == 1:  # default value
             if isinstance(self.target, PointSourceBehindJet):
@@ -656,7 +732,21 @@ class Absorption:
                 return self.tau_dt_mu_s(nu)
 
     def absorption(self, nu):
+        """This function returns the attenuation of the emission assuming that
+        the optical depth tau is computed from the production place to the observer.
+        """
         return np.exp(-self.tau(nu))
+
+    def absorption_homogeneous(self, nu):
+        """This function returns the attenuation of the emission assuming that
+        the emission is produced homogenously inside absorbing material.
+        The calculations is only accurate for a slab of absorbing material with the
+        total optical depth tau, but the same formula is often used also e.g.
+        in the context of absorption of gamma-ray emission by synchrotron radiation in blobs
+        See e.g. section 2.5.1. of Finke et al. 2008.
+        """
+        t = self.tau(nu)
+        return (1 - np.exp(-t)) / t
 
 
 class EBL:
