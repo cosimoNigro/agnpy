@@ -632,7 +632,7 @@ class Absorption:
             phi_re=self.phi,
         )
 
-    def tau_on_synchrotron(self, blob, nu, nu_s_size=200):
+    def tau_on_synchrotron(self, blob, nu, nu_s_size=200, delta_margin_low=1.0e-2):
         r"""Optical depth for absorption of gamma rays in synchrotron radiation of the blob.
         It assumes the same radiation field as the SSC class.
 
@@ -645,13 +645,17 @@ class Absorption:
             **note** these are observed frequencies (observer frame)
         nu_s_size : int
             size of the array over the synchrotron frequencies
+        delta_margin_low : float
+            extension of the integration range of the synchrotron radiation beyond
+            the delta approximation, default = 0.01, but lower value might be needed
+            if the calculations are performed up to very high energies
         """
         # energy of the gamma rays in blob frame
         epsilon1 = nu_to_epsilon_prime(nu, blob.z, blob.delta_D)
 
         # first derive the ranges of the synchrotron spectrum using delta approximation
-        # add two orders of magnitude on both sides to allow for the energy distribution
-        nu_s_min = nu_synch_peak(blob.B, blob.gamma_min) * 1.0e-2
+        # add margin on both sides to allow for the energy distribution
+        nu_s_min = nu_synch_peak(blob.B, blob.gamma_min) * delta_margin_low
         nu_s_max = nu_synch_peak(blob.B, blob.gamma_max) * 1.0e2
 
         # frequencies in the blob frame
