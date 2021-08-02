@@ -52,4 +52,4 @@ plt.show()
 condition = ec_sed.value > 1e-40
 nu = nu.value[condition]
 sed = ec_sed.value[condition]
-np.savetxt("ec_cmb_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
+np.savetxt("data/ec_cmb_bpwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
