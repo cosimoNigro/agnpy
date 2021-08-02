@@ -6,7 +6,13 @@ from astropy.constants import M_sun
 from astropy.coordinates import Distance
 from pathlib import Path
 from agnpy.emission_regions import Blob
-from agnpy.targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus, CMB
+from agnpy.targets import (
+    PointSourceBehindJet,
+    SSDisk,
+    SphericalShellBLR,
+    RingDustTorus,
+    CMB,
+)
 from agnpy.compton import SynchrotronSelfCompton, ExternalCompton
 from .utils import make_comparison_plot, extract_columns_sample_file, check_deviation
 from agnpy.utils.math import trapz_loglog
