@@ -19,7 +19,9 @@ plt.show()
 condition = synch_sed.value > 1e-20
 nu = synch_nu.value[condition]
 sed = synch_sed.value[condition]
-np.savetxt("synch_ssa_pwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
+np.savetxt(
+    "data/synch_ssa_pwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=","
+)
 
 # jet with broken power-law electron distribution
 bpl_jet = Jet(name="", electron_distribution="bkn")
@@ -34,7 +36,9 @@ plt.show()
 condition = synch_sed.value > 1e-20
 nu = synch_nu.value[condition]
 sed = synch_sed.value[condition]
-np.savetxt("synch_ssa_bpwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
+np.savetxt(
+    "data/synch_ssa_bpwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=","
+)
 
 # jet with broken log-parabola electron distribution
 lp_jet = Jet(name="", electron_distribution="lp")
@@ -49,4 +53,4 @@ plt.show()
 condition = synch_sed.value > 1e-20
 nu = synch_nu.value[condition]
 sed = synch_sed.value[condition]
-np.savetxt("synch_ssa_lp_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
+np.savetxt("data/synch_ssa_lp_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")

@@ -34,7 +34,7 @@ plt.show()
 condition = synch_sed.value > 1e-20
 nu = synch_nu.value[condition]
 sed = synch_sed.value[condition]
-np.savetxt("synch_pwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
+np.savetxt("data/synch_pwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
 
 # SSC emission
 pwl_jet.set_nu_grid(1e14, 1e26, 100)
@@ -50,4 +50,4 @@ plt.show()
 condition = ssc_sed.value > 1e-20
 nu = ssc_nu.value[condition]
 sed = ssc_sed.value[condition]
-np.savetxt("ssc_pwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
+np.savetxt("data/ssc_pwl_jetset_1.1.2.txt", np.asarray([nu, sed]).T, delimiter=",")
