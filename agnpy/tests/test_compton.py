@@ -2,12 +2,17 @@
 import pytest
 import numpy as np
 import astropy.units as u
-from astropy.constants import h, m_e, c, M_sun
+from astropy.constants import M_sun
 from astropy.coordinates import Distance
 from pathlib import Path
 from agnpy.emission_regions import Blob
-from agnpy.synchrotron import Synchrotron
-from agnpy.targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
+from agnpy.targets import (
+    PointSourceBehindJet,
+    SSDisk,
+    SphericalShellBLR,
+    RingDustTorus,
+    CMB,
+)
 from agnpy.compton import SynchrotronSelfCompton, ExternalCompton
 from .utils import make_comparison_plot, extract_columns_sample_file, check_deviation
 from agnpy.utils.math import trapz_loglog
@@ -19,7 +24,7 @@ data_dir = agnpy_dir / "data"
 # where to save figures
 figures_dir = agnpy_dir.parent / "crosschecks/figures/compton"
 Path(figures_dir / "ssc").mkdir(parents=True, exist_ok=True)
-for subdir in ["disk", "blr", "dt"]:
+for subdir in ["disk", "blr", "dt", "cmb"]:
     Path(figures_dir / "ec" / subdir).mkdir(parents=True, exist_ok=True)
 
 # variables with _test are global and meant to be used in all tests
@@ -356,3 +361,28 @@ class TestExternalCompton:
         )
         # requires a 20% deviation from the two SED points
         assert check_deviation(nu, sed_ec_dt, sed_ec_ps_dt, 0.2)
+
+    def test_ec_cmb_vs_jetset(self):
+        """check the SED for EC on CMB against jetset"""
+        # reference SED
+        file_ref = f"{data_dir}/reference_seds/jetset/data/ec_cmb_bpwl_jetset_1.1.2.txt"
+        nu_ref, sed_ref = extract_columns_sample_file(file_ref, "Hz", "erg cm-2 s-1")
+        # recompute the SED at the same ordinates where the figure was sampled
+        cmb = CMB(z=bpwl_blob_test.z)
+        ec_cmb = ExternalCompton(bpwl_blob_test, cmb)
+        sed_agnpy = ec_cmb.sed_flux(nu_ref)
+        # sed comparison plot, we will check between 10^(11) and 10^(19) Hz
+        nu_range = [1e16, 5e27] * u.Hz
+        make_comparison_plot(
+            nu_ref,
+            sed_agnpy,
+            sed_ref,
+            "agnpy",
+            "jetset 1.1.2",
+            "EC on CMB, z = 1",
+            f"{figures_dir}/ec/cmb/ec_cmb_bpwl_comparison_jetset_1.1.2.png",
+            "sed",
+            comparison_range=nu_range.to_value("Hz"),
+        )
+        # requires that the SED points deviate less than 35% from the figure
+        assert check_deviation(nu_ref, sed_agnpy, sed_ref, 0.35, nu_range)

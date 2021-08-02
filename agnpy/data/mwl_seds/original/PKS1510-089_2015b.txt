@@ -1,17 +1,4 @@
-# %ECSV 0.9
-# ---
-# datatype:
-# - {name: E, unit: eV, datatype: float64}
-# - {name: nuFnu, unit: TeV/(cm2 s), datatype: float64}
-# - {name: nuFnu_err_lo, unit: TeV/(cm2 s), datatype: float64}
-# - {name: nuFnu_err_hi, unit: TeV/(cm2 s), datatype: float64}
-# meta: !!omap
-# - {z: 0.36}
-# - {restframe: obs}
-# - {data_scale: lin-lin}
-# - {obj_name: 'PKS1510-089'}
-# schema: astropy-2.0
-E nuFnu nuFnu_err_lo nuFnu_err_hi 
+# E / eV, nuFnu / (erg cm-2 s-1), nuFnu_err_low / (erg cm-2 s-1), nuFnu_err_up / (erg cm-2 s-1)
 0.000153032 6.99043e-13 3.2562e-14 3.2562e-14
 1.01705 2.10364e-11 9.68761e-14 9.68761e-14
 1.01705 1.66024e-11 1.52914e-14 1.52914e-14
@@ -52,6 +39,6 @@ E nuFnu nuFnu_err_lo nuFnu_err_hi
 1.50945e+09 1.54187e-10 6.24507e-11 6.24507e-11
 3.36148e+09 1.90394e-10 9.50969e-11 9.50969e-11
 7.48588e+09 2.13595e-10 1.50767e-10 1.50767e-10
-88.1107e9 2.33609e-11 9.42961e-12 9.42961e-12
-122.421e9  5.70499e-12 2.48308e-12 2.48308e-12
-169.735e9  5.59759e-12 1.82241e-12 1.82241e-12
+8.86497e+10 3.28934e-11 1.36366e-11 1.36366e-11
+1.23079e+11 7.89316e-12 3.39887e-12 3.39887e-12
+1.70854e+11 6.76786e-12 2.34705e-12 2.34705e-12

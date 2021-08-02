@@ -117,21 +117,21 @@ class TestSynchrotron:
         "file_ref , spectrum_type, spectrum_parameters, figure_title, figure_path",
         [
             (
-                f"{data_dir}/reference_seds/jetset/synch_ssa_pwl_jetset_1.1.2.txt",
+                f"{data_dir}/reference_seds/jetset/data/synch_ssa_pwl_jetset_1.1.2.txt",
                 "PowerLaw",
                 {"p": 2, "gamma_min": 2, "gamma_max": 1e6},
                 "Self-Absorbed Synchrotron, power-law electron distribution",
                 f"{figures_dir}/ssa_pwl_comparison_jetset_1.1.2.png",
             ),
             (
-                f"{data_dir}/reference_seds/jetset/synch_ssa_bpwl_jetset_1.1.2.txt",
+                f"{data_dir}/reference_seds/jetset/data/synch_ssa_bpwl_jetset_1.1.2.txt",
                 "BrokenPowerLaw",
                 {"p1": 2, "p2": 3, "gamma_b": 1e4, "gamma_min": 2, "gamma_max": 1e6},
                 "Self-Absorbed Synchrotron, broken power-law electron distribution",
                 f"{figures_dir}/ssa_bpwl_comparison_jetset_1.1.2.png",
             ),
             (
-                f"{data_dir}/reference_seds/jetset/synch_ssa_lp_jetset_1.1.2.txt",
+                f"{data_dir}/reference_seds/jetset/data/synch_ssa_lp_jetset_1.1.2.txt",
                 "LogParabola",
                 {"p": 2, "q": 0.4, "gamma_0": 1e4, "gamma_min": 2, "gamma_max": 1e6},
                 "Self-Absorbed Synchrotron, log-parabola electron distribution",
