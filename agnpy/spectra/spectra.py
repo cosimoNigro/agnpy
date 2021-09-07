@@ -177,7 +177,7 @@ class PowerLaw(ElectronDistribution):
             + f" - k_e: {self.k_e:.2e}\n"
             + f" - p: {self.p:.2f}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}\n"
+            + f" - gamma_max: {self.gamma_max:.2e}"
         )
 
 
@@ -289,7 +289,7 @@ class BrokenPowerLaw(ElectronDistribution):
             + f" - p2: {self.p2:.2f}\n"
             + f" - gamma_b: {self.gamma_b:.2e}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}\n"
+            + f" - gamma_max: {self.gamma_max:.2e}"
         )
 
 
@@ -388,7 +388,7 @@ class LogParabola(ElectronDistribution):
             + f" - q: {self.q:.2f}\n"
             + f" - gamma_0: {self.gamma_0:.2e}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}\n"
+            + f" - gamma_max: {self.gamma_max:.2e}"
         )
 
 
@@ -471,5 +471,5 @@ class ExpCutoffPowerLaw(ElectronDistribution):
             + f" - p: {self.p:.2f}\n"
             + f" - gamma_c: {self.gamma_c:.2f}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}\n"
+            + f" - gamma_max: {self.gamma_max:.2e}"
         )
