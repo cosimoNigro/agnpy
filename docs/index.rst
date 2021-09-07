@@ -18,7 +18,7 @@ The numerical operations are delegated to `numpy arrays <https://numpy.org>`_, a
 
 License
 -------
-The code is licensed under `GNU General Public License v3.0 <https://www.gnu.org/licenses/gpl-3.0.html>`_ (see `LICENSE.md` in the main directory).
+The code is licensed under `BSD-3-Clause License <https://opensource.org/licenses/BSD-3-Clause>`_ (see `LICENSE.md` in the main directory).
 
 Installation
 ------------
@@ -63,8 +63,11 @@ The documentation includes several tutorial jupyter notebooks providing examples
    tutorials/absorption_targets.ipynb
    derivations
    spectral_constraints
+   fit
    tutorials/ssc_sherpa_fit.ipynb
+   tutorials/ssc_gammapy_fit.ipynb
    tutorials/ec_dt_sherpa_fit.ipynb
+   tutorials/ec_dt_gammapy_fit.ipynb
    bibliography
    agnpy
 
