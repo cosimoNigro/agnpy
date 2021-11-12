@@ -134,9 +134,9 @@ Let us continue from the previous snippet considering a DT reprocessing the disk
 Black-Body SEDs
 ---------------
 The SEDs due to the black-body (BB) emission by the disk and the DT can be computed via the
-`sed_flux` members of the two classes. A multi-temperature BB is considered for the Disk and 
-a simple single-temperature BB is considered for the DT. 
-An array of frequencies over which to compute the SEDs and the redshift of the galaxy have to be specified.
+`sed_flux` members of the two classes. A multi-temperature BB is considered for the disk and 
+a simple single-temperature BB for the DT. An array of frequencies over which to compute the 
+SED and the redshift of the galaxy have to be specified to the `sed_flux` function.
 
 .. code-block:: python
 
