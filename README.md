@@ -51,7 +51,9 @@ A test suite is available in [`agnpy/tests`](https://github.com/cosimoNigro/agnp
 `pytest` in the main directory.
 
 ## shields
-![](https://github.com/cosimoNigro/agnpy/workflows/CI%20test/badge.svg)
+[![CI test](https://github.com/cosimoNigro/agnpy/actions/workflows/test.yml/badge.svg)](https://github.com/cosimoNigro/agnpy/actions/workflows/test.yml)
+
+[![Upload to PIP](https://github.com/cosimoNigro/agnpy/actions/workflows/pip-upload.yml/badge.svg)](https://github.com/cosimoNigro/agnpy/actions/workflows/pip-upload.yml)
 
 [![Documentation Status](https://readthedocs.org/projects/agnpy/badge/?version=latest)](https://agnpy.readthedocs.io/en/latest/?badge=latest)
 
