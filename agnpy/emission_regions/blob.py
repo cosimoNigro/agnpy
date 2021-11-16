@@ -1,6 +1,9 @@
+"""This module describes the emission regions responsible for the
+acceleration of particles to relativistic energies. Beside physical quantities
+related to the emission itself it contains the electrons energy distributions"""
 import numpy as np
 import astropy.units as u
-from astropy.constants import e, c, m_e, sigma_T
+from astropy.constants import c, sigma_T
 from astropy.coordinates import Distance
 import matplotlib.pyplot as plt
 from .. import spectra
@@ -11,16 +14,16 @@ __all__ = ["Blob"]
 
 
 def init_spectrum_norm_dict(norm, spectrum_dict, norm_type="integral", V_b=None):
-    """initialize a spectrum from a normalisation and a spectrum dictionary of 
+    """initialize a spectrum from a normalisation and a spectrum dictionary of
     the following type
-    
+
     .. code-block:: python
 
         spectrum_dict = {
-            "type": "PowerLaw", 
+            "type": "PowerLaw",
             "parameters": {
-                "p": 2.8, 
-                "gamma_min": 1e2, 
+                "p": 2.8,
+                "gamma_min": 1e2,
                 "gamma_max": 1e7
             }
         }
@@ -42,7 +45,7 @@ def init_spectrum_norm_dict(norm, spectrum_dict, norm_type="integral", V_b=None)
 
     if norm.unit in (u.Unit("erg"), u.Unit("erg cm-3")) and norm_type != "integral":
         raise NameError(
-            "Normalisations different than 'integral' available only for 'spectrum_norm' in cm-3"
+            "Normalisation different than 'integral' available only for 'spectrum_norm' in cm-3"
         )
 
     # check the units of the normalisation
@@ -67,12 +70,9 @@ def init_spectrum_norm_dict(norm, spectrum_dict, norm_type="integral", V_b=None)
     elif norm.unit == u.Unit("erg"):
         if V_b is None:
             raise ValueError(
-                "if a normalisation in erg is provided, the volume V_b of the emission region msut be specified"
+                "if normalisation in erg provided, the volume V_b must be specified"
             )
-        else:
-            final_model = model.from_total_energy(
-                norm, V_b, **spectrum_dict["parameters"]
-            )
+        final_model = model.from_total_energy(norm, V_b, **spectrum_dict["parameters"])
 
     return final_model
 
@@ -102,13 +102,13 @@ class Blob:
         :math:`(\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} = \xi c E / R_L`
 
     spectrum_norm : :class:`~astropy.units.Quantity`
-        normalisation of the electron spectra, by default can be, following 
+        normalisation of the electron spectra, by default can be, following
         the notation in [DermerMenon2009]_:
 
             - :math:`n_{e,\,tot}`: total electrons density, in :math:`\mathrm{cm}^{-3}`
             - :math:`u_e` : total electrons energy density, in :math:`\mathrm{erg}\,\mathrm{cm}^{-3}`
             - :math:`W_e` : total energy in electrons, in :math:`\mathrm{erg}`
-        
+
         see `spectrum_norm_type` for more details on the normalisation
 
     spectrum_dict : dictionary
@@ -117,23 +117,23 @@ class Blob:
         .. code-block:: python
 
             spectrum_dict = {
-                "type": "PowerLaw", 
+                "type": "PowerLaw",
                 "parameters": {
-                    "p": 2.8, 
-                    "gamma_min": 1e2, 
+                    "p": 2.8,
+                    "gamma_min": 1e2,
                     "gamma_max": 1e7
                 }
             }
 
     spectrum_norm_type : ["integral", "differential", "gamma=1"]
-        only with a normalisation in "cm-3" one can select among three types: 
+        only with a normalisation in "cm-3" one can select among three types:
 
-        * ``"integral"``: (default) the spectrum is set such that :math:`n_{e,\,tot}` equals the value provided by ``spectrum_norm``;  
-        
-        * ``"differential"``: the spectrum is set such that :math:`k_e` equals the value provided by ``spectrum_norm``;    
-        
+        * ``"integral"``: (default) the spectrum is set such that :math:`n_{e,\,tot}` equals the value provided by ``spectrum_norm``;
+
+        * ``"differential"``: the spectrum is set such that :math:`k_e` equals the value provided by ``spectrum_norm``;
+
         * ``"gamma=1"``: the spectrum is set such that :math:`n_e(\gamma=1)` equals the value provided by ``spectrum_norm``.
-        
+
     gamma_size : int
         size of the array of electrons Lorentz factors
     """
@@ -187,7 +187,7 @@ class Blob:
         self.gamma_to_integrate = np.logspace(1, 9, self.gamma_size)
 
     def set_gamma(self, gamma_min, gamma_max, gamma_size):
-        """set the array of Lorentz factors to be used for integration in the 
+        """set the array of Lorentz factors to be used for integration in the
         frame comoving with the blob"""
         self.gamma_min = gamma_min
         self.gamma_max = gamma_max
@@ -200,7 +200,7 @@ class Blob:
     def set_spectrum(
         self, spectrum_norm, spectrum_dict, spectrum_norm_type, gamma_size=200
     ):
-        r"""set the spectrum :math:`n_e` for the electrons accelerated in the 
+        r"""set the spectrum :math:`n_e` for the electrons accelerated in the
         blob, reset also the array of Lorentz factor given the `gamma_min` and
         `gamma_max` in the parameters dictionary"""
         self.set_gamma(
@@ -251,7 +251,7 @@ class Blob:
         self.delta_D = delta_D
 
     def N_e(self, gamma):
-        r"""number of electrons as a function of the Lorentz factor, 
+        r"""number of electrons as a function of the Lorentz factor,
         :math:`N_e(\gamma') = V_b\,n_e(\gamma')`"""
         return self.V_b * self.n_e(gamma)
 
@@ -303,7 +303,7 @@ class Blob:
 
     @property
     def k_eq(self):
-        """equipartition parameter: ratio between totoal electron energy density  
+        """equipartition parameter: ratio between totoal electron energy density
         magnetic field energy density, Eq. 7.75 of [DermerMenon2009]_"""
         return (self.u_e / self.U_B).to_value("")
 
@@ -312,7 +312,7 @@ class Blob:
         r"""jet power in electrons
 
         .. math::
-            P_{jet,\,e} = 2 \pi R_b^2 \beta \Gamma^2 c u_e
+            P_{\mathrm{jet},\,e} = 2 \pi R_b^2 \beta \Gamma^2 c u_e
         """
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
@@ -324,7 +324,7 @@ class Blob:
         r"""jet power in magnetic field
 
         .. math::
-            P_{jet,\,B} = 2 \pi R_b^2 beta \Gamma^2 c \frac{B^2}{8\pi}
+            P_{\mathrm{jet},\,B} = 2 \pi R_b^2 \beta \Gamma^2 c \frac{B^2}{8\pi}
         """
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
@@ -335,23 +335,24 @@ class Blob:
     def u_ph_synch(self):
         r"""energy density of the synchrotron photons energy losses are:
 
-        .. math::        
-            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} = 4 / 3 \sigma_T c U_B \gamma^2 
+        .. math::
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} = 4 / 3 \sigma_T c U_B \gamma^2
 
-        the radiation stays an average time of :math:`(3/4) (R_b/c)` (the factor of 3/4 cames from averaging over a sphere), 
+        the radiation stays an average time of :math:`(3/4) (R_b/c)`
+        (the factor of 3/4 cames from averaging over a sphere),
         so an e- with Lorentz factor :math:`\gamma` produces:
 
-        .. math::        
-            0.75\,(\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}}\,(R_b/c)\,/\,V_b 
+        .. math::
+            0.75\,(\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}}\,(R_b/c)\,/\,V_b
 
         of radiation. We need to integrate over the electron spectrum  (and multiply back by V_b)
 
-        .. math::        
-            0.75\,\int n_e(\gamma) (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}}  R_b  \mathrm{d}\gamma
-        
+        .. math::
+            0.75\,\int n_e(\gamma) (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} R_b \mathrm{d}\gamma
+
         so
 
-        .. math::        
+        .. math::
             u_{\mathrm{synch}} = \sigma_T  U_B  R_b  \int n_e(\gamma) \, \gamma^2 \mathrm{d}\gamma
 
         WARNING: this does not take into account SSA!
@@ -366,8 +367,8 @@ class Blob:
 
     def plot_n_e(self, ax=None, gamma_power=0):
         """plot the  electron distribution
-        
-        Parameters 
+
+        Parameters
         ----------
         ax : :class:`~matplotlib.axes.Axes`, optional
             Axis
