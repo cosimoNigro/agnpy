@@ -56,6 +56,7 @@ The documentation includes several tutorial jupyter notebooks providing examples
    synchrotron
    targets
    tutorials/energy_densities.ipynb
+   tutorials/dt_thermal_emission.ipynb
    compton
    tutorials/synchrotron_self_compton.ipynb
    tutorials/external_compton.ipynb

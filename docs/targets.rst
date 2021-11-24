@@ -133,9 +133,10 @@ Let us continue from the previous snippet considering a DT reprocessing the disk
 
 Black-Body SEDs
 ---------------
-The SEDs due to the black-body emission by the disk and the DT can be computed via the
-`sed_flux` members of the two classes. An array of frequencies over which to compute the SEDs
-and the redshift of the galaxy have to be specified.
+The SEDs due to the black-body (BB) emission by the disk and the DT can be computed via the
+`sed_flux` members of the two classes. A multi-temperature BB is considered for the disk and 
+a simple single-temperature BB for the DT. An array of frequencies over which to compute the 
+SED and the redshift of the galaxy have to be specified to the `sed_flux` function.
 
 .. code-block:: python
 
@@ -158,6 +159,9 @@ and the redshift of the galaxy have to be specified.
     :width: 500px
     :align: center
 
+**NOTE:** the BB emission of the thermal components is mostly meant to check their flux levels against that of the
+non-thermal ones. `In this notebook <tutorials/dt_thermal_emission.html>`_ we illustrate that the BB emission
+of the DT might not be sufficiently accurate to reproduce its :math:`100 - 1\,{\mathrm{\mu m}}` SED. 
 
 Energy densities
 ----------------
