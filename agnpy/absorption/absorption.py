@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import astropy.units as u
 from astropy.io import fits
-from astropy.constants import c, G, h, m_e, M_sun, sigma_T
+from astropy.constants import c, G, m_e, sigma_T
 from scipy.interpolate import interp2d
 from ..utils.math import (
     axes_reshaper,
@@ -84,6 +84,7 @@ class Absorption:
         self.mu = np.linspace(-1, 1, self.mu_size)
 
     def set_phi(self, phi_size=50):
+        "Set array of azimuth angles to integrate over"
         self.phi_size = phi_size
         self.phi = np.linspace(0, 2 * np.pi, self.phi_size)
 
@@ -92,13 +93,13 @@ class Absorption:
 
     @staticmethod
     def evaluate_tau_ps_behind_blob(nu, z, mu_s, epsilon_0, L_0, r):
-        r"""Evaluates the absorption produced by the photon field of a point 
+        r"""Evaluates the absorption produced by the photon field of a point
         source of photons behind the blob, for a general set of model parameters
 
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the opacity 
+            array of frequencies, in Hz, to compute the opacity
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
@@ -111,7 +112,7 @@ class Absorption:
             luminosity [erg cm-3] of the point source behind the jet
         r : :class:`~astropy.units.Quantity`
             distance between the point source and the blob
-        
+
         Returns
         -------
         :class:`~astropy.units.Quantity`
@@ -124,7 +125,7 @@ class Absorption:
         return (prefactor * integral).to_value("")
 
     def tau_ps_behind_blob(self, nu):
-        """Evaluates the absorption produced by the photon field of a point 
+        """Evaluates the absorption produced by the photon field of a point
         source of photons behind the blob"""
         return self.evaluate_tau_ps_behind_blob(
             nu, self.z, self.mu_s, self.target.epsilon_0, self.target.L_0, self.r
@@ -132,13 +133,13 @@ class Absorption:
 
     @staticmethod
     def evaluate_tau_ps_behind_blob_mu_s(nu, z, mu_s, epsilon_0, L_0, r, u_size=100):
-        r"""Evaluates the absorption produced by the photon field of a point 
+        r"""Evaluates the absorption produced by the photon field of a point
         source of photons behind the blob, for a general set of model parameters
 
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the opacity 
+            array of frequencies, in Hz, to compute the opacity
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
@@ -153,7 +154,7 @@ class Absorption:
             distance between the point source and the blob
         u_size : int
             size of the array of distances from the photon origin to integrate over
-        
+
         Returns
         -------
         :class:`~astropy.units.Quantity`
@@ -179,7 +180,7 @@ class Absorption:
         return (prefactor * integral).to_value("")
 
     def tau_ps_behind_blob_mu_s(self, nu):
-        """Evaluates the absorption produced by the photon field of a point 
+        """Evaluates the absorption produced by the photon field of a point
         source of photons behind the blob"""
         return self.evaluate_tau_ps_behind_blob_mu_s(
             nu, self.z, self.mu_s, self.target.epsilon_0, self.target.L_0, self.r
@@ -200,27 +201,27 @@ class Absorption:
         l_tilde_size=50,
         phi=phi_to_integrate,
     ):
-        """Evaluates the gamma-gamma absorption produced by the photon field of 
+        """Evaluates the gamma-gamma absorption produced by the photon field of
         a Shakura-Sunyaev accretion disk
 
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the opacity 
+            array of frequencies, in Hz, to compute the opacity
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
         mu_s : float
             cosine of the angle between the blob motion and the jet axis
         M_BH : :class:`~astropy.units.Quantity`
-            Black Hole mass    
+            Black Hole mass
         L_disk : :class:`~astropy.units.Quantity`
-            luminosity of the disk 
+            luminosity of the disk
         eta : float
             accretion efficiency
-        R_in : :class:`~astropy.units.Quantity` 
+        R_in : :class:`~astropy.units.Quantity`
             inner disk radius
-        R_out : :class:`~astropy.units.Quantity` 
+        R_out : :class:`~astropy.units.Quantity`
             inner disk radius
         R_tilde_size : int
             size of the array of disk coordinates to integrate over
@@ -230,7 +231,7 @@ class Absorption:
             size of the array of distances from the BH to integrate over
         phi : :class:`~numpy.ndarray`
             array of azimuth angles to integrate over
-        
+
         Returns
         -------
         :class:`~astropy.units.Quantity`
@@ -270,7 +271,7 @@ class Absorption:
         return (prefactor * integral).to_value("")
 
     def tau_ss_disk(self, nu):
-        """Evaluates the gamma-gamma absorption produced by the photon field of 
+        """Evaluates the gamma-gamma absorption produced by the photon field of
         a Shakura-Sunyaev accretion disk"""
         return self.evaluate_tau_ss_disk(
             nu,
@@ -301,13 +302,13 @@ class Absorption:
         mu=mu_to_integrate,
         phi=phi_to_integrate,
     ):
-        """Evaluates the gamma-gamma absorption produced by a spherical shell 
+        """Evaluates the gamma-gamma absorption produced by a spherical shell
         BLR for a general set of model parameters
 
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the tau 
+            array of frequencies, in Hz, to compute the tau
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
@@ -372,13 +373,13 @@ class Absorption:
         mu=mu_to_integrate,
         phi=phi_to_integrate,
     ):
-        """Evaluates the gamma-gamma absorption produced by a spherical shell 
+        """Evaluates the gamma-gamma absorption produced by a spherical shell
         BLR for a general set of model parameters and arbitrary mu_s
 
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the tau 
+            array of frequencies, in Hz, to compute the tau
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
@@ -442,7 +443,7 @@ class Absorption:
         return (prefactor * integral).to_value("")
 
     def tau_blr(self, nu):
-        """Evaluates the gamma-gamma absorption produced by a spherical shell 
+        """Evaluates the gamma-gamma absorption produced by a spherical shell
         BLR for a general set of model parameters
         """
         return self.evaluate_tau_blr(
@@ -460,7 +461,7 @@ class Absorption:
         )
 
     def tau_blr_mu_s(self, nu):
-        """Evaluates the gamma-gamma absorption produced by a spherical shell 
+        """Evaluates the gamma-gamma absorption produced by a spherical shell
         BLR for a general set of model parameters and arbitrary mu_s
         """
         return self.evaluate_tau_blr_mu_s(
@@ -495,7 +496,7 @@ class Absorption:
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed 
+            array of frequencies, in Hz, to compute the sed
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
@@ -506,7 +507,7 @@ class Absorption:
         xi_dt : float
             fraction of the disk radiation reprocessed by the disk
         epsilon_dt : string
-            peak (dimensionless) energy of the black body radiated by the torus 
+            peak (dimensionless) energy of the black body radiated by the torus
         R_dt : :class:`~astropy.units.Quantity`
             radius of the ting-like torus
         r : :class:`~astropy.units.Quantity`
@@ -551,12 +552,12 @@ class Absorption:
         phi_re=phi_to_integrate,
     ):
         r"""Evaluates the gamma-gamma absorption produced by a ring dust torus
-        for the case of photon moving at an angle to the jet 
+        for the case of photon moving at an angle to the jet
 
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed 
+            array of frequencies, in Hz, to compute the sed
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
@@ -567,7 +568,7 @@ class Absorption:
         xi_dt : float
             fraction of the disk radiation reprocessed by the disk
         epsilon_dt : string
-            peak (dimensionless) energy of the black body radiated by the torus 
+            peak (dimensionless) energy of the black body radiated by the torus
         R_dt : :class:`~astropy.units.Quantity`
             radius of the ting-like torus
         r : :class:`~astropy.units.Quantity`
@@ -754,11 +755,11 @@ class Absorption:
 
 
 class EBL:
-    """Class representing for the Extragalactic Background Light absorption. 
+    """Class representing for the Extragalactic Background Light absorption.
     Tabulated values of absorption as a function of redshift and energy according
     to the models of [Franceschini2008]_, [Finke2010]_, [Dominguez2011]_ are available
-    in `data/ebl_models`. 
-    They are interpolated by `agnpy` and can be later evaluated for a given redshift 
+    in `data/ebl_models`.
+    They are interpolated by `agnpy` and can be later evaluated for a given redshift
     and range of frequencies.
 
     Parameters
@@ -770,8 +771,7 @@ class EBL:
     def __init__(self, model="franceschini"):
         if model not in ["franceschini", "dominguez", "finke"]:
             raise ValueError("No EBL model for the reference you specified")
-        else:
-            self.model_file = ebl_files_dict[model]
+        self.model_file = ebl_files_dict[model]
         # load the absorption table
         self.load_absorption_table()
         self.interpolate_absorption_table()
@@ -795,6 +795,7 @@ class EBL:
         )
 
     def absorption(self, z, nu):
+        "This function returns the attenuation of the emission by EBL"
         energy = nu.to_value("eV", equivalencies=u.spectral())
         log10_energy = np.log10(energy)
         return self.interpolated_model(log10_energy, z)
