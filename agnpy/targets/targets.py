@@ -4,7 +4,7 @@ from astropy.constants import c, G, M_sun, k_B, sigma_sb
 import astropy.units as u
 from astropy.coordinates import Distance
 from astropy.modeling.models import BlackBody
-from ..utils.conversion import mec2, nu_to_epsilon_prime
+from ..utils.conversion import mec2
 from ..utils.math import axes_reshaper
 
 
@@ -151,7 +151,7 @@ lines_dictionary = {
 class CMB:
     """Cosmic Microwave Background radiation, approximated as an isotropic
     monochromatic target.
-    
+
     Parameters
     ----------
     z : float
@@ -171,7 +171,7 @@ class CMB:
         Parameters
         ----------
         blob : :class:`~agnpy.emission_regions.Blob`
-            if provided, the energy density is computed in a reference frame 
+            if provided, the energy density is computed in a reference frame
             comvoing with the blob
         """
         if blob:
@@ -182,7 +182,7 @@ class CMB:
 
 class PointSourceBehindJet:
     """Monochromatic point source behind the jet.
-    
+
     Parameters
     ----------
     L_0 : :class:`~astropy.units.Quantity`
@@ -197,7 +197,7 @@ class PointSourceBehindJet:
         self.epsilon_0 = epsilon_0
 
     def u(self, r, blob=None):
-        """integral energy density of the point source at distance r along the 
+        """integral energy density of the point source at distance r along the
         jet axis
 
         Parameters
@@ -205,7 +205,7 @@ class PointSourceBehindJet:
         r : :class:`~astropy.units.Quantity`
             array of distances along the jet axis
         blob : :class:`~agnpy.emission_regions.Blob`
-            if provided, the energy density is computed in a reference frame 
+            if provided, the energy density is computed in a reference frame
             comvoing with the blob
         """
         u_0 = (self.L_0 / (4 * np.pi * c * np.power(r, 2))).to("erg cm-3")
@@ -221,9 +221,9 @@ class SSDisk:
     Parameters
     ----------
     M_BH : :class:`~astropy.units.Quantity`
-        Black Hole mass    
+        Black Hole mass
     L_disk : :class:`~astropy.units.Quantity`
-        luminosity of the disk 
+        luminosity of the disk
     eta : float
         accretion efficiency
     R_in : :class:`~astropy.units.Quantity` / float
@@ -285,8 +285,8 @@ class SSDisk:
     # staticmethods to be used in SED calculations without using a class instance
     @staticmethod
     def evaluate_mu_from_r_tilde(R_in_tilde, R_out_tilde, r_tilde, size=100):
-        r"""array of cosine angles, spanning from :math:`R_{\mathrm{in}}` to 
-        :math:`R_{\mathrm{out}}`, viewed from a given height :math:`\tilde{r}` 
+        r"""array of cosine angles, spanning from :math:`R_{\mathrm{in}}` to
+        :math:`R_{\mathrm{out}}`, viewed from a given height :math:`\tilde{r}`
         above the disk, Eq. 72 and 73 in [Finke2016]_."""
         mu_min = 1 / np.sqrt(1 + np.power((R_out_tilde / r_tilde), 2))
         mu_max = 1 / np.sqrt(1 + np.power((R_in_tilde / r_tilde), 2))
@@ -294,16 +294,16 @@ class SSDisk:
 
     @staticmethod
     def evaluate_phi_disk_mu(mu, R_in_tilde, r_tilde):
-        """dependency of the radiant surface-energy flux from the disk radius, 
-        here obtained from the cosine of the zenith `mu` and the height above 
-        the disk `r_tilde` (in graviational radius units), 
+        """dependency of the radiant surface-energy flux from the disk radius,
+        here obtained from the cosine of the zenith `mu` and the height above
+        the disk `r_tilde` (in graviational radius units),
         Eq. 63 [Dermer2009]_"""
         R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
         return 1 - np.sqrt(R_in_tilde / R_tilde)
 
     @staticmethod
     def evaluate_epsilon(L_disk, M_BH, eta, R_tilde):
-        """evaluate the dimensionless energy emitted at the radius `R_tilde` 
+        """evaluate the dimensionless energy emitted at the radius `R_tilde`
         Eq. 65 [Dermer2009]_"""
         M_8 = (M_BH / (1e8 * M_sun)).to_value("")
         L_Edd = 1.26 * 1e46 * M_8 << u.Unit("erg s-1")
@@ -313,8 +313,8 @@ class SSDisk:
 
     @staticmethod
     def evaluate_epsilon_mu(L_disk, M_BH, eta, mu, r_tilde):
-        """same as :func:`~agnpy.targets.SSDisk.evaluate_epsilon` but 
-        considering the cosine of the subtended zenith `mu` and the height 
+        """same as :func:`~agnpy.targets.SSDisk.evaluate_epsilon` but
+        considering the cosine of the subtended zenith `mu` and the height
         above the disk `r` instead of the radius `R_tilde`"""
         R_tilde = r_tilde * np.sqrt(np.power(mu, -2) - 1)
         return SSDisk.evaluate_epsilon(L_disk, M_BH, eta, R_tilde)
@@ -340,40 +340,40 @@ class SSDisk:
         return 1 - np.sqrt(self.R_in_tilde / R_tilde)
 
     def T(self, R):
-        r"""temperature of the disk at radius :math:`R`. 
+        r"""temperature of the disk at radius :math:`R`.
         Eq. 64 in [Dermer2009]_."""
         return self.evaluate_T(R, self.M_BH, self.m_dot, self.R_in)
 
     @staticmethod
     def evaluate_multi_T_bb_sed(nu, z, M_BH, m_dot, R_in, R_out, d_L, mu_s=1):
         r"""Evaluate a multi-temperature black body SED in the case of the SS Disk.
-        The SED is calculated for an observer far away from the disk (:math:`d_L \gg R`) 
+        The SED is calculated for an observer far away from the disk (:math:`d_L \gg R`)
         with the following:
 
         .. math::
-            \nu F_{\nu} \approx \mu_s \, \nu \frac{2 \pi}{d_L^2} 
+            \nu F_{\nu} \approx \mu_s \, \nu \frac{2 \pi}{d_L^2}
             \int_{R_{\rm in}}^{R_{\rm out}}{\rm d}R \, R \, I_{\nu}(T(R)),
 
-        where :math:`I_{\nu}` is Planck's law, :math:`R` the radial coordinate 
-        along the disk, and :math:`d_L` the luminosity distance. :math:`\mu_s` 
+        where :math:`I_{\nu}` is Planck's law, :math:`R` the radial coordinate
+        along the disk, and :math:`d_L` the luminosity distance. :math:`\mu_s`
         is the cosine of the angle between the disk axis and the observer's line of sight.
 
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed 
+            array of frequencies, in Hz, to compute the sed
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
         M_BH : :class:`~astropy.units.Quantity`
-            Black Hole mass    
+            Black Hole mass
         m_dot : float
             mass accretion rate
         R_in : :class:`~astropy.units.Quantity`
             inner disk radius
         R_out : :class:`~astropy.units.Quantity`
             outer disk radius
-        d_L : :class:`~astropy.units.Quantity` 
+        d_L : :class:`~astropy.units.Quantity`
             luminosity of the source
         mu_s : float
             cosine of the angle between the observer line of sight and the disk axis
@@ -394,7 +394,7 @@ class SSDisk:
         nu, z, L_disk, M_BH, m_dot, R_in, R_out, d_L, mu_s=1
     ):
         """Evaluate a normalised, multi-temperature black body SED as in
-        :func:`~targets.SSDisk.evaluate_multi_T_bb_sed`, but the integral luminosity 
+        :func:`~targets.SSDisk.evaluate_multi_T_bb_sed`, but the integral luminosity
         is set to be equal to `L_disk`."""
         sed_disk = SSDisk.evaluate_multi_T_bb_sed(
             nu, z, M_BH, m_dot, R_in, R_out, d_L, mu_s
@@ -406,7 +406,7 @@ class SSDisk:
 
     def sed_flux(self, nu, z, mu_s=1):
         r"""evaluate the multi-temperature black body SED for this SS Disk, refer
-        to :func:`~targets.SSDisk.evaluate_multi_T_bb_sed` and to 
+        to :func:`~targets.SSDisk.evaluate_multi_T_bb_sed` and to
         :func:`~targets.SSDisk.evaluate_multi_T_bb_norm_sed`
         """
         d_L = Distance(z=z).to("cm")
@@ -415,15 +415,15 @@ class SSDisk:
         )
 
     def u(self, r, blob=None):
-        """integral energy density of radiation produced by the Disk at the distance 
+        """integral energy density of radiation produced by the Disk at the distance
         r along the jet axis. Integral over the solid angle of Eq. 69 in [Dermer2009]_.
-        
+
         Parameters
         ----------
         r : :class:`~astropy.units.Quantity`
             array of distances along the jet axis
         blob : :class:`~agnpy.emission_regions.Blob`
-            if provided, the energy density is computed in a reference frame 
+            if provided, the energy density is computed in a reference frame
             comvoing with the blob
         """
         r_tilde = (r / self.R_g).to_value("")
@@ -456,7 +456,7 @@ class SSDisk:
 
 class SphericalShellBLR:
     """Spherical Shell Broad Line Region, from [Finke2016]_.
-    Each line is emitted from an infinitesimally thin spherical shell. 
+    Each line is emitted from an infinitesimally thin spherical shell.
 
     Parameters
     ----------
@@ -494,15 +494,15 @@ class SphericalShellBLR:
 
     def print_lines_list():
         r"""Print the list of the available spectral lines.
-        The dictionary with the possible emission lines is taken from Table 5 in 
-        [Finke2016]_ and contains the value of the line wavelength and the ratio of 
+        The dictionary with the possible emission lines is taken from Table 5 in
+        [Finke2016]_ and contains the value of the line wavelength and the ratio of
         its radius to the radius of the :math:`H_{\beta}` shell, not used at the moment.
         """
         for line in lines_dictionary.keys():
             print(f"{line}: {lines_dictionary[line]}")
 
     def u(self, r, blob=None):
-        """Density of radiation produced by the BLR at the distance r along the 
+        """Density of radiation produced by the BLR at the distance r along the
         jet axis. Integral over the solid angle of Eq. 80 in [Finke2016]_.
 
         Parameters
@@ -510,7 +510,7 @@ class SphericalShellBLR:
         r : :class:`~astropy.units.Quantity`
             array of distances along the jet axis
         blob : :class:`~agnpy.emission_regions.Blob`
-            if provided, the energy density is computed in a reference frame 
+            if provided, the energy density is computed in a reference frame
             comvoing with the blob
         """
         mu = np.linspace(-1, 1)
@@ -533,7 +533,7 @@ class SphericalShellBLR:
 
 class RingDustTorus:
     """Dust Torus as infinitesimally thin annulus, from [Finke2016]_.
-    For the Compton scattering monochromatic emission at the peak energy of the 
+    For the Compton scattering monochromatic emission at the peak energy of the
     Black Body spectrum is considered.
 
     Parameters
@@ -589,7 +589,7 @@ class RingDustTorus:
 
     @staticmethod
     def evaluate_bb_norm_sed(nu, z, L_dt, T_dt, R_dt, d_L):
-        """evaluate the torus black-body SED such that its integral luminosity 
+        """evaluate the torus black-body SED such that its integral luminosity
         is equal to the torus luminosity (`xi_dt * L_disk`)"""
         sed_dt = RingDustTorus.evaluate_bb_sed(nu, z, T_dt, R_dt, d_L)
         # renormalise
@@ -606,7 +606,7 @@ class RingDustTorus:
         )
 
     def u(self, r, blob=None):
-        r"""Density of radiation produced by the Torus at the distance r along the 
+        r"""Density of radiation produced by the Torus at the distance r along the
         jet axis. Integral over the solid angle of Eq. 85 in [Finke2016]_
 
         Parameters
@@ -614,7 +614,7 @@ class RingDustTorus:
         r : :class:`~astropy.units.Quantity`
             array of distances along the jet axis
         blob : :class:`~agnpy.emission_regions.Blob`
-            if provided, the energy density is computed in a reference frame 
+            if provided, the energy density is computed in a reference frame
             comvoing with the blob
         """
         x2 = np.power(self.R_dt, 2) + np.power(r, 2)
