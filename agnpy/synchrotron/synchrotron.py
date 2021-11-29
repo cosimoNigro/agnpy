@@ -13,7 +13,7 @@ B_cr = 4.414e13 * u.G  # critical magnetic field
 
 
 def R(x):
-    """Eq. 7.45 in [Dermer2009]_, angle-averaged integrand of the radiated power, the 
+    """Eq. 7.45 in [Dermer2009]_, angle-averaged integrand of the radiated power, the
     approximation of this function, given in Eq. D7 of [Aharonian2010]_, is used.
     """
     term_1_num = 1.808 * np.power(x, 1 / 3)
@@ -24,7 +24,7 @@ def R(x):
 
 
 def nu_synch_peak(B, gamma):
-    """observed peak frequency for monoenergetic electrons 
+    """observed peak frequency for monoenergetic electrons
     Eq. 7.19 in [DermerMenon2009]_"""
     B = B_to_cgs(B)
     nu_peak = (e * B / (2 * np.pi * m_e * c)) * np.power(gamma, 2)
@@ -32,7 +32,7 @@ def nu_synch_peak(B, gamma):
 
 
 def calc_x(B_cgs, epsilon, gamma):
-    """ratio of the frequency to the critical synchrotron frequency from 
+    """ratio of the frequency to the critical synchrotron frequency from
     Eq. 7.34 in [DermerMenon2009]_, argument of R(x),
     note B has to be in cgs Gauss units"""
     x = (
@@ -52,8 +52,8 @@ def epsilon_B(B):
 
 
 def single_electron_synch_power(B_cgs, epsilon, gamma):
-    """angle-averaged synchrotron power for a single electron, 
-    to be folded with the electron distribution    
+    """angle-averaged synchrotron power for a single electron,
+    to be folded with the electron distribution
     """
     x = calc_x(B_cgs, epsilon, gamma)
     prefactor = np.sqrt(3) * np.power(e, 3) * B_cgs / h
@@ -73,9 +73,9 @@ class Synchrotron:
     Parameters
     ----------
     blob : :class:`~agnpy.emission_region.Blob`
-        emitting region and electron distribution 
+        emitting region and electron distribution
     ssa : bool
-        whether or not to consider synchrotron self absorption (SSA).    
+        whether or not to consider synchrotron self absorption (SSA).
         The absorption factor will be taken into account in
         :func:`~agnpy.synchrotron.Synchrotron.com_sed_emissivity`, in order to be
         propagated to :func:`~agnpy.synchrotron.Synchrotron.sed_luminosity` and
@@ -141,16 +141,16 @@ class Synchrotron:
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed 
+            array of frequencies, in Hz, to compute the sed
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
-        d_L : :class:`~astropy.units.Quantity` 
+        d_L : :class:`~astropy.units.Quantity`
             luminosity distance of the source
         delta_D : float
             Doppler factor of the relativistic outflow
         B : :class:`~astropy.units.Quantity`
-            magnetic field in the blob 
+            magnetic field in the blob
         R_b : :class:`~astropy.units.Quantity`
             size of the emitting region (spherical blob assumed)
         n_e : :class:`~agnpy.spectra.ElectronDistribution`
@@ -162,9 +162,9 @@ class Synchrotron:
         integrator : func
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
-            array of Lorentz factor over which to integrate the electron 
+            array of Lorentz factor over which to integrate the electron
             distribution
-        
+
         Returns
         -------
         :class:`~astropy.units.Quantity`
@@ -203,7 +203,7 @@ class Synchrotron:
 
     @staticmethod
     def evaluate_sed_flux_delta_approx(nu, z, d_L, delta_D, B, R_b, n_e, *args):
-        """Synchrotron flux SED using the delta approximation for the 
+        """Synchrotron flux SED using the delta approximation for the
         synchrotron radiation Eq. 7.70 [DermerMenon2009]_."""
         epsilon_prime = nu_to_epsilon_prime(nu, z, delta_D)
         gamma_s = np.sqrt(epsilon_prime / epsilon_B(B))
@@ -218,7 +218,7 @@ class Synchrotron:
         return value.to("erg cm-2 s-1")
 
     def sed_flux(self, nu):
-        r"""Evaluates the synchrotron flux SED for a Synchrotron object built 
+        r"""Evaluates the synchrotron flux SED for a Synchrotron object built
         from a Blob."""
         return self.evaluate_sed_flux(
             nu,
@@ -235,7 +235,7 @@ class Synchrotron:
         )
 
     def sed_flux_delta_approx(self, nu):
-        """Evaluates the synchrotron flux SED using the delta approximation for 
+        """Evaluates the synchrotron flux SED using the delta approximation for
         a Synchrotron object built from a blob."""
         return self.evaluate_sed_flux_delta_approx(
             nu,
@@ -261,7 +261,7 @@ class Synchrotron:
         return self.sed_flux(nu).max()
 
     def sed_peak_nu(self, nu):
-        """provided a grid of frequencies nu, returns the frequency at which the 
+        """provided a grid of frequencies nu, returns the frequency at which the
         SED peaks
         """
         idx_max = self.sed_flux(nu).argmax()
