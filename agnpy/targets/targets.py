@@ -273,14 +273,21 @@ class SSDisk:
 
     def __str__(self):
         return (
-            f"* Shakura Sunyaev accretion disk:\n"
-            + f" - M_BH (central black hole mass): {self.M_BH.cgs:.2e}\n"
-            + f" - L_disk (disk luminosity): {self.L_disk.cgs:.2e}\n"
-            + f" - eta (accretion efficiency): {self.eta:.2e}\n"
-            + f" - dot(m) (mass accretion rate): {self.m_dot.cgs:.2e}\n"
+            (
+                (
+                    (
+                        (
+                            '* Shakura Sunyaev accretion disk:\n'
+                            + f" - M_BH (central black hole mass): {self.M_BH.cgs:.2e}\n"
+                        )
+                        + f" - L_disk (disk luminosity): {self.L_disk.cgs:.2e}\n"
+                    )
+                    + f" - eta (accretion efficiency): {self.eta:.2e}\n"
+                )
+                + f" - dot(m) (mass accretion rate): {self.m_dot.cgs:.2e}\n"
+            )
             + f" - R_in (disk inner radius): {self.R_in.cgs:.2e}\n"
-            + f" - R_out (disk inner radius): {self.R_out.cgs:.2e}"
-        )
+        ) + f" - R_out (disk inner radius): {self.R_out.cgs:.2e}"
 
     # staticmethods to be used in SED calculations without using a class instance
     @staticmethod
@@ -485,12 +492,15 @@ class SphericalShellBLR:
 
     def __str__(self):
         return (
-            f"* Spherical Shell Broad Line Region:\n"
-            + f" - L_disk (accretion disk luminosity): {self.L_disk.cgs:.2e}\n"
-            + f" - xi_line (fraction of the disk radiation reprocessed by the BLR): {self.xi_line:.2e}\n"
+            (
+                (
+                    '* Spherical Shell Broad Line Region:\n'
+                    + f" - L_disk (accretion disk luminosity): {self.L_disk.cgs:.2e}\n"
+                )
+                + f" - xi_line (fraction of the disk radiation reprocessed by the BLR): {self.xi_line:.2e}\n"
+            )
             + f" - line (type of emitted line): {self.line}, lambda = {self.lambda_line.cgs:.2e}\n"
-            + f" - R_line (radius of the BLR shell): {self.R_line.cgs:.2e}\n"
-        )
+        ) + f" - R_line (radius of the BLR shell): {self.R_line.cgs:.2e}\n"
 
     def print_lines_list():
         r"""Print the list of the available spectral lines.
@@ -571,12 +581,15 @@ class RingDustTorus:
 
     def __str__(self):
         return (
-            f"* Ring Dust Torus:\n"
-            + f" - L_disk (accretion disk luminosity): {self.L_disk.cgs:.2e}\n"
-            + f" - xi_dt (fraction of the disk radiation reprocessed by the torus): {self.xi_dt:.2e}\n"
+            (
+                (
+                    '* Ring Dust Torus:\n'
+                    + f" - L_disk (accretion disk luminosity): {self.L_disk.cgs:.2e}\n"
+                )
+                + f" - xi_dt (fraction of the disk radiation reprocessed by the torus): {self.xi_dt:.2e}\n"
+            )
             + f" - T_dt (temperature of the dust torus): {self.T_dt:.2e}\n"
-            + f" - R_dt (radius of the torus): {self.R_dt.cgs:.2e}\n"
-        )
+        ) + f" - R_dt (radius of the torus): {self.R_dt.cgs:.2e}\n"
 
     @staticmethod
     def evaluate_bb_sed(nu, z, T_dt, R_dt, d_L):
