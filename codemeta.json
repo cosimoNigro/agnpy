@@ -10,7 +10,7 @@
     "downloadUrl": "https://github.com/cosimoNigro/agnpy/releases/tag/v0.1.1",
     "issueTracker": "https://github.com/cosimoNigro/agnpy/issues",
     "name": "agnpy",
-    "version": "0.1.1",
+    "version": "0.1.3",
     "identifier": "10.5281/zenodo.4055175",
     "description": "agnpy is a python package focusing on the computation of the radiative processes of relativistic particles accelerated in the jets of Active Galactic Nuclei (AGN). It includes classes describing the galaxy components responsible for line and thermal emission and calculates the absorption due to gamma-gamma pair production on soft (IR-UV) photon fields.",
     "applicationCategory": "astrophysics",
