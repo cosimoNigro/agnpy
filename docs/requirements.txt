@@ -2,3 +2,4 @@ sphinx
 sphinx-astropy
 nbsphinx
 ipython
+docutils<0.18
