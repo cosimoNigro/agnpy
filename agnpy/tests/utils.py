@@ -25,11 +25,11 @@ def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
 def check_deviation(x, y_comp, y_ref, rtol, x_range=None):
     """check the deviation of two quantities within a given range of x
     when setting atol = 0 in np.allclose it will check that
-    |a - b| <= rtol * |b|, that is |a / b - 1| <= rtol. 
-    If we choose the agnpy values to be a and the reference (code ro figure from 
+    |a - b| <= rtol * |b|, that is |a / b - 1| <= rtol.
+    If we choose the agnpy values to be a and the reference (code ro figure from
     the literature) to be b then |a / b - 1| will be positive when agnpy
-    overestimates the reference (a > b) and negative when agnpy underestimates 
-    the reference (a < b). 
+    overestimates the reference (a > b) and negative when agnpy underestimates
+    the reference (a < b).
     """
     if x_range is not None:
         condition = (x >= x_range[0]) * (x <= x_range[1])
@@ -52,7 +52,7 @@ def make_comparison_plot(
     x_scale="log",
     y_scale="log",
 ):
-    """make a comparison plot, for SED or gamma-gamma absorption 
+    """make a comparison plot, for SED or gamma-gamma absorption
     between two different sources: a reference (literature or another code)
     and a comparison (usually the agnpy result)
 
@@ -69,16 +69,16 @@ def make_comparison_plot(
     comp_label : `string`
         label of the comparison model
     fig_title : `string`
-        upper title of the figure    
+        upper title of the figure
     fig_path : `string`
         path to save the figure
     plot_type : `{"sed", "tau", ...}`
-        whether we are doing a comparison plot for a SED or an optical depth 
+        whether we are doing a comparison plot for a SED or an optical depth
         if another string is specified it will be used for the y axis
     y_range : list of float
         lower and upper limit of the y axis limt
     comparison_range : list of float
-        plot the range over which the residuals were checked 
+        plot the range over which the residuals were checked
     """
     if plot_type == "sed":
         # set the axes labels for an SED plot
