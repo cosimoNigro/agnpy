@@ -17,10 +17,15 @@
     "funding": "ESCAPE EU H2020 824064",
     "developmentStatus": "active",
     "isPartOf": "https://www.astropy.org/affiliated/#affiliated-packages",
-    "funder": {
-        "@type": "Organization",
-        "name": "IFAE"
-    },
+    "funder": [
+        {
+            "@type": "Organization",
+            "name": "IFAE"},
+        {
+            "@type": "Organization",
+            "name": "European Commission",
+            "@id": "https://doi.org/10.13039/501100000780"}
+              ],
     "keywords": [
         "blazar",
         "agn",
@@ -89,7 +94,17 @@
             "affiliation": {
                 "@type": "Organization",
                 "name": "Minnesota State University"
+            },
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-5686-2078",
+            "givenName": "Thomas",
+            "familyName": "Vuillaume",
+            "email": "vuillaume@lapp.in2p3.fr",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Univ. Savoie Mont Blanc, CNRS, LAPP"
             }
-        }
     ]
 }
