@@ -1,10 +1,10 @@
 # test on absorption module
+from pathlib import Path
 import pytest
 import numpy as np
 import astropy.units as u
 from astropy.constants import m_e, c, M_sun, sigma_T, k_B
 from astropy.coordinates import Distance
-from pathlib import Path
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron
 from agnpy.targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
@@ -33,7 +33,7 @@ class TestAbsorption:
 
     @pytest.mark.parametrize("r", ["1e-1", "1e0", "1e1", "1e2"])
     def test_absorption_disk_reference_tau(self, r):
-        """test agnpy gamma-gamma optical depth for Disk against the one in 
+        """test agnpy gamma-gamma optical depth for Disk against the one in
         Figure 14 of Finke 2016"""
         # reference tau
         E_ref, tau_ref = extract_columns_sample_file(
@@ -72,7 +72,7 @@ class TestAbsorption:
         "r,nu_min", [("1e-1", 5e24), ("1e0.5", 2e26), ("1e1", 2.3e27)]
     )
     def test_absorption_blr_reference_tau(self, r, nu_min):
-        """test agnpy gamma-gamma optical depth for a Lyman alpha BLR against 
+        """test agnpy gamma-gamma optical depth for a Lyman alpha BLR against
         the one in Figure 14 of Finke 2016"""
         # reference tau
         E_ref, tau_ref = extract_columns_sample_file(
@@ -116,7 +116,7 @@ class TestAbsorption:
         "r,nu_min", [("1e-1", 3.3e26), ("1e0", 3.3e26), ("1e1", 3.3e26), ("1e2", 8e26)]
     )
     def test_absorption_dt_reference_tau(self, r, nu_min):
-        """test agnpy gamma-gamma optical depth for DT against the one in 
+        """test agnpy gamma-gamma optical depth for DT against the one in
         Figure 14 of Finke 2016"""
         # reference tau
         E_ref, tau_ref = extract_columns_sample_file(
@@ -157,7 +157,7 @@ class TestAbsorption:
         assert check_deviation(nu_ref, tau_agnpy, 2 * tau_ref, 0.20, nu_range)
 
     def test_abs_blr_vs_point_source(self):
-        """check if in the limit of large distances the gamma-gamma optical depth 
+        """check if in the limit of large distances the gamma-gamma optical depth
         on the BLR tends to the one of a point-like source approximating it"""
         # broad line region
         L_disk = 2e46 * u.Unit("erg s-1")
@@ -193,7 +193,7 @@ class TestAbsorption:
         assert check_deviation(nu, tau_blr, tau_ps_blr, 0.1)
 
     def test_abs_dt_vs_point_source(self):
-        """check if in the limit of large distances the gamma-gamma optical depth 
+        """check if in the limit of large distances the gamma-gamma optical depth
         on the DT tends to the one of a point-like source approximating it"""
         # dust torus
         L_disk = 2e46 * u.Unit("erg s-1")

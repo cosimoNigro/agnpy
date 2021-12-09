@@ -1,6 +1,5 @@
 # math utilities for agnpy
 import numpy as np
-import warnings
 import astropy.units as u
 
 # default arrays to be used for integration
@@ -32,7 +31,6 @@ def axes_reshaper(*args):
         .
         .
     `args[n-1]` is reshaped as `(1, 1, 1, ..., args[n-1].size)` -> axis n-1
-    
     Parameters
     ----------
     args: 1-dimensional `~numpy.ndarray`s to be reshaped

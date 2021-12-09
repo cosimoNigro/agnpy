@@ -29,10 +29,10 @@ class TestMathUtils:
     @pytest.mark.parametrize("m", np.arange(-2, 2.5, 0.5))
     @pytest.mark.parametrize("n", np.arange(-2, 2.5, 0.5))
     def test_trapz_log_log(self, m, n):
+        """test trapz loglog integral method"""
         x = np.logspace(2, 5)
         # generate syntethic power-law like data by defining a straight line
         y = line_loglog(x, m, n)
-        trapz_integral = np.trapz(y, x, axis=0)
         trapz_loglog_integral = math.trapz_loglog(y, x, axis=0)
         analytical_integral = integral_line_loglog(x[0], x[-1], m, n)
         assert np.isclose(trapz_loglog_integral, analytical_integral, atol=0, rtol=0.01)
@@ -116,7 +116,7 @@ class TestUtilsGeometry:
     @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
     @pytest.mark.parametrize("mu_s", np.linspace(0, 1, 5))
     def test_x_re_shell_mu_s_vs_ring(self, R_re, r, phi_re, uu, mu_s):
-        """Test that for mu_re=0. x_re_shell_mu_s gives the same results as 
+        """Test that for mu_re=0. x_re_shell_mu_s gives the same results as
         x_re_ring_mu_s"""
         x_ring = geom.x_re_ring_mu_s(R_re, r, phi_re, uu, mu_s)
         mu_re = 0.01
@@ -129,7 +129,7 @@ class TestUtilsGeometry:
     @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
     @pytest.mark.parametrize("mu_re", np.linspace(-1, 1, 4))
     def test_x_re_shell_mu_s_vs_on_axis(self, R_re, r, phi_re, mu_re, uu):
-        """Test that for mu_s=1. x_re_shell_mu_s gives the same results as 
+        """Test that for mu_s=1. x_re_shell_mu_s gives the same results as
         x_re_shell"""
         mu_s = 0.9999
         x_on_axis = geom.x_re_shell(mu_re, R_re, r + uu)
@@ -154,7 +154,7 @@ class TestUtilsGeometry:
     @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
     @pytest.mark.parametrize("mu_s", np.linspace(0, 1, 5))
     def test_phi_mu_re_shell_vs_ring(self, R_re, r, phi_re, uu, mu_s):
-        """Test that for mu_re=0 phi_mu_re_shell gives the same results as 
+        """Test that for mu_re=0 phi_mu_re_shell gives the same results as
         phi_mu_re_ring"""
         phi_ring, mu_ring = geom.phi_mu_re_ring(R_re, r, phi_re, uu, mu_s)
         mu_re = 0.001

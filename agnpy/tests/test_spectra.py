@@ -1,11 +1,10 @@
 # tests on spectra module
 import numpy as np
 import astropy.units as u
-from astropy.constants import m_e
+import pytest
 from agnpy.spectra import PowerLaw, BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw
 from agnpy.utils.math import trapz_loglog
 from agnpy.utils.conversion import mec2
-import pytest
 
 # variables with _test are global and meant to be used in all tests
 # global PowerLaw
@@ -66,7 +65,7 @@ def broken_power_law_integral(k_e, p1, p2, gamma_b, gamma_min, gamma_max):
 
 
 def broken_power_law_times_gamma_integral(k_e, p1, p2, gamma_b, gamma_min, gamma_max):
-    """analytical integral of the power law with two spectral indexes multiplied 
+    """analytical integral of the power law with two spectral indexes multiplied
     by gamma"""
     if np.allclose(p1, 2.0):
         term_1 = np.power(gamma_b, 2) * np.log(gamma_b / gamma_min)
@@ -117,7 +116,7 @@ class TestPowerLaw:
     @pytest.mark.parametrize("p", [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
     @pytest.mark.parametrize("integrator", [np.trapz, trapz_loglog])
     def test_power_law_times_gamma_integral(self, p, integrator):
-        """test the integration of the power law times gamma for different 
+        """test the integration of the power law times gamma for different
         spectral indexes and different integrating functions"""
         pwl = PowerLaw(
             k_e_test, p, gamma_min_test, gamma_max_test, integrator=integrator
@@ -133,7 +132,7 @@ class TestPowerLaw:
         )
 
     def test_from_normalised_density(self):
-        """test the intialisation of the power law from the total particle 
+        """test the intialisation of the power law from the total particle
         density"""
         n_e_tot = 1e-5 * u.Unit("cm-3")
         pwl = PowerLaw.from_normalised_density(
@@ -149,7 +148,7 @@ class TestPowerLaw:
         assert u.isclose(n_e_tot, n_e_tot_calc, atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
     def test_from_normalised_energy_density(self):
-        """test the intialisation of the power law from the total particle 
+        """test the intialisation of the power law from the total particle
         energy density"""
         u_e = 3e-4 * u.Unit("erg cm-3")
         pwl = PowerLaw.from_normalised_energy_density(
@@ -162,7 +161,7 @@ class TestPowerLaw:
         assert u.isclose(u_e, u_e_calc, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
     def test_from_norm_at_gamma_1(self):
-        """test the intialisation of the powerlaw from the normalisation at 
+        """test the intialisation of the powerlaw from the normalisation at
         gamma = 1"""
         norm = 1e-13 * u.Unit("cm-3")
         pwl = PowerLaw.from_norm_at_gamma_1(
@@ -187,7 +186,7 @@ class TestBrokenPowerLaw:
     @pytest.mark.parametrize("gamma_b", [1e2, 1e3, 1e4, 1e5, 1e6])
     @pytest.mark.parametrize("integrator", [np.trapz, trapz_loglog])
     def test_broken_power_law_integral(self, p1, p2, gamma_b, integrator):
-        """test the integration of the log parabola for different spectral 
+        """test the integration of the log parabola for different spectral
         indexes and breaks and different integrating functions"""
         bpwl = BrokenPowerLaw(
             k_e_test,
@@ -213,7 +212,7 @@ class TestBrokenPowerLaw:
     @pytest.mark.parametrize("gamma_b", [1e2, 1e3, 1e4, 1e5, 1e6])
     @pytest.mark.parametrize("integrator", [np.trapz, trapz_loglog])
     def test_broken_power_law_times_gamma_integral(self, p1, p2, gamma_b, integrator):
-        """test the integration of the broken power law times gamma for different 
+        """test the integration of the broken power law times gamma for different
         spectral indexes and breaks and different integrating functions"""
         bpwl = BrokenPowerLaw(
             k_e_test,
@@ -235,7 +234,7 @@ class TestBrokenPowerLaw:
         )
 
     def test_from_normalised_density(self):
-        """test the intialisation of the broken power law from the total particle 
+        """test the intialisation of the broken power law from the total particle
         density"""
         n_e_tot = 1e-5 * u.Unit("cm-3")
         bpwl = BrokenPowerLaw.from_normalised_density(
@@ -253,7 +252,7 @@ class TestBrokenPowerLaw:
         assert u.isclose(n_e_tot, n_e_tot_calc, atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
     def test_from_normalised_energy_density(self):
-        """test the intialisation of the powerlaw from the total particle 
+        """test the intialisation of the powerlaw from the total particle
         energy density"""
         u_e = 3e-4 * u.Unit("erg cm-3")
         bpwl = BrokenPowerLaw.from_normalised_energy_density(
@@ -271,7 +270,7 @@ class TestBrokenPowerLaw:
         assert u.isclose(u_e, u_e_calc, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
     def test_from_norm_at_gamma_1(self):
-        """test the intialisation of the powerlaw from the normalisation at 
+        """test the intialisation of the powerlaw from the normalisation at
         gamma = 1"""
         norm = 1e-13 * u.Unit("cm-3")
         bpwl = BrokenPowerLaw.from_norm_at_gamma_1(
@@ -287,7 +286,7 @@ class TestBrokenPowerLaw:
 
 class TestLogParabola:
     """class grouping all tests related to the PowerLaw spectrum
-    the analytical integral is non-trivial so we ignore the comparison with the 
+    the analytical integral is non-trivial so we ignore the comparison with the
     analytical integral"""
 
     def test_call(self):
@@ -299,7 +298,7 @@ class TestLogParabola:
         assert not np.all(values[~condition])
 
     def test_from_normalised_density(self):
-        """test the intialisation of the log parabola from the total particle 
+        """test the intialisation of the log parabola from the total particle
         density"""
         n_e_tot = 1e-5 * u.Unit("cm-3")
         lp = LogParabola.from_normalised_density(
@@ -317,7 +316,7 @@ class TestLogParabola:
         assert u.isclose(n_e_tot, n_e_tot_calc, atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
     def test_from_normalised_energy_density(self):
-        """test the intialisation of the powerlaw from the total particle 
+        """test the intialisation of the powerlaw from the total particle
         energy density"""
         u_e = 3e-4 * u.Unit("erg cm-3")
         lp = LogParabola.from_normalised_energy_density(
@@ -335,7 +334,7 @@ class TestLogParabola:
         assert u.isclose(u_e, u_e_calc, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
     def test_from_norm_at_gamma_1(self):
-        """test the intialisation of the powerlaw from the normalisation at 
+        """test the intialisation of the powerlaw from the normalisation at
         gamma = 1"""
         norm = 1e-13 * u.Unit("cm-3")
         lp = LogParabola.from_norm_at_gamma_1(
@@ -361,7 +360,7 @@ class TestExpCutoffPowerLaw:
         assert not np.all(values[~condition])
 
     def test_from_normalised_density(self):
-        """test the intialisation of the power law from the total particle 
+        """test the intialisation of the power law from the total particle
         density"""
         n_e_tot = 1e-5 * u.Unit("cm-3")
         epwl = ExpCutoffPowerLaw.from_normalised_density(
@@ -378,7 +377,7 @@ class TestExpCutoffPowerLaw:
         assert u.isclose(n_e_tot, n_e_tot_calc, atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
     def test_from_normalised_energy_density(self):
-        """test the intialisation of the power law from the total particle 
+        """test the intialisation of the power law from the total particle
         energy density"""
         u_e = 3e-4 * u.Unit("erg cm-3")
         epwl = ExpCutoffPowerLaw.from_normalised_energy_density(
@@ -397,7 +396,7 @@ class TestExpCutoffPowerLaw:
         assert u.isclose(u_e, u_e_calc, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
     def test_from_norm_at_gamma_1(self):
-        """test the intialisation of the powerlaw from the normalisation at 
+        """test the intialisation of the powerlaw from the normalisation at
         gamma = 1"""
         norm = 1e-13 * u.Unit("cm-3")
         epwl = ExpCutoffPowerLaw.from_norm_at_gamma_1(

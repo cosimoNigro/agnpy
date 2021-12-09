@@ -1,5 +1,4 @@
 # plotting utilities for agnpy
-from pathlib import Path
 import matplotlib.pyplot as plt
 
 # axes labels
@@ -44,7 +43,7 @@ def plot_sed(nu, sed, ax=None, **kwargs):
     y_range : list of float
         lower and upper limit of the y axis limt
     comparison_range : list of float
-        plot the range over which the residuals were checked 
+        plot the range over which the residuals were checked
     """
     ax = plt.gca() if ax is None else ax
 

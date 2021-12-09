@@ -1,8 +1,9 @@
 # tests on targets module
 import numpy as np
 import astropy.units as u
+import pytest
 from astropy.coordinates import Distance
-from astropy.constants import e, c, m_e, M_sun, G, sigma_sb
+from astropy.constants import M_sun, G, sigma_sb
 from agnpy.emission_regions import Blob
 from agnpy.targets import (
     CMB,
@@ -11,7 +12,7 @@ from agnpy.targets import (
     SphericalShellBLR,
     RingDustTorus,
 )
-import pytest
+
 
 # variables with _test are global and meant to be used in all tests
 blob_test = Blob()
@@ -77,7 +78,6 @@ class TestPointSourceBehindJet:
             atol=0 * u.Unit("erg / cm3"),
             rtol=1e-3,
         )
-
     def test_u_comoving(self):
         """test u in the reference frame comoving with the blob"""
         r = np.asarray([1e18, 1e19, 1e20]) * u.cm
@@ -94,14 +94,17 @@ class TestSSDisk:
 
     # global quantities defining the test disk
     def test_L_Edd(self):
+        """test on disk properties"""
         assert u.isclose(
             disk_test.L_Edd, L_Edd_test, atol=0 * u.Unit("erg s-1"), rtol=1e-3
         )
 
     def test_l_Edd(self):
+        """test on disk properties"""
         assert u.isclose(disk_test.l_Edd, 0.1, atol=0, rtol=1e-3)
 
     def test_m_dot(self):
+        """test on disk properties"""
         assert u.isclose(
             disk_test.m_dot, m_dot_test, atol=0 * u.Unit("g s-1"), rtol=1e-3
         )
@@ -111,15 +114,17 @@ class TestSSDisk:
         [(R_in_tilde_test, R_out_tilde_test, False), (R_in_test, R_out_test, True),],
     )
     def test_R_in_R_out_units(self, R_in, R_out, R_g_units):
-        """check if a TypeError is raised when passing R_in and R_out with 
+        """check if a TypeError is raised when passing R_in and R_out with
         (without) units but specifiying R_g_units True (False)"""
         with pytest.raises(TypeError):
             disk = SSDisk(M_BH_test, L_disk_test, eta_test, R_in, R_out, R_g_units)
 
     def test_R_g(self):
+        """test on disk properties"""
         assert u.isclose(disk_test.R_g, R_g_test, atol=0 * u.cm, rtol=1e-2)
 
     def test_mu_from_r_tilde(self):
+        """test on disk properties"""
         mu = SSDisk.evaluate_mu_from_r_tilde(
             R_in_tilde_test, R_out_tilde_test, r_tilde=10
         )
@@ -129,11 +134,13 @@ class TestSSDisk:
         assert np.isclose(mu[-1], mu_max_expected, atol=0, rtol=1e-2)
 
     def test_phi_disk(self):
+        """test on disk properties"""
         R_tilde = 10
         phi_expected = 0.225
         assert np.isclose(disk_test.phi_disk(R_tilde), phi_expected, atol=0, rtol=1e-2)
 
     def test_phi_disk_mu(self):
+        """test on disk properties"""
         r_tilde = 10
         mu = 1 / np.sqrt(2)
         phi_disk_expected = 0.225
@@ -141,6 +148,7 @@ class TestSSDisk:
         assert np.allclose(phi_disk, phi_disk_expected, atol=0, rtol=1e-2)
 
     def test_epsilon(self):
+        """test on disk properties"""
         R_tilde = 10
         epsilon_expected = 2.7e-5
         assert np.allclose(
@@ -148,6 +156,7 @@ class TestSSDisk:
         )
 
     def test_epsilon_mu(self):
+        """test on disk properties"""
         r_tilde = 10
         # assume R_tilde = 10 as before
         mu = 1 / np.sqrt(2)
@@ -158,6 +167,7 @@ class TestSSDisk:
         assert np.allclose(epsilon_disk, epsilon_disk_expected, atol=0, rtol=1e-2)
 
     def test_T(self):
+        """test on disk properties"""
         R = 10 * R_g_test
         phi = 1 - np.sqrt((disk_test.R_in / R).to(""))
         T_expected = np.power(
@@ -228,7 +238,7 @@ class TestSphericalShellBLR:
         )
 
     def test_u_blr_vs_point_source(self):
-        """test that for large enough distances the energy density of the 
+        """test that for large enough distances the energy density of the
         BLR tends to the one of a point like source approximating it"""
         # point source with the same luminosity as the BLR
         ps_blr = PointSourceBehindJet(
@@ -262,7 +272,7 @@ class TestSphericalShellBLR:
         )
 
     def test_u_blr_vs_point_source_comoving(self):
-        """test that for large enough distances the energy density of the 
+        """test that for large enough distances the energy density of the
         BLR tends to the one of a point like source approximating it"""
         # point source with the same luminosity as the BLR
         ps_blr = PointSourceBehindJet(
@@ -282,6 +292,7 @@ class TestRingDustTorus:
     """class grouping all the tests related to the RingDustTorus target"""
 
     def test_sublimation_radius(self):
+        """test on RingDustTorus properties"""
         assert u.allclose(dt_test.R_dt, 1.361 * 1e19 * u.cm, atol=0 * u.cm, rtol=1e-3)
 
     def test_setting_radius(self):
@@ -328,8 +339,8 @@ class TestRingDustTorus:
         )
 
     def test_u_dt_vs_point_source(self):
-        """test that in the stationary reference frame, for large enough 
-        distances, the energy density of the DT tends to the one of a point like 
+        """test that in the stationary reference frame, for large enough
+        distances, the energy density of the DT tends to the one of a point like
         source approximating it"""
         # point source with the same luminosity as the DT
         ps_dt = PointSourceBehindJet(dt_test.xi_dt * dt_test.L_disk, dt_test.epsilon_dt)
@@ -361,8 +372,8 @@ class TestRingDustTorus:
         )
 
     def test_u_dt_vs_point_source_comoving(self):
-        """test that in the reference frame comoving with the Blob, for large 
-        enough distances, the energy density of the DT tends to the one of 
+        """test that in the reference frame comoving with the Blob, for large
+        enough distances, the energy density of the DT tends to the one of
         a point like source approximating it"""
         # point source with the same luminosity as the DT
         ps_dt = PointSourceBehindJet(dt_test.xi_dt * dt_test.L_disk, dt_test.epsilon_dt)

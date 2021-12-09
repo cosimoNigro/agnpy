@@ -1,10 +1,10 @@
 # test on compton module
+from pathlib import Path
 import pytest
 import numpy as np
 import astropy.units as u
 from astropy.constants import M_sun
 from astropy.coordinates import Distance
-from pathlib import Path
 from agnpy.emission_regions import Blob
 from agnpy.targets import (
     PointSourceBehindJet,
@@ -14,9 +14,8 @@ from agnpy.targets import (
     CMB,
 )
 from agnpy.compton import SynchrotronSelfCompton, ExternalCompton
-from .utils import make_comparison_plot, extract_columns_sample_file, check_deviation
 from agnpy.utils.math import trapz_loglog
-
+from .utils import make_comparison_plot, extract_columns_sample_file, check_deviation
 
 agnpy_dir = Path(__file__).parent.parent
 # where to read sampled files
