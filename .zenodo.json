@@ -51,8 +51,8 @@
     ],
     "language": "eng",
     "license": "BSD-3-Clause",
-    "publication_date": "2020-07-27",
+    "publication_date": "2021-12-14",
     "title": "agnpy",
     "upload_type": "software",
-    "version": "0.1.4"
+    "version": "0.1.6"
 }
