@@ -46,7 +46,8 @@
         "blazar",
         "agn",
         "jets",
-        "radiative processes"
+        "radiative processes",
+        "jupyter-notebook"
     ],
     "language": "eng",
     "license": "BSD-3-Clause",

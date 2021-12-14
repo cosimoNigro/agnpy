@@ -32,7 +32,8 @@
         "blazar",
         "agn",
         "jets",
-        "radiative processes"
+        "radiative processes",
+        "jupyter-notebook"
     ],
     "programmingLanguage": [
         "Python 3"
