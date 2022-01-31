@@ -1,5 +1,6 @@
 include README.md
 include LICENSE
+include agnpy/utils/matplotlibrc
 recursive-include agnpy/data/ebl_models *.fits.gz
 recursive-include agnpy/data/mwl_seds/ *.ecsv
 recursive-include agnpy/data/reference_seds/*/* *.txt
