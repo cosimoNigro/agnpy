@@ -1,6 +1,6 @@
 # plotting utilities for agnpy
 import numpy as np
-from pathlib import Path
+import importlib.resources
 import matplotlib.pyplot as plt
 
 # axes labels
@@ -10,8 +10,8 @@ sed_y_label = r"$\nu F_{\nu}\,/\,(\mathrm{erg}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1
 
 def load_mpl_rc():
     """use the custom matplotlibrc in this subdirectory"""
-    mpl_rc = Path(__file__).parent
-    plt.style.use(mpl_rc / "matplotlibrc")
+    with importlib.resources.path("agnpy.utils", "matplotlibrc") as mpl_rc:
+        plt.style.use(mpl_rc)
 
 
 def plot_eed(gamma, n_e, gamma_power=0, ax=None, **kwargs):
