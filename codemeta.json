@@ -5,27 +5,35 @@
     "codeRepository": "https://github.com/cosimoNigro/agnpy",
     "contIntegration": "https://github.com/cosimoNigro/agnpy/actions",
     "dateCreated": "2019-12-17",
-    "datePublished": "2020-07-27",
+    "datePublished": "2022-01-31",
     "dateModified": "2021-08-02",
-    "downloadUrl": "https://github.com/cosimoNigro/agnpy/releases/tag/v0.1.1",
+    "downloadUrl": "https://github.com/cosimoNigro/agnpy/releases/tag/v0.1.6",
     "issueTracker": "https://github.com/cosimoNigro/agnpy/issues",
     "name": "agnpy",
-    "version": "0.1.1",
+    "version": "0.1.8",
     "identifier": "10.5281/zenodo.4055175",
     "description": "agnpy is a python package focusing on the computation of the radiative processes of relativistic particles accelerated in the jets of Active Galactic Nuclei (AGN). It includes classes describing the galaxy components responsible for line and thermal emission and calculates the absorption due to gamma-gamma pair production on soft (IR-UV) photon fields.",
     "applicationCategory": "astrophysics",
     "funding": "ESCAPE EU H2020 824064",
     "developmentStatus": "active",
     "isPartOf": "https://www.astropy.org/affiliated/#affiliated-packages",
-    "funder": {
-        "@type": "Organization",
-        "name": "IFAE"
-    },
+    "funder": [
+        {
+            "@type": "Organization",
+            "name": "IFAE"
+        },
+        {
+            "@type": "Organization",
+            "name": "European Commission",
+            "@id": "https://doi.org/10.13039/501100000780"
+        }
+    ],
     "keywords": [
         "blazar",
         "agn",
         "jets",
-        "radiative processes"
+        "radiative processes",
+        "jupyter-notebook"
     ],
     "programmingLanguage": [
         "Python 3"
@@ -46,7 +54,7 @@
             "email": "cosimo.nigro@ifae.es",
             "affiliation": {
                 "@type": "Organization",
-                "name": "IFAE"
+                "name": "Institut de F\u00edsica d'Altes Energies (IFAE)"
             }
         },
         {
@@ -65,8 +73,9 @@
         {
             "@type": "Person",
             "@id": "https://orcid.org/0000-0002-4183-391X",
-            "givenName": "Pawel",
+            "givenName": "Pawe\u0142",
             "familyName": "Gliwny",
+            "email": "p.gliwny@gmail.com",
             "affiliation": {
                 "@type": "Organization",
                 "name": "University of Lodz"
@@ -76,9 +85,10 @@
             "@type": "Person",
             "givenName": "David",
             "familyName": "Sanchez",
+            "email":"david.sanchez@lapp.in2p3.fr",
             "affiliation": {
                 "@type": "Organization",
-                "name": "CNRS, LAPP"
+                "name": "Univ. Savoie Mont Blanc, CNRS, LAPP"
             }
         },
         {
@@ -86,9 +96,21 @@
             "@id": "https://orcid.org/0000-0001-7988-8919",
             "givenName": "Matthew",
             "familyName": "Craig",
+            "email": "mattwcraig@gmail.com",
             "affiliation": {
                 "@type": "Organization",
                 "name": "Minnesota State University"
+            }
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-5686-2078",
+            "givenName": "Thomas",
+            "familyName": "Vuillaume",
+            "email": "vuillaume@lapp.in2p3.fr",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Univ. Savoie Mont Blanc, CNRS, LAPP"
             }
         }
     ]

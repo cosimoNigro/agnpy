@@ -8,7 +8,7 @@ from astropy.coordinates import Distance
 import matplotlib.pyplot as plt
 from .. import spectra
 from ..utils.conversion import mec2, B_to_cgs
-from ..utils.plot import load_mpl_rc
+from ..utils.plot import plot_eed
 
 __all__ = ["Blob"]
 
@@ -365,7 +365,7 @@ class Blob:
         )
         return u_ph.to("erg cm-3")
 
-    def plot_n_e(self, ax=None, gamma_power=0):
+    def plot_n_e(self, ax=None, gamma_power=0, **kwargs):
         """plot the  electron distribution
 
         Parameters
@@ -375,18 +375,4 @@ class Blob:
         gamma_power : float
             power of gamma to raise the electron distribution
         """
-        load_mpl_rc()
-        ax = plt.gca() if ax is None else ax
-
-        ax.loglog(self.gamma, np.power(self.gamma, gamma_power) * self.n_e(self.gamma))
-        ax.set_xlabel(r"$\gamma$")
-        if gamma_power == 0:
-            ax.set_ylabel(r"$n_e(\gamma)\,/\,{\rm cm}^{-3}$")
-        else:
-            ax.set_ylabel(
-                r"$\gamma^{"
-                + str(gamma_power)
-                + r"}$"
-                + r"$\,n_e(\gamma)\,/\,{\rm cm}^{-3}$"
-            )
-        return ax
+        plot_eed(self.gamma, self.n_e, gamma_power, ax, **kwargs)

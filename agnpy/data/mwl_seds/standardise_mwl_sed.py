@@ -1,4 +1,4 @@
-# standardise the MWL SED to a format readable by Gammapy's FluxPointsDataset
+# standardise the MWL SED to a format readable by Gammapy's FluxPoints (at least until version 0.18.2)
 # SED format based on
 # https://gamma-astro-data-formats.readthedocs.io/en/latest/spectra/flux_points/index.html
 import numpy as np
@@ -27,87 +27,31 @@ sed_table.meta[
 sed_table.meta["redshift"] = 0.03
 sed_table.write("Mrk421_2011.ecsv", overwrite=True)
 
-# - PKS1510-089 low state
-sed_file = np.loadtxt("original/PKS1510-089_low.txt")
-# read
-E = sed_file[:, 0] * u.eV
-nuFnu = sed_file[:, 1] * u.Unit("erg cm-2 s-1")
-nuFnu_err = sed_file[:, 2] * u.Unit("erg cm-2 s-1")
-# store in table and remove points with orders of magnitude smaller error, they are upper limits
-UL = nuFnu_err < (nuFnu * 1e-3)
-sed_table = Table()
-sed_table["e_ref"] = E[~UL]
-sed_table["e2dnde"] = nuFnu[~UL]
-sed_table["e2dnde_err"] = nuFnu_err[~UL]
-sed_table.meta["SED_TYPE"] = "e2dnde"
-sed_table.meta["source"] = "PKS1510-089"
-sed_table.meta["period"] = "2012-2017"
-sed_table.meta[
-    "reference"
-] = "https://ui.adsabs.harvard.edu/abs/2018A%26A...619A.159M/abstract"
-sed_table.meta["redshift"] = 0.361
-sed_table.write("PKS1510-089_low.ecsv", overwrite=True)
-
-# - PKS1510-089 2012 state
-sed_file = np.loadtxt("original/PKS1510-089_2012.txt")
-# read
-nu = sed_file[:, 0] * u.Hz
-nuFnu = sed_file[:, 1] * u.Unit("erg cm-2 s-1")
-nuFnu_err_low = sed_file[:, 2] * u.Unit("erg cm-2 s-1")
-nuFnu_err_high = sed_file[:, 3] * u.Unit("erg cm-2 s-1")
-# store in table and remove points with orders of magnitude smaller error, they are upper limits
-UL = nuFnu_err_low < (nuFnu * 1e-3)
-sed_table = Table()
-sed_table["e_ref"] = nu.to("eV", equivalencies=u.spectral())[~UL]
-sed_table["e2dnde"] = nuFnu[~UL]
-sed_table["e2dnde_errn"] = nuFnu_err_low[~UL]
-sed_table["e2dnde_errp"] = nuFnu_err_high[~UL]
-sed_table.meta["SED_TYPE"] = "e2dnde"
-sed_table.meta["source"] = "PKS1510-089"
-sed_table.meta["period"] = "2012"
-sed_table.meta[
-    "reference"
-] = "https://ui.adsabs.harvard.edu/abs/2014A%26A...569A..46A/abstract"
-sed_table.meta["redshift"] = 0.361
-sed_table.write("PKS1510-089_2012.ecsv", overwrite=True)
-
-# - PKS1510-089 2015, Period A
-sed_file = np.loadtxt("original/PKS1510-089_2015a.txt")
-# read
-E = sed_file[:, 0] * u.eV
-nuFnu = sed_file[:, 1] * u.Unit("erg cm-2 s-1")
-nuFnu_err_low = sed_file[:, 2] * u.Unit("erg cm-2 s-1")
-nuFnu_err_high = sed_file[:, 3] * u.Unit("erg cm-2 s-1")
-# store in table and remove points with orders of magnitude smaller error, they are upper limits
-UL = nuFnu_err_low < (nuFnu * 1e-3)
-sed_table = Table()
-sed_table["e_ref"] = E[~UL]
-sed_table["e2dnde"] = nuFnu[~UL]
-sed_table["e2dnde_errn"] = nuFnu_err_low[~UL]
-sed_table["e2dnde_errp"] = nuFnu_err_high[~UL]
-sed_table.meta["SED_TYPE"] = "e2dnde"
-sed_table.meta["source"] = "PKS1510-089"
-sed_table.meta["period"] = "2015, A"
-sed_table.meta[
-    "reference"
-] = "https://ui.adsabs.harvard.edu/abs/2017A%26A...603A..29A/abstract"
-sed_table.meta["redshift"] = 0.361
-sed_table.write("PKS1510-089_2015a.ecsv", overwrite=True)
 
 # - PKS1510-089 2015, Period B
-sed_file = np.loadtxt("original/PKS1510-089_2015b.txt")
+sed_file = np.loadtxt(
+    "original/PKS1510-089_2015b.txt",
+    dtype={
+        "names": ("E", "sed", "sed_err_low", "sed_err_high", "instrument"),
+        "formats": (float, float, float, float, "|S15"),
+    },
+)
+
 # read
-E = sed_file[:, 0] * u.eV
-nuFnu = sed_file[:, 1] * u.Unit("erg cm-2 s-1")
-nuFnu_err_low = sed_file[:, 2] * u.Unit("erg cm-2 s-1")
-nuFnu_err_high = sed_file[:, 3] * u.Unit("erg cm-2 s-1")
+E = sed_file["E"] * u.eV
+nuFnu = sed_file["sed"] * u.Unit("TeV cm-2 s-1")
+nuFnu_err_low = sed_file["sed_err_low"] * u.Unit("erg cm-2 s-1")
+nuFnu_err_high = sed_file["sed_err_high"] * u.Unit("erg cm-2 s-1")
+instruments = sed_file["instrument"]
+
 # store in table and remove points with orders of magnitude smaller error, they are upper limits
 UL = nuFnu_err_low < (nuFnu * 1e-3)
 sed_table = Table()
 sed_table["e_ref"] = E[~UL]
-sed_table["e2dnde"] = nuFnu[~UL]
-sed_table["e2dnde_errn"] = nuFnu_err_low[~UL]
-sed_table["e2dnde_errp"] = nuFnu_err_high[~UL]
+sed_table["e2dnde"] = nuFnu.to("erg cm-2 s-1")[~UL]
+sed_table["e2dnde_errn"] = nuFnu_err_low.to("erg cm-2 s-1")[~UL]
+sed_table["e2dnde_errp"] = nuFnu_err_high.to("erg cm-2 s-1")[~UL]
+sed_table["instrument"] = instruments[~UL]
 sed_table.meta["SED_TYPE"] = "e2dnde"
 sed_table.meta["source"] = "PKS1510-089"
 sed_table.meta["period"] = "2015, B"

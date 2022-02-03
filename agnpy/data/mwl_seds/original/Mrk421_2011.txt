@@ -1,4 +1,5 @@
-# nu / Hz, nuFnu / (erg cm-2 s-1), nuFnu_err / (erg cm-2 s-1)
+# Frequency [Hz]  EnergyFlux [erg/cm2/s]
+#  Xval  Yval  YvalError
 2.299540e+09 1.340900e-14 3.910000e-16
 2.639697e+09 1.793088e-14 3.231099e-26
 4.799040e+09 2.313600e-14 2.400000e-16

@@ -2,8 +2,10 @@
 import pytest
 import numpy as np
 import astropy.units as u
+from agnpy.spectra import PowerLaw
 import agnpy.utils.math as math
 import agnpy.utils.geometry as geom
+from agnpy.utils.plot import load_mpl_rc, plot_eed, plot_sed
 
 
 twopi = 2 * np.pi
@@ -29,10 +31,10 @@ class TestMathUtils:
     @pytest.mark.parametrize("m", np.arange(-2, 2.5, 0.5))
     @pytest.mark.parametrize("n", np.arange(-2, 2.5, 0.5))
     def test_trapz_log_log(self, m, n):
+        """test trapz loglog integral method"""
         x = np.logspace(2, 5)
         # generate syntethic power-law like data by defining a straight line
         y = line_loglog(x, m, n)
-        trapz_integral = np.trapz(y, x, axis=0)
         trapz_loglog_integral = math.trapz_loglog(y, x, axis=0)
         analytical_integral = integral_line_loglog(x[0], x[-1], m, n)
         assert np.isclose(trapz_loglog_integral, analytical_integral, atol=0, rtol=0.01)
@@ -116,7 +118,7 @@ class TestUtilsGeometry:
     @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
     @pytest.mark.parametrize("mu_s", np.linspace(0, 1, 5))
     def test_x_re_shell_mu_s_vs_ring(self, R_re, r, phi_re, uu, mu_s):
-        """Test that for mu_re=0. x_re_shell_mu_s gives the same results as 
+        """Test that for mu_re=0. x_re_shell_mu_s gives the same results as
         x_re_ring_mu_s"""
         x_ring = geom.x_re_ring_mu_s(R_re, r, phi_re, uu, mu_s)
         mu_re = 0.01
@@ -129,7 +131,7 @@ class TestUtilsGeometry:
     @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
     @pytest.mark.parametrize("mu_re", np.linspace(-1, 1, 4))
     def test_x_re_shell_mu_s_vs_on_axis(self, R_re, r, phi_re, mu_re, uu):
-        """Test that for mu_s=1. x_re_shell_mu_s gives the same results as 
+        """Test that for mu_s=1. x_re_shell_mu_s gives the same results as
         x_re_shell"""
         mu_s = 0.9999
         x_on_axis = geom.x_re_shell(mu_re, R_re, r + uu)
@@ -154,7 +156,7 @@ class TestUtilsGeometry:
     @pytest.mark.parametrize("phi_re", np.linspace(0, 2 * np.pi, 5))
     @pytest.mark.parametrize("mu_s", np.linspace(0, 1, 5))
     def test_phi_mu_re_shell_vs_ring(self, R_re, r, phi_re, uu, mu_s):
-        """Test that for mu_re=0 phi_mu_re_shell gives the same results as 
+        """Test that for mu_re=0 phi_mu_re_shell gives the same results as
         phi_mu_re_ring"""
         phi_ring, mu_ring = geom.phi_mu_re_ring(R_re, r, phi_re, uu, mu_s)
         mu_re = 0.001
@@ -184,3 +186,49 @@ class TestUtilsGeometry:
         # here we add on purpose pi to avoid slightly negative differences
         dphi = np.mod(phi_shell.value - phi_true + 3 * np.pi, twopi)
         assert np.isclose(dphi, np.pi, atol=0.03, rtol=0)
+
+
+class TestPlotUtils:
+    """test utils.plot"""
+
+    def test_load_mpl_rc(self):
+        """check that the matplotlibrc is properly loaded"""
+        import matplotlib as mpl
+
+        load_mpl_rc()
+
+        assert mpl.rcParams["font.size"] == 12
+        assert mpl.rcParams["lines.linewidth"] == 1.6
+        assert mpl.rcParams["xtick.major.size"] == 7
+        assert mpl.rcParams["xtick.minor.size"] == 4
+
+    def test_plot_eed(self):
+        """check that the functions for plotting EED can be called and that the
+        **kwargs are correctly passed to matploltib"""
+        kwargs = {"linewidth": 3, "color": "crimson"}
+        gamma = np.logspace(2, 5)
+        n_e = PowerLaw()
+
+        # plot it without scaling by a power of gamma
+        ax = plot_eed(gamma, n_e, **kwargs)
+        line_2d = ax.get_lines()[0]
+
+        assert line_2d.get_linewidth() == kwargs["linewidth"]
+        assert line_2d.get_color() == kwargs["color"]
+
+        # plot it by scaling by a power of gamma
+        ax = plot_eed(gamma, n_e, gamma_power=2)
+        assert ax.get_ylabel() == r"$\gamma^{2}$$\,n_e(\gamma)\,/\,{\rm cm}^{-3}$"
+
+    def test_plot_sed(self):
+        """check that the functions for plotting SED can be called and that the
+        **kwargs are correctly passed to matploltib"""
+        kwargs = {"linewidth": 3, "color": "crimson"}
+        nu = np.logspace(10, 20) * u.Hz
+        sed = np.logspace(-10, -20) * u.Unit("erg cm-2 s-1")
+
+        ax = plot_sed(nu, sed, **kwargs)
+        line_2d = ax.get_lines()[0]
+
+        assert line_2d.get_linewidth() == kwargs["linewidth"]
+        assert line_2d.get_color() == kwargs["color"]

@@ -1,9 +1,9 @@
 # tests on spectra and emission region modules
 import numpy as np
 import astropy.units as u
-from astropy.constants import e, c, m_e
-from agnpy.emission_regions import Blob
 import pytest
+from astropy.constants import c, m_e
+from agnpy.emission_regions import Blob
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
@@ -82,9 +82,8 @@ class TestBlob:
         """the default norm type should be 'integral'"""
         assert pwl_blob_test.spectrum_norm_type == "integral"
 
-    # tests for the power-law spectrum
-    # - printing test
     def test_print_pwl(self):
+        """tests for the power-law spectrum - printing test"""
         print(pwl_blob_test)
         assert True
 
@@ -131,9 +130,8 @@ class TestBlob:
         pwl_blob_test.set_spectrum(W_e, pwl_dict_test, "integral")
         assert u.allclose(pwl_blob_test.W_e, W_e, atol=0 * u.erg, rtol=1e-2)
 
-    # tests for the broken power-law spectrum
-    # - printing test
     def test_print_bpwl(self):
+        """tests for the broken power-law spectrum - printing test"""
         print(bpwl_blob_test)
         assert True
 
@@ -183,9 +181,8 @@ class TestBlob:
         bpwl_blob_test.set_spectrum(W_e, bpwl_dict_test, "integral")
         assert u.allclose(bpwl_blob_test.W_e, W_e, atol=0 * u.erg, rtol=1e-2)
 
-    # tests for the log-parabola spectrum
-    # - printing test
     def test_print_lp(self):
+        """tests for the log-parabola spectrum - printing test"""
         print(lp_blob_test)
         assert True
 
@@ -243,17 +240,18 @@ class TestBlob:
         ],
     )
     def test_non_available_norm_type(self, spectrum_norm, spectrum_norm_type):
-        """check that the spectrum_norm_type 'differential' and 'gamma=1' 
+        """check that the spectrum_norm_type 'differential' and 'gamma=1'
         raise a NameError for a spectrum_norm in erg or erg cm-3"""
         with pytest.raises(NameError):
             pwl_blob_test.set_spectrum(spectrum_norm, pwl_dict_test, spectrum_norm_type)
 
-    # test on blob properties
     def test_set_delta_D(self):
+        """test on blob properties"""
         pwl_blob_test.set_delta_D(Gamma=10, theta_s=20 * u.deg)
         assert np.allclose(pwl_blob_test.delta_D, 1.53804, atol=0)
 
     def test_set_gamma_size(self):
+        """test set gamma size"""
         pwl_blob_test.set_gamma_size(1000)
         assert len(pwl_blob_test.gamma) == 1000
 
@@ -265,11 +263,13 @@ class TestBlob:
         assert u.allclose(N_e / n_e, V_b_test, atol=0 * u.Unit("cm3"), rtol=1e-3)
 
     def test_U_B(self):
+        """test on blob properties"""
         # strip the units for convenience on this one
         U_B_expected = np.power(B_test.value, 2) / (8 * np.pi) * u.Unit("erg cm-3")
         assert np.allclose(pwl_blob_test.U_B, U_B_expected, atol=0 * u.Unit("erg cm-3"))
 
     def test_P_jet_e(self):
+        """test on blob properties"""
         u_e_expected = (
             mec2 * spectrum_norm_test * np.log(gamma_max_test / gamma_min_test)
         )
@@ -290,6 +290,7 @@ class TestBlob:
         )
 
     def test_P_jet_B(self):
+        """test on blob properties"""
         U_B_expected = np.power(B_test.value, 2) / (8 * np.pi) * u.Unit("erg cm-3")
         P_jet_B_expected = (
             2
