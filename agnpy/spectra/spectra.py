@@ -1,11 +1,11 @@
-# module containing the electron spectra
+# module containing the particles energy distributions (or particles spectra)
 import numpy as np
 import astropy.units as u
 from ..utils.math import trapz_loglog
-from ..utils.conversion import mec2
+
 
 __all__ = [
-    "ElectronDistribution",
+    "EnergyDistribution",
     "PowerLaw",
     "ExpCutoffPowerLaw",
     "BrokenPowerLaw",
@@ -13,20 +13,22 @@ __all__ = [
 ]
 
 
-class ElectronDistribution:
-    """Base class grouping common functionalities to be used by all electron 
-    distributions. Choose the function to be used for integration. The
-    default is :class:`~numpy.trapz`"""
+class EnergyDistribution:
+    """Base class grouping common functionalities to be used by all particles
+    energy distributions. Choose the function to be used for integration, the
+    default is :class:`~numpy.trapz`.
+
+    All the energy distributions have units [cm-3]."""
 
     def __init__(self, integrator=np.trapz):
         self.integrator = integrator
 
     @staticmethod
-    def general_integral(
+    def _integral(
         self, gamma_low, gamma_up, gamma_power=0, integrator=np.trapz, **kwargs
     ):
-        """integral of the electron distribution over the range gamma_low, 
-        gamma_up for a general set of parameters
+        """Integral of the particle distribution over the range `gamma_low`,
+        `gamma_up`, for a general set of the distribution parameters.
 
         Parameters
         ----------
@@ -35,11 +37,11 @@ class ElectronDistribution:
         gamma_up : float
             higher integration limit
         gamma_power : int
-            power of gamma to raise the electron distribution before integration
+            power of gamma to raise the particle distribution before integration
         integrator: func
             function to be used for integration, default is :class:`~numpy.trapz`
         kwargs : dict
-            parameters of the electron distribution
+            parameters of the particle distribution
         """
         gamma = np.logspace(np.log10(gamma_low), np.log10(gamma_up), 200)
         values = self.evaluate(gamma, **kwargs)
@@ -47,8 +49,8 @@ class ElectronDistribution:
         return integrator(values, gamma, axis=0)
 
     def integral(self, gamma_low, gamma_up, gamma_power=0):
-        """integral of **this particular** electron distribution over the range 
-        gamma_low, gamma_up
+        """Integral of **this particular** particle distribution over the range
+        `gamma_low`, `gamma_up`.
 
         Parameters
         ----------
@@ -62,52 +64,8 @@ class ElectronDistribution:
         values *= np.power(gamma, gamma_power)
         return self.integrator(values, gamma, axis=0)
 
-    @classmethod
-    def from_normalised_density(cls, n_e_tot, **kwargs):
-        r"""sets the normalisation :math:`k_e` from the total particle density 
-        :math:`n_{e,\,tot}`"""
-        # use gamma_min and gamma_max of the electron distribution as
-        # integration limits
-        if "gamma_min" in kwargs:
-            gamma_min = kwargs.get("gamma_min")
-        if "gamma_max" in kwargs:
-            gamma_max = kwargs.get("gamma_max")
-        k_e = n_e_tot / cls.general_integral(
-            cls, gamma_low=gamma_min, gamma_up=gamma_max, gamma_power=0, k_e=1, **kwargs
-        )
-        return cls(k_e.to("cm-3"), **kwargs)
 
-    @classmethod
-    def from_normalised_energy_density(cls, u_e, **kwargs):
-        r"""sets the normalisation :math:`k_e` from the total energy density 
-        :math:`u_e`, Eq. 6.64 in [DermerMenon2009]_"""
-        # use gamma_min and gamma_max of the electron distribution as
-        # integration limits
-        if "gamma_min" in kwargs:
-            gamma_min = kwargs.get("gamma_min")
-        if "gamma_max" in kwargs:
-            gamma_max = kwargs.get("gamma_max")
-        integral = cls.general_integral(
-            cls, gamma_low=gamma_min, gamma_up=gamma_max, gamma_power=1, k_e=1, **kwargs
-        )
-        k_e = u_e / (mec2 * integral)
-        return cls(k_e.to("cm-3"), **kwargs)
-
-    @classmethod
-    def from_norm_at_gamma_1(cls, norm, **kwargs):
-        r"""sets :math:`k_e` such that `norm` = :math:`n_e(\gamma=1)`."""
-        k_e = norm.to("cm-3") / cls.evaluate(1, 1, **kwargs)
-        return cls(k_e, **kwargs)
-
-    @classmethod
-    def from_total_energy(cls, W_e, V_b, **kwargs):
-        r"""sets :math:`k_e` from the total energy `W_e`, given a volume
-        V_b of the emission region."""
-        u_e = W_e / V_b
-        return cls.from_normalised_energy_density(u_e, **kwargs)
-
-
-class PowerLaw(ElectronDistribution):
+class PowerLaw(EnergyDistribution):
     r"""Class for power-law particle spectrum. 
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
@@ -181,7 +139,7 @@ class PowerLaw(ElectronDistribution):
         )
 
 
-class BrokenPowerLaw(ElectronDistribution):
+class BrokenPowerLaw(EnergyDistribution):
     r"""Class for broken power-law particle spectrum.
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
@@ -293,7 +251,7 @@ class BrokenPowerLaw(ElectronDistribution):
         )
 
 
-class LogParabola(ElectronDistribution):
+class LogParabola(EnergyDistribution):
     r"""Class for log-parabolic particle spectrum. Built on :class:`~astropy.modeling.Fittable1DModel`.
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
@@ -392,7 +350,7 @@ class LogParabola(ElectronDistribution):
         )
 
 
-class ExpCutoffPowerLaw(ElectronDistribution):
+class ExpCutoffPowerLaw(EnergyDistribution):
     r"""Class for power-law with an exponetial cutoff particle spectrum. 
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
