@@ -4,28 +4,34 @@ import astropy.units as u
 from ..synchrotron import Synchrotron
 from ..compton import ExternalCompton
 from ..compton import SynchrotronSelfCompton
-from gammapy.modeling.models import SpectralModel, Parameter, Parameters
+from gammapy.modeling import Parameter, Parameters
+from gammapy.modeling.models import SpectralModel
 
 
-class SpectralModelSSC(SpectralModel):
+class SynchrotronSelfComptonSpectralModel(SpectralModel):
 
-    tag = ["SpectralModelSSC"]
+    tag = ["SynchrotronSelfComptonSpectralModel"]
 
     def __init__(self, blob):
         """Initialise all the parameters from the Blob instance."""
 
         self.blob = blob
 
-        parameters = []
+        spectral_parameters = []
+        emission_region_parameters = []
 
-        # all the parameters of the EED have to be parameters of the fittable model
-        # any electron distribution has for attributes the spectral parameters and the integrator
-        # we remove the latter
+        # all the EED parameters have to be parameters of the fittable model
+        # any EED has for attributes the spectral parameters and the integrator
+        # the normalisation of the electron distribution, k_e, is defined as
+        # the norm of the whole model
         pars = vars(self.blob.n_e)
         pars.pop("integrator")
         for name in pars.keys():
-            parameter = Parameter(name, pars[name])
-            parameters.append(parameter)
+            if name == "k_e":
+                parameter = Parameter(name, pars[name], is_norm=True)
+            else:
+                parameter = Parameter(name, pars[name])
+            spectral_parameters.append(parameter)
 
         # emission region parameters
         z = Parameter("z", blob.z)
@@ -33,9 +39,12 @@ class SpectralModelSSC(SpectralModel):
         delta_D = Parameter("delta_D", blob.delta_D)
         B = Parameter("B", blob.B)
         R_b = Parameter("R_b", blob.R_b)
-        parameters.extend([z, d_L, delta_D, B, R_b])
+        emission_region_parameters.extend([z, d_L, delta_D, B, R_b])
 
-        self.default_parameters = Parameters(parameters)
+        # group the model parameters
+        self.spectral_parameters = Parameters(spectral_parameters)
+        self.emission_region_parameters = Parameters(emission_region_parameters)
+        self.default_parameters = Parameters([*self.spectral_parameters, *self.emission_region_parameters])
         super().__init__()
 
     def evaluate(self, energy, **kwargs):
@@ -73,9 +82,9 @@ class SpectralModelSSC(SpectralModel):
         return (sed / energy ** 2).to("1 / (cm2 eV s)")
 
 
-class SpectralModelEC(SpectralModel):
+class ExternalComptonSpectralModel(SpectralModel):
 
-    tag = ["SpectralModelEC"]
+    tag = ["ExternalComptonSpectralModel"]
 
     def __init__(self, blob, blr, dt, r, ec_blr=True):
         """Initialise all the parameters from the Blob and the targets instances."""
