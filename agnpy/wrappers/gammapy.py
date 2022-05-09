@@ -1,6 +1,5 @@
-from multiprocessing.sharedctypes import Value
-from xml.etree.ElementInclude import XINCLUDE_INCLUDE
 import astropy.units as u
+from astropy.coordinates import Distance
 from ..synchrotron import Synchrotron
 from ..compton import ExternalCompton
 from ..compton import SynchrotronSelfCompton
@@ -8,44 +7,113 @@ from gammapy.modeling import Parameter, Parameters
 from gammapy.modeling.models import SpectralModel
 
 
+def set_emission_region_pars_scales_ranges(parameters):
+    """Properly set the ranges and scales of the emission region parameters."""
+    z_min = 0.001
+    z_max = 10
+    parameters["z"].min = z_min
+    parameters["z"].max = z_max
+    parameters["z"].frozen = True
+    parameters["d_L"].min = Distance(z=z_min).to_value("cm")
+    parameters["d_L"].max = Distance(z=z_max).to_value("cm")
+    parameters["d_L"].frozen = True
+    parameters["delta_D"].min = 1
+    parameters["delta_D"].max = 100
+    parameters["delta_D"].scale_method = "factor1"
+    parameters["B"].min = 1e-4
+    parameters["B"].max = 1e3
+    parameters["B"].scale_method = "scale10"
+    parameters["R_b"].min = 1e12
+    parameters["R_b"].max = 1e18
+    parameters["R_b"].scale_method = "scale10"
+
+
+def set_spectrum_pars_scales_ranges(parameters):
+    """Properly set the ranges and scales of the particle energy distribution.
+    By default minimum and maximum of the energy distribution are frozen."""
+    # normalisation
+    parameters["k_e"].min = 1
+    parameters["k_e"].max = 1e9
+    parameters["k_e"].scale_method = "scale10"
+    for parameter in parameters:
+        # Lorentz factors
+        if parameter.name.startswith("gamma"):
+            parameter.scale_method = "scale10"
+        if parameter.name == "gamma_min":
+            parameter.min = 1
+            parameter.max = 1e3
+            parameter.frozen = True
+        if parameter.name == "gamma_max":
+            parameter.min = 1e4
+            parameter.max = 1e8
+            parameter.frozen = True
+        # indexes
+        if parameter.name.startswith("p"):
+            parameter.min = 1
+            parameter.max = 5
+            parameter.scale_method = "factor1"
+
+
 class SynchrotronSelfComptonSpectralModel(SpectralModel):
 
     tag = ["SynchrotronSelfComptonSpectralModel"]
 
-    def __init__(self, blob):
-        """Initialise all the parameters from the Blob instance."""
+    def __init__(self, blob, ssa=False):
+        """Gammapy wrapper for a source emitting Synchrotron and SSC radiation.
+        The parameters for the model are initialised from a Blob instance.
+
+        Parameters
+        ----------
+        blob : `~agnpy.emission_regions.blob`
+
+        Returns
+        -------
+        """
 
         self.blob = blob
+        self.ssa = ssa
 
-        spectral_parameters = []
-        emission_region_parameters = []
+        self.spectral_pars_names = []  # will fetch this from blob.n_e
+        self.emission_region_pars_names = ["z", "d_L", "delta_D", "B", "R_b"]
 
-        # all the EED parameters have to be parameters of the fittable model
-        # any EED has for attributes the spectral parameters and the integrator
-        # the normalisation of the electron distribution, k_e, is defined as
-        # the norm of the whole model
-        pars = vars(self.blob.n_e)
+        spectral_pars = []
+        emission_region_pars = []
+
+        # all the particle distribution parameters have to be parameters of the
+        # fittable model, the normalisation of the electrons, k_e, is the norm
+        # of the SpectralModel
+        pars = vars(self.blob.n_e)  # EED has in the attributes also the integrator
         pars.pop("integrator")
         for name in pars.keys():
             if name == "k_e":
                 parameter = Parameter(name, pars[name], is_norm=True)
             else:
                 parameter = Parameter(name, pars[name])
-            spectral_parameters.append(parameter)
+            spectral_pars.append(parameter)
+            # create the list with the names of the spectral parameters
+            self.spectral_pars_names.append(name)
 
         # emission region parameters
-        z = Parameter("z", blob.z)
-        d_L = Parameter("d_L", blob.d_L)
-        delta_D = Parameter("delta_D", blob.delta_D)
-        B = Parameter("B", blob.B)
-        R_b = Parameter("R_b", blob.R_b)
-        emission_region_parameters.extend([z, d_L, delta_D, B, R_b])
+        for name in self.emission_region_pars_names:
+            parameter = Parameter(name, getattr(blob, name))
+            emission_region_pars.append(parameter)
 
         # group the model parameters
-        self.spectral_parameters = Parameters(spectral_parameters)
-        self.emission_region_parameters = Parameters(emission_region_parameters)
-        self.default_parameters = Parameters([*self.spectral_parameters, *self.emission_region_parameters])
+        self.default_parameters = Parameters([*spectral_pars, *emission_region_pars])
+        # sale them, set min and maxes
+        set_spectrum_pars_scales_ranges(self.default_parameters)
+        set_emission_region_pars_scales_ranges(self.default_parameters)
         super().__init__()
+
+    @property
+    def spectral_parameters(self):
+        """Select all the parameters related to the particle distribution."""
+        return self.parameters.select(self.spectral_pars_names)
+
+    @property
+    def emission_region_parameters(self):
+        """Select all the parameters related to the emission region."""
+        return self.parameters.select(self.emission_region_pars_names)
 
     def evaluate(self, energy, **kwargs):
         """evaluate"""
@@ -63,10 +131,10 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         args = kwargs.values()
 
         sed_synch = Synchrotron.evaluate_sed_flux(
-            nu, z, d_L, delta_D, B, R_b, self.blob.n_e, *args
+            nu, z, d_L, delta_D, B, R_b, self.blob.n_e, *args, self.ssa
         )
         sed_ssc = SynchrotronSelfCompton.evaluate_sed_flux(
-            nu, z, d_L, delta_D, B, R_b, self.blob.n_e, *args
+            nu, z, d_L, delta_D, B, R_b, self.blob.n_e, *args, self.ssa
         )
 
         sed = sed_synch + sed_ssc
@@ -79,7 +147,7 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         # https://github.com/gammapy/gammapy/blob/master/gammapy/modeling/models/spectral.py#L2119
 
         # gammapy requires a differential flux in input
-        return (sed / energy ** 2).to("1 / (cm2 eV s)")
+        return (sed / energy**2).to("1 / (cm2 eV s)")
 
 
 class ExternalComptonSpectralModel(SpectralModel):
@@ -214,4 +282,4 @@ class ExternalComptonSpectralModel(SpectralModel):
         # we can do here something like
         # sed = sed.reshape(energy.shape)
 
-        return (sed / energy ** 2).to("1 / (cm2 eV s)")
+        return (sed / energy**2).to("1 / (cm2 eV s)")
