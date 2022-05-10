@@ -25,7 +25,6 @@ def set_spectral_pars_ranges_scales(parameters):
             parameter.max = 1e9
             parameter.scale_method = "scale10"
             parameter.interp = "log"
-            parameter._is_norm = True
         # Lorentz factors
         if parameter.name.startswith("gamma"):
             parameter.scale_method = "scale10"
@@ -243,8 +242,11 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
             emission_region_pars_names, self._blob
         )
 
-        # group the model parameters
-        self.default_parameters = Parameters([*spectral_pars, *emission_region_pars])
+        # group the model parameters, add the norm at the bottom of the list
+        norm = Parameter("norm", 1, min=0.1, max=10, is_norm=True, frozen=True)
+        self.default_parameters = Parameters(
+            [*spectral_pars, *emission_region_pars, norm]
+        )
 
         # set min and maxes, scale them
         set_spectral_pars_ranges_scales(self.default_parameters)
@@ -274,7 +276,8 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         B = kwargs.pop("B")
         R_b = kwargs.pop("R_b")
 
-        # expand the remaining kwargs in the spectral parameters
+        # pop the norm and expand the remaining kwargs in the spectral parameters
+        kwargs.pop("norm")
         args = kwargs.values()
 
         sed_synch = Synchrotron.evaluate_sed_flux(
@@ -353,9 +356,10 @@ class ExternalComptonSpectralModel(SpectralModel):
         target_pars_names, target_pars = get_blr_dt_parameters(self._blr, self._dt)
         self._target_parameters_names = target_pars_names
 
-        # group the model parameters
+        # group the model parameters, add the norm at the bottom of the list
+        norm = Parameter("norm", 1, min=0.1, max=10, is_norm=True, frozen=True)
         self.default_parameters = Parameters(
-            [*spectral_pars, *emission_region_pars, *target_pars]
+            [*spectral_pars, *emission_region_pars, *target_pars, norm]
         )
 
         # set min and maxes, scale them
@@ -363,7 +367,7 @@ class ExternalComptonSpectralModel(SpectralModel):
         set_emission_region_pars_ranges_scales(self.default_parameters)
         set_targets_pars_ranges_scales(self.default_parameters)
 
-        super().__init__()
+        super().__init__(norm=norm)
 
     @property
     def spectral_parameters(self):
@@ -405,7 +409,8 @@ class ExternalComptonSpectralModel(SpectralModel):
         epsilon_dt = kwargs.pop("epsilon_dt")
         R_dt = kwargs.pop("R_dt")
 
-        # expand the remaining kwargs in the spectral parameters
+        # pop the norm and expand the remaining kwargs in the spectral parameters
+        kwargs.pop("norm")
         args = kwargs.values()
 
         sed_synch = Synchrotron.evaluate_sed_flux(
