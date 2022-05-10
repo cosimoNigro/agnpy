@@ -29,7 +29,7 @@ spectrum_dict = {
 }
 R_b = 1e16 * u.cm
 B = 1 * u.G
-z = Distance(1e27, unit=u.cm).z.value
+z = Distance(1e27, unit=u.cm).z
 delta_D = 10
 Gamma = 10
 ssc_blob = Blob(R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict)
