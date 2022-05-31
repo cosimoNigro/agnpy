@@ -149,7 +149,7 @@ def get_spectral_parameters_from_blob(blob):
     """
     spectral_pars = []
     spectral_pars_names = []
-    pars = vars(blob.n_e)
+    pars = vars(blob.n_e).copy()
     # EED has in the attributes also the integrator
     pars.pop("integrator")
 
@@ -158,7 +158,7 @@ def get_spectral_parameters_from_blob(blob):
         # create the list with the names of the spectral parameters
         spectral_pars_names.append(name)
 
-    return spectral_pars_names, spectral_pars
+    return dict(zip(spectral_pars_names, spectral_pars))
 
 
 def get_emission_region_parameters_from_names(parameters_names, blob):
@@ -172,19 +172,13 @@ def get_emission_region_parameters_from_names(parameters_names, blob):
     return emission_region_pars
 
 
-def get_blr_dt_parameters(blr, dt):
-    """Return a list of `~gammapy.modeling.Parameter`s (and a list of their names)
-    for the targets for external Compton."""
-    # check for the two targets to have the same disk luminosities
-    if not u.isclose(blr.L_disk, dt.L_disk):
-        raise ValueError(
-            "The BLR and DT provided have the different disk luminosities."
-        )
-
+def get_blr_parameters(blr):
+    """Return a dictionary of `~gammapy.modeling.Parameter`s (and a list of their names)
+    from the BLR object."""
     target_pars = []
     target_pars_names = []
 
-    blr_pars = vars(blr)
+    blr_pars = vars(blr).copy()
     blr_pars.pop("name")
     blr_pars.pop("line")
     blr_pars.pop("lambda_line")
@@ -192,16 +186,24 @@ def get_blr_dt_parameters(blr, dt):
         target_pars_names.append(name)
         target_pars.append(Parameter(name, blr_pars[name]))
 
-    dt_pars = vars(dt)
+    return dict(zip(target_pars_names, target_pars))
+
+
+def get_dt_parameters(dt):
+    """Return a dictionary of `~gammapy.modeling.Parameter`s (and a list of their names)
+    from the DT object."""
+    target_pars = []
+    target_pars_names = []
+
+    dt_pars = vars(dt).copy()
     dt_pars.pop("name")
-    dt_pars.pop("L_disk")  # already provided by the BLR
     dt_pars.pop("T_dt")
     dt_pars.pop("Theta")
     for name in dt_pars:
         target_pars_names.append(name)
         target_pars.append(Parameter(name, dt_pars[name]))
 
-    return target_pars_names, target_pars
+    return dict(zip(target_pars_names, target_pars))
 
 
 class SynchrotronSelfComptonSpectralModel(SpectralModel):
@@ -230,22 +232,19 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         self.ssa = ssa
 
         # parameters of the particles energy distribution
-        spectral_pars_names, spectral_pars = get_spectral_parameters_from_blob(
-            self._blob
-        )
-        self._spectral_parameters_names = spectral_pars_names
+        spectral_pars = get_spectral_parameters_from_blob(self._blob)
+        self._spectral_parameters_names = list(spectral_pars.keys())
 
         # parameters of the emission region
-        emission_region_pars_names = ["z", "d_L", "delta_D", "B", "R_b"]
-        self._emission_region_parameters_names = emission_region_pars_names
+        self._emission_region_parameters_names = ["z", "d_L", "delta_D", "B", "R_b"]
         emission_region_pars = get_emission_region_parameters_from_names(
-            emission_region_pars_names, self._blob
+            self._emission_region_parameters_names, self._blob
         )
 
         # group the model parameters, add the norm at the bottom of the list
         norm = Parameter("norm", 1, min=0.1, max=10, is_norm=True, frozen=True)
         self.default_parameters = Parameters(
-            [*spectral_pars, *emission_region_pars, norm]
+            [*spectral_pars.values(), *emission_region_pars, norm]
         )
 
         # set min and maxes, scale them
@@ -304,25 +303,19 @@ class ExternalComptonSpectralModel(SpectralModel):
 
     tag = ["ExternalComptonSpectralModel"]
 
-    def __init__(self, blob, blr, dt, r, ssa=False, ec_blr=True):
-        """Gammapy wrapper for a source emitting Synchrotron, SSC, EC on BLR and
-        DT radiation. The parameters for the model are initialised from a Blob
-        and targets instances. The computation of EC on BLR can be switched off
-        as it is subdominant and time-consuming to compute.
+    def __init__(self, blob, r, targets, ssa=False):
+        """Gammapy wrapper for a source emitting Synchrotron, SSC, and EC on a
+        list of targets. The parameters for the model are initialised from a Blob
+        and targets instances.
 
         Parameters
         ----------
         blob : `~agnpy.emission_regions.blob`
             emission region containing all the initial parameters of the model
-        blr : `~agnpy.targets.SphericalShellBLR`
-            BLR producing photon the field target for external Compton
-        dt : `~agnpy.targets.RingDustTorus`
-            DT producing the photon field target for external Compton
         r : `~astropy.units.Quantity`
             distance of the blob from the central BH
-        ec_blr : bool
-            whether or not to compute the EC on the BLR (time-consuming)
-
+        targets : list of `~agnpy.targets`
+            list of targets to be considered for external Compton
         Returns
         -------
         `~gammapy.modeling.models.SpectralModel`
@@ -331,35 +324,63 @@ class ExternalComptonSpectralModel(SpectralModel):
         # the attributes representing the physical objects are internal, they
         # are used only for Parameters initialisation
         self._blob = copy.copy(blob)
-        self._blr = copy.copy(blr)
-        self._dt = copy.copy(dt)
+        for target in targets:
+            if target.name == "SphericalShellBLR":
+                self._blr = copy.copy(target)
+            if target.name == "RingDustTorus":
+                self._dt = copy.copy(target)
         self.ssa = ssa
-        self.ec_blr = ec_blr
 
         # parameters of the particles energy distribution
-        spectral_pars_names, spectral_pars = get_spectral_parameters_from_blob(
-            self._blob
-        )
-        self._spectral_parameters_names = spectral_pars_names
+        spectral_pars = get_spectral_parameters_from_blob(self._blob)
+        self._spectral_parameters_names = list(spectral_pars.keys())
 
         # parameters of the emission region
-        emission_region_pars_names = ["z", "d_L", "delta_D", "B", "R_b", "mu_s"]
-        self._emission_region_parameters_names = emission_region_pars_names
+        self._emission_region_parameters_names = [
+            "z",
+            "d_L",
+            "delta_D",
+            "B",
+            "R_b",
+            "mu_s",
+        ]
         emission_region_pars = get_emission_region_parameters_from_names(
-            emission_region_pars_names, self._blob
+            self._emission_region_parameters_names, self._blob
         )
         # add also the position of the blob to the emisison region parameters
         self._emission_region_parameters_names.append("r")
         emission_region_pars.append(Parameter("r", r))
 
-        # parameters of the targets
-        target_pars_names, target_pars = get_blr_dt_parameters(self._blr, self._dt)
-        self._target_parameters_names = target_pars_names
+        targets_pars = {}
 
+        if hasattr(self, "_blr"):
+            targets_pars.update(get_blr_parameters(self._blr))
+
+        if hasattr(self, "_dt"):
+            dt_pars = get_dt_parameters(self._dt)
+            if hasattr(self, "_blr"):
+                # if both DT and BLR are specified, check that they have the same L_disk
+                # and remove the duplicate parameter
+                if not u.isclose(self._blr.L_disk, self._dt.L_disk):
+                    raise ValueError(
+                        "The BLR and DT provided have the different disk luminosities."
+                    )
+                else:
+                    dt_pars.pop("L_disk")
+
+            targets_pars.update(dt_pars)
+
+        # names of the target parameters, for the corresponding property
+        self._targets_parameters_names = list(targets_pars.keys())
         # group the model parameters, add the norm at the bottom of the list
         norm = Parameter("norm", 1, min=0.1, max=10, is_norm=True, frozen=True)
         self.default_parameters = Parameters(
-            [*spectral_pars, *emission_region_pars, *target_pars, norm]
+            [
+                *spectral_pars.values(),
+                *emission_region_pars,
+                *targets_pars.values(),
+                norm,
+            ]
         )
 
         # set min and maxes, scale them
@@ -380,9 +401,9 @@ class ExternalComptonSpectralModel(SpectralModel):
         return self.parameters.select(self._emission_region_parameters_names)
 
     @property
-    def target_parameters(self):
+    def targets_parameters(self):
         """Select all the parameters related to the targets for EC."""
-        return self.parameters.select(self._target_parameters_names)
+        return self.parameters.select(self._targets_parameters_names)
 
     def evaluate(self, energy, **kwargs):
         """evaluate"""
@@ -400,14 +421,18 @@ class ExternalComptonSpectralModel(SpectralModel):
 
         # now sort the target ones out
         L_disk = kwargs.pop("L_disk")
-        # - BLR
-        xi_line = kwargs.pop("xi_line")
-        epsilon_line = kwargs.pop("epsilon_line")
-        R_line = kwargs.pop("R_line")
-        # - DT
-        xi_dt = kwargs.pop("xi_dt")
-        epsilon_dt = kwargs.pop("epsilon_dt")
-        R_dt = kwargs.pop("R_dt")
+
+        if self._blr:
+            # - BLR
+            xi_line = kwargs.pop("xi_line")
+            epsilon_line = kwargs.pop("epsilon_line")
+            R_line = kwargs.pop("R_line")
+
+        if self._dt:
+            # - DT
+            xi_dt = kwargs.pop("xi_dt")
+            epsilon_dt = kwargs.pop("epsilon_dt")
+            R_dt = kwargs.pop("R_dt")
 
         # pop the norm and expand the remaining kwargs in the spectral parameters
         kwargs.pop("norm")
@@ -419,26 +444,28 @@ class ExternalComptonSpectralModel(SpectralModel):
         sed_ssc = SynchrotronSelfCompton.evaluate_sed_flux(
             nu, z, d_L, delta_D, B, R_b, self._blob.n_e, *args, ssa=self.ssa
         )
+        sed = sed_synch + sed_ssc
 
-        sed_ec_dt = ExternalCompton.evaluate_sed_flux_dt(
-            nu,
-            z,
-            d_L,
-            delta_D,
-            mu_s,
-            R_b,
-            L_disk,
-            xi_dt,
-            epsilon_dt,
-            R_dt,
-            r,
-            self._blob.n_e,
-            *args
-        )
+        if self._dt:
+            sed_ec_dt = ExternalCompton.evaluate_sed_flux_dt(
+                nu,
+                z,
+                d_L,
+                delta_D,
+                mu_s,
+                R_b,
+                L_disk,
+                xi_dt,
+                epsilon_dt,
+                R_dt,
+                r,
+                self._blob.n_e,
+                *args
+            )
 
-        sed = sed_synch + sed_ssc + sed_ec_dt
+            sed += sed_ec_dt
 
-        if self.ec_blr:
+        if self._blr:
             sed_ec_blr = ExternalCompton.evaluate_sed_flux_blr(
                 nu,
                 z,
