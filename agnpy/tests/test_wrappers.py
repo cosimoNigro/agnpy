@@ -1,6 +1,7 @@
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import Distance
+import pytest
 from pathlib import Path
 from agnpy.emission_regions import Blob
 from agnpy.targets import SphericalShellBLR, RingDustTorus
@@ -101,32 +102,28 @@ class TestGammapyWrapper:
         # requires that the SED points deviate less than 1% from the figure
         # assert check_deviation(nu, sed_ssc_gammapy, sed_ssc_agnpy, 0.1)
 
-    def test_external_compton_spectral_model(self):
-        """Test the EC model SED computation using agnpy classes against that
-        obtained with the Gammapy wrapper."""
-        # agnpy
-        synch = Synchrotron(ec_blob)
-        ssc = SynchrotronSelfCompton(ec_blob)
-        ec_blr = ExternalCompton(ec_blob, blr, r)
-        ec_dt = ExternalCompton(ec_blob, dt, r)
+    @pytest.mark.parametrize(
+        "targets, targets_pars_names",
+        [
+            ([blr], ["L_disk", "xi_line", "epsilon_line", "R_line"]),
+            ([dt], ["L_disk", "xi_dt", "epsilon_dt", "R_dt"]),
+            (
+                [blr, dt],
+                [
+                    "L_disk",
+                    "xi_line",
+                    "epsilon_line",
+                    "R_line",
+                    "xi_dt",
+                    "epsilon_dt",
+                    "R_dt",
+                ],
+            ),
+        ],
+    )
+    def test_targets_parameters(self, targets, targets_pars_names):
+        """In this function we just test that the targets are correctly loaded
+        and that the list of parameters is what we expect."""
 
-        # Gammapy's SpectralModel
-        ec_model = ExternalComptonSpectralModel(ec_blob, blr, dt, r, ec_blr=False)
-
-        # SEDs
-        sed_ec_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu) + ec_dt.sed_flux(nu)
-        sed_ec_gammapy = (E**2 * ec_model(E)).to("erg cm-2 s-1")
-
-        make_comparison_plot(
-            nu,
-            sed_ec_gammapy,
-            sed_ec_agnpy,
-            "Gammapy wrapper",
-            "agnpy",
-            "synchrotron + SSC + EC on DT",
-            figures_dir / "gammapy_ec_wrapper.png",
-            "sed",
-            # y_range=[1e-13, 1e-9]
-        )
-        # requires that the SED points deviate less than 1% from the figure
-        # assert check_deviation(nu, sed_ec_gammapy, sed_ec_agnpy, 0.1)
+        ec_model = ExternalComptonSpectralModel(ec_blob, r, targets)
+        assert ec_model.targets_parameters.names == targets_pars_names
