@@ -7,17 +7,29 @@ from astropy.table import Table
 
 
 # - Mrk421 2011
-sed_file = np.loadtxt("original/Mrk421_2011.txt")
+sed_file = np.loadtxt(
+    "original/Mrk421_2011.txt",
+    dtype={
+        "names": ("nu", "sed", "sed_err_low", "sed_err_high", "instrument"),
+        "formats": (float, float, float, float, "|S18"),
+    },
+)
+
 # read
-nu = sed_file[:, 0] * u.Hz
-nuFnu = sed_file[:, 1] * u.Unit("erg cm-2 s-1")
-nuFnu_err = sed_file[:, 2] * u.Unit("erg cm-2 s-1")
+nu = sed_file["nu"] * u.Hz
+nuFnu = sed_file["sed"] * u.Unit("erg cm-2 s-1")
+nuFnu_err_low = sed_file["sed_err_low"] * u.Unit("erg cm-2 s-1")
+nuFnu_err_high = sed_file["sed_err_high"] * u.Unit("erg cm-2 s-1")
+instruments = sed_file["instrument"]
+
 # store in table and remove points with orders of magnitude smaller error, they are upper limits
-UL = nuFnu_err < (nuFnu * 1e-3)
+UL = nuFnu_err_low < (nuFnu * 1e-3)
 sed_table = Table()
 sed_table["e_ref"] = nu.to("eV", equivalencies=u.spectral())[~UL]
 sed_table["e2dnde"] = nuFnu[~UL]
-sed_table["e2dnde_err"] = nuFnu_err[~UL]
+sed_table["e2dnde_errn"] = nuFnu_err_low[~UL]
+sed_table["e2dnde_errp"] = nuFnu_err_high[~UL]
+sed_table["instrument"] = instruments[~UL]
 sed_table.meta["SED_TYPE"] = "e2dnde"
 sed_table.meta["source"] = "Mrk421"
 sed_table.meta["period"] = "2009"
@@ -40,8 +52,8 @@ sed_file = np.loadtxt(
 # read
 E = sed_file["E"] * u.eV
 nuFnu = sed_file["sed"] * u.Unit("TeV cm-2 s-1")
-nuFnu_err_low = sed_file["sed_err_low"] * u.Unit("erg cm-2 s-1")
-nuFnu_err_high = sed_file["sed_err_high"] * u.Unit("erg cm-2 s-1")
+nuFnu_err_low = sed_file["sed_err_low"] * u.Unit("TeV cm-2 s-1")
+nuFnu_err_high = sed_file["sed_err_high"] * u.Unit("TeV cm-2 s-1")
 instruments = sed_file["instrument"]
 
 # store in table and remove points with orders of magnitude smaller error, they are upper limits
