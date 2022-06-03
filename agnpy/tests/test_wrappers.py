@@ -51,7 +51,6 @@ z = 1
 delta_D = 40
 Gamma = 40
 ec_blob = Blob(R_b, z, delta_D, Gamma, B, spectrum_norm, spectrum_dict)
-ec_blob.set_gamma_size(1000)
 
 # - BLR definition
 xi_line = 0.024
@@ -86,7 +85,7 @@ class TestGammapyWrapper:
 
         # SEDs
         sed_ssc_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu)
-        sed_ssc_gammapy = (E**2 * ssc_model(E)).to("erg cm-2 s-1")
+        sed_ssc_gammapy = (E ** 2 * ssc_model(E)).to("erg cm-2 s-1")
 
         make_comparison_plot(
             nu,
@@ -127,3 +126,46 @@ class TestGammapyWrapper:
 
         ec_model = ExternalComptonSpectralModel(ec_blob, r, targets)
         assert ec_model.targets_parameters.names == targets_pars_names
+
+    @pytest.mark.parametrize("targets", ([blr], [dt], [blr, dt]))
+    def test_external_compton_spectral_model(self, targets):
+        """Check that the Synch + SSC + EC SED computed with the Gammapy wrapper
+        corresponds to the one computed with agnpy."""
+        # Gammapy wrapper
+        ec_model = ExternalComptonSpectralModel(ec_blob, r, targets)
+        # agnpy radiative processes
+        ec_blr = ExternalCompton(ec_blob, blr, r)
+        ec_dt = ExternalCompton(ec_blob, dt, r)
+        synch = Synchrotron(ec_blob)
+        ssc = SynchrotronSelfCompton(ec_blob)
+        sed_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu)
+
+        # now look at the targets which EC components have to be added
+        if targets == [blr]:
+            sed_agnpy += ec_blr.sed_flux(nu)
+            title = "EC on BLR comparison"
+            fig_name = "gammapy_ec_blr_wrapper.png"
+        if targets == [dt]:
+            sed_agnpy += ec_dt.sed_flux(nu)
+            title = "EC on DT comparison"
+            fig_name = "gammapy_ec_dt_wrapper.png"
+        if targets == [blr, dt]:
+            sed_agnpy += ec_blr.sed_flux(nu) + ec_dt.sed_flux(nu)
+            title = "EC on BLR and DT comparison"
+            fig_name = "gammapy_ec_dt_blr_wrapper.png"
+
+        sed_gammapy = (E ** 2 * ec_model(E)).to("erg cm-2 s-1")
+
+        make_comparison_plot(
+            nu,
+            sed_gammapy,
+            sed_agnpy,
+            "Gammapy wrapper",
+            "agnpy",
+            title,
+            figures_dir / fig_name,
+            "sed",
+            # y_range=[1e-13, 1e-9],
+        )
+        # requires that the SED points deviate less than 1% from the figure
+        # assert check_deviation(nu, sed_ssc_gammapy, sed_ssc_agnpy, 0.1)

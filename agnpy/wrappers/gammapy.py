@@ -296,7 +296,7 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         # https://github.com/gammapy/gammapy/blob/master/gammapy/modeling/models/spectral.py#L2119
 
         # gammapy requires a differential flux in input
-        return (sed / energy**2).to("1 / (cm2 eV s)")
+        return (sed / energy ** 2).to("1 / (cm2 eV s)")
 
 
 class ExternalComptonSpectralModel(SpectralModel):
@@ -422,13 +422,13 @@ class ExternalComptonSpectralModel(SpectralModel):
         # now sort the target ones out
         L_disk = kwargs.pop("L_disk")
 
-        if self._blr:
+        if hasattr(self, "_blr"):
             # - BLR
             xi_line = kwargs.pop("xi_line")
             epsilon_line = kwargs.pop("epsilon_line")
             R_line = kwargs.pop("R_line")
 
-        if self._dt:
+        if hasattr(self, "_dt"):
             # - DT
             xi_dt = kwargs.pop("xi_dt")
             epsilon_dt = kwargs.pop("epsilon_dt")
@@ -446,7 +446,25 @@ class ExternalComptonSpectralModel(SpectralModel):
         )
         sed = sed_synch + sed_ssc
 
-        if self._dt:
+        if hasattr(self, "_blr"):
+            sed_ec_blr = ExternalCompton.evaluate_sed_flux_blr(
+                nu,
+                z,
+                d_L,
+                delta_D,
+                mu_s,
+                R_b,
+                L_disk,
+                xi_line,
+                epsilon_line,
+                R_line,
+                r,
+                self._blob.n_e,
+                *args
+            )
+            sed += sed_ec_blr
+
+        if hasattr(self, "_dt"):
             sed_ec_dt = ExternalCompton.evaluate_sed_flux_dt(
                 nu,
                 z,
@@ -465,26 +483,8 @@ class ExternalComptonSpectralModel(SpectralModel):
 
             sed += sed_ec_dt
 
-        if self._blr:
-            sed_ec_blr = ExternalCompton.evaluate_sed_flux_blr(
-                nu,
-                z,
-                d_L,
-                delta_D,
-                mu_s,
-                R_b,
-                L_disk,
-                xi_line,
-                epsilon_line,
-                R_line,
-                r,
-                self._blob.n_e,
-                *args
-            )
-            sed += sed_ec_blr
-
         # eventual reshaping
         # we can do here something like
         # sed = sed.reshape(energy.shape)
 
-        return (sed / energy**2).to("1 / (cm2 eV s)")
+        return (sed / energy ** 2).to("1 / (cm2 eV s)")
