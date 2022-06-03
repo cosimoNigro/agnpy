@@ -73,6 +73,30 @@ E = nu.to("eV", equivalencies=u.spectral())
 class TestGammapyWrapper:
     """Test the Gammapy wrappers."""
 
+    def test_spectral_emission_region_parameters(self):
+        """Test that the parameters of the spectrum and of the emission region
+        can be correctly fetched."""
+        ssc_model = SynchrotronSelfComptonSpectralModel(ssc_blob)
+        assert ssc_model.spectral_parameters.names == [
+            "k_e",
+            "p",
+            "gamma_min",
+            "gamma_max",
+        ]
+        assert ssc_model.emission_region_parameters.names == [
+            "z",
+            "d_L",
+            "delta_D",
+            "B",
+            "R_b",
+        ]
+
+        # check that, when changed, parameters are updated accordingly
+        # in both lists
+        k_e = 1e8
+        ssc_model.parameters["k_e"].value = 1e8
+        assert u.isclose(ssc_model.spectral_parameters.k_e.value, k_e)
+
     def test_synchrotron_self_compton_spectral_model(self):
         """Test the SSC model SED computation using agnpy classes against that
         obtained with the Gammapy wrapper."""
@@ -84,13 +108,13 @@ class TestGammapyWrapper:
         ssc_model = SynchrotronSelfComptonSpectralModel(ssc_blob, ssa=True)
 
         # SEDs
-        sed_ssc_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu)
-        sed_ssc_gammapy = (E ** 2 * ssc_model(E)).to("erg cm-2 s-1")
+        sed_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu)
+        sed_gammapy = (E ** 2 * ssc_model(E)).to("erg cm-2 s-1")
 
         make_comparison_plot(
             nu,
-            sed_ssc_gammapy,
-            sed_ssc_agnpy,
+            sed_gammapy,
+            sed_agnpy,
             "Gammapy wrapper",
             "agnpy",
             "synchrotron + SSC",
@@ -99,7 +123,7 @@ class TestGammapyWrapper:
             y_range=[1e-13, 1e-9],
         )
         # requires that the SED points deviate less than 1% from the figure
-        # assert check_deviation(nu, sed_ssc_gammapy, sed_ssc_agnpy, 0.1)
+        assert check_deviation(nu, sed_gammapy, sed_agnpy, 0.1, [1e9, 1e28])
 
     @pytest.mark.parametrize(
         "targets, targets_pars_names",
@@ -168,4 +192,4 @@ class TestGammapyWrapper:
             # y_range=[1e-13, 1e-9],
         )
         # requires that the SED points deviate less than 1% from the figure
-        # assert check_deviation(nu, sed_ssc_gammapy, sed_ssc_agnpy, 0.1)
+        assert check_deviation(nu, sed_gammapy, sed_agnpy, 0.1)
