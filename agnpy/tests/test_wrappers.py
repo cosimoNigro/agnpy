@@ -95,7 +95,7 @@ class TestGammapyWrapper:
         # in both lists
         k_e = 1e8
         ssc_model.parameters["k_e"].value = 1e8
-        assert u.isclose(ssc_model.spectral_parameters.k_e.value, k_e)
+        assert u.isclose(ssc_model.spectral_parameters["k_e"].value, k_e)
 
     def test_synchrotron_self_compton_spectral_model(self):
         """Test the SSC model SED computation using agnpy classes against that
@@ -111,6 +111,7 @@ class TestGammapyWrapper:
         sed_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu)
         sed_gammapy = (E ** 2 * ssc_model(E)).to("erg cm-2 s-1")
 
+        nu_range = [1e9, 1e27] * u.Hz
         make_comparison_plot(
             nu,
             sed_gammapy,
@@ -121,9 +122,10 @@ class TestGammapyWrapper:
             figures_dir / "gammapy_ssc_wrapper.png",
             "sed",
             y_range=[1e-13, 1e-9],
+            comparison_range=nu_range.to_value("Hz")
         )
         # requires that the SED points deviate less than 1% from the figure
-        assert check_deviation(nu, sed_gammapy, sed_agnpy, 0.1, [1e9, 1e28])
+        assert check_deviation(nu, sed_gammapy, sed_agnpy, 0.1, nu_range)
 
     @pytest.mark.parametrize(
         "targets, targets_pars_names",
