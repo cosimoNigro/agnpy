@@ -21,8 +21,8 @@ def set_spectral_pars_ranges_scales(parameters):
     for parameter in parameters:
         # the normalisation of the electrons is the norm of the SpectralModel
         if parameter.name == "k_e":
-            parameter.min = 1
-            parameter.max = 1e9
+            parameter.min = 1e-8
+            parameter.max = 1e2
             parameter.scale_method = "scale10"
             parameter.interp = "log"
         # Lorentz factors
