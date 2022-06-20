@@ -37,6 +37,8 @@ sed_table.meta[
     "reference"
 ] = "https://ui.adsabs.harvard.edu/abs/2011ApJ...736..131A/abstract"
 sed_table.meta["redshift"] = 0.03
+# before writing sort in energy
+sed_table.sort("e_ref")
 sed_table.write("Mrk421_2011.ecsv", overwrite=True)
 
 
@@ -71,4 +73,6 @@ sed_table.meta[
     "reference"
 ] = "https://ui.adsabs.harvard.edu/abs/2017A%26A...603A..29A/abstract"
 sed_table.meta["redshift"] = 0.361
+# before writing sort in energy
+sed_table.sort("e_ref")
 sed_table.write("PKS1510-089_2015b.ecsv", overwrite=True)
