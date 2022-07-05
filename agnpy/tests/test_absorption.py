@@ -535,7 +535,7 @@ class TestAbsorptionMuS:
 class TestEBL:
     """class grouping all tests related to the EBL class"""
 
-    @pytest.mark.parametrize("model", ["franceschini", "finke", "dominguez"])
+    @pytest.mark.parametrize("model", ["franceschini", "finke", "dominguez", "saldana-lopez"])
     @pytest.mark.parametrize("z", [0.5, 1.5])
     def test_correct_interpolation(self, model, z):
         # define the ebl model, evaluate it at the reference energies
