@@ -35,7 +35,7 @@ ebl_files_dict = {
     "franceschini": f"{agnpy_dir}/data/ebl_models/ebl_franceschini08.fits.gz",
     "dominguez": f"{agnpy_dir}/data/ebl_models/ebl_dominguez11.fits.gz",
     "finke": f"{agnpy_dir}/data/ebl_models/ebl_finke10.fits.gz",
-    "saldana-lopez": f"{agnpy_dir}/data/ebl_models/ebl_saldana-lopez21.fits.gz"
+    "saldana-lopez": f"{agnpy_dir}/data/ebl_models/ebl_saldana-lopez21.fits.gz",
 }
 
 
