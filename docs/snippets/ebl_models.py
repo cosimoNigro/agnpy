@@ -13,7 +13,7 @@ load_mpl_rc()
 z = 1
 nu = np.logspace(15, 25) * u.Hz
 
-for model in ["franceschini", "dominguez", "finke"]:
+for model in ["franceschini", "dominguez", "finke", "saldana-lopez"]:
     ebl = EBL(model)
     absorption = ebl.absorption(z, nu)
     plt.loglog(nu, absorption, label=model)
