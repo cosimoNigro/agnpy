@@ -35,6 +35,7 @@ ebl_files_dict = {
     "franceschini": f"{agnpy_dir}/data/ebl_models/ebl_franceschini08.fits.gz",
     "dominguez": f"{agnpy_dir}/data/ebl_models/ebl_dominguez11.fits.gz",
     "finke": f"{agnpy_dir}/data/ebl_models/ebl_finke10.fits.gz",
+    "saldana-lopez": f"{agnpy_dir}/data/ebl_models/ebl_saldana-lopez21.fits.gz",
 }
 
 
@@ -757,19 +758,19 @@ class Absorption:
 class EBL:
     """Class representing for the Extragalactic Background Light absorption.
     Tabulated values of absorption as a function of redshift and energy according
-    to the models of [Franceschini2008]_, [Finke2010]_, [Dominguez2011]_ are available
+    to the models of [Franceschini2008]_, [Finke2010]_, [Dominguez2011]_, [Saldana-Lopez2021]_ are available
     in `data/ebl_models`.
     They are interpolated by `agnpy` and can be later evaluated for a given redshift
     and range of frequencies.
 
     Parameters
     ----------
-    model : ["franceschini", "dominguez", "finke"]
+    model : ["franceschini", "dominguez", "finke", "saldana-lopez"]
         choose the reference for the EBL model
     """
 
     def __init__(self, model="franceschini"):
-        if model not in ["franceschini", "dominguez", "finke"]:
+        if model not in ["franceschini", "dominguez", "finke", "saldana-lopez"]:
             raise ValueError("No EBL model for the reference you specified")
         self.model_file = ebl_files_dict[model]
         # load the absorption table

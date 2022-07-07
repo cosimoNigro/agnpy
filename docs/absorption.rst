@@ -46,7 +46,7 @@ check the `tutorial notebook on Absorption <tutorials/absorption_targets.html>`_
 
 Extragalactic Background Light
 ------------------------------
-The absorption produced by the EBL models of [Franceschini2008]_, [Finke2010]_ and [Dominguez2011]_, 
+The absorption produced by the EBL models of [Franceschini2008]_, [Finke2010]_, [Dominguez2011]_ and [Saldana-Lopez2021]_,
 tabulated as a function of redshift and energy, is available in `data/ebl_models`. 
 The absorption values are interpolated by `agnpy` and can be later evaluated for a given redshift and range of frequencies.
 
