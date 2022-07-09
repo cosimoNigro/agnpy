@@ -1,11 +1,34 @@
 import copy
+import numpy as np
 import astropy.units as u
+from astropy.constants import c
 from astropy.coordinates import Distance
 from ..synchrotron import Synchrotron
 from ..compton import ExternalCompton
 from ..compton import SynchrotronSelfCompton
 from gammapy.modeling import Parameter, Parameters
 from gammapy.modeling.models import SpectralModel
+
+
+def add_systematic_errors_flux_points(flux_points, syst):
+    """Add the systematic error on the flux points in a given energy range.
+    We symply sum the systematic error in quadrature with the statystical one.
+    The systematic error is given as a percentage of the flux.
+
+    Parameters
+    ----------
+    flux_points : `~gammapy.estimators.FluxPoints`
+        Gammapy's flux points
+    syst : float
+        systematic error as a percentage of the dnde flux
+    """
+    dnde_err_syst = syst * flux_points.dnde.data
+    # sum in quadrature with the stat error
+    dnde_errn_tot = np.sqrt(flux_points.dnde_errn.data**2 + dnde_err_syst**2)
+    dnde_errp_tot = np.sqrt(flux_points.dnde_errp.data**2 + dnde_err_syst**2)
+    # the attributes we have to change is the norm_errn and norm_errp
+    flux_points.norm_errn.data = dnde_errn_tot / flux_points.dnde_ref.data
+    flux_points.norm_errp.data = dnde_errp_tot / flux_points.dnde_ref.data
 
 
 def set_spectral_pars_ranges_scales(parameters):
@@ -21,26 +44,37 @@ def set_spectral_pars_ranges_scales(parameters):
     for parameter in parameters:
         # the normalisation of the electrons is the norm of the SpectralModel
         if parameter.name == "k_e":
-            parameter.min = 1e-8
+            parameter.min = 1e-10
             parameter.max = 1e2
             parameter.scale_method = "scale10"
             parameter.interp = "log"
         # Lorentz factors
-        if parameter.name.startswith("gamma"):
-            parameter.scale_method = "scale10"
-            parameter.interp = "log"
         if parameter.name == "gamma_min":
             parameter.min = 1
             parameter.max = 1e3
+            parameter.scale_method = "scale10"
+            parameter.interp = "log"
             parameter.frozen = True
         if parameter.name == "gamma_max":
-            parameter.min = 1e4
+            parameter.min = 1e5
             parameter.max = 1e8
+            parameter.scale_method = "scale10"
+            parameter.interp = "log"
             parameter.frozen = True
+        if parameter.name in ["gamma_b", "gamma_0", "gamma_c"]:
+            parameter.min = 1e2
+            parameter.max = 1e6
+            parameter.scale_method = "scale10"
+            parameter.interp = "log"
         # indexes
         if parameter.name.startswith("p"):
             parameter.min = 1
             parameter.max = 5
+            parameter.scale_method = "factor1"
+            parameter.interp = "lin"
+        if parameter.name == "q":
+            parameter.min = 0.01
+            parameter.max = 1
             parameter.scale_method = "factor1"
             parameter.interp = "lin"
 
@@ -74,11 +108,12 @@ def set_emission_region_pars_ranges_scales(parameters):
             parameter.max = 1e3
             parameter.scale_method = "scale10"
             parameter.interp = "log"
-        if parameter.name == "R_b":
-            parameter.min = 1e12
-            parameter.max = 1e18
+        if parameter.name == "t_var": # in days
+            parameter.min = 0.01
+            parameter.max = 100
             parameter.scale_method = "scale10"
             parameter.interp = "log"
+            parameter.frozen = True
         if parameter.name == "mu_s":
             parameter.min = 0
             parameter.max = 1
@@ -236,7 +271,7 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         self._spectral_parameters_names = list(spectral_pars.keys())
 
         # parameters of the emission region
-        self._emission_region_parameters_names = ["z", "d_L", "delta_D", "B", "R_b"]
+        self._emission_region_parameters_names = ["z", "d_L", "delta_D", "B", "t_var"]
         emission_region_pars = get_emission_region_parameters_from_names(
             self._emission_region_parameters_names, self._blob
         )
@@ -273,7 +308,8 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         d_L = kwargs.pop("d_L")
         delta_D = kwargs.pop("delta_D")
         B = kwargs.pop("B")
-        R_b = kwargs.pop("R_b")
+        t_var = kwargs.pop("t_var")
+        R_b = (c * t_var * delta_D / (1 + z)).to("cm")
 
         # pop the norm and expand the remaining kwargs in the spectral parameters
         kwargs.pop("norm")
@@ -341,7 +377,7 @@ class ExternalComptonSpectralModel(SpectralModel):
             "d_L",
             "delta_D",
             "B",
-            "R_b",
+            "t_var",
             "mu_s",
         ]
         emission_region_pars = get_emission_region_parameters_from_names(
