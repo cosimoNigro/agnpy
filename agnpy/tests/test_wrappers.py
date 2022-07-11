@@ -122,7 +122,7 @@ class TestGammapyWrapper:
             figures_dir / "gammapy_ssc_wrapper.png",
             "sed",
             y_range=[1e-13, 1e-9],
-            comparison_range=nu_range.to_value("Hz")
+            comparison_range=nu_range.to_value("Hz"),
         )
         # requires that the SED points deviate less than 1% from the figure
         assert check_deviation(nu, sed_gammapy, sed_agnpy, 0.1, nu_range)

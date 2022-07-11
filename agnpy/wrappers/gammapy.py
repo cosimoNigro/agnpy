@@ -1,13 +1,20 @@
 import copy
 import numpy as np
 import astropy.units as u
-from astropy.constants import c
+from astropy.constants import c, k_B
 from astropy.coordinates import Distance
 from ..synchrotron import Synchrotron
 from ..compton import ExternalCompton
 from ..compton import SynchrotronSelfCompton
+from ..targets import lines_dictionary, SSDisk, RingDustTorus
+from ..utils.conversion import mec2
+from ..utils.math import gamma_to_integrate
 from gammapy.modeling import Parameter, Parameters
 from gammapy.modeling.models import SpectralModel
+
+
+gamma_size = 400
+gamma_to_integrate = np.logspace(0, 7, gamma_size)
 
 
 def add_systematic_errors_flux_points(flux_points, syst):
@@ -24,8 +31,8 @@ def add_systematic_errors_flux_points(flux_points, syst):
     """
     dnde_err_syst = syst * flux_points.dnde.data
     # sum in quadrature with the stat error
-    dnde_errn_tot = np.sqrt(flux_points.dnde_errn.data**2 + dnde_err_syst**2)
-    dnde_errp_tot = np.sqrt(flux_points.dnde_errp.data**2 + dnde_err_syst**2)
+    dnde_errn_tot = np.sqrt(flux_points.dnde_errn.data ** 2 + dnde_err_syst ** 2)
+    dnde_errp_tot = np.sqrt(flux_points.dnde_errp.data ** 2 + dnde_err_syst ** 2)
     # the attributes we have to change is the norm_errn and norm_errp
     flux_points.norm_errn.data = dnde_errn_tot / flux_points.dnde_ref.data
     flux_points.norm_errp.data = dnde_errp_tot / flux_points.dnde_ref.data
@@ -79,180 +86,155 @@ def set_spectral_pars_ranges_scales(parameters):
             parameter.interp = "lin"
 
 
-def set_emission_region_pars_ranges_scales(parameters):
-    """Properly set the ranges and scales for the emission region parameters.
+def get_spectral_parameters_from_n_e(n_e):
+    """Get the list of parameters of the particles energy distribution from an
+    EED instance.
 
     Parameters
     ----------
-    parameters : `~gammapy.modeling.Parameters`
-        list of `SpectralModel` parameters
-    """
-    z_min = 0.001
-    z_max = 10
-    for parameter in parameters:
-        if parameter.name == "z":
-            parameter.min = z_min
-            parameter.max = z_max
-            parameter.frozen = True
-        if parameter.name == "d_L":
-            parameter.min = Distance(z=z_min).to_value("cm")
-            parameter.max = Distance(z=z_max).to_value("cm")
-            parameter.frozen = True
-        if parameter.name == "delta_D":
-            parameter.min = 1
-            parameter.max = 100
-            parameter.scale_method = "factor1"
-            parameter.interp = "lin"
-        if parameter.name == "B":
-            parameter.min = 1e-4
-            parameter.max = 1e3
-            parameter.scale_method = "scale10"
-            parameter.interp = "log"
-        if parameter.name == "t_var": # in days
-            parameter.min = 0.01
-            parameter.max = 100
-            parameter.scale_method = "scale10"
-            parameter.interp = "log"
-            parameter.frozen = True
-        if parameter.name == "mu_s":
-            parameter.min = 0
-            parameter.max = 1
-            parameter.frozen = True
-        if parameter.name == "r":
-            parameter.min = 1e16
-            parameter.max = 1e20
-            parameter.scale_method = "scale10"
-            parameter.interp = "log"
-
-
-def set_targets_pars_ranges_scales(parameters):
-    """Properly set the ranges and scales for the targets for EC. All of them
-    are fixed by default since typically the parameters of the targets are not
-    fitted.
-
-    Parameters
-    ----------
-    parameters : `~gammapy.modeling.Parameters`
-        list of `SpectralModel` parameters
-    """
-    for parameter in parameters:
-        if parameter.name == "L_disk":
-            parameter.min = 1e42
-            parameter.max = 1e48
-            parameter.frozen = True
-        if parameter.name == "xi_line":
-            parameter.min = 1e-3
-            parameter.max = 1
-            parameter.frozen = True
-        if parameter.name == "epsilon_line":
-            parameter.min = 1e-7
-            parameter.max = 1e-4
-            parameter.frozen = True
-        if parameter.name == "R_line":
-            parameter.min = 1e15
-            parameter.max = 1e18
-            parameter.frozen = True
-        if parameter.name == "xi_dt":
-            parameter.min = 1e-3
-            parameter.max = 1
-            parameter.frozen = True
-        if parameter.name == "epsilon_dt":
-            parameter.min = 1e-6
-            parameter.max = 1e-8
-            parameter.frozen = True
-        if parameter.name == "R_dt":
-            parameter.min = 1e17
-            parameter.max = 1e21
-            parameter.frozen = True
-
-
-def get_spectral_parameters_from_blob(blob):
-    """Get the list of parameters of the particles energy distribution from a
-    blob instance.
-
-    Parameters
-    ----------
-    blob : `~agnpy.emission_regions.Blob`
-        blob containing the particles energy distribution
+    n_e : `~agnpy.spectra.ElectronDistribution`
+        electron distribution
 
     Returns
     -------
-    spectral_pars_names : list of string
-        list of parameters names
-    spectral_pars : list of `~gammapy.modeling.Parameter`
-        list of parameters of the particles energy distribution
+    parameters : dict of `~gammapy.modeling.Parameter`
+        dictionary of parameters of the particles energy distribution
     """
-    spectral_pars = []
     spectral_pars_names = []
-    pars = vars(blob.n_e).copy()
+    spectral_pars = []
+    pars = vars(n_e).copy()
     # EED has in the attributes also the integrator
     pars.pop("integrator")
 
     for name in pars.keys():
-        spectral_pars.append(Parameter(name, pars[name]))
-        # create the list with the names of the spectral parameters
         spectral_pars_names.append(name)
+        spectral_pars.append(Parameter(name, pars[name]))
 
-    return dict(zip(spectral_pars_names, spectral_pars))
-
-
-def get_emission_region_parameters_from_names(parameters_names, blob):
-    """Return a list of `~gammapy.modeling.Parameter`s for the emission region,
-    corresponding to the names specified in the list."""
-    emission_region_pars = []
-
-    for name in parameters_names:
-        emission_region_pars.append(Parameter(name, getattr(blob, name)))
-
-    return emission_region_pars
+    # add the limits and the scales to the spectral parameters
+    set_spectral_pars_ranges_scales(spectral_pars)
+    parameters = dict(zip(spectral_pars_names, spectral_pars))
+    return parameters
 
 
-def get_blr_parameters(blr):
-    """Return a dictionary of `~gammapy.modeling.Parameter`s (and a list of their names)
-    from the BLR object."""
-    target_pars = []
-    target_pars_names = []
+def get_emission_region_parameters(model_type):
+    """Return a dict of `~gammapy.modeling.Parameter`s for the emission region.
+    The list of parameters is different whether we are considering a SSC or EC
+    model.
 
-    blr_pars = vars(blr).copy()
-    blr_pars.pop("name")
-    blr_pars.pop("line")
-    blr_pars.pop("lambda_line")
-    for name in blr_pars:
-        target_pars_names.append(name)
-        target_pars.append(Parameter(name, blr_pars[name]))
+    Parameters
+    ----------
+    model_type : ["ssc", "ec"]
+        type of model for which this emission region is being considered
+    """
+    z_min = 0.001
+    z_max = 10
+    # parameters common to SSC and EC models
+    z = Parameter("z", 0.1, min=z_min, max=z_max, frozen=True)
+    delta_D = Parameter(
+        "delta_D", 10, min=1, max=100, scale_method="factor1", interp="lin",
+    )
+    B = Parameter(
+        "B", "0.1 G", min=1e-4, max=1e2, scale_method="scale10", interp="log",
+    )
+    t_var = Parameter(
+        "t_var",
+        "1 d",
+        min=0.01,
+        max=100,
+        scale_method="scale10",
+        interp="log",
+        frozen=True,
+    )
+    mu_s = Parameter("mu_s", 0, min=0, max=1, frozen=True)
+    r = Parameter(
+        "r",
+        "3e18 cm",
+        min=1e16,
+        max=1e22,
+        scale_method="scale10",
+        interp="log",
+        frozen=True,
+    )
 
-    return dict(zip(target_pars_names, target_pars))
+    if model_type == "ssc":
+        emission_region_pars_names = ["z", "delta_D", "B", "t_var"]
+        emission_region_pars = [z, delta_D, B, t_var]
+    elif model_type == "ec":
+        emission_region_pars_names = ["z", "delta_D", "B", "t_var", "mu_s", "r"]
+        emission_region_pars = [z, delta_D, B, t_var, mu_s, r]
+
+    parameters = dict(zip(emission_region_pars_names, emission_region_pars))
+    return parameters
 
 
-def get_dt_parameters(dt):
-    """Return a dictionary of `~gammapy.modeling.Parameter`s (and a list of their names)
-    from the DT object."""
-    target_pars = []
-    target_pars_names = []
+def get_targets_parameters(line):
+    """Return a dict of `~gammapy.modeling.Parameter`s for the line and thermal
+    emitters.
 
-    dt_pars = vars(dt).copy()
-    dt_pars.pop("name")
-    dt_pars.pop("T_dt")
-    dt_pars.pop("Theta")
-    for name in dt_pars:
-        target_pars_names.append(name)
-        target_pars.append(Parameter(name, dt_pars[name]))
+    Parameters
+    ----------
+    line : str
+        a line from `~agnpy.targets.lines_dictionary`
+    """
 
-    return dict(zip(target_pars_names, target_pars))
+    # disk parameters
+    L_disk = Parameter("L_disk", "1e45 erg s-1", min=1e42, max=1e48, frozen=True)
+    M_BH = Parameter("M_BH", "1e42 g", min=1e32, max=1e45, frozen=True)
+    m_dot = Parameter("m_dot", "1e26 g s-1", min=1e24, max=1e30, frozen=True)
+    R_in = Parameter("R_in", "1e14 cm", min=1e12, max=1e16, frozen=True)
+    R_out = Parameter("R_out", "1e17 cm", min=1e12, max=1e19, frozen=True)
+    # BLR parameters
+    xi_line = Parameter("xi_line", 0.6, min=0.0, max=1.0, frozen=True)
+    lambda_line = Parameter(
+        "lambda_line", lines_dictionary[line]["lambda"], min=900, max=7000, frozen=True
+    )
+    R_line = Parameter("R_line", "1e17 cm", min=1e16, max=1e18, frozen=True)
+    # DT parameters
+    xi_dt = Parameter("xi_dt", 0.6, min=0.0, max=1.0, frozen=True)
+    T_dt = Parameter("T_dt", "1e3 K", min=1e2, max=1e4, frozen=True)
+    R_dt = Parameter("R_dt", "2.5e18 cm", min=1.0e17, max=1.0e19, frozen=True)
+
+    targets_pars_names = [
+        "L_disk",
+        "M_BH",
+        "m_dot",
+        "R_in",
+        "R_out",
+        "xi_line",
+        "lambda_line",
+        "R_line",
+        "xi_dt",
+        "T_dt",
+        "R_dt",
+    ]
+    targets_pars = [
+        L_disk,
+        M_BH,
+        m_dot,
+        R_in,
+        R_out,
+        xi_line,
+        lambda_line,
+        R_line,
+        xi_dt,
+        T_dt,
+        R_dt,
+    ]
+    parameters = dict(zip(targets_pars_names, targets_pars))
+    return parameters
 
 
 class SynchrotronSelfComptonSpectralModel(SpectralModel):
 
     tag = ["SynchrotronSelfComptonSpectralModel"]
 
-    def __init__(self, blob, ssa=False):
+    def __init__(self, n_e, ssa=False):
         """Gammapy wrapper for a source emitting Synchrotron and SSC radiation.
-        The parameters for the model are initialised from a Blob instance.
 
         Parameters
         ----------
-        blob : `~agnpy.emission_regions.blob`
-            emission region containing all the initial parameters of the model
+        n_e : `~agnpy.spectra.ElectronDistribution`
+            electron distribution to be used for this modelling
         ssa : bool
             whether or not to calculate synchrotron self-absorption
 
@@ -260,55 +242,47 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         -------
         `~gammapy.modeling.models.SpectralModel`
         """
-
-        # the attributes representing the physical objects are internal, they
-        # are used only for Parameters initialisation
-        self._blob = copy.copy(blob)
+        self._n_e = n_e
         self.ssa = ssa
 
         # parameters of the particles energy distribution
-        spectral_pars = get_spectral_parameters_from_blob(self._blob)
-        self._spectral_parameters_names = list(spectral_pars.keys())
+        spectral_pars = get_spectral_parameters_from_n_e(self._n_e)
+        self._spectral_pars_names = list(spectral_pars.keys())
 
         # parameters of the emission region
-        self._emission_region_parameters_names = ["z", "d_L", "delta_D", "B", "t_var"]
-        emission_region_pars = get_emission_region_parameters_from_names(
-            self._emission_region_parameters_names, self._blob
-        )
+        emission_region_pars = get_emission_region_parameters("ssc")
+        self._emission_region_pars_names = list(emission_region_pars.keys())
 
         # group the model parameters, add the norm at the bottom of the list
         norm = Parameter("norm", 1, min=0.1, max=10, is_norm=True, frozen=True)
         self.default_parameters = Parameters(
-            [*spectral_pars.values(), *emission_region_pars, norm]
+            [*spectral_pars.values(), *emission_region_pars.values(), norm]
         )
-
-        # set min and maxes, scale them
-        set_spectral_pars_ranges_scales(self.default_parameters)
-        set_emission_region_pars_ranges_scales(self.default_parameters)
 
         super().__init__()
 
     @property
     def spectral_parameters(self):
         """Select all the parameters related to the particle distribution."""
-        return self.parameters.select(self._spectral_parameters_names)
+        return self.parameters.select(self._spectral_pars_names)
 
     @property
     def emission_region_parameters(self):
         """Select all the parameters related to the emission region."""
-        return self.parameters.select(self._emission_region_parameters_names)
+        return self.parameters.select(self._emission_region_pars_names)
 
     def evaluate(self, energy, **kwargs):
-        """evaluate"""
+        """Evaluate the SED model."""
         nu = energy.to("Hz", equivalencies=u.spectral())
 
         # all the model parameters will be passed as kwargs, by SpectralModel.evaluate()
         # sort the ones related to the source out
         z = kwargs.pop("z")
-        d_L = kwargs.pop("d_L")
         delta_D = kwargs.pop("delta_D")
         B = kwargs.pop("B")
         t_var = kwargs.pop("t_var")
+        # compute the luminosity distance and the size of the emission region
+        d_L = Distance(z=z).to("cm")
         R_b = (c * t_var * delta_D / (1 + z)).to("cm")
 
         # pop the norm and expand the remaining kwargs in the spectral parameters
@@ -316,10 +290,10 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         args = kwargs.values()
 
         sed_synch = Synchrotron.evaluate_sed_flux(
-            nu, z, d_L, delta_D, B, R_b, self._blob.n_e, *args, ssa=self.ssa
+            nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
         )
         sed_ssc = SynchrotronSelfCompton.evaluate_sed_flux(
-            nu, z, d_L, delta_D, B, R_b, self._blob.n_e, *args, ssa=self.ssa
+            nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
         )
 
         sed = sed_synch + sed_ssc
@@ -339,150 +313,120 @@ class ExternalComptonSpectralModel(SpectralModel):
 
     tag = ["ExternalComptonSpectralModel"]
 
-    def __init__(self, blob, r, targets, ssa=False):
+    def __init__(self, n_e, targets, blr_line="Lyalpha", ssa=False):
         """Gammapy wrapper for a source emitting Synchrotron, SSC, and EC on a
-        list of targets. The parameters for the model are initialised from a Blob
-        and targets instances.
+        list of targets.
 
         Parameters
         ----------
-        blob : `~agnpy.emission_regions.blob`
-            emission region containing all the initial parameters of the model
-        r : `~astropy.units.Quantity`
-            distance of the blob from the central BH
-        targets : list of `~agnpy.targets`
-            list of targets to be considered for external Compton
+        n_e : `~agnpy.spectra.ElectronDistribution`
+            electron distribution to be used for this modelling
+        targets : list of strings ["blr", "dt"]
+            targets to be considered for external Compton
+            typically we consider the BLR or the DT or both, the EC on disk
+            is not considered as it is subdominant at distances >> R_out
+        blr_line : str
+            line to be considered if EC on BLR is computed
+        ssa : bool
+            whether or not to calculate synchrotron self-absorption
+
         Returns
         -------
         `~gammapy.modeling.models.SpectralModel`
         """
 
-        # the attributes representing the physical objects are internal, they
-        # are used only for Parameters initialisation
-        self._blob = copy.copy(blob)
-        for target in targets:
-            if target.name == "SphericalShellBLR":
-                self._blr = copy.copy(target)
-            if target.name == "RingDustTorus":
-                self._dt = copy.copy(target)
+        self._n_e = n_e
+        self.targets = targets
         self.ssa = ssa
 
         # parameters of the particles energy distribution
-        spectral_pars = get_spectral_parameters_from_blob(self._blob)
-        self._spectral_parameters_names = list(spectral_pars.keys())
+        spectral_pars = get_spectral_parameters_from_n_e(self._n_e)
+        self._spectral_pars_names = list(spectral_pars.keys())
 
         # parameters of the emission region
-        self._emission_region_parameters_names = [
-            "z",
-            "d_L",
-            "delta_D",
-            "B",
-            "t_var",
-            "mu_s",
-        ]
-        emission_region_pars = get_emission_region_parameters_from_names(
-            self._emission_region_parameters_names, self._blob
-        )
-        # add also the position of the blob to the emisison region parameters
-        self._emission_region_parameters_names.append("r")
-        emission_region_pars.append(Parameter("r", r))
+        emission_region_pars = get_emission_region_parameters("ec")
+        self._emission_region_pars_names = list(emission_region_pars.keys())
 
-        targets_pars = {}
+        # parameters of the targets
+        targets_pars = get_targets_parameters(blr_line)
+        self._targets_pars_names = list(targets_pars.keys())
 
-        if hasattr(self, "_blr"):
-            targets_pars.update(get_blr_parameters(self._blr))
-
-        if hasattr(self, "_dt"):
-            dt_pars = get_dt_parameters(self._dt)
-            if hasattr(self, "_blr"):
-                # if both DT and BLR are specified, check that they have the same L_disk
-                # and remove the duplicate parameter
-                if not u.isclose(self._blr.L_disk, self._dt.L_disk):
-                    raise ValueError(
-                        "The BLR and DT provided have the different disk luminosities."
-                    )
-                else:
-                    dt_pars.pop("L_disk")
-
-            targets_pars.update(dt_pars)
-
-        # names of the target parameters, for the corresponding property
-        self._targets_parameters_names = list(targets_pars.keys())
         # group the model parameters, add the norm at the bottom of the list
         norm = Parameter("norm", 1, min=0.1, max=10, is_norm=True, frozen=True)
         self.default_parameters = Parameters(
             [
                 *spectral_pars.values(),
-                *emission_region_pars,
+                *emission_region_pars.values(),
                 *targets_pars.values(),
                 norm,
             ]
         )
 
-        # set min and maxes, scale them
-        set_spectral_pars_ranges_scales(self.default_parameters)
-        set_emission_region_pars_ranges_scales(self.default_parameters)
-        set_targets_pars_ranges_scales(self.default_parameters)
-
-        super().__init__(norm=norm)
+        super().__init__()
 
     @property
     def spectral_parameters(self):
         """Select all the parameters related to the particle distribution."""
-        return self.parameters.select(self._spectral_parameters_names)
+        return self.parameters.select(self._spectral_pars_names)
 
     @property
     def emission_region_parameters(self):
         """Select all the parameters related to the emission region."""
-        return self.parameters.select(self._emission_region_parameters_names)
+        return self.parameters.select(self._emission_region_pars_names)
 
     @property
     def targets_parameters(self):
         """Select all the parameters related to the targets for EC."""
-        return self.parameters.select(self._targets_parameters_names)
+        return self.parameters.select(self._targets_pars_names)
 
     def evaluate(self, energy, **kwargs):
-        """evaluate"""
+        """Evaluate the SED model."""
         nu = energy.to("Hz", equivalencies=u.spectral())
 
         # all the model parameters will be passed as kwargs, by SpectralModel.evaluate()
         # sort the ones related to the emission region out
         z = kwargs.pop("z")
-        d_L = kwargs.pop("d_L")
         delta_D = kwargs.pop("delta_D")
         B = kwargs.pop("B")
-        R_b = kwargs.pop("R_b")
         mu_s = kwargs.pop("mu_s")
         r = kwargs.pop("r")
-
-        # now sort the target ones out
+        t_var = kwargs.pop("t_var")
+        # compute the luminosity distance and the size of the emission region
+        d_L = Distance(z=z).to("cm")
+        R_b = (c * t_var * delta_D / (1 + z)).to("cm")
+        # now sort the targets ones out
+        # - Disk
         L_disk = kwargs.pop("L_disk")
-
-        if hasattr(self, "_blr"):
-            # - BLR
-            xi_line = kwargs.pop("xi_line")
-            epsilon_line = kwargs.pop("epsilon_line")
-            R_line = kwargs.pop("R_line")
-
-        if hasattr(self, "_dt"):
-            # - DT
-            xi_dt = kwargs.pop("xi_dt")
-            epsilon_dt = kwargs.pop("epsilon_dt")
-            R_dt = kwargs.pop("R_dt")
+        M_BH = kwargs.pop("M_BH")
+        m_dot = kwargs.pop("m_dot")
+        R_in = kwargs.pop("R_in")
+        R_out = kwargs.pop("R_out")
+        # - BLR
+        xi_line = kwargs.pop("xi_line")
+        lambda_line = kwargs.pop("lambda_line")
+        R_line = kwargs.pop("R_line")
+        epsilon_line = (
+            lambda_line.to("erg", equivalencies=u.spectral()) / mec2
+        ).to_value("")
+        # - DT
+        xi_dt = kwargs.pop("xi_dt")
+        T_dt = kwargs.pop("T_dt")
+        R_dt = kwargs.pop("R_dt")
+        epsilon_dt = 2.7 * (k_B * T_dt / mec2).to_value("")
 
         # pop the norm and expand the remaining kwargs in the spectral parameters
         kwargs.pop("norm")
         args = kwargs.values()
 
         sed_synch = Synchrotron.evaluate_sed_flux(
-            nu, z, d_L, delta_D, B, R_b, self._blob.n_e, *args, ssa=self.ssa
+            nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
         )
         sed_ssc = SynchrotronSelfCompton.evaluate_sed_flux(
-            nu, z, d_L, delta_D, B, R_b, self._blob.n_e, *args, ssa=self.ssa
+            nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa, gamma=gamma_to_integrate
         )
         sed = sed_synch + sed_ssc
 
-        if hasattr(self, "_blr"):
+        if "blr" in self.targets:
             sed_ec_blr = ExternalCompton.evaluate_sed_flux_blr(
                 nu,
                 z,
@@ -495,12 +439,13 @@ class ExternalComptonSpectralModel(SpectralModel):
                 epsilon_line,
                 R_line,
                 r,
-                self._blob.n_e,
-                *args
+                self._n_e,
+                *args,
+                gamma=gamma_to_integrate
             )
             sed += sed_ec_blr
 
-        if hasattr(self, "_dt"):
+        if "dt" in self.targets:
             sed_ec_dt = ExternalCompton.evaluate_sed_flux_dt(
                 nu,
                 z,
@@ -513,14 +458,27 @@ class ExternalComptonSpectralModel(SpectralModel):
                 epsilon_dt,
                 R_dt,
                 r,
-                self._blob.n_e,
-                *args
+                self._n_e,
+                *args,
+                gamma=gamma_to_integrate
             )
-
             sed += sed_ec_dt
+
+            # now add the thermal component as well
+            sed_bb_dt = RingDustTorus.evaluate_bb_norm_sed(
+                nu, z, xi_dt * L_disk, T_dt, R_dt, d_L
+            )
+            sed += sed_bb_dt
+
+        # thermal disk component
+        sed_bb_disk = SSDisk.evaluate_multi_T_bb_norm_sed(
+            nu, z, L_disk, M_BH, m_dot, R_in, R_out, d_L
+        )
+        sed += sed_bb_disk
 
         # eventual reshaping
         # we can do here something like
         # sed = sed.reshape(energy.shape)
+        # see the same comment in the SSC model
 
         return (sed / energy ** 2).to("1 / (cm2 eV s)")
