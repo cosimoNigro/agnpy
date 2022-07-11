@@ -10,7 +10,7 @@ from agnpy.emission_regions import Blob
 from agnpy.wrappers import SynchrotronSelfComptonSpectralModel
 
 # import gammapy classes
-from gammapy.modeling.models import (SPECTRAL_MODEL_REGISTRY, SkyModel)
+from gammapy.modeling.models import SPECTRAL_MODEL_REGISTRY, SkyModel
 from gammapy.estimators import FluxPoints
 from gammapy.datasets import Datasets, FluxPointsDataset
 from gammapy.modeling import Fit
@@ -19,17 +19,17 @@ from gammapy.modeling import Fit
 SPECTRAL_MODEL_REGISTRY.append(SynchrotronSelfComptonSpectralModel)
 
 # total energy content of the electron distribution
-spectrum_norm = 5e46 * u.Unit("erg") 
+spectrum_norm = 5e46 * u.Unit("erg")
 # dictionary describing the electron distribution
 spectrum_dict = {
-    "type": "BrokenPowerLaw", 
+    "type": "BrokenPowerLaw",
     "parameters": {
         "p1": 2.02,
         "p2": 3.43,
         "gamma_b": 9e4,
         "gamma_min": 500,
-        "gamma_max": 1e6
-    }
+        "gamma_max": 1e6,
+    },
 }
 R_b = 1.5e16 * u.cm
 B = 0.1 * u.G
@@ -58,16 +58,16 @@ E_min_fit = (1e11 * u.Hz).to("eV", equivalencies=u.spectral())
 
 for group in table.groups:
     name = group["instrument"][0]
-    
+
     data = FluxPoints.from_table(group, sed_type="e2dnde", format="gadf-sed")
     dataset = FluxPointsDataset(data=data, name=name)
-    
+
     flux_points.update({name: data})
     dataset.mask_fit = dataset.data.energy_ref > E_min_fit
     datasets.append(dataset)
 
 # load the SSC model in the datasets
-model = SkyModel(spectral_model = ssc_model, name="Mrk421")
+model = SkyModel(spectral_model=ssc_model, name="Mrk421")
 datasets.models = [model]
 
 # plot the starting model and the flux points
@@ -76,7 +76,9 @@ fig, ax = plt.subplots(figsize=(10, 6))
 for key in flux_points.keys():
     flux_points[key].plot(ax=ax, label=key)
 
-model.spectral_model.plot(energy_bounds=[1e-6, 1e14] * u.eV, energy_power=2, label="model")
+model.spectral_model.plot(
+    energy_bounds=[1e-6, 1e14] * u.eV, energy_power=2, label="model"
+)
 plt.legend(ncol=4)
 plt.xlim([1e-6, 1e14])
 plt.show()
@@ -100,7 +102,9 @@ fig, ax = plt.subplots(figsize=(10, 6))
 for key in flux_points.keys():
     flux_points[key].plot(ax=ax, label=key)
 
-model.spectral_model.plot(energy_bounds=[1e-6, 1e14] * u.eV, energy_power=2, label="model")
+model.spectral_model.plot(
+    energy_bounds=[1e-6, 1e14] * u.eV, energy_power=2, label="model"
+)
 plt.legend(ncol=4)
 plt.xlim([1e-6, 1e14])
 plt.show()
