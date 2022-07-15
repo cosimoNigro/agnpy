@@ -13,8 +13,8 @@ from gammapy.modeling import Parameter, Parameters
 from gammapy.modeling.models import SpectralModel
 
 
-gamma_size = 400
-gamma_to_integrate = np.logspace(0, 7, gamma_size)
+gamma_size = 300
+gamma_to_integrate = np.logspace(1, 9, gamma_size)
 
 
 def add_systematic_errors_flux_points(flux_points, syst):
@@ -422,7 +422,16 @@ class ExternalComptonSpectralModel(SpectralModel):
             nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
         )
         sed_ssc = SynchrotronSelfCompton.evaluate_sed_flux(
-            nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa, gamma=gamma_to_integrate
+            nu,
+            z,
+            d_L,
+            delta_D,
+            B,
+            R_b,
+            self._n_e,
+            *args,
+            ssa=self.ssa,
+            gamma=gamma_to_integrate
         )
         sed = sed_synch + sed_ssc
 
