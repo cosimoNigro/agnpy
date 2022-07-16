@@ -91,23 +91,23 @@ class TestGammapyWrapper:
         can be correctly fetched."""
         ssc_model = SynchrotronSelfComptonSpectralModel(ssc_blob.n_e)
         assert ssc_model.spectral_parameters.names == [
-            "k_e",
+            "log10_k_e",
             "p",
-            "gamma_min",
-            "gamma_max",
+            "log10_gamma_min",
+            "log10_gamma_max",
         ]
         assert ssc_model.emission_region_parameters.names == [
             "z",
             "delta_D",
-            "B",
+            "log10_B",
             "t_var",
         ]
 
         # check that, when changed, parameters are updated accordingly
         # in both lists
-        k_e = 1e8
-        ssc_model.parameters["k_e"].value = 1e8
-        assert u.isclose(ssc_model.spectral_parameters["k_e"].value, k_e)
+        log10_k_e = 8
+        ssc_model.parameters["log10_k_e"].value = log10_k_e
+        assert u.isclose(ssc_model.spectral_parameters["log10_k_e"].value, log10_k_e)
 
     def test_synchrotron_self_compton_spectral_model(self):
         """Test the SSC model SED computation using agnpy classes against that
@@ -121,8 +121,8 @@ class TestGammapyWrapper:
         # set the parameters to be the same as the ssc_blob
         ssc_model.parameters["z"].value = ssc_blob.z
         ssc_model.parameters["delta_D"].value = ssc_blob.delta_D
-        ssc_model.parameters["B"].value = ssc_blob.B.to_value("G")
-        ssc_model.parameters["t_var"].value = ssc_blob.t_var.to_value("d")
+        ssc_model.parameters["log10_B"].value = np.log10(ssc_blob.B.to_value("G"))
+        ssc_model.parameters["t_var"].value = ssc_blob.t_var.to_value("s")
 
         # SEDs
         sed_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu)
@@ -184,10 +184,10 @@ class TestGammapyWrapper:
         # - emission region
         ec_model.parameters["z"].value = ec_blob.z
         ec_model.parameters["delta_D"].value = ec_blob.delta_D
-        ec_model.parameters["B"].value = ec_blob.B.to_value("G")
+        ec_model.parameters["log10_B"].value = np.log10(ec_blob.B.to_value("G"))
         ec_model.parameters["t_var"].value = ec_blob.t_var.to_value("d")
         ec_model.parameters["mu_s"].value = ec_blob.mu_s
-        ec_model.parameters["r"].value = r.to_value("cm")
+        ec_model.parameters["log10_r"].value = np.log10(r.to_value("cm"))
         # - EC targets
         ec_model.parameters["L_disk"].value = disk.L_disk.to_value("erg s-1")
         ec_model.parameters["M_BH"].value = disk.M_BH.to_value("g")

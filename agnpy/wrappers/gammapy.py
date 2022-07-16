@@ -51,39 +51,36 @@ def set_spectral_pars_ranges_scales(parameters):
     for parameter in parameters:
         # the normalisation of the electrons is the norm of the SpectralModel
         if parameter.name == "k_e":
-            parameter.min = 1e-10
-            parameter.max = 1e2
-            parameter.scale_method = "scale10"
-            parameter.interp = "log"
+            parameter._name = "log10_" + parameter.name
+            parameter.value = np.log10(parameter.value)
+            parameter.unit = ""
+            parameter.min = -10
+            parameter.max = 2
         # Lorentz factors
         if parameter.name == "gamma_min":
+            parameter._name = "log10_" + parameter.name
+            parameter.value = np.log10(parameter.value)
             parameter.min = 1
-            parameter.max = 1e3
-            parameter.scale_method = "scale10"
-            parameter.interp = "log"
+            parameter.max = 3
             parameter.frozen = True
         if parameter.name == "gamma_max":
-            parameter.min = 1e5
-            parameter.max = 1e8
-            parameter.scale_method = "scale10"
-            parameter.interp = "log"
+            parameter._name = "log10_" + parameter.name
+            parameter.value = np.log10(parameter.value)
+            parameter.min = 5
+            parameter.max = 8
             parameter.frozen = True
         if parameter.name in ["gamma_b", "gamma_0", "gamma_c"]:
-            parameter.min = 1e2
-            parameter.max = 1e6
-            parameter.scale_method = "scale10"
-            parameter.interp = "log"
+            parameter._name = "log10_" + parameter.name
+            parameter.value = np.log10(parameter.value)
+            parameter.min = 2
+            parameter.max = 6
         # indexes
         if parameter.name.startswith("p"):
             parameter.min = 1
             parameter.max = 5
-            parameter.scale_method = "factor1"
-            parameter.interp = "lin"
         if parameter.name == "q":
             parameter.min = 0.01
             parameter.max = 1
-            parameter.scale_method = "factor1"
-            parameter.interp = "lin"
 
 
 def get_spectral_parameters_from_n_e(n_e):
@@ -107,7 +104,10 @@ def get_spectral_parameters_from_n_e(n_e):
     pars.pop("integrator")
 
     for name in pars.keys():
-        spectral_pars_names.append(name)
+        if (name == "k_e") or name.startswith("gamma_"):
+            spectral_pars_names.append("log10_" + name)
+        else:
+            spectral_pars_names.append(name)
         spectral_pars.append(Parameter(name, pars[name]))
 
     # add the limits and the scales to the spectral parameters
@@ -130,38 +130,19 @@ def get_emission_region_parameters(model_type):
     z_max = 10
     # parameters common to SSC and EC models
     z = Parameter("z", 0.1, min=z_min, max=z_max, frozen=True)
-    delta_D = Parameter(
-        "delta_D", 10, min=1, max=100, scale_method="factor1", interp="lin",
-    )
-    B = Parameter(
-        "B", "0.1 G", min=1e-4, max=1e2, scale_method="scale10", interp="log",
-    )
-    t_var = Parameter(
-        "t_var",
-        "1 d",
-        min=0.01,
-        max=100,
-        scale_method="scale10",
-        interp="log",
-        frozen=True,
-    )
+    delta_D = Parameter("delta_D", 10, min=1, max=100)
+    log10_B = Parameter("log10_B", -2, min=-4, max=2)
+    t_var = Parameter("t_var", "600 s", min=10, max=np.pi * 1e7)
+
     mu_s = Parameter("mu_s", 0, min=0, max=1, frozen=True)
-    r = Parameter(
-        "r",
-        "3e18 cm",
-        min=1e16,
-        max=1e22,
-        scale_method="scale10",
-        interp="log",
-        frozen=True,
-    )
+    log10_r = Parameter("log10_r", 18, min=16, max=22, frozen=True)
 
     if model_type == "ssc":
-        emission_region_pars_names = ["z", "delta_D", "B", "t_var"]
-        emission_region_pars = [z, delta_D, B, t_var]
+        emission_region_pars_names = ["z", "delta_D", "log10_B", "t_var"]
+        emission_region_pars = [z, delta_D, log10_B, t_var]
     elif model_type == "ec":
-        emission_region_pars_names = ["z", "delta_D", "B", "t_var", "mu_s", "r"]
-        emission_region_pars = [z, delta_D, B, t_var, mu_s, r]
+        emission_region_pars_names = ["z", "delta_D", "B", "t_var", "mu_s", "log10_r"]
+        emission_region_pars = [z, delta_D, log10_B, t_var, mu_s, log10_r]
 
     parameters = dict(zip(emission_region_pars_names, emission_region_pars))
     return parameters
@@ -272,22 +253,29 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         return self.parameters.select(self._emission_region_pars_names)
 
     def evaluate(self, energy, **kwargs):
-        """Evaluate the SED model."""
+        """Evaluate the SED model.
+        NOTE: All the model parameters will be passed as kwargs by
+        SpectralModel.evaluate()."""
+
         nu = energy.to("Hz", equivalencies=u.spectral())
 
-        # all the model parameters will be passed as kwargs, by SpectralModel.evaluate()
-        # sort the ones related to the source out
+        # sort the parameters related to the emission region
         z = kwargs.pop("z")
         delta_D = kwargs.pop("delta_D")
-        B = kwargs.pop("B")
+        B = 10 ** kwargs.pop("log10_B") * u.G
         t_var = kwargs.pop("t_var")
         # compute the luminosity distance and the size of the emission region
         d_L = Distance(z=z).to("cm")
         R_b = (c * t_var * delta_D / (1 + z)).to("cm")
 
-        # pop the norm and expand the remaining kwargs in the spectral parameters
+        # pop the norm and raise to 10 the spectral parameters with log10_ names
         kwargs.pop("norm")
-        args = kwargs.values()
+        args = [
+            10 ** (kwargs[key].value) if key.startswith("log10_") else kwargs[key].value
+            for key in kwargs
+        ]
+        # first comes the norm
+        args[0] *= u.Unit("cm-3")
 
         sed_synch = Synchrotron.evaluate_sed_flux(
             nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
@@ -380,21 +368,24 @@ class ExternalComptonSpectralModel(SpectralModel):
         return self.parameters.select(self._targets_pars_names)
 
     def evaluate(self, energy, **kwargs):
-        """Evaluate the SED model."""
+        """Evaluate the SED model.
+        NOTE: All the model parameters will be passed as kwargs by
+        SpectralModel.evaluate()."""
+
         nu = energy.to("Hz", equivalencies=u.spectral())
 
-        # all the model parameters will be passed as kwargs, by SpectralModel.evaluate()
-        # sort the ones related to the emission region out
+        # sort the parameters related to the emission region
         z = kwargs.pop("z")
         delta_D = kwargs.pop("delta_D")
-        B = kwargs.pop("B")
-        mu_s = kwargs.pop("mu_s")
-        r = kwargs.pop("r")
+        B = 10 ** kwargs.pop("log10_B") * u.G
         t_var = kwargs.pop("t_var")
+        mu_s = kwargs.pop("mu_s")
+        r = 10 ** kwargs.pop("log10_r") * u.cm
         # compute the luminosity distance and the size of the emission region
         d_L = Distance(z=z).to("cm")
         R_b = (c * t_var * delta_D / (1 + z)).to("cm")
-        # now sort the targets ones out
+
+        # now sort the parameters related to the targets
         # - Disk
         L_disk = kwargs.pop("L_disk")
         M_BH = kwargs.pop("M_BH")
@@ -414,9 +405,14 @@ class ExternalComptonSpectralModel(SpectralModel):
         R_dt = kwargs.pop("R_dt")
         epsilon_dt = 2.7 * (k_B * T_dt / mec2).to_value("")
 
-        # pop the norm and expand the remaining kwargs in the spectral parameters
+        # pop the norm and raise to 10 the spectral parameters with log10_ names
         kwargs.pop("norm")
-        args = kwargs.values()
+        args = [
+            10 ** (kwargs[key].value) if key.startswith("log10_") else kwargs[key].value
+            for key in kwargs
+        ]
+        # first comes the norm
+        args[0] *= u.Unit("cm-3")
 
         sed_synch = Synchrotron.evaluate_sed_flux(
             nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
