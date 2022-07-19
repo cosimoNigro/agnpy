@@ -76,7 +76,7 @@ csi_dt = 0.1
 dt = RingDustTorus(L_disk, csi_dt, T_dt)
 
 # distance
-r = 1e18 * u.cm
+r = 1e16 * u.cm
 
 # frequency / energies for SED computation
 nu = np.logspace(9, 29, 100) * u.Hz
@@ -176,7 +176,7 @@ class TestGammapyWrapper:
         ec_dt = ExternalCompton(ec_blob, dt, r)
         synch = Synchrotron(ec_blob)
         ssc = SynchrotronSelfCompton(ec_blob)
-        sed_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu) + disk.sed_flux(nu, z)
+        sed_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu) + disk.sed_flux(nu, ec_blob.z)
 
         # Gammapy wrapper
         ec_model = ExternalComptonSpectralModel(ec_blob.n_e, targets)
@@ -185,7 +185,7 @@ class TestGammapyWrapper:
         ec_model.parameters["z"].value = ec_blob.z
         ec_model.parameters["delta_D"].value = ec_blob.delta_D
         ec_model.parameters["log10_B"].value = np.log10(ec_blob.B.to_value("G"))
-        ec_model.parameters["t_var"].value = ec_blob.t_var.to_value("d")
+        ec_model.parameters["t_var"].value = ec_blob.t_var.to_value("s")
         ec_model.parameters["mu_s"].value = ec_blob.mu_s
         ec_model.parameters["log10_r"].value = np.log10(r.to_value("cm"))
         # - EC targets
@@ -207,7 +207,7 @@ class TestGammapyWrapper:
             title = "EC on BLR comparison"
             fig_name = "gammapy_ec_blr_wrapper.png"
         if targets == ["dt"]:
-            sed_agnpy += dt.sed_flux(nu, z)
+            sed_agnpy += dt.sed_flux(nu, ec_blob.z)
             sed_agnpy += ec_dt.sed_flux(nu)
             title = "EC on DT comparison"
             fig_name = "gammapy_ec_dt_wrapper.png"
