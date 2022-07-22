@@ -3,6 +3,7 @@ import astropy.units as u
 from astropy.constants import M_sun
 from astropy.coordinates import Distance
 import pytest
+import shutil
 from pathlib import Path
 from agnpy.emission_regions import Blob
 from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
@@ -15,12 +16,15 @@ from agnpy.wrappers.gammapy import (
 )
 from .utils import make_comparison_plot, check_deviation
 
+
 agnpy_dir = Path(__file__).parent.parent
 # where to read sampled files
 data_dir = agnpy_dir / "data"
 # where to save figures
 figures_dir = agnpy_dir.parent / "crosschecks/figures/wrappers"
+shutil.rmtree(figures_dir)
 figures_dir.mkdir(parents=True, exist_ok=True)
+
 
 # emission region and targets
 # - SSC blob
@@ -167,8 +171,11 @@ class TestGammapyWrapper:
         ]
         assert ec_model.targets_parameters.names == targets_pars_names
 
-    @pytest.mark.parametrize("targets", (["blr"], ["dt"], ["blr", "dt"]))
-    def test_external_compton_spectral_model(self, targets):
+    @pytest.mark.parametrize(
+        "targets, r",
+        [(["blr"], 1e16 * u.cm), (["dt"], 1e18 * u.cm), (["blr", "dt"], 2e17 * u.cm)],
+    )
+    def test_external_compton_spectral_model(self, targets, r):
         """Check that the Synch + SSC + EC SED computed with the Gammapy wrapper
         corresponds to the one computed with agnpy."""
         # agnpy radiative processes
@@ -177,6 +184,22 @@ class TestGammapyWrapper:
         synch = Synchrotron(ec_blob)
         ssc = SynchrotronSelfCompton(ec_blob)
         sed_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu) + disk.sed_flux(nu, ec_blob.z)
+
+        # now look at the targets which EC components have to be added
+        if targets == ["blr"]:
+            sed_agnpy += ec_blr.sed_flux(nu)
+            title = "EC on BLR comparison"
+            fig_name = "gammapy_ec_blr_wrapper.png"
+        if targets == ["dt"]:
+            sed_agnpy += dt.sed_flux(nu, ec_blob.z)
+            sed_agnpy += ec_dt.sed_flux(nu)
+            title = "EC on DT comparison"
+            fig_name = "gammapy_ec_dt_wrapper.png"
+        if targets == ["blr", "dt"]:
+            sed_agnpy += dt.sed_flux(nu, ec_blob.z)
+            sed_agnpy += ec_blr.sed_flux(nu) + ec_dt.sed_flux(nu)
+            title = "EC on BLR and DT comparison"
+            fig_name = "gammapy_ec_dt_blr_wrapper.png"
 
         # Gammapy wrapper
         ec_model = ExternalComptonSpectralModel(ec_blob.n_e, targets)
@@ -201,22 +224,6 @@ class TestGammapyWrapper:
         ec_model.parameters["T_dt"].value = dt.T_dt.to_value("K")
         ec_model.parameters["R_dt"].value = dt.R_dt.to_value("cm")
 
-        # now look at the targets which EC components have to be added
-        if targets == ["blr"]:
-            sed_agnpy += ec_blr.sed_flux(nu)
-            title = "EC on BLR comparison"
-            fig_name = "gammapy_ec_blr_wrapper.png"
-        if targets == ["dt"]:
-            sed_agnpy += dt.sed_flux(nu, ec_blob.z)
-            sed_agnpy += ec_dt.sed_flux(nu)
-            title = "EC on DT comparison"
-            fig_name = "gammapy_ec_dt_wrapper.png"
-        if targets == ["blr", "dt"]:
-            sed_agnpy += dt.sed_flux(nu, z)
-            sed_agnpy += ec_blr.sed_flux(nu) + ec_dt.sed_flux(nu)
-            title = "EC on BLR and DT comparison"
-            fig_name = "gammapy_ec_dt_blr_wrapper.png"
-
         sed_gammapy = (E ** 2 * ec_model(E)).to("erg cm-2 s-1")
 
         make_comparison_plot(
@@ -228,7 +235,6 @@ class TestGammapyWrapper:
             title,
             figures_dir / fig_name,
             "sed",
-            # y_range=[1e-13, 1e-9],
         )
         # requires that the SED points deviate less than 1% from the figure
-        # assert check_deviation(nu, sed_gammapy, sed_agnpy, 0.1)
+        assert check_deviation(nu, sed_gammapy, sed_agnpy, 0.1)
