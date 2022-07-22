@@ -379,10 +379,10 @@ class SSDisk:
             cosine of the angle between the observer line of sight and the disk axis
         """
         # correct for redshift
-        nu *= 1 + z
+        nu_prime = nu * (1 + z)
         # array to integrate R
         R = np.linspace(R_in, R_out, 100)
-        _R, _nu = axes_reshaper(R, nu)
+        _R, _nu = axes_reshaper(R, nu_prime)
         _T = SSDisk.evaluate_T(_R, M_BH, m_dot, R_in)
         _I_nu = BlackBody().evaluate(_nu, _T, scale=1)
         integrand = _R / np.power(d_L, 2) * _I_nu * u.sr
@@ -581,11 +581,11 @@ class RingDustTorus:
     @staticmethod
     def evaluate_bb_sed(nu, z, T_dt, R_dt, d_L):
         """evaluate the black body SED corresponding to the torus temperature"""
-        nu *= 1 + z
+        nu_prime = nu * (1 + z)
         # geometrical factor for a source of size R_dt at distance d_L
         prefactor = np.pi * np.power((R_dt / d_L).to_value(""), 2) * u.sr
-        I_nu = BlackBody().evaluate(nu, T_dt, scale=1)
-        return (prefactor * nu * I_nu).to("erg cm-2 s-1")
+        I_nu = BlackBody().evaluate(nu_prime, T_dt, scale=1)
+        return (prefactor * nu_prime * I_nu).to("erg cm-2 s-1")
 
     @staticmethod
     def evaluate_bb_norm_sed(nu, z, L_dt, T_dt, R_dt, d_L):
