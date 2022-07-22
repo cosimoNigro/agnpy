@@ -20,9 +20,10 @@ from .utils import make_comparison_plot, check_deviation
 agnpy_dir = Path(__file__).parent.parent
 # where to read sampled files
 data_dir = agnpy_dir / "data"
-# where to save figures
-figures_dir = agnpy_dir.parent / "crosschecks/figures/wrappers"
-shutil.rmtree(figures_dir)
+# where to save figures, clean-up before making the new
+figures_dir = Path(agnpy_dir.parent / "crosschecks/figures/wrappers")
+if figures_dir.exists() and figures_dir.is_dir():
+    shutil.rmtree(figures_dir)
 figures_dir.mkdir(parents=True, exist_ok=True)
 
 
