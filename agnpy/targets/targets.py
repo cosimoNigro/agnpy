@@ -585,7 +585,7 @@ class RingDustTorus:
         # geometrical factor for a source of size R_dt at distance d_L
         prefactor = np.pi * np.power((R_dt / d_L).to_value(""), 2) * u.sr
         I_nu = BlackBody().evaluate(nu_prime, T_dt, scale=1)
-        return (prefactor * nu_prime * I_nu).to("erg cm-2 s-1")
+        return (prefactor * nu * I_nu).to("erg cm-2 s-1")
 
     @staticmethod
     def evaluate_bb_norm_sed(nu, z, L_dt, T_dt, R_dt, d_L):
