@@ -13,7 +13,7 @@ from gammapy.modeling import Parameter, Parameters
 from gammapy.modeling.models import SpectralModel
 
 
-gamma_size = 300
+gamma_size = 400
 gamma_to_integrate = np.logspace(1, 9, gamma_size)
 
 
@@ -426,8 +426,7 @@ class ExternalComptonSpectralModel(SpectralModel):
             R_b,
             self._n_e,
             *args,
-            ssa=self.ssa,
-            gamma=gamma_to_integrate
+            ssa=self.ssa
         )
         sed = sed_synch + sed_ssc
 
