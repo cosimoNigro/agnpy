@@ -51,7 +51,7 @@ parameters = {
     "gamma_max": 5e7,
 }
 spectrum_dict = {"type": "BrokenPowerLaw", "parameters": parameters}
-gamma_size = 300  # same value set in the EC evaluation
+gamma_size = 400  # same value set in the EC evaluation
 R_b = 1e16 * u.cm
 B = 0.56 * u.G
 z = 1
