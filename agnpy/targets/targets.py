@@ -401,8 +401,12 @@ class SSDisk:
         )
         # renormalise, the factor 2 includes the two sides of the Disk
         L = 2 * (np.trapz(sed_disk / nu, nu) * 4 * np.pi * d_L ** 2).to("erg s-1")
-        norm = (L_disk / L).to_value("")
-        return norm * sed_disk
+        # if the SED is 0, avoid re-normalising with its integral (0 erg s-1)
+        if u.isclose(L, 0 * u.Unit("erg s-1")):
+            return sed_disk
+        else:
+            norm = (L_disk / L).to_value("")
+            return norm * sed_disk
 
     def sed_flux(self, nu, z, mu_s=1):
         r"""evaluate the multi-temperature black body SED for this SS Disk, refer
@@ -594,8 +598,12 @@ class RingDustTorus:
         sed_dt = RingDustTorus.evaluate_bb_sed(nu, z, T_dt, R_dt, d_L)
         # renormalise
         L = (np.trapz(sed_dt / nu, nu) * 4 * np.pi * d_L ** 2).to("erg s-1")
-        norm = (L_dt / L).to_value("")
-        return norm * sed_dt
+        # if the SED is 0, avoid re-normalising with its integral (0 erg s-1)
+        if u.isclose(L, 0 * u.Unit("erg s-1")):
+            return sed_dt
+        else:
+            norm = (L_dt / L).to_value("")
+            return norm * sed_dt
 
     def sed_flux(self, nu, z):
         """evaluate the black-body SED for the Dust Torus"""
