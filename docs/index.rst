@@ -65,10 +65,6 @@ The documentation includes several tutorial jupyter notebooks providing examples
    derivations
    spectral_constraints
    fit
-   tutorials/ssc_sherpa_fit.ipynb
-   tutorials/ssc_gammapy_fit.ipynb
-   tutorials/ec_dt_sherpa_fit.ipynb
-   tutorials/ec_dt_gammapy_fit.ipynb
    bibliography
    agnpy
 
