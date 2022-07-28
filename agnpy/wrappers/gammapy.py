@@ -55,7 +55,7 @@ def set_spectral_pars_ranges_scales(parameters):
             parameter.value = np.log10(parameter.value)
             parameter.unit = ""
             parameter.min = -10
-            parameter.max = 2
+            parameter.max = 10
         # Lorentz factors
         if parameter.name == "gamma_min":
             parameter._name = "log10_" + parameter.name
