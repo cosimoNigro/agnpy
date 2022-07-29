@@ -141,7 +141,7 @@ def get_emission_region_parameters(model_type):
         emission_region_pars_names = ["z", "delta_D", "log10_B", "t_var"]
         emission_region_pars = [z, delta_D, log10_B, t_var]
     elif model_type == "ec":
-        emission_region_pars_names = ["z", "delta_D", "B", "t_var", "mu_s", "log10_r"]
+        emission_region_pars_names = ["z", "delta_D", "log10_B", "t_var", "mu_s", "log10_r"]
         emission_region_pars = [z, delta_D, log10_B, t_var, mu_s, log10_r]
 
     parameters = dict(zip(emission_region_pars_names, emission_region_pars))
