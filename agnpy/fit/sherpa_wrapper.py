@@ -1,7 +1,9 @@
 # wrap agnpy SED computation via sherpa's 1D model
 import astropy.units as u
+from astropy.coordinates import Distance
 from astropy.constants import c
 from sherpa.models import model
+from ..spectra import PowerLaw
 from ..synchrotron import Synchrotron
 from ..compton import SynchrotronSelfCompton, ExternalCompton
 from .core import (
@@ -50,35 +52,35 @@ class SynchrotronSelfComptonRegriddableModel1D(model.RegriddableModel1D):
             setattr(self, par.name, par)
             pars_attr_list.append(getattr(self, par.name))
 
-        model.RegriddableModel1D.__init__(self, self.name, tuple(pars_attr_list))
+        super().__init__(self.name, tuple(pars_attr_list))
 
+    def calc(self, pars, x):
+        """Evaluate the SED model."""
+        (*args, z, delta_D, log10_B, t_var,) = pars
 
-"""
-        def calc(self, pars, x):
-            (
-                *args,
-                z,
-                d_L,
-                delta_D,
-                log10_B,
-                t_var,
-            ) = pars
-            # add units, scale quantities
-            x *= u.Hz
-            k_e = 10 ** log10_k_e * u.Unit("cm-3")
-            gamma_b = 10 ** log10_gamma_b
-            gamma_min = 10 ** log10_gamma_min
-            gamma_max = 10 ** log10_gamma_max
-            B = 10 ** log10_B * u.G
-            d_L *= u.cm
-            R_b = c.to_value("cm s-1") * t_var * delta_D / (1 + z) * u.cm
+        # add units and scale quantities
+        x *= u.Hz
 
-            sed_synch = Synchrotron.evaluate_sed_flux(
-                nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
-            )
-            sed_ssc = SynchrotronSelfCompton.evaluate_sed_flux(
-                nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
-            )
-            sed = sed_synch + sed_ssc
-            return sed
-"""
+        # parameters of the spectrum are in log10 scale, first comes the norm
+        args[0] = 10 ** args[0] * u.Unit("cm-3")
+        # last two come the gamma min and gamma max
+        args[-2] = 10 ** args[-2]
+        args[-1] = 10 ** args[-1]
+        # if this is not a power law, then there is a break or pivot Lorentz factor
+        if not isinstance(self._n_e, PowerLaw):
+            args[-3] = 10 ** args[-3]
+
+        # parameters of the emission region
+        B = 10 ** log10_B * u.G
+        # compute the luminosity distance and the size of the emission region
+        d_L = Distance(z=z).to("cm")
+        R_b = (c.to_value("cm s-1") * t_var * delta_D) / (1 + z) * u.cm
+
+        sed_synch = Synchrotron.evaluate_sed_flux(
+            x, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
+        )
+        sed_ssc = SynchrotronSelfCompton.evaluate_sed_flux(
+            x, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
+        )
+        sed = sed_synch + sed_ssc
+        return sed
