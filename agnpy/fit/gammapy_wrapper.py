@@ -81,7 +81,7 @@ def _sort_emission_region_parameters(scenario, **kwargs):
         return z, d_L, delta_D, B, R_b, mu_s, r
 
 
-def _sort_disk_parameters(targets, **kwargs):
+def _sort_disk_parameters(**kwargs):
     """Same as the functions above, but for the disk."""
     L_disk = kwargs.pop("L_disk")
     M_BH = kwargs.pop("M_BH")
