@@ -90,7 +90,7 @@ def get_spectral_parameters_from_n_e(n_e, backend, modelname=None):
         elif name == "q":
             par = Parameter(name, value, "", min=0.001, max=1)
 
-        _pars_names.append(name)
+        _pars_names.append(par.name)
         _pars.append(par)
 
     # transform the parameters to sherpa o gammapy parameters
@@ -158,7 +158,7 @@ def get_emission_region_parameters(scenario, backend, modelname=None):
     return parameters
 
 
-def get_targets_parameters(targets, backend, modelname):
+def get_targets_parameters(targets, backend, modelname=None):
     """Return a dict of `~agnpy.fit.core.Parameter`s for the line and thermal
     emitters.
 
@@ -185,24 +185,24 @@ def get_targets_parameters(targets, backend, modelname):
     m_dot = Parameter("m_dot", 1e26, "g s-1", min=1e24, max=1e30, frozen=True)
     R_in = Parameter("R_in", 1e14, "cm", min=1e12, max=1e16, frozen=True)
     R_out = Parameter("R_out", 1e17, "cm", min=1e12, max=1e19, frozen=True)
-    _pars_names.append("L_disk", "M_BH", "m_dot", "R_in", "R_out")
-    _pars.append(L_disk, M_BH, m_dot, R_in, R_out)
+    _pars_names.extend(["L_disk", "M_BH", "m_dot", "R_in", "R_out"])
+    _pars.extend([L_disk, M_BH, m_dot, R_in, R_out])
 
     if "blr" in targets:
-        xi_line = Parameter("xi_line", 0.6, min=0.0, max=1.0, frozen=True)
+        xi_line = Parameter("xi_line", 0.6, "", min=0.0, max=1.0, frozen=True)
         lambda_line = Parameter(
             "lambda_line", 1215.67, "Angstrom", min=900, max=7000, frozen=True
         )
-        R_line = Parameter("R_line", "1e17 cm", min=1e16, max=1e18, frozen=True)
-        _pars_names.append("xi_line", "lambda_line", "R_line")
-        _pars.append(xi_line, lambda_line, R_line)
+        R_line = Parameter("R_line", "1e17", "cm", min=1e16, max=1e18, frozen=True)
+        _pars_names.extend(["xi_line", "lambda_line", "R_line"])
+        _pars.append([xi_line, lambda_line, R_line])
 
     if "dt" in targets:
-        xi_dt = Parameter("xi_dt", 0.6, min=0.0, max=1.0, frozen=True)
-        T_dt = Parameter("T_dt", "1e3 K", min=1e2, max=1e4, frozen=True)
-        R_dt = Parameter("R_dt", "2.5e18 cm", min=1.0e17, max=1.0e19, frozen=True)
-        _pars_names.append("xi_dt", "T_dt", "R_dt")
-        _pars.append(xi_dt, T_dt, R_dt)
+        xi_dt = Parameter("xi_dt", 0.6, "", min=0.0, max=1.0, frozen=True)
+        T_dt = Parameter("T_dt", 1e3, "K", min=1e2, max=1e4, frozen=True)
+        R_dt = Parameter("R_dt", 3e18, "cm", min=1e17, max=1e20, frozen=True)
+        _pars_names.extend(["xi_dt", "T_dt", "R_dt"])
+        _pars.extend([xi_dt, T_dt, R_dt])
 
     # transform the parameters to sherpa o gammapy parameters
     if backend == "gammapy":

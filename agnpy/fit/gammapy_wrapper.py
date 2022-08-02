@@ -23,7 +23,7 @@ gamma_to_integrate = np.logspace(1, 9, gamma_size)
 def add_systematic_errors_flux_points(flux_points, syst):
     """Add the systematic error on the flux points in a given energy range.
     We symply sum the systematic error in quadrature with the statystical one.
-    The systematic error is given as a percentage of the flux.
+    The systematic error is given as a percentage of the flux value.
 
     Parameters
     ----------
@@ -39,6 +39,88 @@ def add_systematic_errors_flux_points(flux_points, syst):
     # the attributes we have to change is the norm_errn and norm_errp
     flux_points.norm_errn.data = dnde_errn_tot / flux_points.dnde_ref.data
     flux_points.norm_errp.data = dnde_errp_tot / flux_points.dnde_ref.data
+
+
+def _sort_spectral_parameters(spectral_pars_names, **kwargs):
+    """All the model parameters will be passed as **kwargs by
+    SpectralModel.evaluate(). This function helps sort out those related to the
+    particle energy distribution.
+    Parameters are returned as a simple list.
+    """
+    args = [
+        10 ** (kwargs[key].value) if key.startswith("log10_") else kwargs[key].value
+        for key in spectral_pars_names
+    ]
+    # add unit to the norm, which is always the first one
+    args[0] *= u.Unit("cm-3")
+    return args
+
+
+def _sort_emission_region_parameters(scenario, **kwargs):
+    """All the model parameters will be passed as **kwargs by
+    SpectralModel.evaluate(). This function helps sort out those related to the
+    emission region.
+    """
+    z = kwargs["z"]
+    delta_D = kwargs["delta_D"]
+    B = 10 ** kwargs["log10_B"] * u.G
+    t_var = kwargs["t_var"]
+
+    # compute the luminosity distance and the size of the emission region
+    d_L = Distance(z=z).to("cm")
+    R_b = (c * t_var * delta_D / (1 + z)).to("cm")
+
+    if scenario == "ssc":
+        return z, d_L, delta_D, B, R_b
+
+    if scenario == "ec":
+        # there are two additional emission region parameters in case of EC
+        mu_s = kwargs["mu_s"]
+        r = 10 ** kwargs["log10_r"] * u.cm
+
+        return z, d_L, delta_D, B, R_b, mu_s, r
+
+
+def _sort_disk_parameters(targets, **kwargs):
+    """Same as the functions above, but for the disk."""
+    L_disk = kwargs.pop("L_disk")
+    M_BH = kwargs.pop("M_BH")
+    m_dot = kwargs.pop("m_dot")
+    R_in = kwargs.pop("R_in")
+    R_out = kwargs.pop("R_out")
+
+    return L_disk, M_BH, m_dot, R_in, R_out
+
+
+def _sort_blr_parameters(**kwargs):
+    """Same as the functions above, but for the BLR."""
+    xi_line = kwargs["xi_line"]
+    lambda_line = kwargs["lambda_line"]
+    epsilon_line = (lambda_line.to("erg", equivalencies=u.spectral()) / mec2).to_value(
+        ""
+    )
+    R_line = kwargs["R_line"]
+
+    return xi_line, epsilon_line, R_line
+
+
+def _sort_blr_parameters(**kwargs):
+    """Same as the functions above, but for the BLR."""
+    xi_line = kwargs["xi_line"]
+    lambda_line = kwargs["lambda_line"]
+    R_line = kwargs["R_line"]
+    epsilon_line = lambda_line.to("erg", equivalencies=u.spectral()) / mec2
+
+    return xi_line, epsilon_line.to_value(""), R_line
+
+
+def _sort_dt_parameters(**kwargs):
+    xi_dt = kwargs["xi_dt"]
+    T_dt = kwargs["T_dt"]
+    R_dt = kwargs["R_dt"]
+    epsilon_dt = 2.7 * (k_B * T_dt / mec2).to_value("")
+
+    return xi_dt, epsilon_dt, T_dt, R_dt
 
 
 class SynchrotronSelfComptonSpectralModel(SpectralModel):
@@ -95,24 +177,10 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
 
         nu = energy.to("Hz", equivalencies=u.spectral())
 
-        # sort the parameters related to the emission region
-        z = kwargs.pop("z")
-        delta_D = kwargs.pop("delta_D")
-        B = 10 ** kwargs.pop("log10_B") * u.G
-        t_var = kwargs.pop("t_var")
-        # compute the luminosity distance and the size of the emission region
-        d_L = Distance(z=z).to("cm")
-        R_b = (c * t_var * delta_D / (1 + z)).to("cm")
+        args = _sort_spectral_parameters(self._spectral_pars_names, **kwargs)
+        z, d_L, delta_D, B, R_b = _sort_emission_region_parameters("ssc", **kwargs)
 
-        # pop the norm and raise to 10 the spectral parameters with log10_ names
-        kwargs.pop("norm")
-        args = [
-            10 ** (kwargs[key].value) if key.startswith("log10_") else kwargs[key].value
-            for key in kwargs
-        ]
-        # first comes the norm
-        args[0] *= u.Unit("cm-3")
-
+        # evaluate the synch. and SSC SEDs
         sed_synch = Synchrotron.evaluate_sed_flux(
             nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
         )
@@ -136,7 +204,7 @@ class ExternalComptonSpectralModel(SpectralModel):
 
     tag = ["ExternalComptonSpectralModel"]
 
-    def __init__(self, n_e, targets, blr_line="Lyalpha", ssa=False):
+    def __init__(self, n_e, targets, ssa=False):
         """Gammapy wrapper for a source emitting Synchrotron, SSC, and EC on a
         list of targets.
 
@@ -148,8 +216,6 @@ class ExternalComptonSpectralModel(SpectralModel):
             targets to be considered for external Compton
             typically we consider the BLR or the DT or both, the EC on disk
             is not considered as it is subdominant at distances >> R_out
-        blr_line : str
-            line to be considered if EC on BLR is computed
         ssa : bool
             whether or not to calculate synchrotron self-absorption
 
@@ -163,15 +229,15 @@ class ExternalComptonSpectralModel(SpectralModel):
         self.ssa = ssa
 
         # parameters of the particles energy distribution
-        spectral_pars = get_spectral_parameters_from_n_e(self._n_e)
+        spectral_pars = get_spectral_parameters_from_n_e(self._n_e, backend="gammapy")
         self._spectral_pars_names = list(spectral_pars.keys())
 
         # parameters of the emission region
-        emission_region_pars = get_emission_region_parameters("ec")
+        emission_region_pars = get_emission_region_parameters("ec", backend="gammapy")
         self._emission_region_pars_names = list(emission_region_pars.keys())
 
         # parameters of the targets
-        targets_pars = get_targets_parameters(blr_line)
+        targets_pars = get_targets_parameters(self.targets, backend="gammapy")
         self._targets_pars_names = list(targets_pars.keys())
 
         # group the model parameters, add the norm at the bottom of the list
@@ -209,46 +275,12 @@ class ExternalComptonSpectralModel(SpectralModel):
 
         nu = energy.to("Hz", equivalencies=u.spectral())
 
-        # sort the parameters related to the emission region
-        z = kwargs.pop("z")
-        delta_D = kwargs.pop("delta_D")
-        B = 10 ** kwargs.pop("log10_B") * u.G
-        t_var = kwargs.pop("t_var")
-        mu_s = kwargs.pop("mu_s")
-        r = 10 ** kwargs.pop("log10_r") * u.cm
-        # compute the luminosity distance and the size of the emission region
-        d_L = Distance(z=z).to("cm")
-        R_b = (c * t_var * delta_D / (1 + z)).to("cm")
+        args = _sort_spectral_parameters(self._spectral_pars_names, **kwargs)
+        z, d_L, delta_D, B, R_b, mu_s, r = _sort_emission_region_parameters(
+            "ec", **kwargs
+        )
 
-        # now sort the parameters related to the targets
-        # - Disk
-        L_disk = kwargs.pop("L_disk")
-        M_BH = kwargs.pop("M_BH")
-        m_dot = kwargs.pop("m_dot")
-        R_in = kwargs.pop("R_in")
-        R_out = kwargs.pop("R_out")
-        # - BLR
-        xi_line = kwargs.pop("xi_line")
-        lambda_line = kwargs.pop("lambda_line")
-        R_line = kwargs.pop("R_line")
-        epsilon_line = (
-            lambda_line.to("erg", equivalencies=u.spectral()) / mec2
-        ).to_value("")
-        # - DT
-        xi_dt = kwargs.pop("xi_dt")
-        T_dt = kwargs.pop("T_dt")
-        R_dt = kwargs.pop("R_dt")
-        epsilon_dt = 2.7 * (k_B * T_dt / mec2).to_value("")
-
-        # pop the norm and raise to 10 the spectral parameters with log10_ names
-        kwargs.pop("norm")
-        args = [
-            10 ** (kwargs[key].value) if key.startswith("log10_") else kwargs[key].value
-            for key in kwargs
-        ]
-        # first comes the norm
-        args[0] *= u.Unit("cm-3")
-
+        # evaluate the synch. and SSC SEDs
         sed_synch = Synchrotron.evaluate_sed_flux(
             nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
         )
@@ -257,7 +289,16 @@ class ExternalComptonSpectralModel(SpectralModel):
         )
         sed = sed_synch + sed_ssc
 
+        # add the disk thermal components
+        L_disk, M_BH, m_dot, R_in, R_out = _sort_disk_parameters(**kwargs)
+        sed_bb_disk = SSDisk.evaluate_multi_T_bb_norm_sed(
+            nu, z, L_disk, M_BH, m_dot, R_in, R_out, d_L
+        )
+        sed += sed_bb_disk
+
+        # add the EC components
         if "blr" in self.targets:
+            xi_line, epsilon_line, R_line = _sort_blr_parameters(**kwargs)
             sed_ec_blr = ExternalCompton.evaluate_sed_flux_blr(
                 nu,
                 z,
@@ -277,6 +318,7 @@ class ExternalComptonSpectralModel(SpectralModel):
             sed += sed_ec_blr
 
         if "dt" in self.targets:
+            xi_dt, epsilon_dt, T_dt, R_dt = _sort_dt_parameters(**kwargs)
             sed_ec_dt = ExternalCompton.evaluate_sed_flux_dt(
                 nu,
                 z,
@@ -294,18 +336,11 @@ class ExternalComptonSpectralModel(SpectralModel):
                 gamma=gamma_to_integrate
             )
             sed += sed_ec_dt
-
-            # now add the thermal component as well
+            # add the thermal emission of the DT as well
             sed_bb_dt = RingDustTorus.evaluate_bb_norm_sed(
                 nu, z, xi_dt * L_disk, T_dt, R_dt, d_L
             )
             sed += sed_bb_dt
-
-        # thermal disk component
-        sed_bb_disk = SSDisk.evaluate_multi_T_bb_norm_sed(
-            nu, z, L_disk, M_BH, m_dot, R_in, R_out, d_L
-        )
-        sed += sed_bb_disk
 
         # eventual reshaping
         # we can do here something like
