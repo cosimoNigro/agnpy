@@ -11,8 +11,8 @@ from ..synchrotron import Synchrotron
 from ..compton import SynchrotronSelfCompton, ExternalCompton
 from .core import (
     get_spectral_parameters_from_n_e,
-    get_emission_region_parameters,
-    get_targets_parameters,
+    make_emission_region_parameters_dict,
+    make_targets_parameters_dict,
 )
 
 
@@ -267,6 +267,9 @@ def _evaluate_sed_ec_blr_dt_scenario(x, pars, n_e, ssa):
     sed_bb_disk = SSDisk.evaluate_multi_T_bb_norm_sed(
         x, z, L_disk, M_BH, m_dot, R_in, R_out, d_L
     )
+    sed_bb_dt = RingDustTorus.evaluate_bb_norm_sed(
+        x, z, xi_dt * L_disk, T_dt, R_dt, d_L
+    )
     sed_ec_blr = ExternalCompton.evaluate_sed_flux_blr(
         x,
         z,
@@ -299,7 +302,7 @@ def _evaluate_sed_ec_blr_dt_scenario(x, pars, n_e, ssa):
         *args,
         gamma=gamma_to_integrate
     )
-    return sed_synch + sed_ssc + sed_bb_disk + sed_ec_blr + sed_ec_dt
+    return sed_synch + sed_ssc + sed_bb_disk + sed_bb_dt + sed_ec_blr + sed_ec_dt
 
 
 class SynchrotronSelfComptonRegriddableModel1D(model.RegriddableModel1D):
@@ -327,7 +330,7 @@ class SynchrotronSelfComptonRegriddableModel1D(model.RegriddableModel1D):
         )
 
         # parameters of the emission region
-        emission_region_pars = get_emission_region_parameters(
+        emission_region_pars = make_emission_region_parameters_dict(
             "ssc", backend="sherpa", modelname=self.name
         )
 
@@ -342,6 +345,13 @@ class SynchrotronSelfComptonRegriddableModel1D(model.RegriddableModel1D):
             pars_attr_list.append(getattr(self, par.name))
 
         super().__init__(self.name, tuple(pars_attr_list))
+
+    def set_emission_region_parameters_from_blob(self, blob):
+        """Set the parameter of the emission region from a Blob instance"""
+        self.z = blob.z
+        self.delta_D = blob.delta_D
+        self.log10_B = np.log10(blob.B.to_value("G"))
+        self.t_var = blob.t_var.to_value("s")
 
     def calc(self, pars, x):
         """Evaluate the SED model."""
@@ -379,12 +389,12 @@ class ExternalComptonRegriddableModel1D(model.RegriddableModel1D):
         )
 
         # parameters of the emission region
-        emission_region_pars = get_emission_region_parameters(
+        emission_region_pars = make_emission_region_parameters_dict(
             "ec", backend="sherpa", modelname=self.name
         )
 
         # parameters of the targets
-        targets_pars = get_targets_parameters(
+        targets_pars = make_targets_parameters_dict(
             self.targets, backend="sherpa", modelname=self.name
         )
 
@@ -403,6 +413,34 @@ class ExternalComptonRegriddableModel1D(model.RegriddableModel1D):
             pars_attr_list.append(getattr(self, par.name))
 
         super().__init__(self.name, tuple(pars_attr_list))
+
+    def set_emission_region_parameters_from_blob(self, blob, r):
+        """Set the parameter of the emission region from a Blob instance.
+        Since this is EC, remember to specify also the distance"""
+        self.z = blob.z
+        self.delta_D = blob.delta_D
+        self.log10_B = np.log10(blob.B.to_value("G"))
+        self.t_var = blob.t_var.to_value("s")
+        self.mu_s = blob.mu_s
+        self.log10_r = np.log10(r.to_value("cm"))
+
+    def set_targets_parameters_from_targets(self, disk, blr=None, dt=None):
+        """Set the parameter of the targets for EC from instances of `~agnpy.targets`."""
+        self.log10_L_disk = np.log10(disk.L_disk.to_value("erg s-1"))
+        self.M_BH = disk.M_BH.to_value("g")
+        self.m_dot = disk.m_dot.to_value("g s-1")
+        self.R_in = disk.R_in.to_value("cm")
+        self.R_out = disk.R_out.to_value("cm")
+
+        if blr is not None:
+            self.xi_line = blr.xi_line
+            self.lambda_line = blr.lambda_line.to_value("Angstrom")
+            self.R_line = blr.R_line.to_value("cm")
+
+        if dt is not None:
+            self.xi_dt = dt.xi_dt
+            self.T_dt = dt.T_dt.to_value("K")
+            self.R_dt = dt.R_dt.to_value("cm")
 
     def calc(self, pars, x):
         """Evaluate the SED model."""

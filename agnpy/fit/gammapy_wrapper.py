@@ -11,8 +11,8 @@ from ..compton import SynchrotronSelfCompton, ExternalCompton
 from ..targets import SSDisk, RingDustTorus
 from .core import (
     get_spectral_parameters_from_n_e,
-    get_emission_region_parameters,
-    get_targets_parameters,
+    make_emission_region_parameters_dict,
+    make_targets_parameters_dict,
 )
 
 
@@ -147,7 +147,9 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         self._spectral_pars_names = list(spectral_pars.keys())
 
         # parameters of the emission region
-        emission_region_pars = get_emission_region_parameters("ssc", backend="gammapy")
+        emission_region_pars = make_emission_region_parameters_dict(
+            "ssc", backend="gammapy"
+        )
         self._emission_region_pars_names = list(emission_region_pars.keys())
 
         # group the model parameters, add the norm at the bottom of the list
@@ -167,6 +169,13 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
     def emission_region_parameters(self):
         """Select all the parameters related to the emission region."""
         return self.parameters.select(self._emission_region_pars_names)
+
+    def set_emission_region_parameters_from_blob(self, blob):
+        """Set the parameter of the emission region from a Blob instance"""
+        self.parameters["z"].value = blob.z
+        self.parameters["delta_D"].value = blob.delta_D
+        self.parameters["log10_B"].value = np.log10(blob.B.to_value("G"))
+        self.parameters["t_var"].value = blob.t_var.to_value("s")
 
     def evaluate(self, energy, **kwargs):
         """Evaluate the SED model.
@@ -231,11 +240,13 @@ class ExternalComptonSpectralModel(SpectralModel):
         self._spectral_pars_names = list(spectral_pars.keys())
 
         # parameters of the emission region
-        emission_region_pars = get_emission_region_parameters("ec", backend="gammapy")
+        emission_region_pars = make_emission_region_parameters_dict(
+            "ec", backend="gammapy"
+        )
         self._emission_region_pars_names = list(emission_region_pars.keys())
 
         # parameters of the targets
-        targets_pars = get_targets_parameters(self.targets, backend="gammapy")
+        targets_pars = make_targets_parameters_dict(self.targets, backend="gammapy")
         self._targets_pars_names = list(targets_pars.keys())
 
         # group the model parameters, add the norm at the bottom of the list
@@ -250,6 +261,36 @@ class ExternalComptonSpectralModel(SpectralModel):
         )
 
         super().__init__()
+
+    def set_emission_region_parameters_from_blob(self, blob, r):
+        """Set the parameter of the emission region from a Blob instance.
+        Since this is EC, remember to specify also the distance"""
+        self.parameters["z"].value = blob.z
+        self.parameters["delta_D"].value = blob.delta_D
+        self.parameters["log10_B"].value = np.log10(blob.B.to_value("G"))
+        self.parameters["t_var"].value = blob.t_var.to_value("s")
+        self.parameters["mu_s"].value = blob.mu_s
+        self.parameters["log10_r"].value = np.log10(r.to_value("cm"))
+
+    def set_targets_parameters_from_targets(self, disk, blr=None, dt=None):
+        """Set the parameter of the targets for EC from instances of `~agnpy.targets`."""
+        self.parameters["log10_L_disk"].value = np.log10(
+            disk.L_disk.to_value("erg s-1")
+        )
+        self.parameters["M_BH"].value = disk.M_BH.to_value("g")
+        self.parameters["m_dot"].value = disk.m_dot.to_value("g s-1")
+        self.parameters["R_in"].value = disk.R_in.to_value("cm")
+        self.parameters["R_out"].value = disk.R_out.to_value("cm")
+
+        if blr is not None:
+            self.parameters["xi_line"].value = blr.xi_line
+            self.parameters["lambda_line"].value = blr.lambda_line.to_value("Angstrom")
+            self.parameters["R_line"].value = blr.R_line.to_value("cm")
+
+        if dt is not None:
+            self.parameters["xi_dt"].value = dt.xi_dt
+            self.parameters["T_dt"].value = dt.T_dt.to_value("K")
+            self.parameters["R_dt"].value = dt.R_dt.to_value("cm")
 
     @property
     def spectral_parameters(self):

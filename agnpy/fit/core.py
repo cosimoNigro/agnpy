@@ -108,7 +108,7 @@ def get_spectral_parameters_from_n_e(n_e, backend, modelname=None):
     return parameters
 
 
-def get_emission_region_parameters(scenario, backend, modelname=None):
+def make_emission_region_parameters_dict(scenario, backend, modelname=None):
     """Return a dict of `~agnpy.fit.core.Parameter`s for the emission region.
     The list of parameters is different whether we are considering a SSC or EC
     model.
@@ -163,7 +163,7 @@ def get_emission_region_parameters(scenario, backend, modelname=None):
     return parameters
 
 
-def get_targets_parameters(targets, backend, modelname=None):
+def make_targets_parameters_dict(targets, backend, modelname=None):
     """Return a dict of `~agnpy.fit.core.Parameter`s for the line and thermal
     emitters.
 
