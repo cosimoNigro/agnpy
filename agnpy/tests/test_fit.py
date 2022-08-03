@@ -83,11 +83,45 @@ r = 1e16 * u.cm
 nu = np.logspace(9, 29, 100) * u.Hz
 E = nu.to("eV", equivalencies=u.spectral())
 
+ec_blr_parameters_names = [
+    "log10_L_disk",
+    "M_BH",
+    "m_dot",
+    "R_in",
+    "R_out",
+    "xi_line",
+    "lambda_line",
+    "R_line",
+]
+ec_dt_parameters_names = [
+    "log10_L_disk",
+    "M_BH",
+    "m_dot",
+    "R_in",
+    "R_out",
+    "xi_dt",
+    "T_dt",
+    "R_dt",
+]
+ec_blr_dt_parameters_names = [
+    "log10_L_disk",
+    "M_BH",
+    "m_dot",
+    "R_in",
+    "R_out",
+    "xi_line",
+    "lambda_line",
+    "R_line",
+    "xi_dt",
+    "T_dt",
+    "R_dt",
+]
 
-class TestGammapyWrapper:
+
+class TestFit:
     """Test the wrappers for fitting."""
 
-    def test_spectral_emission_region_parameters(self):
+    def test_gammapy_spectral_emission_region_parameters_names(self):
         """Test that the parameters of the spectrum and of the emission region
         can be correctly fetched."""
         ssc_model = SynchrotronSelfComptonModel(ssc_blob.n_e, backend="gammapy")
@@ -111,100 +145,104 @@ class TestGammapyWrapper:
         assert u.isclose(ssc_model.spectral_parameters["log10_k_e"].value, log10_k_e)
 
     @pytest.mark.parametrize(
-        "targets, parameters_names",
+        "targets, targets_parameters_names",
         [
-            (
-                ["blr"],
-                [
-                    "log10_L_disk",
-                    "M_BH",
-                    "m_dot",
-                    "R_in",
-                    "R_out",
-                    "xi_line",
-                    "lambda_line",
-                    "R_line",
-                ],
-            ),
-            (
-                ["dt"],
-                [
-                    "log10_L_disk",
-                    "M_BH",
-                    "m_dot",
-                    "R_in",
-                    "R_out",
-                    "xi_dt",
-                    "T_dt",
-                    "R_dt",
-                ],
-            ),
-            (
-                ["blr", "dt"],
-                [
-                    "log10_L_disk",
-                    "M_BH",
-                    "m_dot",
-                    "R_in",
-                    "R_out",
-                    "xi_line",
-                    "lambda_line",
-                    "R_line",
-                    "xi_dt",
-                    "T_dt",
-                    "R_dt",
-                ],
-            ),
+            (["blr"], ec_blr_parameters_names),
+            (["dt"], ec_dt_parameters_names),
+            (["blr", "dt"], ec_blr_dt_parameters_names),
         ],
     )
-    def test_targets_parameters(self, targets, parameters_names):
+    def test_gamampy_targets_parameters_names(self, targets, targets_parameters_names):
         """In this function we just test that the targets are correctly loaded
         and that the list of parameters is what we expect."""
-
         ec_model = ExternalComptonModel(ec_blob.n_e, targets, backend="gammapy")
-        assert ec_model.targets_parameters.names == parameters_names
+        assert ec_model.targets_parameters.names == targets_parameters_names
 
-    def test_synchrotron_self_compton_spectral_model(self):
+    def test_sherpa_ssc_model_parameters_names(self):
+        """Test the names of the SSC model parameters for the `sherpa` wrapper."""
+        ssc_model = SynchrotronSelfComptonModel(ssc_blob.n_e, backend="sherpa")
+        pars_names = [par.name for par in ssc_model.pars]
+        assert pars_names == [
+            "log10_k_e",
+            "p",
+            "log10_gamma_min",
+            "log10_gamma_max",
+            "z",
+            "delta_D",
+            "log10_B",
+            "t_var",
+        ]
+
+    @pytest.mark.parametrize(
+        "targets, targets_parameters_names",
+        [
+            (["blr"], ec_blr_parameters_names),
+            (["dt"], ec_dt_parameters_names),
+            (["blr", "dt"], ec_blr_dt_parameters_names),
+        ],
+    )
+    def test_sherpa_ec_model_parameters_names(self, targets, targets_parameters_names):
+        """Test the names of the EC model parameters for the `sherpa` wrapper."""
+        ec_model = ExternalComptonModel(ec_blob.n_e, targets, backend="sherpa")
+        pars_names = [par.name for par in ec_model.pars]
+        blob_pars = [
+            "log10_k_e",
+            "p1",
+            "p2",
+            "log10_gamma_b",
+            "log10_gamma_min",
+            "log10_gamma_max",
+            "z",
+            "delta_D",
+            "log10_B",
+            "t_var",
+            "mu_s",
+            "log10_r",
+        ]
+        assert pars_names == blob_pars + targets_parameters_names
+
+    @pytest.mark.parametrize("backend", ["gammapy", "sherpa"])
+    def test_synchrotron_self_compton_model(self, backend):
         """Test the SSC model SED computation using agnpy classes against that
-        obtained with the Gammapy wrapper."""
+        obtained with the Gammapy and sherpa wrappers."""
         # agnpy radiative processes
         synch = Synchrotron(ssc_blob, ssa=True)
         ssc = SynchrotronSelfCompton(ssc_blob, ssa=True)
 
-        # Gammapy's SpectralModel
-        ssc_model = SynchrotronSelfComptonModel(ssc_blob.n_e, ssa=True, backend="gammapy")
-        # set the parameters to be the same as the ssc_blob
-        ssc_model.parameters["z"].value = ssc_blob.z
-        ssc_model.parameters["delta_D"].value = ssc_blob.delta_D
-        ssc_model.parameters["log10_B"].value = np.log10(ssc_blob.B.to_value("G"))
-        ssc_model.parameters["t_var"].value = ssc_blob.t_var.to_value("s")
+        # model
+        ssc_model = SynchrotronSelfComptonModel(ssc_blob.n_e, ssa=True, backend=backend)
+        ssc_model.set_emission_region_parameters_from_blob(ssc_blob)
 
-        # SEDs
+        # compute SEDs from agnpy and the wrappers
+        if backend == "sherpa":
+            sed_wrapper = ssc_model(nu.to_value("Hz"))
         sed_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu)
-        sed_gammapy = (E ** 2 * ssc_model(E)).to("erg cm-2 s-1")
+        if backend == "gammapy":
+            sed_wrapper = (E ** 2 * ssc_model(E)).to("erg cm-2 s-1")
 
         nu_range = [1e9, 1e27] * u.Hz
         make_comparison_plot(
             nu,
-            sed_gammapy,
+            sed_wrapper,
             sed_agnpy,
-            "Gammapy wrapper",
+            f"{backend} wrapper",
             "agnpy",
-            "synchrotron + SSC",
-            figures_dir / "gammapy_ssc_wrapper.png",
+            "SSC scenario",
+            figures_dir / f"ssc_scenario_{backend}_wrapper.png",
             "sed",
             y_range=[1e-13, 1e-9],
             comparison_range=nu_range.to_value("Hz"),
         )
         # requires that the SED points deviate less than 1% from the figure
-        assert check_deviation(nu, sed_gammapy, sed_agnpy, 0.1, nu_range)
+        assert check_deviation(nu, sed_wrapper, sed_agnpy, 0.1, nu_range)
 
+    @pytest.mark.parametrize("backend", ["gammapy", "sherpa"])
     @pytest.mark.parametrize(
         "targets, r",
         [(["blr"], 1e16 * u.cm), (["dt"], 1e18 * u.cm), (["blr", "dt"], 2e17 * u.cm)],
     )
-    def test_external_compton_spectral_model(self, targets, r):
-        """Check that the Synch + SSC + EC SED computed with the Gammapy wrapper
+    def test_external_compton_model(self, backend, targets, r):
+        """Check that the Synch + SSC + EC SED computed with the wrappers
         corresponds to the one computed with agnpy."""
         # agnpy radiative processes
         ec_blr = ExternalCompton(ec_blob, blr, r)
@@ -213,66 +251,46 @@ class TestGammapyWrapper:
         ssc = SynchrotronSelfCompton(ec_blob)
         sed_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu) + disk.sed_flux(nu, ec_blob.z)
 
-        # now look at the targets which EC components have to be added
+        # Gammapy wrapper
+        ec_model = ExternalComptonModel(ec_blob.n_e, targets, backend=backend)
+        ec_model.set_emission_region_parameters_from_blob(ec_blob, r)
+
+        # now set the parameters of the target and compute the SEDs
         if targets == ["blr"]:
+            ec_model.set_targets_parameters_from_targets(disk=disk, blr=blr)
             sed_agnpy += ec_blr.sed_flux(nu)
-            title = "EC on BLR comparison"
-            fig_name = "gammapy_ec_blr_wrapper.png"
+            title = "EC on BLR scenario"
+            fig_name = f"ec_blr_scenario_{backend}_wrapper.png"
+
         if targets == ["dt"]:
+            ec_model.set_targets_parameters_from_targets(disk=disk, dt=dt)
             sed_agnpy += dt.sed_flux(nu, ec_blob.z)
             sed_agnpy += ec_dt.sed_flux(nu)
-            title = "EC on DT comparison"
-            fig_name = "gammapy_ec_dt_wrapper.png"
+            title = "EC on DT scenario"
+            fig_name = f"ec_dt_scenario_{backend}_wrapper.png"
+
         if targets == ["blr", "dt"]:
+            ec_model.set_targets_parameters_from_targets(disk=disk, blr=blr, dt=dt)
             sed_agnpy += dt.sed_flux(nu, ec_blob.z)
-            sed_agnpy += ec_blr.sed_flux(nu) + ec_dt.sed_flux(nu)
-            title = "EC on BLR and DT comparison"
-            fig_name = "gammapy_ec_dt_blr_wrapper.png"
+            sed_agnpy += ec_blr.sed_flux(nu)
+            sed_agnpy += ec_dt.sed_flux(nu)
+            title = "EC on BLR and DT scenario"
+            fig_name = f"ec_blr_dt_scenario_{backend}_wrapper.png"
 
-        # Gammapy wrapper
-        ec_model = ExternalComptonModel(ec_blob.n_e, targets, backend="gammapy")
-        # set the same parameters as the agnpy objects
-        # - emission region
-        ec_model.parameters["z"].value = ec_blob.z
-        ec_model.parameters["delta_D"].value = ec_blob.delta_D
-        ec_model.parameters["log10_B"].value = np.log10(ec_blob.B.to_value("G"))
-        ec_model.parameters["t_var"].value = ec_blob.t_var.to_value("s")
-        ec_model.parameters["mu_s"].value = ec_blob.mu_s
-        ec_model.parameters["log10_r"].value = np.log10(r.to_value("cm"))
-        # - EC targets
-        ec_model.parameters["log10_L_disk"].value = np.log10(
-            disk.L_disk.to_value("erg s-1")
-        )
-        ec_model.parameters["M_BH"].value = disk.M_BH.to_value("g")
-        ec_model.parameters["m_dot"].value = disk.m_dot.to_value("g s-1")
-        ec_model.parameters["R_in"].value = disk.R_in.to_value("cm")
-        ec_model.parameters["R_out"].value = disk.R_out.to_value("cm")
-        if "blr" in targets:
-            ec_model.parameters["xi_line"].value = blr.xi_line
-            ec_model.parameters["lambda_line"].value = blr.lambda_line.to_value("Angstrom")
-            ec_model.parameters["R_line"].value = blr.R_line.to_value("cm")
-        if "dt" in targets:
-            ec_model.parameters["xi_dt"].value = dt.xi_dt
-            ec_model.parameters["T_dt"].value = dt.T_dt.to_value("K")
-            ec_model.parameters["R_dt"].value = dt.R_dt.to_value("cm")
-
-        sed_gammapy = (E ** 2 * ec_model(E)).to("erg cm-2 s-1")
+        if backend == "sherpa":
+            sed_wrapper = ec_model(nu.to_value("Hz"))
+        if backend == "gammapy":
+            sed_wrapper = (E ** 2 * ec_model(E)).to("erg cm-2 s-1")
 
         make_comparison_plot(
             nu,
-            sed_gammapy,
+            sed_wrapper,
             sed_agnpy,
-            "Gammapy wrapper",
+            f"{backend} wrapper",
             "agnpy",
             title,
             figures_dir / fig_name,
             "sed",
         )
         # requires that the SED points deviate less than 1% from the figure
-        assert check_deviation(nu, sed_gammapy, sed_agnpy, 0.1)
-
-
-class TestSherpaWrapper:
-
-    def test_model_parameters(self):
-        assert True
+        assert check_deviation(nu, sed_wrapper, sed_agnpy, 0.1)
