@@ -16,7 +16,7 @@ from .core import (
 )
 
 
-gamma_size = 400
+gamma_size = 300
 gamma_to_integrate = np.logspace(1, 9, gamma_size)
 
 
@@ -83,11 +83,11 @@ def _sort_emission_region_parameters(scenario, **kwargs):
 
 def _sort_disk_parameters(**kwargs):
     """Same as the functions above, but for the disk."""
-    L_disk = kwargs.pop("L_disk")
-    M_BH = kwargs.pop("M_BH")
-    m_dot = kwargs.pop("m_dot")
-    R_in = kwargs.pop("R_in")
-    R_out = kwargs.pop("R_out")
+    L_disk = 10 ** kwargs["log10_L_disk"] * u.Unit("erg s-1")
+    M_BH = kwargs["M_BH"]
+    m_dot = kwargs["m_dot"]
+    R_in = kwargs["R_in"]
+    R_out = kwargs["R_out"]
 
     return L_disk, M_BH, m_dot, R_in, R_out
 
@@ -96,12 +96,10 @@ def _sort_blr_parameters(**kwargs):
     """Same as the functions above, but for the BLR."""
     xi_line = kwargs["xi_line"]
     lambda_line = kwargs["lambda_line"]
-    epsilon_line = (lambda_line.to("erg", equivalencies=u.spectral()) / mec2).to_value(
-        ""
-    )
+    epsilon_line = lambda_line.to("erg", equivalencies=u.spectral()) / mec2
     R_line = kwargs["R_line"]
 
-    return xi_line, epsilon_line, R_line
+    return xi_line, epsilon_line.to_value(""), R_line
 
 
 def _sort_blr_parameters(**kwargs):
