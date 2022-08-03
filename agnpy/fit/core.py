@@ -24,6 +24,10 @@ class Parameter:
         modelname : str
             The name of the model component containing the parameter.
         """
+        # sherpa has a hard_max set to
+        hard_max = 3.40282e38
+        if self.max > hard_max:
+            hard_max = 1e50
         return model.Parameter(
             modelname=modelname,
             name=self.name,
@@ -31,6 +35,7 @@ class Parameter:
             units=self.unit,
             min=self.min,
             max=self.max,
+            hard_max=hard_max,
             frozen=self.frozen,
         )
 
@@ -77,7 +82,7 @@ def get_spectral_parameters_from_n_e(n_e, backend, modelname=None):
             )
         elif name == "gamma_min":
             par = Parameter(
-                "log10_gamma_min", np.log10(value), "", min=1, max=3, frozen=True
+                "log10_gamma_min", np.log10(value), "", min=0, max=4, frozen=True
             )
         elif name == "gamma_max":
             par = Parameter(
@@ -180,22 +185,22 @@ def get_targets_parameters(targets, backend, modelname=None):
     _pars = []
 
     # disk parameters
-    L_disk = Parameter("L_disk", 1e45, "erg s-1", min=1e42, max=1e48, frozen=True)
+    log10_L_disk = Parameter("log10_L_disk", 45, "", min=42, max=48, frozen=True)
     M_BH = Parameter("M_BH", 1e42, "g", min=1e32, max=1e45, frozen=True)
     m_dot = Parameter("m_dot", 1e26, "g s-1", min=1e24, max=1e30, frozen=True)
     R_in = Parameter("R_in", 1e14, "cm", min=1e12, max=1e16, frozen=True)
     R_out = Parameter("R_out", 1e17, "cm", min=1e12, max=1e19, frozen=True)
-    _pars_names.extend(["L_disk", "M_BH", "m_dot", "R_in", "R_out"])
-    _pars.extend([L_disk, M_BH, m_dot, R_in, R_out])
+    _pars_names.extend(["log10_L_disk", "M_BH", "m_dot", "R_in", "R_out"])
+    _pars.extend([log10_L_disk, M_BH, m_dot, R_in, R_out])
 
     if "blr" in targets:
         xi_line = Parameter("xi_line", 0.6, "", min=0.0, max=1.0, frozen=True)
         lambda_line = Parameter(
             "lambda_line", 1215.67, "Angstrom", min=900, max=7000, frozen=True
         )
-        R_line = Parameter("R_line", "1e17", "cm", min=1e16, max=1e18, frozen=True)
+        R_line = Parameter("R_line", 1e17, "cm", min=1e16, max=1e18, frozen=True)
         _pars_names.extend(["xi_line", "lambda_line", "R_line"])
-        _pars.append([xi_line, lambda_line, R_line])
+        _pars.extend([xi_line, lambda_line, R_line])
 
     if "dt" in targets:
         xi_dt = Parameter("xi_dt", 0.6, "", min=0.0, max=1.0, frozen=True)
