@@ -294,3 +294,6 @@ class TestFit:
         )
         # requires that the SED points deviate less than 1% from the figure
         assert check_deviation(nu, sed_wrapper, sed_agnpy, 0.1)
+
+def test_fit_mrk421_data(self):
+    
