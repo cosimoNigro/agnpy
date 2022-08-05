@@ -20,27 +20,6 @@ gamma_size = 300
 gamma_to_integrate = np.logspace(1, 9, gamma_size)
 
 
-def add_systematic_errors_flux_points(flux_points, syst):
-    """Add the systematic error on the flux points in a given energy range.
-    We symply sum the systematic error in quadrature with the statystical one.
-    The systematic error is given as a percentage of the flux value.
-
-    Parameters
-    ----------
-    flux_points : `~gammapy.estimators.FluxPoints`
-        Gammapy's flux points
-    syst : float
-        systematic error as a percentage of the dnde flux
-    """
-    dnde_err_syst = syst * flux_points.dnde.data
-    # sum in quadrature with the stat error
-    dnde_errn_tot = np.sqrt(flux_points.dnde_errn.data ** 2 + dnde_err_syst ** 2)
-    dnde_errp_tot = np.sqrt(flux_points.dnde_errp.data ** 2 + dnde_err_syst ** 2)
-    # the attributes we have to change is the norm_errn and norm_errp
-    flux_points.norm_errn.data = dnde_errn_tot / flux_points.dnde_ref.data
-    flux_points.norm_errp.data = dnde_errp_tot / flux_points.dnde_ref.data
-
-
 def _sort_spectral_parameters(spectral_pars_names, **kwargs):
     """All the model parameters will be passed as **kwargs by
     SpectralModel.evaluate(). This function helps sort out those related to the
