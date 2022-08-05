@@ -48,12 +48,13 @@ def _evaluate_sed_ssc_scenario(x, pars, n_e, ssa):
     R_b = (c.to_value("cm s-1") * t_var * delta_D) / (1 + z) * u.cm
 
     # evaluate the SED
-    x *= u.Hz
+    x *= u.eV
+    nu = x.to("Hz", equivalencies=u.spectral())
     sed_synch = Synchrotron.evaluate_sed_flux(
-        x, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
+        nu, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
     )
     sed_ssc = SynchrotronSelfCompton.evaluate_sed_flux(
-        x, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
+        nu, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
     )
     return sed_synch + sed_ssc
 
@@ -103,18 +104,19 @@ def _evaluate_sed_ec_blr_scenario(x, pars, n_e, ssa):
     )
 
     # evaluate the SED
-    x *= u.Hz
+    x *= u.eV
+    nu = x.to("Hz", equivalencies=u.spectral())
     sed_synch = Synchrotron.evaluate_sed_flux(
-        x, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
+        nu, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
     )
     sed_ssc = SynchrotronSelfCompton.evaluate_sed_flux(
-        x, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
+        nu, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
     )
     sed_bb_disk = SSDisk.evaluate_multi_T_bb_norm_sed(
-        x, z, L_disk, M_BH, m_dot, R_in, R_out, d_L
+        nu, z, L_disk, M_BH, m_dot, R_in, R_out, d_L
     )
     sed_ec_blr = ExternalCompton.evaluate_sed_flux_blr(
-        x,
+        nu,
         z,
         d_L,
         delta_D,
@@ -174,21 +176,22 @@ def _evaluate_sed_ec_dt_scenario(x, pars, n_e, ssa):
     epsilon_dt = 2.7 * (k_B * T_dt / mec2).to_value("")
 
     # evaluate the SED
-    x *= u.Hz
+    x *= u.eV
+    nu = x.to("Hz", equivalencies=u.spectral())
     sed_synch = Synchrotron.evaluate_sed_flux(
-        x, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
+        nu, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
     )
     sed_ssc = SynchrotronSelfCompton.evaluate_sed_flux(
-        x, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
+        nu, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
     )
     sed_bb_disk = SSDisk.evaluate_multi_T_bb_norm_sed(
-        x, z, L_disk, M_BH, m_dot, R_in, R_out, d_L
+        nu, z, L_disk, M_BH, m_dot, R_in, R_out, d_L
     )
     sed_bb_dt = RingDustTorus.evaluate_bb_norm_sed(
-        x, z, xi_dt * L_disk, T_dt, R_dt, d_L
+        nu, z, xi_dt * L_disk, T_dt, R_dt, d_L
     )
     sed_ec_dt = ExternalCompton.evaluate_sed_flux_dt(
-        x,
+        nu,
         z,
         d_L,
         delta_D,
@@ -257,21 +260,22 @@ def _evaluate_sed_ec_blr_dt_scenario(x, pars, n_e, ssa):
     epsilon_dt = 2.7 * (k_B * T_dt / mec2).to_value("")
 
     # evaluate the SED
-    x *= u.Hz
+    x *= u.eV
+    nu = x.to("Hz", equivalencies=u.spectral())
     sed_synch = Synchrotron.evaluate_sed_flux(
-        x, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
+        nu, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
     )
     sed_ssc = SynchrotronSelfCompton.evaluate_sed_flux(
-        x, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
+        nu, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
     )
     sed_bb_disk = SSDisk.evaluate_multi_T_bb_norm_sed(
-        x, z, L_disk, M_BH, m_dot, R_in, R_out, d_L
+        nu, z, L_disk, M_BH, m_dot, R_in, R_out, d_L
     )
     sed_bb_dt = RingDustTorus.evaluate_bb_norm_sed(
-        x, z, xi_dt * L_disk, T_dt, R_dt, d_L
+        nu, z, xi_dt * L_disk, T_dt, R_dt, d_L
     )
     sed_ec_blr = ExternalCompton.evaluate_sed_flux_blr(
-        x,
+        nu,
         z,
         d_L,
         delta_D,
@@ -287,7 +291,7 @@ def _evaluate_sed_ec_blr_dt_scenario(x, pars, n_e, ssa):
         gamma=gamma_to_integrate
     )
     sed_ec_dt = ExternalCompton.evaluate_sed_flux_dt(
-        x,
+        nu,
         z,
         d_L,
         delta_D,

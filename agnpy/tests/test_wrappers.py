@@ -217,10 +217,11 @@ class TestWrappers:
 
         # compute SEDs from agnpy and the wrappers
         if backend == "sherpa":
-            sed_wrapper = ssc_model(nu.to_value("Hz"))
-        sed_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu)
+            sed_wrapper = ssc_model(E.to_value("eV"))
         if backend == "gammapy":
             sed_wrapper = (E ** 2 * ssc_model(E)).to("erg cm-2 s-1")
+
+        sed_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu)
 
         nu_range = [1e9, 1e27] * u.Hz
         make_comparison_plot(
@@ -280,7 +281,7 @@ class TestWrappers:
             fig_name = f"ec_blr_dt_scenario_{backend}_wrapper.png"
 
         if backend == "sherpa":
-            sed_wrapper = ec_model(nu.to_value("Hz"))
+            sed_wrapper = ec_model(E.to_value("eV"))
         if backend == "gammapy":
             sed_wrapper = (E ** 2 * ec_model(E)).to("erg cm-2 s-1")
 
