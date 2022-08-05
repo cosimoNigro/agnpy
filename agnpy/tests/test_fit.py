@@ -6,163 +6,131 @@ from astropy.table import Table
 import pytest
 
 # sherpa
-from sherpa import data
 import sherpa.fit
 from sherpa.stats import Chi2
 from sherpa.optmethods import LevMar
 
 # gammapy
-from gammapy.estimators import FluxPoints
-from gammapy.datasets import FluxPointsDataset, Datasets
 from gammapy.modeling.models import SkyModel
 import gammapy.modeling
 
 # agnpy
 from agnpy.spectra import BrokenPowerLaw, ExpCutoffPowerLaw
 from agnpy.fit import (
-    add_systematic_errors_flux_points,
+    load_sherpa_flux_points,
+    load_gammapy_flux_points,
     SynchrotronSelfComptonModel,
     ExternalComptonModel,
 )
 
+# dictionaries with the systematics for the Mrk421 and PKS1510-089 data
+# let us assume 30% for VHE, 10% for HE and X-ray and 5% for the rest
+systemtics_dict_mrk421 = {
+    "Fermi": 0.10,
+    "GASP": 0.05,
+    "GRT": 0.05,
+    "MAGIC": 0.30,
+    "MITSuME": 0.05,
+    "Medicina": 0.05,
+    "Metsahovi": 0.05,
+    "NewMexicoSkies": 0.05,
+    "Noto": 0.05,
+    "OAGH": 0.05,
+    "OVRO": 0.05,
+    "RATAN": 0.05,
+    "ROVOR": 0.05,
+    "RXTE/PCA": 0.10,
+    "SMA": 0.05,
+    "Swift/BAT": 0.10,
+    "Swift/UVOT": 0.05,
+    "Swift/XRT": 0.10,
+    "VLBA(BK150)": 0.05,
+    "VLBA(BP143)": 0.05,
+    "VLBA(MOJAVE)": 0.05,
+    "VLBA_core(BP143)": 0.05,
+    "VLBA_core(MOJAVE)": 0.05,
+    "WIRO": 0.05,
+}
 
-def load_gammapy_flux_points(sed_path):
-    """Load the MWL SED at `sed_path` in a list of
-    `~gammapy.datasets.FluxPointsDataset`. Add the systematic errors."""
-    datasets = Datasets()
-
-    table = Table.read(sed_path)
-    table = table.group_by("instrument")
-
-    # do not use frequency point below 1e11 Hz, affected by non-blazar emission
-    E_min_fit = (1e11 * u.Hz).to("eV", equivalencies=u.spectral())
-
-    for group in table.groups:
-        name = group["instrument"][0]
-        data = FluxPoints.from_table(group, sed_type="e2dnde", format="gadf-sed")
-
-        # add systematic errors
-        if name == "MAGIC":
-            add_systematic_errors_flux_points(data, 0.30)
-        elif name in [
-            "Fermi",
-            "Fermi-LAT",
-            "RXTE/PCA",
-            "Swift/BAT",
-            "Swift/XRT",
-            "Swift-XRT",
-        ]:
-            add_systematic_errors_flux_points(data, 0.10)
-        else:
-            add_systematic_errors_flux_points(data, 0.05)
-
-        # load the flux points in a dataset
-        dataset = FluxPointsDataset(data=data, name=name)
-
-        # set the minimum energy to be used for the fit
-        dataset.mask_fit = dataset.data.energy_ref > E_min_fit
-
-        datasets.append(dataset)
-
-    return datasets
-
-
-def load_sherpa_flux_points(sed_path):
-    """Load the MWL SED at `sed_path` in a `~sherpa.data.Data1D` object."""
-    table = Table.read(sed_path)
-    table = table.group_by("instrument")
-
-    x = []
-    y = []
-    y_err_stat = []
-    y_err_syst = []
-
-    for tab in table.groups:
-        name = tab["instrument"][0]
-
-        nu = tab["e_ref"].quantity.to_value("Hz", equivalencies=u.spectral())
-        e2dnde = tab["e2dnde"]
-        e2dnde_err_stat = tab["e2dnde_errn"]
-
-        # add systematic error
-        if name == "MAGIC":
-            e2dnde_err_syst = 0.30 * e2dnde
-        elif name in [
-            "Fermi",
-            "Fermi-LAT",
-            "RXTE/PCA",
-            "Swift/BAT",
-            "Swift/XRT",
-            "Swift-XRT",
-        ]:
-            e2dnde_err_syst = 0.10 * e2dnde
-        else:
-            e2dnde_err_syst = 0.05 * e2dnde
-
-        x.extend(nu)
-        y.extend(e2dnde)
-        y_err_stat.extend(e2dnde_err_stat)
-        y_err_syst.extend(e2dnde_err_syst)
-
-    sed = data.Data1D(
-        "sed",
-        np.asarray(x),
-        np.asarray(y),
-        staterror=np.asarray(y_err_stat),
-        syserror=np.asarray(y_err_syst),
-    )
-
-    # set the minimum energy to be used for the fit
-    min_x = 1e11 * u.Hz
-    max_x = 1e30 * u.Hz
-    sed.notice(min_x, max_x)
-
-    return sed
+systematics_dict_pks1510 = {
+    "Fermi-LAT": 0.10,
+    "KVA1": 0.05,
+    "KVA2": 0.05,
+    "MAGIC": 0.30,
+    "Metsahovi": 0.05,
+    "NICS1": 0.05,
+    "NICS2": 0.05,
+    "SMART1": 0.05,
+    "Swift-XRT": 0.10,
+    "TCS1": 0.05,
+    "TCS2": 0.05,
+    "TCS3": 0.05,
+    "TCS4": 0.05,
+    "TCS5": 0.05,
+    "TCS6": 0.05,
+    "UVOT": 0.05,
+}
 
 
 class TestFit:
     """Test the fitting with the gammapy and sherpa models"""
 
     @pytest.mark.parametrize(
-        "sed_path",
+        "sed_path, systematics_dict",
         [
-            "agnpy/data/mwl_seds/Mrk421_2011.ecsv",
-            "agnpy/data/mwl_seds/PKS1510-089_2015b.ecsv",
+            ("agnpy/data/mwl_seds/Mrk421_2011.ecsv", systemtics_dict_mrk421),
+            ("agnpy/data/mwl_seds/PKS1510-089_2015b.ecsv", systematics_dict_pks1510),
         ],
     )
-    def test_sed_loading(self, sed_path):
-        """Test that the MWL SED data are correctly loaded by Gammapy and sherpa."""
+    def test_sed_loading(self, sed_path, systematics_dict):
+        """Test that the same values are loaded by gammapy and sherpa from the
+        MWL SED files."""
+
+        # min and max energy to be considered in the fit
+        E_min = (1e11 * u.Hz).to("eV", equivalencies=u.spectral())
+        E_max = 100 * u.TeV
 
         # load the flux points
-        datasets_gammapy = load_gammapy_flux_points(sed_path)
-        data_1d_sherpa = load_sherpa_flux_points(sed_path)
+        datasets_gammapy = load_gammapy_flux_points(
+            sed_path, E_min, E_max, systematics_dict
+        )
+        data_1d_sherpa = load_sherpa_flux_points(
+            sed_path, E_min, E_max, systematics_dict
+        )
 
         # assert that the SED points are the same
         # gammapy data are divided in dataset, let us group them together again
-        energy_gammapy = []
-        e2dnde_gammappy = []
-        e2dnde_err_gammapy = []
+        energy_gammapy = np.asarray([])
+        e2dnde_gammapy = np.asarray([])
+        e2dnde_errn_gammapy = np.asarray([])
+        e2dnde_errp_gammapy = np.asarray([])
+
         for dataset in datasets_gammapy:
-            energy_gammapy.extend(dataset.data.energy_ref.data)
-            e2dnde_gammappy.extend(
-                dataset.data.e2dnde.quantity.flatten().to_value("erg cm-2 s-1")
+            energy_gammapy = np.append(energy_gammapy, dataset.data.energy_ref.data)
+            e2dnde_gammapy = np.append(
+                e2dnde_gammapy,
+                dataset.data.e2dnde.quantity.flatten().to_value("erg cm-2 s-1"),
             )
-            e2dnde_err_gammapy.extend(
-                dataset.data.e2dnde_errn.quantity.flatten().to_value("erg cm-2 s-1")
+            e2dnde_errn_gammapy = np.append(
+                e2dnde_errn_gammapy,
+                dataset.data.e2dnde_errn.quantity.flatten().to_value("erg cm-2 s-1"),
+            )
+            e2dnde_errp_gammapy = np.append(
+                e2dnde_errp_gammapy,
+                dataset.data.e2dnde_errp.quantity.flatten().to_value("erg cm-2 s-1"),
             )
 
-        energy_sherpa = (data_1d_sherpa.x * u.Hz).to_value(
-            "eV", equivalencies=u.spectral()
-        )
+        # this error is used in the Chi2 computation by gammapy
+        e2dnde_err_gammapy = (e2dnde_errn_gammapy + e2dnde_errp_gammapy) / 2
 
-        assert np.allclose(energy_gammapy, energy_sherpa, atol=0, rtol=1e-3)
-        assert np.allclose(e2dnde_gammappy, data_1d_sherpa.y, atol=0, rtol=1e-3)
+        assert np.allclose(energy_gammapy, data_1d_sherpa.x, atol=0, rtol=1e-5)
+        assert np.allclose(e2dnde_gammapy, data_1d_sherpa.y, atol=0, rtol=1e-5)
         assert np.allclose(
             e2dnde_err_gammapy, data_1d_sherpa.get_error(), atol=0, rtol=1e-3
         )
 
     def test_mrk_421_fit(self):
-        """test the fit of Mrk421 MWL SED. Check that the sherpa and gammapy
+        """Test the fit of Mrk421 MWL SED. Validate that the sherpa and gammapy
         wrappers return the same results."""
         # electron energy distribution
         n_e = BrokenPowerLaw(
@@ -197,15 +165,20 @@ class TestFit:
         ssc_model_sherpa.log10_B = log10_B
 
         # load the gammapy dataset
+        # min and max energy to be considered in the fit
+        E_min = (1e11 * u.Hz).to("eV", equivalencies=u.spectral())
+        E_max = 100 * u.TeV
         datasets_gammapy = load_gammapy_flux_points(
-            "agnpy/data/mwl_seds/Mrk421_2011.ecsv"
+            "agnpy/data/mwl_seds/Mrk421_2011.ecsv", E_min, E_max, systemtics_dict_mrk421
         )
         sky_model = SkyModel(spectral_model=ssc_model_gammapy, name="Mrk421")
         datasets_gammapy.models = [sky_model]
         gammapy_fitter = gammapy.modeling.Fit()
 
         # load the sherpa dataset
-        data_1d_sherpa = load_sherpa_flux_points("agnpy/data/mwl_seds/Mrk421_2011.ecsv")
+        data_1d_sherpa = load_sherpa_flux_points(
+            "agnpy/data/mwl_seds/Mrk421_2011.ecsv", E_min, E_max, systemtics_dict_mrk421
+        )
         sherpa_fitter = sherpa.fit.Fit(
             data_1d_sherpa, ssc_model_sherpa, stat=Chi2(), method=LevMar()
         )
@@ -222,7 +195,7 @@ class TestFit:
         # assert both fits converged
         assert gammapy_result.success == sherpa_result.succeeded
 
-        # assert that the starting statistics are within 1%
+        # assert that the final statistics are within 1%
         sherpa_stat = sherpa_fitter.calc_stat()
         gammapy_stat = datasets_gammapy.stat_sum()
         assert np.isclose(sherpa_stat, gammapy_stat, atol=0, rtol=0.01)
@@ -294,7 +267,7 @@ class TestFit:
         T_dt = 2e3 * u.K
         R_dt = 2.5 * 1e18 * np.sqrt(L_disk.to_value("erg s-1") / 1e45) * u.cm
 
-        # for the gammapy wrapper
+        # set the gammapy wrapper parameters
         ec_model_gammapy.z.value = z
         ec_model_gammapy.delta_D.value = delta_D
         ec_model_gammapy.t_var.value = t_var.to_value("s")
@@ -310,7 +283,7 @@ class TestFit:
         ec_model_gammapy.xi_dt.value = xi_dt
         ec_model_gammapy.T_dt.value = T_dt.to_value("K")
         ec_model_gammapy.R_dt.value = R_dt.to_value("cm")
-        # for the sherpa wrapper
+        # set the sherpa wrapper parameters
         ec_model_sherpa.z = z
         ec_model_sherpa.delta_D = delta_D
         ec_model_sherpa.t_var = t_var.to_value("s")
@@ -328,8 +301,11 @@ class TestFit:
         ec_model_sherpa.R_dt = R_dt.to_value("cm")
 
         # load the gammapy dataset
+        # min and max energy to be considered in the fit
+        E_min = (1e11 * u.Hz).to("eV", equivalencies=u.spectral())
+        E_max = 100 * u.TeV
         datasets_gammapy = load_gammapy_flux_points(
-            "agnpy/data/mwl_seds/PKS1510-089_2015b.ecsv"
+            "agnpy/data/mwl_seds/PKS1510-089_2015b.ecsv", E_min, E_max, systematics_dict_pks1510
         )
         sky_model = SkyModel(spectral_model=ec_model_gammapy, name="Mrk421")
         datasets_gammapy.models = [sky_model]
@@ -337,7 +313,7 @@ class TestFit:
 
         # load the sherpa dataset
         data_1d_sherpa = load_sherpa_flux_points(
-            "agnpy/data/mwl_seds/PKS1510-089_2015b.ecsv"
+            "agnpy/data/mwl_seds/PKS1510-089_2015b.ecsv", E_min, E_max, systematics_dict_pks1510
         )
         sherpa_fitter = sherpa.fit.Fit(
             data_1d_sherpa, ec_model_sherpa, stat=Chi2(), method=LevMar()
@@ -347,7 +323,7 @@ class TestFit:
         sherpa_stat = sherpa_fitter.calc_stat()
         gammapy_stat = datasets_gammapy.stat_sum()
         assert np.isclose(sherpa_stat, gammapy_stat, atol=0, rtol=0.01)
-
+        quit()
         # run the fit!
         gammapy_result = gammapy_fitter.run(datasets_gammapy)
         sherpa_result = sherpa_fitter.fit()
@@ -355,7 +331,7 @@ class TestFit:
         # assert both fits converged
         assert gammapy_result.success == sherpa_result.succeeded
 
-        # assert that the starting statistics are within 1%
+        # assert that the final statistics are within 1%
         sherpa_stat = sherpa_fitter.calc_stat()
         gammapy_stat = datasets_gammapy.stat_sum()
         assert np.isclose(sherpa_stat, gammapy_stat, atol=0, rtol=0.01)
