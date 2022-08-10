@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.8, 3.9, 3.10.0]
 
     steps:
     - uses: actions/checkout@v2
@@ -25,6 +25,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest pytest-cov
         python -m pip install .
+        python -m pip install gammapy
+        python -m pip install sherpa
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

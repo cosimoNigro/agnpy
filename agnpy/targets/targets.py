@@ -147,6 +147,9 @@ lines_dictionary = {
     },
 }
 
+# array of frequencies to numerically integrate the multi-T disk black body
+nu_to_integrate = np.logspace(3, 21, 100) * u.Hz
+
 
 class CMB:
     """Cosmic Microwave Background radiation, approximated as an isotropic
@@ -379,10 +382,10 @@ class SSDisk:
             cosine of the angle between the observer line of sight and the disk axis
         """
         # correct for redshift
-        nu *= 1 + z
+        nu_prime = nu * (1 + z)
         # array to integrate R
         R = np.linspace(R_in, R_out, 100)
-        _R, _nu = axes_reshaper(R, nu)
+        _R, _nu = axes_reshaper(R, nu_prime)
         _T = SSDisk.evaluate_T(_R, M_BH, m_dot, R_in)
         _I_nu = BlackBody().evaluate(_nu, _T, scale=1)
         integrand = _R / np.power(d_L, 2) * _I_nu * u.sr
@@ -396,13 +399,22 @@ class SSDisk:
         """Evaluate a normalised, multi-temperature black body SED as in
         :func:`~targets.SSDisk.evaluate_multi_T_bb_sed`, but the integral luminosity
         is set to be equal to `L_disk`."""
-        sed_disk = SSDisk.evaluate_multi_T_bb_sed(
-            nu, z, M_BH, m_dot, R_in, R_out, d_L, mu_s
+        # it is difficult to integrate numerically the multi-T BB of the disk
+        # to get the total luminosity, let us integrate it numerically
+        # over a large range of frequencies
+        F_nu_norm = (
+            SSDisk.evaluate_multi_T_bb_sed(
+                nu_to_integrate, z, M_BH, m_dot, R_in, R_out, d_L, mu_s
+            )
+            / nu_to_integrate
         )
         # renormalise, the factor 2 includes the two sides of the Disk
-        L = 2 * (np.trapz(sed_disk / nu, nu) * 4 * np.pi * d_L ** 2).to("erg s-1")
+        A = 4 * np.pi * d_L ** 2
+        L = 2 * (np.trapz(F_nu_norm, nu_to_integrate) * A).to("erg s-1")
         norm = (L_disk / L).to_value("")
-        return norm * sed_disk
+        return norm * SSDisk.evaluate_multi_T_bb_sed(
+            nu, z, M_BH, m_dot, R_in, R_out, d_L, mu_s
+        )
 
     def sed_flux(self, nu, z, mu_s=1):
         r"""evaluate the multi-temperature black body SED for this SS Disk, refer
@@ -581,10 +593,10 @@ class RingDustTorus:
     @staticmethod
     def evaluate_bb_sed(nu, z, T_dt, R_dt, d_L):
         """evaluate the black body SED corresponding to the torus temperature"""
-        nu *= 1 + z
+        nu_prime = nu * (1 + z)
         # geometrical factor for a source of size R_dt at distance d_L
         prefactor = np.pi * np.power((R_dt / d_L).to_value(""), 2) * u.sr
-        I_nu = BlackBody().evaluate(nu, T_dt, scale=1)
+        I_nu = BlackBody().evaluate(nu_prime, T_dt, scale=1)
         return (prefactor * nu * I_nu).to("erg cm-2 s-1")
 
     @staticmethod
@@ -592,9 +604,9 @@ class RingDustTorus:
         """evaluate the torus black-body SED such that its integral luminosity
         is equal to the torus luminosity (`xi_dt * L_disk`)"""
         sed_dt = RingDustTorus.evaluate_bb_sed(nu, z, T_dt, R_dt, d_L)
-        # renormalise
-        L = (np.trapz(sed_dt / nu, nu) * 4 * np.pi * d_L ** 2).to("erg s-1")
-        norm = (L_dt / L).to_value("")
+        # renormalise, total luminosity from theory (Stefan-Boltzmann Law)
+        L_tot = 4 * np.pi * R_dt ** 2 * sigma_sb * T_dt ** 4
+        norm = (L_dt / L_tot).to_value("")
         return norm * sed_dt
 
     def sed_flux(self, nu, z):

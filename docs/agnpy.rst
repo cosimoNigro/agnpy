@@ -8,7 +8,7 @@ agnpy.spectra module
 --------------------
 
 .. automodule:: agnpy.spectra
-   :members: PowerLaw, BrokenPowerLaw, LogParabola, ElectronDistribution
+   :members: PowerLaw, BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw, ElectronDistribution
    :undoc-members:
    :show-inheritance:
 
@@ -56,14 +56,14 @@ agnpy.constraints module
 ------------------------
 
 .. automodule:: agnpy.constraints
-   :members:
+   :members: SpectralConstraints
    :undoc-members:
    :show-inheritance:
 
-agnpy.utils module
+agnpy.fit module
 ------------------
-.. automodule:: agnpy.utils
-   :members:
+.. automodule:: agnpy.fit
+   :members: SynchrotronSelfComptonModel, ExternalComptonModel
    :undoc-members:
    :show-inheritance:
 

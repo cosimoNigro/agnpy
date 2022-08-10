@@ -161,6 +161,7 @@ class Blob:
         self.delta_D = delta_D
         self.Gamma = Gamma
         self.Beta = np.sqrt(1 - 1 / np.power(self.Gamma, 2))
+        self.t_var = (((1 + self.z) * self.R_b) / (c * self.delta_D)).to("d")
         # viewing angle
         self.mu_s = (1 - 1 / (self.Gamma * self.delta_D)) / self.Beta
         self.theta_s = (np.arccos(self.mu_s) * u.rad).to("deg")
@@ -217,6 +218,7 @@ class Blob:
         return (
             "* spherical emission region\n"
             + f" - R_b (radius of the blob): {self.R_b.cgs:.2e}\n"
+            + f" - t_var (variability time scale): {self.t_var:.2e}\n"
             + f" - V_b (volume of the blob): {self.V_b.cgs:.2e}\n"
             + f" - z (source redshift): {self.z:.2f}\n"
             + f" - d_L (source luminosity distance):{self.d_L.cgs:.2e}\n"
