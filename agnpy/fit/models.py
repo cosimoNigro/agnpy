@@ -23,7 +23,7 @@ class SynchrotronSelfComptonModel:
 
 
 class ExternalComptonModel:
-    """Model for synchrotron self-Compton scenario."""
+    """Model for external Compton scenario."""
 
     def __new__(cls, n_e, targets, ssa=False, backend="gammapy"):
         if backend == "sherpa":
