@@ -2,7 +2,6 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import c, G, M_sun
-from astropy.table import Table
 import pytest
 
 # sherpa
@@ -15,7 +14,7 @@ from gammapy.modeling.models import SkyModel
 import gammapy.modeling
 
 # agnpy
-from agnpy.spectra import BrokenPowerLaw, ExpCutoffPowerLaw
+from agnpy.spectra import BrokenPowerLaw, LogParabola
 from agnpy.fit import (
     load_sherpa_flux_points,
     load_gammapy_flux_points,
@@ -120,7 +119,7 @@ class TestFit:
                 dataset.data.e2dnde_errp.quantity.flatten().to_value("erg cm-2 s-1"),
             )
 
-        # this error is used in the Chi2 computation by gammapy
+        # this is the error used in the Chi2 computation by gammapy
         e2dnde_err_gammapy = (e2dnde_errn_gammapy + e2dnde_errp_gammapy) / 2
 
         assert np.allclose(energy_gammapy, data_1d_sherpa.x, atol=0, rtol=1e-5)
@@ -236,8 +235,13 @@ class TestFit:
         """test the fit of Mrk421 MWL SED. Check that the sherpa and gammapy
         wrappers return the same results."""
         # electron energy distribution
-        n_e = ExpCutoffPowerLaw(
-            k_e=1e4 * u.Unit("cm-3"), p=2.0, gamma_c=5e3, gamma_min=1, gamma_max=5e4
+        n_e = LogParabola(
+            k_e=1 * u.Unit("cm-3"),
+            p=2.0,
+            q=0.2,
+            gamma_0=1e2,
+            gamma_min=1,
+            gamma_max=3e4,
         )
 
         # initialise the wrappers
@@ -268,6 +272,8 @@ class TestFit:
         R_dt = 2.5 * 1e18 * np.sqrt(L_disk.to_value("erg s-1") / 1e45) * u.cm
 
         # set the gammapy wrapper parameters
+        # freeze the log parabola reference energy
+        ec_model_gammapy.log10_gamma_0.frozen = True
         ec_model_gammapy.z.value = z
         ec_model_gammapy.delta_D.value = delta_D
         ec_model_gammapy.t_var.value = t_var.to_value("s")
@@ -284,6 +290,8 @@ class TestFit:
         ec_model_gammapy.T_dt.value = T_dt.to_value("K")
         ec_model_gammapy.R_dt.value = R_dt.to_value("cm")
         # set the sherpa wrapper parameters
+        # freeze the log parabola reference energy
+        ec_model_sherpa.log10_gamma_0.freeze()
         ec_model_sherpa.z = z
         ec_model_sherpa.delta_D = delta_D
         ec_model_sherpa.t_var = t_var.to_value("s")
@@ -305,7 +313,10 @@ class TestFit:
         E_min = (1e11 * u.Hz).to("eV", equivalencies=u.spectral())
         E_max = 100 * u.TeV
         datasets_gammapy = load_gammapy_flux_points(
-            "agnpy/data/mwl_seds/PKS1510-089_2015b.ecsv", E_min, E_max, systematics_dict_pks1510
+            "agnpy/data/mwl_seds/PKS1510-089_2015b.ecsv",
+            E_min,
+            E_max,
+            systematics_dict_pks1510,
         )
         sky_model = SkyModel(spectral_model=ec_model_gammapy, name="Mrk421")
         datasets_gammapy.models = [sky_model]
@@ -313,7 +324,10 @@ class TestFit:
 
         # load the sherpa dataset
         data_1d_sherpa = load_sherpa_flux_points(
-            "agnpy/data/mwl_seds/PKS1510-089_2015b.ecsv", E_min, E_max, systematics_dict_pks1510
+            "agnpy/data/mwl_seds/PKS1510-089_2015b.ecsv",
+            E_min,
+            E_max,
+            systematics_dict_pks1510,
         )
         sherpa_fitter = sherpa.fit.Fit(
             data_1d_sherpa, ec_model_sherpa, stat=Chi2(), method=LevMar()
@@ -323,7 +337,7 @@ class TestFit:
         sherpa_stat = sherpa_fitter.calc_stat()
         gammapy_stat = datasets_gammapy.stat_sum()
         assert np.isclose(sherpa_stat, gammapy_stat, atol=0, rtol=0.01)
-        quit()
+
         # run the fit!
         gammapy_result = gammapy_fitter.run(datasets_gammapy)
         sherpa_result = sherpa_fitter.fit()
@@ -347,10 +361,7 @@ class TestFit:
             ec_model_gammapy.p.value, ec_model_sherpa.p.val, atol=0, rtol=0.01
         )
         assert np.isclose(
-            ec_model_gammapy.log10_gamma_c.value,
-            ec_model_sherpa.log10_gamma_c.val,
-            atol=0,
-            rtol=0.01,
+            ec_model_gammapy.q.value, ec_model_sherpa.q.val, atol=0, rtol=0.01
         )
         assert np.isclose(
             ec_model_gammapy.delta_D.value,
