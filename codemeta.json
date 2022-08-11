@@ -2,38 +2,35 @@
     "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
     "@type": "SoftwareSourceCode",
     "license": "https://spdx.org/licenses/BSD-3-Clause",
-    "codeRepository": "https://github.com/cosimoNigro/agnpy",
+    "codeRepository": "git+https://github.com/cosimoNigro/agnpy.git",
     "contIntegration": "https://github.com/cosimoNigro/agnpy/actions",
     "dateCreated": "2019-12-17",
-    "datePublished": "2022-01-31",
-    "dateModified": "2021-08-02",
-    "downloadUrl": "https://github.com/cosimoNigro/agnpy/releases/tag/v0.1.6",
+    "datePublished": "2022-08-11",
+    "dateModified": "2022-08-11",
+    "downloadUrl": "https://github.com/cosimoNigro/agnpy/releases/tag/v0.2.0",
     "issueTracker": "https://github.com/cosimoNigro/agnpy/issues",
     "name": "agnpy",
-    "version": "0.1.8",
+    "version": "0.2.0",
     "identifier": "10.5281/zenodo.4055175",
     "description": "agnpy is a python package focusing on the computation of the radiative processes of relativistic particles accelerated in the jets of Active Galactic Nuclei (AGN). It includes classes describing the galaxy components responsible for line and thermal emission and calculates the absorption due to gamma-gamma pair production on soft (IR-UV) photon fields.",
-    "applicationCategory": "astrophysics",
-    "funding": "ESCAPE EU H2020 824064",
+    "applicationCategory": "Astronomy",
+    "funding": "ESCAPE 824064",
     "developmentStatus": "active",
-    "isPartOf": "https://www.astropy.org/affiliated/#affiliated-packages",
-    "funder": [
-        {
-            "@type": "Organization",
-            "name": "IFAE"
-        },
-        {
-            "@type": "Organization",
-            "name": "European Commission",
-            "@id": "https://doi.org/10.13039/501100000780"
-        }
-    ],
+    "isPartOf": "https://www.astropy.org/affiliated/",
+    "referencePublication": "https://doi.org/10.1051/0004-6361/202142000",
+    "funder": {
+        "@type": "Organization",
+        "name": "European Union's Horizon 2020 research and innovation programme"
+    },
     "keywords": [
-        "blazar",
-        "agn",
-        "jets",
-        "radiative processes",
-        "jupyter-notebook"
+        "CTA",
+        "Astroparticle physics",
+        "jupyter-notebook",
+        "Active galactic nuclei",
+        "Blazars",
+        "Radio jets",
+        "Radio active galactic nuclei",
+        "Radiative processes"
     ],
     "programmingLanguage": [
         "Python 3"
@@ -43,7 +40,7 @@
         "macOS"
     ],
     "softwareRequirements": [
-        "https://github.com/cosimoNigro/agnpy#dependencies"
+        "https://agnpy.readthedocs.io/en/latest/#dependencies"
     ],
     "author": [
         {
@@ -54,26 +51,26 @@
             "email": "cosimo.nigro@ifae.es",
             "affiliation": {
                 "@type": "Organization",
-                "name": "Institut de F\u00edsica d'Altes Energies (IFAE)"
-            }
-        },
-        {
-            "@type": "Person",
-            "@id": "https://orcid.org/0000-0002-1659-5374",
-            "givenName": "Julian ",
-            "familyName": "Sitarek",
-            "email": "jsitarek@uni.lodz.pl",
-            "affiliation": {
-                "@type": "Organization",
-                "name": "University of Lodz"
+                "name": "Institut de F\\u00edsica d'Altes Energies (IFAE)"
             }
         }
     ],
     "contributor": [
         {
             "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-1659-5374",
+            "givenName": "Julian",
+            "familyName": "Sitarek",
+            "email": "jsitarek@uni.lodz.pl",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "University of Lodz"
+            }
+        },
+        {
+            "@type": "Person",
             "@id": "https://orcid.org/0000-0002-4183-391X",
-            "givenName": "Pawe\u0142",
+            "givenName": "Pawe\\u0142",
             "familyName": "Gliwny",
             "email": "p.gliwny@gmail.com",
             "affiliation": {
@@ -85,7 +82,7 @@
             "@type": "Person",
             "givenName": "David",
             "familyName": "Sanchez",
-            "email":"david.sanchez@lapp.in2p3.fr",
+            "email": "david.sanchez@lapp.in2p3.fr",
             "affiliation": {
                 "@type": "Organization",
                 "name": "Univ. Savoie Mont Blanc, CNRS, LAPP"
@@ -111,6 +108,16 @@
             "affiliation": {
                 "@type": "Organization",
                 "name": "Univ. Savoie Mont Blanc, CNRS, LAPP"
+            }
+        },
+        {
+            "@type": "Person",
+            "givenName": "Ilaria",
+            "familyName": "Viale",
+            "email": "ilaria.viale.1@studenti.unipd.it",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Università degli Studi di Padova "
             }
         }
     ]
