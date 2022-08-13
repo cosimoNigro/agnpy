@@ -349,7 +349,7 @@ class BrokenPowerLaw(ParticleDistribution):
             + f" - p2: {self.p2:.2f}\n"
             + f" - gamma_b: {self.gamma_b:.2e}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}"
+            + f" - gamma_max: {self.gamma_max:.2e}\n"
         )
 
 
@@ -438,7 +438,7 @@ class LogParabola(ParticleDistribution):
             + f" - q: {self.q:.2f}\n"
             + f" - gamma_0: {self.gamma_0:.2e}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}"
+            + f" - gamma_max: {self.gamma_max:.2e}\n"
         )
 
 
@@ -523,5 +523,5 @@ class ExpCutoffPowerLaw(ParticleDistribution):
             + f" - p: {self.p:.2f}\n"
             + f" - gamma_c: {self.gamma_c:.2f}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}"
+            + f" - gamma_max: {self.gamma_max:.2e}\n"
         )

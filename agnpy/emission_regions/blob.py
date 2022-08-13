@@ -3,78 +3,14 @@ acceleration of particles to relativistic energies. Beside physical quantities
 related to the emission itself it contains the electrons energy distributions"""
 import numpy as np
 import astropy.units as u
-from astropy.constants import c, sigma_T
 from astropy.coordinates import Distance
-import matplotlib.pyplot as plt
-from .. import spectra
-from ..utils.conversion import mec2, B_to_cgs
+from astropy.constants import c, sigma_T, m_e
+from ..spectra import PowerLaw
+from ..utils.conversion import mec2, mpc2, B_to_cgs
 from ..utils.plot import plot_eed
 
+
 __all__ = ["Blob"]
-
-
-def init_spectrum_norm_dict(norm, spectrum_dict, norm_type="integral", V_b=None):
-    """initialize a spectrum from a normalisation and a spectrum dictionary of
-    the following type
-
-    .. code-block:: python
-
-        spectrum_dict = {
-            "type": "PowerLaw",
-            "parameters": {
-                "p": 2.8,
-                "gamma_min": 1e2,
-                "gamma_max": 1e7
-            }
-        }
-
-    Parameters
-    ----------
-    norm : :class:`~astropy.units.Quantity`
-        normalisation of the spectrum, might be in cm-3, erg cm-3 or erg,
-        if erg are specified then V_b has to be provided
-    spectrum_dict : dictionary
-        dictionary with the spectrum type and parameters
-    norm_type : ["integral", "differential", "gamma=1"]
-        normalisation type
-    V_b : :class:`~astropy.units.Quantity`
-        volume of the emission region, to be provided only if the normalisation
-        is in erg
-    """
-    model = getattr(spectra, spectrum_dict["type"])
-
-    if norm.unit in (u.Unit("erg"), u.Unit("erg cm-3")) and norm_type != "integral":
-        raise NameError(
-            "Normalisation different than 'integral' available only for 'spectrum_norm' in cm-3"
-        )
-
-    # check the units of the normalisation
-    # cm-3 is the only one allowing more than one normalisation type
-    if norm.unit == u.Unit("cm-3"):
-        if norm_type == "differential":
-            final_model = model(norm, **spectrum_dict["parameters"])
-        elif norm_type == "gamma=1":
-            final_model = model.from_norm_at_gamma_1(
-                norm, **spectrum_dict["parameters"]
-            )
-        elif norm_type == "integral":
-            final_model = model.from_normalised_density(
-                norm, **spectrum_dict["parameters"]
-            )
-
-    elif norm.unit == u.Unit("erg cm-3"):
-        final_model = model.from_normalised_energy_density(
-            norm, **spectrum_dict["parameters"]
-        )
-
-    elif norm.unit == u.Unit("erg"):
-        if V_b is None:
-            raise ValueError(
-                "if normalisation in erg provided, the volume V_b must be specified"
-            )
-        final_model = model.from_total_energy(norm, V_b, **spectrum_dict["parameters"])
-
-    return final_model
 
 
 class Blob:
@@ -95,47 +31,17 @@ class Blob:
         Lorentz factor of the relativistic outflow
     B : :class:`~astropy.units.Quantity`
         magnetic field in the blob (Gauss)
+    n_e : :class:`~agnpy.spectra.ParticleDistribution`
+        electron distribution contained in the blob
+    n_p : :class:`~agnpy.spectra.ParticleDistribution`
+        proton distribution contained in the blob
     xi : float
         acceleration coefficient :math:`\xi` for first-order Fermi acceleration
         :math:`(\mathrm{d}E/\mathrm{d}t \propto v \approx c)`
         used to compute limits on the maximum Lorentz factor via
         :math:`(\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} = \xi c E / R_L`
-
-    spectrum_norm : :class:`~astropy.units.Quantity`
-        normalisation of the electron spectra, by default can be, following
-        the notation in [DermerMenon2009]_:
-
-            - :math:`n_{e,\,tot}`: total electrons density, in :math:`\mathrm{cm}^{-3}`
-            - :math:`u_e` : total electrons energy density, in :math:`\mathrm{erg}\,\mathrm{cm}^{-3}`
-            - :math:`W_e` : total energy in electrons, in :math:`\mathrm{erg}`
-
-        see `spectrum_norm_type` for more details on the normalisation
-
-    spectrum_dict : dictionary
-        dictionary containing type and spectral shape information, e.g.:
-
-        .. code-block:: python
-
-            spectrum_dict = {
-                "type": "PowerLaw",
-                "parameters": {
-                    "p": 2.8,
-                    "gamma_min": 1e2,
-                    "gamma_max": 1e7
-                }
-            }
-
-    spectrum_norm_type : ["integral", "differential", "gamma=1"]
-        only with a normalisation in "cm-3" one can select among three types:
-
-        * ``"integral"``: (default) the spectrum is set such that :math:`n_{e,\,tot}` equals the value provided by ``spectrum_norm``;
-
-        * ``"differential"``: the spectrum is set such that :math:`k_e` equals the value provided by ``spectrum_norm``;
-
-        * ``"gamma=1"``: the spectrum is set such that :math:`n_e(\gamma=1)` equals the value provided by ``spectrum_norm``.
-
     gamma_size : int
-        size of the array of electrons Lorentz factors
+        size of the array of particles Lorentz factors
     """
 
     def __init__(
@@ -145,12 +51,8 @@ class Blob:
         delta_D=10,
         Gamma=10,
         B=1 * u.G,
-        spectrum_norm=1e48 * u.Unit("erg"),
-        spectrum_dict={
-            "type": "PowerLaw",
-            "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7},
-        },
-        spectrum_norm_type="integral",
+        n_e=PowerLaw(mass=m_e),
+        n_p=None,
         xi=1.0,
         gamma_size=200,
     ):
@@ -168,14 +70,13 @@ class Blob:
         self.B = B
         # B decomposed in Gaussian-cgs units
         self.B_cgs = B_to_cgs(B)
-        self.spectrum_norm = spectrum_norm
-        self.spectrum_norm_type = spectrum_norm_type
-        self.spectrum_dict = spectrum_dict
+        self.n_e = n_e
+        self.n_p = n_p
         self.xi = xi
         # default grid of Lorentz factors for integration in the external frame
         self.gamma_to_integrate = np.logspace(1, 9, gamma_size)
-        # model for the electron density
-        self.set_spectrum(
+        # default Lorentz factor grid for integrating in the blob frame
+        self.gamma(
             self.spectrum_norm, self.spectrum_dict, self.spectrum_norm_type, gamma_size
         )
 
@@ -198,21 +99,6 @@ class Blob:
             np.log10(self.gamma_min), np.log10(self.gamma_max), self.gamma_size
         )
 
-    def set_spectrum(
-        self, spectrum_norm, spectrum_dict, spectrum_norm_type, gamma_size=200
-    ):
-        r"""set the spectrum :math:`n_e` for the electrons accelerated in the
-        blob, reset also the array of Lorentz factor given the `gamma_min` and
-        `gamma_max` in the parameters dictionary"""
-        self.set_gamma(
-            spectrum_dict["parameters"]["gamma_min"],
-            spectrum_dict["parameters"]["gamma_max"],
-            gamma_size,
-        )
-        self.n_e = init_spectrum_norm_dict(
-            spectrum_norm, spectrum_dict, spectrum_norm_type, self.V_b
-        )
-
     def __str__(self):
         """printable summary of the blob"""
         return (
@@ -229,6 +115,7 @@ class Blob:
             + f" - B (magnetic field tangled to the jet): {self.B:.2e}\n"
             + f" - xi (coefficient for 1st order Fermi acceleration) : {self.xi:.2e}\n"
             + str(self.n_e)
+            + str(self.n_p)
         )
 
     def set_delta_D(self, Gamma, theta_s):
@@ -257,14 +144,28 @@ class Blob:
         :math:`N_e(\gamma') = V_b\,n_e(\gamma')`"""
         return self.V_b * self.n_e(gamma)
 
+    def N_p(self, gamma):
+        r"""number of protons as a function of the Lorentz factor,
+        :math:`N_e(\gamma') = V_b\,n_e(\gamma')`"""
+        return self.V_b * self.n_p(gamma)
+
     @property
     def n_e_tot(self):
-        r"""total electrons density
+        r"""total electron density
 
         .. math::
             n_{e,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' n_e(\gamma')
         """
         return np.trapz(self.n_e(self.gamma), self.gamma)
+
+    @property
+    def n_p_tot(self):
+        r"""total proton density
+
+        .. math::
+            n_{p,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' n_p(\gamma')
+        """
+        return np.trapz(self.n_p(self.gamma), self.gamma)
 
     @property
     def N_e_tot(self):
@@ -276,6 +177,15 @@ class Blob:
         return np.trapz(self.N_e(self.gamma), self.gamma)
 
     @property
+    def N_p_tot(self):
+        r"""total number of electrons
+
+        .. math::
+            N_{p,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' N_e(\gamma')
+        """
+        return np.trapz(self.N_p(self.gamma), self.gamma)
+
+    @property
     def u_e(self):
         r"""total energy density in non-thermal electrons
 
@@ -283,6 +193,15 @@ class Blob:
             u_{e} = m_e c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' \gamma' n_e(\gamma')
         """
         return mec2 * np.trapz(self.gamma * self.n_e(self.gamma), self.gamma)
+
+    @property
+    def u_p(self):
+        r"""total energy density in non-thermal electrons
+
+        .. math::
+            u_{p} = m_p c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' \gamma' n_e(\gamma')
+        """
+        return mpc2 * np.trapz(self.gamma * self.n_p(self.gamma), self.gamma)
 
     @property
     def W_e(self):
