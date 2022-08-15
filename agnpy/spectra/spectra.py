@@ -81,7 +81,7 @@ class ParticleDistribution:
         return self.integrator(values, gamma, axis=0)
 
     @classmethod
-    def from_normalised_density(cls, n_tot, mass, **kwargs):
+    def from_total_density(cls, n_tot, mass, **kwargs):
         r"""Set the normalisation of the particle distribution,
         :math:`k [{\rm cm}^{-3}]`, from the total particle density
         :math:`n_{\rm tot} [{\rm cm}^{-3}]`.
@@ -104,7 +104,7 @@ class ParticleDistribution:
         return cls(k=k.to("cm-3"), **kwargs, mass=mass)
 
     @classmethod
-    def from_normalised_energy_density(cls, u_tot, mass, **kwargs):
+    def from_total_energy_density(cls, u_tot, mass, **kwargs):
         r"""Set the normalisation of the particle distribution,
         :math:`k [{\rm cm}^{-3}]`, from the total energy density
         :math:`u_{\rm tot} [{\rm erg}{\rm cm}^{-3}]`, Eq. 6.64 in [DermerMenon2009]_.
@@ -129,18 +129,18 @@ class ParticleDistribution:
         return cls(k=k.to("cm-3"), **kwargs, mass=mass)
 
     @classmethod
-    def from_norm_at_gamma_1(cls, norm, mass, **kwargs):
+    def from_density_at_gamma_1(cls, n_1, mass, **kwargs):
         r"""Set the normalisation of the particle distribution,
         :math:`k [{\rm cm}^{-3}]`, such that `norm` = :math:`n(\gamma=1)`.
 
         Parameters
         ----------
-        norm : `~astropy.units.Quantity`
+        n_1 : `~astropy.units.Quantity`
             value :math:`n(\gamma)` should have at :math:`\gamma=1`, in cm-3
         mass : `~astropy.units.Quantity`
             particle mass
         """
-        k = norm.to("cm-3") / cls.evaluate(1, 1, **kwargs)
+        k = n_1.to("cm-3") / cls.evaluate(1, 1, **kwargs)
         return cls(k=k.to("cm-3"), **kwargs, mass=mass)
 
     @classmethod
@@ -389,9 +389,10 @@ class LogParabola(ParticleDistribution):
         gamma_0=1e3,
         gamma_min=10,
         gamma_max=1e7,
+        mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(integrator)
+        super().__init__(mass, integrator)
         self.k = k
         self.p = p
         self.q = q
@@ -475,9 +476,10 @@ class ExpCutoffPowerLaw(ParticleDistribution):
         gamma_c=1e3,
         gamma_min=10,
         gamma_max=1e5,
+        mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(integrator)
+        super().__init__(mass, integrator)
         self.k = k
         self.p = p
         self.gamma_c = gamma_c
