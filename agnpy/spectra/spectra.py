@@ -277,9 +277,10 @@ class BrokenPowerLaw(ParticleDistribution):
         gamma_b=1e3,
         gamma_min=10,
         gamma_max=1e7,
+        mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(integrator)
+        super().__init__(mass, integrator)
         self.k = k
         self.p1 = p1
         self.p2 = p2
