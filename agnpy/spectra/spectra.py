@@ -29,10 +29,10 @@ class ParticleDistribution:
         self.integrator = integrator
         if mass is m_e:
             self.mass = m_e
-            self.type = "electrons"
+            self.particle = "electrons"
         elif mass is m_p:
             self.mass = m_p
-            self.type = "protons"
+            self.particle = "protons"
         else:
             raise ValueError(
                 f"No distribution for particles with mass {mass} is available."
@@ -40,7 +40,7 @@ class ParticleDistribution:
         self.mc2 = self.mass.to("erg", equivalencies=u.mass_energy())
 
     @staticmethod
-    def general_integral(
+    def integral(
         self, gamma_low, gamma_up, gamma_power=0, integrator=np.trapz, **kwargs
     ):
         """Integral of the particle distribution over the range gamma_low,
@@ -64,9 +64,9 @@ class ParticleDistribution:
         values *= np.power(gamma, gamma_power)
         return integrator(values, gamma, axis=0)
 
-    def integral(self, gamma_low, gamma_up, gamma_power=0):
-        """integral of **this particular** particle distribution over the range 
-        gamma_low, gamma_up
+    def integrate(self, gamma_low, gamma_up, gamma_power=0):
+        """Integral of **this particular** particle distribution over the range 
+        gamma_low, gamma_up.
 
         Parameters
         ----------
@@ -98,7 +98,7 @@ class ParticleDistribution:
             gamma_min = kwargs.get("gamma_min")
         if "gamma_max" in kwargs:
             gamma_max = kwargs.get("gamma_max")
-        k = n_tot / cls.general_integral(
+        k = n_tot / cls.integral(
             cls, gamma_low=gamma_min, gamma_up=gamma_max, gamma_power=0, k=1, **kwargs
         )
         return cls(k=k.to("cm-3"), **kwargs, mass=mass)
@@ -121,7 +121,7 @@ class ParticleDistribution:
             gamma_min = kwargs.get("gamma_min")
         if "gamma_max" in kwargs:
             gamma_max = kwargs.get("gamma_max")
-        integral = cls.general_integral(
+        integral = cls.integral(
             cls, gamma_low=gamma_min, gamma_up=gamma_max, gamma_power=1, k=1, **kwargs
         )
         mc2 = mass.to("erg", equivalencies=u.mass_energy())
@@ -230,7 +230,7 @@ class PowerLaw(ParticleDistribution):
 
     def __str__(self):
         return (
-            f"* {self.type} energy distribution\n"
+            f"* {self.particle} energy distribution\n"
             + f" - power law\n"
             + f" - k: {self.k:.2e}\n"
             + f" - p: {self.p:.2f}\n"
@@ -342,7 +342,7 @@ class BrokenPowerLaw(ParticleDistribution):
 
     def __str__(self):
         return (
-            f"* {self.type} energy distribution\n"
+            f"* {self.particle} energy distribution\n"
             + f" - broken power law\n"
             + f" - k: {self.k:.2e}\n"
             + f" - p1: {self.p1:.2f}\n"
@@ -431,7 +431,7 @@ class LogParabola(ParticleDistribution):
 
     def __str__(self):
         return (
-            f"* {self.type} energy distribution\n"
+            f"* {self.particle} energy distribution\n"
             + f" - log parabola\n"
             + f" - k: {self.k:.2e}\n"
             + f" - p: {self.p:.2f}\n"
@@ -503,7 +503,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
     @staticmethod
     def evaluate_SSA_integrand(gamma, k, p, gamma_c, gamma_min, gamma_max):
         r"""(analytical) integrand for the synchrotron self-absorption:
-        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`"""
+        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n(\gamma)}{\gamma'^2}\right)`"""
         prefactor = -(p + 2) / gamma + (-1 / gamma_c)
 
         return prefactor * ExpCutoffPowerLaw.evaluate(
@@ -517,7 +517,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
 
     def __str__(self):
         return (
-            f"* {self.type} energy distribution\n"
+            f"* {self.particle} energy distribution\n"
             + f" - power law\n"
             + f" - k: {self.k:.2e}\n"
             + f" - p: {self.p:.2f}\n"
