@@ -2,6 +2,7 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import m_e, m_p
+import matplotlib.pyplot as plt
 
 
 __all__ = [
@@ -159,7 +160,39 @@ class ParticleDistribution:
             particle mass
         """
         u = W / V
-        return cls.from_normalised_energy_density(u, mass, **kwargs)
+        return cls.from_total_energy_density(u, mass, **kwargs)
+
+    def plot(self, gamma=None, gamma_power=0, ax=None, **kwargs):
+        """Plot the particle energy distribution.
+
+        Parameters
+        ----------
+        gamma : :class:`~numpy.ndarray`
+            array of Lorentz factors over which to plot the SED
+        gamma_power : float
+            power of gamma to raise the electron distribution
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            Axis
+        """
+        ax = plt.gca() if ax is None else ax
+
+        gamma = np.logspace(0, 8, 200) if gamma is None else gamma
+
+        ax.loglog(gamma, np.power(gamma, gamma_power) * self.__call__(gamma), **kwargs)
+        ax.set_xlabel(r"$\gamma$")
+
+        if gamma_power == 0:
+            ax.set_ylabel(r"$n_e(\gamma)\,/\,{\rm cm}^{-3}$")
+
+        else:
+            ax.set_ylabel(
+                r"$\gamma^{"
+                + str(gamma_power)
+                + r"}$"
+                + r"$\,n_e(\gamma)\,/\,{\rm cm}^{-3}$"
+            )
+
+        return ax
 
 
 class PowerLaw(ParticleDistribution):
@@ -235,7 +268,7 @@ class PowerLaw(ParticleDistribution):
             + f" - k: {self.k:.2e}\n"
             + f" - p: {self.p:.2f}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
-            + f" - gamma_max: {self.gamma_max:.2e}"
+            + f" - gamma_max: {self.gamma_max:.2e}\n"
         )
 
 

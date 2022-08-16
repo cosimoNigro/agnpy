@@ -60,6 +60,19 @@ def broken_power_law_times_gamma_integral(k_e, p1, p2, gamma_b, gamma_min, gamma
     return k_e * (term_1 + term_2)
 
 
+class TestParticleDistribution:
+    """Class grouping all the tests related to the general class
+    ParticleDistribution, from which all the other classes inherit."""
+
+    @pytest.mark.parametrize(
+        "n_e", [PowerLaw(), BrokenPowerLaw(), LogParabola(), ExpCutoffPowerLaw()]
+    )
+    @pytest.mark.parametrize("gamma_power", [0, 1, 2])
+    def test_plot(self, n_e, gamma_power):
+        n_e.plot(gamma_power=gamma_power)
+        assert True
+
+
 class TestPowerLaw:
     """Class grouping all tests related to the PowerLaw spectrum."""
 

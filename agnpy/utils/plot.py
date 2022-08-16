@@ -14,39 +14,6 @@ def load_mpl_rc():
         plt.style.use(mpl_rc)
 
 
-def plot_eed(gamma, n_e, gamma_power=0, ax=None, **kwargs):
-    """plot an electron energy distributions
-
-    Parameters
-    ----------
-    gamma : `~numpy.ndarray`
-        array of Lorentz factors over which to plot the SED
-    n_e : `~agnpy.spectra.spectra`
-        the electron energy distribution to be plotted
-    gamma_power : float
-        power of gamma to raise the electron distribution
-    ax : :class:`~matplotlib.axes.Axes`, optional
-        Axis
-    """
-    ax = plt.gca() if ax is None else ax
-
-    ax.loglog(gamma, np.power(gamma, gamma_power) * n_e(gamma), **kwargs)
-    ax.set_xlabel(r"$\gamma$")
-
-    if gamma_power == 0:
-        ax.set_ylabel(r"$n_e(\gamma)\,/\,{\rm cm}^{-3}$")
-
-    else:
-        ax.set_ylabel(
-            r"$\gamma^{"
-            + str(gamma_power)
-            + r"}$"
-            + r"$\,n_e(\gamma)\,/\,{\rm cm}^{-3}$"
-        )
-
-    return ax
-
-
 def plot_sed(nu, sed, ax=None, **kwargs):
     """plot an SED
 
