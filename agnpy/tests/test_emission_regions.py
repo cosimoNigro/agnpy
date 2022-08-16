@@ -1,83 +1,117 @@
-# tests on spectra and emission region modules
+# tests the emission region modules
 import numpy as np
 import astropy.units as u
+from astropy.constants import m_e, m_p
 import pytest
-from astropy.constants import c, m_e
+from agnpy.spectra import PowerLaw, BrokenPowerLaw
 from agnpy.emission_regions import Blob
-
-
-mec2 = m_e.to("erg", equivalencies=u.mass_energy())
-# variables with _test are global and meant to be used in all tests
-spectrum_norm_test = 1e-13 * u.Unit("cm-3")
-gamma_min_test = 1
-gamma_max_test = 1e6
-# test ditctionaries for different spectra
-pwl_dict_test = {
-    "type": "PowerLaw",
-    "parameters": {"p": 2, "gamma_min": gamma_min_test, "gamma_max": gamma_max_test},
-}
-
-bpwl_dict_test = {
-    "type": "BrokenPowerLaw",
-    "parameters": {
-        "p1": 2.4,
-        "p2": 3.4,
-        "gamma_b": 1e2,
-        "gamma_min": gamma_min_test,
-        "gamma_max": gamma_max_test,
-    },
-}
-lp_dict_test = {
-    "type": "LogParabola",
-    "parameters": {
-        "p": 2.5,
-        "q": 0.1,
-        "gamma_0": 1e3,
-        "gamma_min": gamma_min_test,
-        "gamma_max": gamma_max_test,
-    },
-}
-# blob parameters
-R_b_test = 1e16 * u.cm
-z_test = 0.1
-delta_D_test = 10
-Gamma_test = 10
-B_test = 0.1 * u.G
-pwl_blob_test = Blob(
-    R_b_test,
-    z_test,
-    delta_D_test,
-    Gamma_test,
-    B_test,
-    spectrum_norm_test,
-    pwl_dict_test,
-)
-bpwl_blob_test = Blob(
-    R_b_test,
-    z_test,
-    delta_D_test,
-    Gamma_test,
-    B_test,
-    spectrum_norm_test,
-    bpwl_dict_test,
-)
-lp_blob_test = Blob(
-    R_b_test,
-    z_test,
-    delta_D_test,
-    Gamma_test,
-    B_test,
-    spectrum_norm_test,
-    lp_dict_test,
-)
-# useful for checks
-Beta_test = 1 - 1 / np.power(Gamma_test, 2)
-V_b_test = 4 / 3 * np.pi * np.power(R_b_test, 3)
+from agnpy.utils.conversion import Gauss_cgs_unit
 
 
 class TestBlob:
-    """class grouping all tests related to the Blob emission region"""
+    """Class grouping all tests related to the Blob emission region."""
 
+    def test_blob_properties(self):
+        """Test that the blob properties are properly updated if the basic
+        attributes are modified."""
+        blob = Blob()
+        blob.R_b = 1e17 * u.cm
+        blob.z = 2.1
+        blob.delta_D = 8
+        blob.Gamma = 5
+        blob.B = 2 * u.G
+        assert u.isclose(
+            blob.V_b, 4.1887902e51 * u.Unit("cm3"), atol=0 * u.Unit("cm3"), rtol=1e-3
+        )
+        assert u.isclose(blob.d_L, 5.21497473e28 * u.cm, atol=0 * u.cm, rtol=1e-3)
+        assert np.isclose(blob.Beta, 0.9798, atol=0, rtol=1e-3)
+        assert u.isclose(blob.theta_s, 5.67129265 * u.deg, atol=0 * u.deg, rtol=1e-3)
+        assert u.isclose(
+            blob.B_cgs,
+            2 * u.Unit(Gauss_cgs_unit),
+            atol=0 * u.Unit(Gauss_cgs_unit),
+            rtol=1e-3,
+        )
+
+    def test_particle_spectra(self):
+        """Test for the blob properties related to the particle spectra."""
+        n_e = BrokenPowerLaw()
+        n_p = PowerLaw(mass=m_p)
+        # first we initialise the blob without the protons distribution
+        blob = Blob(n_e=n_e)
+        # assert that the proton distribution is not set
+        with pytest.raises(AttributeError):
+            assert blob.n_p
+        assert blob.gamma_p is None
+        # now let us set the proton distribution
+        blob.n_p = n_p
+        # change the grid of Lorentz factors
+        gamma = np.logspace(2, 6, 50)
+        blob.set_gamma_e(gamma[0], gamma[-1], len(gamma))
+        assert np.array_equal(blob.gamma_e, gamma)
+        blob.set_gamma_p(gamma[0], gamma[-1], len(gamma))
+        assert np.array_equal(blob.gamma_p, gamma)
+
+    def test_particles_densities(self):
+        """Test different methods to initialise the protons and electrons
+        distributions. Check the attributes related to the particles
+        distributions computed by the blob.
+        """
+        blob = Blob()
+
+        # intialise from total particle density
+        n_tot = 1e-5 * u.Unit("cm-3")
+        N_tot = blob.V_b * n_tot
+
+        n_e = PowerLaw.from_total_density(
+            n_tot=n_tot, mass=m_e, p=2.1, gamma_min=1e3, gamma_max=1e6
+        )
+
+        n_p = PowerLaw.from_total_density(
+            n_tot=n_tot, mass=m_p, p=2.1, gamma_min=1e3, gamma_max=1e6
+        )
+
+        blob.n_e = n_e
+        blob.n_p = n_p
+        assert u.isclose(blob.n_e_tot, n_tot, atol=0 * u.Unit("cm-3"), rtol=0.05)
+        assert u.isclose(blob.n_p_tot, n_tot, atol=0 * u.Unit("cm-3"), rtol=0.05)
+        assert np.isclose(blob.N_e_tot, N_tot, atol=0, rtol=0.05)
+        assert np.isclose(blob.N_p_tot, N_tot, atol=0, rtol=0.05)
+
+        # intialise from total particle density
+        u_tot = 3e-4 * u.Unit("erg cm-3")
+
+        n_e = PowerLaw.from_total_energy_density(
+            u_tot=u_tot, mass=m_e, p=2.5, gamma_min=1e2, gamma_max=1e6
+        )
+
+        n_p = PowerLaw.from_total_energy_density(
+            u_tot=u_tot, mass=m_p, p=2.5, gamma_min=1e2, gamma_max=1e6
+        )
+
+        blob.n_e = n_e
+        blob.n_p = n_p
+        assert u.isclose(blob.u_e, u_tot, atol=0 * u.Unit("erg cm-3"), rtol=0.05)
+        assert u.isclose(blob.u_p, u_tot, atol=0 * u.Unit("erg cm-3"), rtol=0.05)
+
+        # intialise from total energy
+        W = 1e48 * u.erg
+
+        n_e = PowerLaw.from_total_energy(
+            W=W, V=blob.V_b, mass=m_e, p=2.5, gamma_min=1e2, gamma_max=1e6
+        )
+
+        n_p = PowerLaw.from_total_energy(
+            W=W, V=blob.V_b, mass=m_p, p=2.5, gamma_min=1e2, gamma_max=1e6
+        )
+
+        blob.n_e = n_e
+        blob.n_p = n_p
+        assert u.isclose(blob.W_e, W, atol=0 * u.Unit("erg"), rtol=0.05)
+        assert u.isclose(blob.W_p, W, atol=0 * u.Unit("erg"), rtol=0.05)
+
+
+class TestOld:
     def test_default_norm_type(self):
         """the default norm type should be 'integral'"""
         assert pwl_blob_test.spectrum_norm_type == "integral"

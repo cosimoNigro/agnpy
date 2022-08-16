@@ -15,8 +15,13 @@ __all__ = ["Blob"]
 class Blob:
     r"""Simple spherical emission region.
 
-    **Note:** all these quantities are defined in the comoving frame so they are actually
-    primed quantities, when referring the notation in [DermerMenon2009]_.
+    **Note:** all these quantities are defined in the comoving frame so they are
+    actually primed quantities, when referring the notation in [DermerMenon2009]_.
+
+    All the quantities returned from the base attributes (e.g. volume of the
+    emission region and variability time scale are derived from the blob radius)
+    will be returned as properties, such that their value will be updated if the
+    parameter from which they are derived is updated.
 
     Parameters
     ----------
@@ -60,26 +65,90 @@ class Blob:
     ):
         self.R_b = R_b.to("cm")
         self.z = z
-        self.d_L = Distance(z=self.z).cgs
-        self.V_b = 4 / 3 * np.pi * np.power(self.R_b, 3)
         self.delta_D = delta_D
         self.Gamma = Gamma
-        self.Beta = np.sqrt(1 - 1 / np.power(self.Gamma, 2))
-        self.t_var = (((1 + self.z) * self.R_b) / (c * self.delta_D)).to("d")
-        # viewing angle
-        self.mu_s = (1 - 1 / (self.Gamma * self.delta_D)) / self.Beta
-        self.theta_s = (np.arccos(self.mu_s) * u.rad).to("deg")
         self.B = B
-        # B decomposed in Gaussian-cgs units
-        self.B_cgs = B_to_cgs(B)
-        # electrons and protons particle distributions
-        self.n_e = n_e
-        self.n_p = n_p
+        self._n_e = n_e
+        self._n_p = n_p
+        self.xi = xi
         # we might want to have different array of Lorentz factors for e and p
         self.set_gamma_e(gamma_e_size=gamma_e_size)
         self.set_gamma_p(gamma_p_size=gamma_p_size)
-        # acceleration coefficieant
-        self.xi = xi
+
+    @property
+    def V_b(self):
+        """Volume of the blob."""
+        return 4 / 3 * np.pi * np.power(self.R_b, 3)
+
+    @property
+    def t_var(self):
+        """Variability time scale, defined as:
+        :math:`t_{\rm var} = \frac{(1 + z) R_{\rm b}}{c \delta_{\rm D}}`.
+        """
+        return (((1 + self.z) * self.R_b) / (c * self.delta_D)).to("d")
+
+    @property
+    def d_L(self):
+        """Luminosity distance."""
+        return Distance(z=self.z).cgs
+
+    @property
+    def Beta(self):
+        """Bulk Lorentz factor of the Blob."""
+        return np.sqrt(1 - 1 / np.power(self.Gamma, 2))
+
+    @property
+    def mu_s(self):
+        """Cosine of the viewing angle from the jet axis to the observer."""
+        return (1 - 1 / (self.Gamma * self.delta_D)) / self.Beta
+
+    @property
+    def theta_s(self):
+        """Viewing angle from the jet axis to the observer."""
+        return (np.arccos(self.mu_s) * u.rad).to("deg")
+
+    @property
+    def B_cgs(self):
+        """Magnetic field decomposed in Gaussian-cgs units."""
+        return B_to_cgs(self.B)
+
+    def set_delta_D(self, Gamma, theta_s):
+        """Set the Doppler factor by specifying the bulk Lorentz factor of the
+        outflow and the viewing angle.
+
+        Parameters
+        ----------
+        Gamma : float
+            Lorentz factor of the relativistic outflow
+        theta_s : :class:`~astropy.units.Quantity`
+            viewing angle of the jet
+        """
+        self.Gamma = Gamma
+        mu_s = np.cos(theta_s.to("rad").value)
+        self.delta_D = 1 / (self.Gamma * (1 - self.Beta * mu_s))
+
+    @property
+    def n_e(self):
+        """Electron distribution."""
+        return self._n_e
+
+    @n_e.setter
+    def n_e(self, spectrum):
+        """Setter of the electron distribution."""
+        self._n_e = spectrum
+
+    @property
+    def n_p(self):
+        """Proton distribution."""
+        if self._n_p is None:
+            raise AttributeError()
+        else:
+            return self._n_p
+
+    @n_p.setter
+    def n_p(self, spectrum):
+        """Setter of the proton distribution."""
+        self._n_p = spectrum
 
     def set_gamma_e(self, gamma_e_min=1, gamma_e_max=1e8, gamma_e_size=200):
         """Set the array of Lorentz factors for the electrons."""
@@ -105,7 +174,7 @@ class Blob:
     def gamma_p(self):
         """Array of protons Lorentz factors, to be used for integration in the
         frame comoving with the emission region."""
-        if self.n_p is not None:
+        if self._n_p is not None:
             return np.logspace(
                 np.log10(self.gamma_p_min),
                 np.log10(self.gamma_p_max),
@@ -133,27 +202,6 @@ class Blob:
             resume += str(self.n_p)
         return resume
 
-    def set_delta_D(self, Gamma, theta_s):
-        """set the viewing angle and the Lorentz factor of the outflow to
-        obtain a specific Doppler factor
-
-        Parameters
-        ----------
-        Gamma : float
-            Lorentz factor of the relativistic outflow
-        theta_s : :class:`~astropy.units.Quantity`
-            viewing angle of the jet
-        """
-        mu_s = np.cos(theta_s.to("rad").value)
-        Beta = np.sqrt(1 - 1 / np.power(Gamma, 2))
-        delta_D = 1 / (Gamma * (1 - Beta * mu_s))
-
-        self.theta_s = theta_s
-        self.mu_s = mu_s
-        self.Gamma = Gamma
-        self.Beta = Beta
-        self.delta_D = delta_D
-
     def N_e(self, gamma):
         r"""Number of electrons as a function of the Lorentz factor,
         :math:`N_{\rm e}(\gamma') = V_b\,n_{\rm e}(\gamma')`.
@@ -174,12 +222,7 @@ class Blob:
         gamma : :class:`~numpy.ndarray`
             array of Lorentz factor over which to evaluate the number of electrons
         """
-        if self.n_p is None:
-            raise AttributeError(
-                "The proton density, Blob.n_p, was not initialised for this blob."
-            )
-        else:
-            return self.V_b * self.n_p(gamma)
+        return self.V_b * self.n_p(gamma)
 
     @property
     def n_e_tot(self):
@@ -197,12 +240,7 @@ class Blob:
         .. math::
             n_{\rm p,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' n_{\rm p}(\gamma').
         """
-        if self.n_p is None:
-            raise AttributeError(
-                "The proton density, Blob.n_p, was not initialised for this blob."
-            )
-        else:
-            return np.trapz(self.n_p(self.gamma_p), self.gamma_p)
+        return np.trapz(self.n_p(self.gamma_p), self.gamma_p)
 
     @property
     def N_e_tot(self):
