@@ -201,10 +201,10 @@ class Blob:
             + f" - theta_s (jet viewing angle): {self.theta_s:.2e}\n"
             + f" - B (magnetic field tangled to the jet): {self.B:.2e}\n"
             + f" - xi (coefficient for 1st order Fermi acceleration) : {self.xi:.2e}\n"
-            + str(self.n_e)
+            + str(self._n_e)
         )
-        if self.n_p is not None:
-            resume += str(self.n_p)
+        if self._n_p is not None:
+            resume += str(self._n_p)
         return resume
 
     def N_e(self, gamma):
