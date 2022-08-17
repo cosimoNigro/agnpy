@@ -1,5 +1,4 @@
-# test the G
-# gammapy and sherpa wrappers
+# test the gammapy and sherpa wrappers
 import numpy as np
 import astropy.units as u
 from astropy.constants import M_sun
