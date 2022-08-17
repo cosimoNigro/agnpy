@@ -155,9 +155,9 @@ class Blob:
         """Setter of the proton distribution."""
         self._n_p = spectrum
 
-    def set_gamma_e(self, gamma_e_size, gamma_min=1, gamma_max=1e8):
+    def set_gamma_e(self, gamma_size, gamma_min=1, gamma_max=1e8):
         """Set the array of Lorentz factors for the electrons."""
-        self.gamma_e_size = gamma_e_size
+        self.gamma_e_size = gamma_size
         self.gamma_e_min = gamma_min
         self.gamma_e_max = gamma_max
 

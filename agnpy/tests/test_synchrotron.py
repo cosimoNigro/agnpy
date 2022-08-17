@@ -1,9 +1,12 @@
-# test on synchrotron module
-from pathlib import Path
-import pytest
+# test the synchrotron module
+from ..spectra.spectra import LogParabola, PowerLaw
 import numpy as np
 import astropy.units as u
+from astropy.constants import m_e
 from astropy.coordinates import Distance
+import pytest
+import shutil
+from pathlib import Path
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron, nu_synch_peak, epsilon_B
 from agnpy.utils.math import trapz_loglog
@@ -13,87 +16,62 @@ from .utils import (
     check_deviation,
 )
 
-
 agnpy_dir = Path(__file__).parent.parent
 # where to read sampled files
 data_dir = agnpy_dir / "data"
-# where to save figures
-figures_dir = agnpy_dir.parent / "crosschecks/figures/synchrotron"
+# where to save figures, clean-up before making the new
+figures_dir = Path(agnpy_dir.parent / "crosschecks/figures/synchrotron")
+if figures_dir.exists() and figures_dir.is_dir():
+    shutil.rmtree(figures_dir)
 figures_dir.mkdir(parents=True, exist_ok=True)
 
+# definition of the blobs
+# as a default we use the same parameters of Figure 7.4 in Dermer Menon 2009
+W_e = 1e48 * u.Unit("erg")
+R_b = 1e16 * u.cm
+V_b = 4 / 3 * np.pi * R_b**3
+PWL = PowerLaw.from_total_energy(W_e, V_b, m_e, p=2.8, gamma_min=1e2, gamma_max=1e5)
+LP = LogParabola.from_total_energy(W_e, V_b, m_e, p=2.8, q=0.2, gamma_0=1e3, gamma_min=1e2, gamma_max=1e5)
 
-# variables with _test are global and meant to be used in all tests
-# here as a default we use the same parameters of Figure 7.4 in Dermer Menon 2009
-spectrum_norm_test = 1e48 * u.Unit("erg")
-p_test = 2.8
-q_test = 0.2
-gamma_0 = 1e3
-gamma_min_test = 1e2
-gamma_max_test = 1e5
-pwl_dict_test = {
-    "type": "PowerLaw",
-    "parameters": {
-        "p": p_test,
-        "gamma_min": gamma_min_test,
-        "gamma_max": gamma_max_test,
-    },
-}
-# dictionary test for log parabola
-lp_dict_test = {
-    "type": "LogParabola",
-    "parameters": {
-        "p": p_test,
-        "q": q_test,
-        "gamma_0": gamma_0,
-        "gamma_min": gamma_min_test,
-        "gamma_max": gamma_max_test,
-    },
-}
-# blob parameters
-R_b_test = 1e16 * u.cm
-B_test = 1 * u.G
-z_test = Distance(1e27, unit=u.cm).z
-delta_D_test = 10
-Gamma_test = 10
-pwl_blob_test = Blob(
-    R_b_test,
-    z_test,
-    delta_D_test,
-    Gamma_test,
-    B_test,
-    spectrum_norm_test,
-    pwl_dict_test,
+PWL_BLOB = Blob(
+    R_b=R_b,
+    z=Distance(1e27, unit=u.cm).z,
+    delta_D=10,
+    Gamma=10,
+    B=1*u.G,
+    n_e=PWL
 )
-lp_blob_test = Blob(
-    R_b_test,
-    z_test,
-    delta_D_test,
-    Gamma_test,
-    B_test,
-    spectrum_norm_test,
-    lp_dict_test,
+
+LP_BLOB = Blob(
+    R_b=R_b,
+    z=Distance(1e27, unit=u.cm).z,
+    delta_D=10,
+    Gamma=10,
+    B=1*u.G,
+    n_e=LP
 )
 
 class TestSynchrotron:
-    """class grouping all tests related to the Synchrotron class"""
+    """Class grouping all tests related to the Synchrotron class."""
 
     @pytest.mark.parametrize("gamma_max, nu_range_max", [("1e5", 1e18), ("1e7", 1e22)])
     def test_synch_reference_sed(self, gamma_max, nu_range_max):
-        """test agnpy synchrotron SED against the ones in Figure 7.4 of Dermer
-        Menon 2009"""
+        """Test agnpy synchrotron SED against the ones in Figure 7.4 of Dermer
+        Menon 2009."""
+
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
             f"{data_dir}/reference_seds/dermer_menon_2009/figure_7_4/synchrotron_gamma_max_{gamma_max}.txt",
             "Hz",
             "erg cm-2 s-1",
         )
+
         # agnpy
-        # change the gamma_max in the blob
-        pwl_dict_test["parameters"]["gamma_max"] = float(gamma_max)
-        pwl_blob_test.set_spectrum(spectrum_norm_test, pwl_dict_test, "integral")
-        # recompute the SED at the same ordinates of the reference figures
-        synch = Synchrotron(pwl_blob_test)
+        PWL_BLOB.n_e.gamma_max = float(gamma_max)
+        PWL_BLOB.set_gamma_e(gamma_size=200, gamma_max=float(gamma_max))
+        synch = Synchrotron(PWL_BLOB)
         sed_agnpy = synch.sed_flux(nu_ref)
+
         # sed comparison plot
         nu_range = [1e10, nu_range_max] * u.Hz
         make_comparison_plot(

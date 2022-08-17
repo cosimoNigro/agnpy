@@ -231,7 +231,7 @@ class Synchrotron:
             *self.blob.n_e.parameters,
             ssa=self.ssa,
             integrator=self.integrator,
-            gamma=self.blob.gamma,
+            gamma=self.blob.gamma_e,
         )
 
     def sed_flux_delta_approx(self, nu):
