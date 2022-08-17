@@ -102,6 +102,7 @@ def make_comparison_plot(
         gridspec_kw={"height_ratios": [2, 1], "hspace": 0.05},
         figsize=(8, 6),
     )
+
     # plot the SEDs or TAUs in the upper panel
     # plot the reference sed with a continuous line and agnpy sed with a dashed one
     ax[0].loglog(nu, y_ref, marker=".", ls="-", color="k", lw=1.5, label=ref_label)
@@ -113,6 +114,11 @@ def make_comparison_plot(
     ax[0].legend(loc="best")
     if y_range is not None:
         ax[0].set_ylim(y_range)
+    if comparison_range is not None:
+        ax[0].axvline(comparison_range[0], ls="--", color="dodgerblue")
+        ax[0].axvline(comparison_range[1], ls="--", color="dodgerblue")
+    ax[0].grid(ls=":")
+
     # plot the deviation in the bottom panel
     deviation = y_comp / y_ref - 1
     ax[1].axhline(0, ls="-", color="darkgray")
@@ -133,8 +139,9 @@ def make_comparison_plot(
     ax[1].set_xlabel(x_label)
     ax[1].legend(loc="best")
     if comparison_range is not None:
-        ax[1].axvline(comparison_range[0], ls="--", color="k")
-        ax[1].axvline(comparison_range[1], ls="--", color="k")
+        ax[1].axvline(comparison_range[0], ls="--", color="dodgerblue")
+        ax[1].axvline(comparison_range[1], ls="--", color="dodgerblue")
+
     fig.savefig(f"{fig_path}")
     # avoid RuntimeWarning: More than 20 figures have been opened.
     plt.close(fig)

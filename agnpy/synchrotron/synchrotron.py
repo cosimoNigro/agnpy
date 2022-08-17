@@ -6,7 +6,7 @@ from ..utils.math import axes_reshaper, gamma_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
 
 
-__all__ = ["R", "nu_synch_peak", "epsilon_B", "Synchrotron"]
+__all__ = ["R", "nu_synch_peak", "Synchrotron"]
 
 e = e.gauss
 B_cr = 4.414e13 * u.G  # critical magnetic field
