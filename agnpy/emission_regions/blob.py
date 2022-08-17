@@ -72,8 +72,13 @@ class Blob:
         self._n_p = n_p
         self.xi = xi
         # we might want to have different array of Lorentz factors for e and p
-        self.set_gamma_e(gamma_e_size=gamma_e_size)
-        self.set_gamma_p(gamma_p_size=gamma_p_size)
+        self.set_gamma_e(gamma_e_size, self._n_e.gamma_min, self._n_e.gamma_max)
+        # we initialise the array of gamma for protons, in case we later
+        # want to add a proton distribution to this blob
+        if self._n_p is not None:
+            self.set_gamma_p(gamma_p_size, self._n_p.gamma_min, self._n_p.gamma_max)
+        else:
+            self.set_gamma_p(gamma_p_size)
 
     @property
     def V_b(self):
@@ -141,7 +146,7 @@ class Blob:
     def n_p(self):
         """Proton distribution."""
         if self._n_p is None:
-            raise AttributeError()
+            raise AttributeError("No proton distribution initialised for this blob.")
         else:
             return self._n_p
 
@@ -150,17 +155,17 @@ class Blob:
         """Setter of the proton distribution."""
         self._n_p = spectrum
 
-    def set_gamma_e(self, gamma_e_min=1, gamma_e_max=1e8, gamma_e_size=200):
+    def set_gamma_e(self, gamma_e_size, gamma_min=1, gamma_max=1e8):
         """Set the array of Lorentz factors for the electrons."""
-        self.gamma_e_min = gamma_e_min
-        self.gamma_e_max = gamma_e_max
         self.gamma_e_size = gamma_e_size
+        self.gamma_e_min = gamma_min
+        self.gamma_e_max = gamma_max
 
-    def set_gamma_p(self, gamma_p_min=1, gamma_p_max=1e8, gamma_p_size=200):
+    def set_gamma_p(self, gamma_size, gamma_min=1, gamma_max=1e8):
         """Set the array of Lorentz factors for the protons."""
-        self.gamma_p_min = gamma_p_min
-        self.gamma_p_max = gamma_p_max
-        self.gamma_p_size = gamma_p_size
+        self.gamma_p_size = gamma_size
+        self.gamma_p_min = gamma_min
+        self.gamma_p_max = gamma_max
 
     @property
     def gamma_e(self):
@@ -315,7 +320,7 @@ class Blob:
     def k_eq(self):
         """Equipartition parameter: ratio between totoal particle energy density
         and magnetic field energy density, Eq. 7.75 of [DermerMenon2009]_"""
-        if self.n_p is None:
+        if self._n_p is None:
             return (self.u_e / self.U_B).to_value("")
         else:
             return ((self.u_e + self.u_p) / self.U_B).to_value("")
@@ -330,7 +335,7 @@ class Blob:
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
         )
-        if self.n_p is None:
+        if self._n_p is None:
             return (prefactor * self.u_e).to("erg s-1")
         else:
             return (prefactor * (self.u_e + self.u_p)).to("erg s-1")
