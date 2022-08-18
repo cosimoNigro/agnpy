@@ -3,11 +3,22 @@
 
 Using agnpy radiative processes to fit a MWL SED
 ================================================
-``agnpy`` includes ``sherpa`` and ``gammapy`` wrappers that allow the user to fit the broad-band emission of jetted AGN.
+``agnpy`` includes `sherpa <https://sherpa.readthedocs.io/>`_ and `gammapy <https://docs.gammapy.org/>`_ wrappers that allow the user to fit the broad-band emission of jetted AGN.
 The wrappers consider the combination of several radiative processes and return a ``model`` object that can be used by the fitting routine of the package.
 In this documentation page, we gather several examples showing how to obtain the best-fit parameters for these models via a :math:`\chi^2` minimisation.
 The data to be fitted are flux points, representing the flux measurement of an instrument in one or more energy bins.
 The interested user is invited to read the following tutorials.
+
+
+Prerequisites
+-------------
+Note that the ``agnpy.fit`` module, containing the wrappers, needs ``gammapy`` and ``sherpa`` to be installed.
+These packages are not among the basic dependencies of ``agnpy`` and will not be installed automatically if ``agnpy`` is installed via ``conda`` or ``pip``.
+Check the documentation of the relative packages for their installation instructions.
+The following error message will be printed by ``agnpy`` as a warning of the packages not being installed:
+
+``WARNING:root:sherpa and gammapy are not installed, the agnpy.fit module cannot be used``
+
 
 Fit using the ``sherpa`` wrapper
 --------------------------------
@@ -16,6 +27,7 @@ Fit using the ``sherpa`` wrapper
 
    tutorials/ssc_sherpa_fit.ipynb
    tutorials/ec_dt_sherpa_fit.ipynb
+
 
 Fit using the ``Gammapy`` wrapper
 ---------------------------------
@@ -27,6 +39,7 @@ For Gammapy we show, beside the simple :math:`\chi^2` minimisation, how to use a
    tutorials/ssc_gammapy_fit.ipynb
    tutorials/ssc_gammapy_mcmc_fit.ipynb
    tutorials/ec_dt_gammapy_fit.ipynb
+
 
 Loading MWL SED data with ``Gammapy`` and ``sherpa``
 ----------------------------------------------------
