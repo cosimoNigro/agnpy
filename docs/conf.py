@@ -79,6 +79,7 @@ intersphinx_mapping = {
 }
 
 # latex support
+"""
 mathjax_config = {
     "TeX": {
         "Macros": {
@@ -91,3 +92,4 @@ mathjax_config = {
         }
     }
 }
+"""
