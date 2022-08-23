@@ -7,15 +7,21 @@ Modelling Active Galactic Nuclei radiative processes with python.
 [![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
 ## descritpion
-`agnpy` focuses on the numerical computation of the photon spectra produced by leptonic radiative processes in jetted Active Galactic Nuclei (AGN).  
+`agnpy` focuses on the numerical computation of the photon spectra produced by leptonic radiative processes in jetted Active Galactic Nuclei (AGN).
 
 ## agnpy binder
-Run this repository in binder     
+Run this repository in binder    
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cosimoNigro/agnpy/HEAD)
 
-## citing agnpy
-If you are using `agnpy` for your work you can acknowledge and reference it through its zenodo record   
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4055175.svg)](https://doi.org/10.5281/zenodo.4055175)
+## acknowledging and citing agnpy
+As a general acknowledgement of `agnpy` usage, we recommend citing the agnpy release paper.
+Additionaly, to specify which version of `agnpy` is being used, that version's zenodo record can be cited.
+We recommend citing both.
+
+At the following links you can find:
+
+ * [the agnpy release paper (for a general citation)](https://ui.adsabs.harvard.edu/abs/2022A%26A...660A..18N/abstract);
+ * the zenodo record (for citing a specific version) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4055175.svg)](https://doi.org/10.5281/zenodo.4055175)
 
 ## documentation and quickstart
 You are invited to check the documentation at https://agnpy.readthedocs.io/en/latest/.    
