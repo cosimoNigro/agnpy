@@ -1,6 +1,6 @@
 # module containing the synchrotron self Compton radiative process
 import numpy as np
-from astropy.constants import h, c, m_e, sigma_T, G
+from astropy.constants import c, sigma_T
 import astropy.units as u
 from .kernels import isotropic_kernel
 from ..synchrotron import Synchrotron
@@ -140,7 +140,7 @@ class SynchrotronSelfCompton:
             *self.blob.n_e.parameters,
             ssa=self.ssa,
             integrator=self.integrator,
-            gamma=self.blob.gamma,
+            gamma=self.blob.gamma_e,
         )
 
     def sed_luminosity(self, nu):

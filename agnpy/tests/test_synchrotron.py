@@ -4,7 +4,6 @@ import astropy.units as u
 from astropy.constants import m_e
 from astropy.coordinates import Distance
 import pytest
-import shutil
 from pathlib import Path
 from agnpy.emission_regions import Blob
 from agnpy.spectra import PowerLaw, LogParabola, BrokenPowerLaw

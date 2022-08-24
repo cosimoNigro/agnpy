@@ -1,10 +1,11 @@
-# test on compton module
+# test the compton module
 from pathlib import Path
 import pytest
 import numpy as np
 import astropy.units as u
-from astropy.constants import M_sun
+from astropy.constants import M_sun, m_e
 from astropy.coordinates import Distance
+from agnpy.spectra import PowerLaw, BrokenPowerLaw
 from agnpy.emission_regions import Blob
 from agnpy.targets import (
     PointSourceBehindJet,
@@ -15,85 +16,78 @@ from agnpy.targets import (
 )
 from agnpy.compton import SynchrotronSelfCompton, ExternalCompton
 from agnpy.utils.math import trapz_loglog
-from .utils import make_comparison_plot, extract_columns_sample_file, check_deviation
+from .utils import (
+    make_comparison_plot,
+    extract_columns_sample_file,
+    check_deviation,
+    clean_and_make_dir,
+)
 
-agnpy_dir = Path(__file__).parent.parent
+agnpy_dir = Path(__file__).parent.parent.parent  # go to the agnpy root
 # where to read sampled files
-data_dir = agnpy_dir / "data"
-# where to save figures
-figures_dir = agnpy_dir.parent / "crosschecks/figures/compton"
-Path(figures_dir / "ssc").mkdir(parents=True, exist_ok=True)
-for subdir in ["disk", "blr", "dt", "cmb"]:
-    Path(figures_dir / "ec" / subdir).mkdir(parents=True, exist_ok=True)
+data_dir = agnpy_dir / "agnpy/data"
+# where to save figures, clean-up before making the new
+figures_dir_ssc = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/ssc")
+figures_dir_ec_disk = clean_and_make_dir(
+    agnpy_dir, "crosschecks/figures/compton/ec_disk"
+)
+figures_dir_ec_blr = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/ec_blr")
+figures_dir_ec_dt = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/ec_dt")
+figures_dir_ec_cmb = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/ec_cmb")
 
-# variables with _test are global and meant to be used in all tests
-pwl_spectrum_norm_test = 1e48 * u.Unit("erg")
-pwl_dict_test = {
-    "type": "PowerLaw",
-    "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e5},
-}
-bpwl_spectrum_norm_test = 6e42 * u.Unit("erg")
-bpwl_dict_test = {
-    "type": "BrokenPowerLaw",
-    "parameters": {
-        "p1": 2.0,
-        "p2": 3.5,
-        "gamma_b": 1e4,
-        "gamma_min": 20,
-        "gamma_max": 5e7,
-    },
-}
 # blob reproducing Figure 7.4 of Dermer Menon 2009
-pwl_blob_test = Blob(
-    1e16 * u.cm,
-    Distance(1e27, unit=u.cm).z,
-    10,
-    10,
-    1 * u.G,
-    pwl_spectrum_norm_test,
-    pwl_dict_test,
+W_e = 1e48 * u.Unit("erg")
+R_b = 1e16 * u.cm
+V_b = 4 / 3 * np.pi * R_b ** 3
+
+PWL = PowerLaw.from_total_energy(W_e, V_b, m_e, p=2.8, gamma_min=1e2, gamma_max=1e5)
+PWL_BLOB = Blob(
+    R_b=R_b, z=Distance(1e27, unit=u.cm).z, delta_D=10, Gamma=10, B=1 * u.G, n_e=PWL
 )
+
 # blob reproducing the EC scenarios in Finke 2016
-bpwl_blob_test = Blob(
-    1e16 * u.cm, 1, 40, 40, 0.56 * u.G, bpwl_spectrum_norm_test, bpwl_dict_test,
+W_e = 6e42 * u.Unit("erg")
+BPWL = BrokenPowerLaw.from_total_energy(
+    W_e, V_b, m_e, p1=2.0, p2=3.5, gamma_b=1e4, gamma_min=20, gamma_max=5e7
 )
-bpwl_blob_test.set_gamma_size(400)
-# global disk
-M_BH = 1.2 * 1e9 * M_sun.cgs
+BPWL_BLOB = Blob(R_b=R_b, z=1, delta_D=40, Gamma=40, B=0.56 * u.G, n_e=BPWL)
+BPWL_BLOB.set_gamma_e(gamma_size=400)
+
+# targets used for the EC scenario in Finke 2016
 L_disk = 2e46 * u.Unit("erg s-1")
-eta = 1 / 12
-R_in = 6
-R_out = 200
-disk_test = SSDisk(M_BH, L_disk, eta, R_in, R_out, R_g_units=True)
-# global blr
-xi_line = 0.024
-R_line = 1e17 * u.cm
-blr_test = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
-# global dt
-T_dt = 1e3 * u.K
-csi_dt = 0.1
-dt_test = RingDustTorus(L_disk, csi_dt, T_dt)
+DISK = SSDisk(
+    M_BH=1.2 * 1e9 * M_sun.cgs,
+    L_disk=L_disk,
+    eta=1 / 12,
+    R_in=6,
+    R_out=200,
+    R_g_units=True,
+)
+BLR = SphericalShellBLR(L_disk, xi_line=0.024, line="Lyalpha", R_line=1e17 * u.cm)
+DT = RingDustTorus(L_disk, xi_dt=0.1, T_dt=1e3 * u.K)
 
 
 class TestSynchrotronSelfCompton:
-    """class grouping all tests related to the Synchrotron Slef Compton class"""
+    """Class grouping all tests related to the Synchrotron Slef Compton class."""
 
     @pytest.mark.parametrize("gamma_max, nu_range_max", [("1e5", 1e25), ("1e7", 1e27)])
     def test_ssc_reference_sed(self, gamma_max, nu_range_max):
-        """test agnpy SSC SED against the ones in Figure 7.4 of Dermer Menon 2009"""
+        """Test agnpy SSC SED against the ones in Figure 7.4 of Dermer Menon
+        2009."""
+
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
             f"{data_dir}/reference_seds/dermer_menon_2009/figure_7_4/ssc_gamma_max_{gamma_max}.txt",
             "Hz",
             "erg cm-2 s-1",
         )
+
         # agnpy
-        # change the gamma_max in the blob
-        pwl_dict_test["parameters"]["gamma_max"] = float(gamma_max)
-        pwl_blob_test.set_spectrum(pwl_spectrum_norm_test, pwl_dict_test, "integral")
-        # recompute the SED at the same ordinates where the figure was sampled
-        ssc = SynchrotronSelfCompton(pwl_blob_test)
+        PWL_BLOB.n_e.gamma_max = float(gamma_max)
+        PWL_BLOB.set_gamma_e(gamma_size=200, gamma_max=float(gamma_max))
+        ssc = SynchrotronSelfCompton(PWL_BLOB)
         sed_agnpy = ssc.sed_flux(nu_ref)
+
         # sed comparison plot
         nu_range = [1e14, nu_range_max] * u.Hz
         make_comparison_plot(
@@ -103,7 +97,7 @@ class TestSynchrotronSelfCompton:
             "agnpy",
             "Figure 7.4, Dermer and Menon (2009)",
             "Synchrotron Self Compton, " + r"$\gamma_{max} = $" + gamma_max,
-            f"{figures_dir}/ssc/comparison_gamma_max_{gamma_max}_figure_7_4_dermer_menon_2009.png",
+            f"{figures_dir_ssc}/ssc_comparison_gamma_max_{gamma_max}_figure_7_4_dermer_menon_2009.png",
             "sed",
             y_range=[1e-13, 1e-9],
             comparison_range=nu_range.to_value("Hz"),
@@ -112,15 +106,14 @@ class TestSynchrotronSelfCompton:
         assert check_deviation(nu_ref, sed_agnpy, sed_ref, 0.2, nu_range)
 
     def test_ssc_integration_methods(self):
-        """test SSC SED for different integration methods against each other
+        """Test SSC SED for different integration methods against each other
         """
         nu = np.logspace(15, 28) * u.Hz
-        ssc_trapz = SynchrotronSelfCompton(pwl_blob_test, integrator=np.trapz)
-        ssc_trapz_loglog = SynchrotronSelfCompton(
-            pwl_blob_test, integrator=trapz_loglog
-        )
+        ssc_trapz = SynchrotronSelfCompton(PWL_BLOB, integrator=np.trapz)
+        ssc_trapz_loglog = SynchrotronSelfCompton(PWL_BLOB, integrator=trapz_loglog)
         sed_ssc_trapz = ssc_trapz.sed_flux(nu)
         sed_ssc_trapz_loglog = ssc_trapz_loglog.sed_flux(nu)
+
         # compare in a restricted energy range
         nu_range = [1e15, 1e27] * u.Hz
         make_comparison_plot(
@@ -130,10 +123,11 @@ class TestSynchrotronSelfCompton:
             "trapezoidal log-log integration",
             "trapezoidal integration",
             "Synchrotron Self Compton",
-            f"{figures_dir}/ssc/comparison_integration_methods.png",
+            f"{figures_dir_ssc}/ssc_comparison_integration_methods.png",
             "sed",
             comparison_range=nu_range.to_value("Hz"),
         )
+
         # requires that the SED points deviate less than 15%
         assert check_deviation(nu, sed_ssc_trapz_loglog, sed_ssc_trapz, 0.15, nu_range)
 
