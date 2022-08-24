@@ -77,17 +77,3 @@ intersphinx_mapping = {
     "astropy": ("http://docs.astropy.org/en/latest/", None),
     "matplotlib": ("https://matplotlib.org", None),
 }
-
-# latex support
-mathjax_config = {
-    "TeX": {
-        "Macros": {
-            "Beta": r"{\mathcal{B}}",
-            "uunits": r"{{\rm erg}\,{\rm cm}^{-3}}",
-            "diff": r"{\mathrm{d}}",
-            "utransform": r"{\Gamma^3 (1 + \Beta \mu')^3}",
-            "rtilde": r"\tilde{r}",
-            "ltilde": r"\tilde{l}",
-        }
-    }
-}

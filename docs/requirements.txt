@@ -2,4 +2,5 @@ sphinx
 sphinx-astropy
 nbsphinx
 ipython
+ipykernel
 docutils<0.18
