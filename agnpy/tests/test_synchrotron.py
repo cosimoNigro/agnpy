@@ -23,10 +23,12 @@ data_dir = agnpy_dir / "agnpy/data"
 # where to save figures, clean-up before making the new
 figures_dir = clean_and_make_dir(agnpy_dir, "crosschecks/figures/synchrotron")
 
-# as a default we use the same parameters of Figure 7.4 in Dermer Menon 2009
+# as a default we use the same PWL EED of Figure 7.4 in Dermer Menon 2009
+# we use additional blob with a LP EED to test the delta function approximation
 W_e = 1e48 * u.Unit("erg")
 R_b = 1e16 * u.cm
 V_b = 4 / 3 * np.pi * R_b ** 3
+
 PWL = PowerLaw.from_total_energy(W_e, V_b, m_e, p=2.8, gamma_min=1e2, gamma_max=1e5)
 LP = LogParabola.from_total_energy(
     W_e, V_b, m_e, p=2.8, q=0.2, gamma_0=1e3, gamma_min=1e2, gamma_max=1e5
@@ -35,7 +37,6 @@ LP = LogParabola.from_total_energy(
 PWL_BLOB = Blob(
     R_b=R_b, z=Distance(1e27, unit=u.cm).z, delta_D=10, Gamma=10, B=1 * u.G, n_e=PWL
 )
-
 LP_BLOB = Blob(
     R_b=R_b, z=Distance(1e27, unit=u.cm).z, delta_D=10, Gamma=10, B=1 * u.G, n_e=LP
 )
