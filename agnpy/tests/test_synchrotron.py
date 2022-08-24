@@ -37,7 +37,6 @@ class TestSynchrotron:
     def test_synch_reference_sed(self, gamma_max, nu_range_max):
         """Test agnpy synchrotron SED against the ones in Figure 7.4 of Dermer
         and Menon 2009."""
-
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
             f"{data_dir}/reference_seds/dermer_menon_2009/figure_7_4/synchrotron_gamma_max_{gamma_max}.txt",

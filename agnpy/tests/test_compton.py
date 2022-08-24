@@ -35,27 +35,17 @@ figures_dir_ec_blr = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/
 figures_dir_ec_dt = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/ec_dt")
 figures_dir_ec_cmb = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/ec_cmb")
 
-# blob reproducing Figure 7.4 of Dermer Menon 2009
+
+# parameters of the Blob and EED in Figure 7.4 Dermer and Menon 2009
 W_e = 1e48 * u.Unit("erg")
 R_b = 1e16 * u.cm
 V_b = 4 / 3 * np.pi * R_b ** 3
+z = Distance(1e27, unit=u.cm).z
 
-PWL = PowerLaw.from_total_energy(W_e, V_b, m_e, p=2.8, gamma_min=1e2, gamma_max=1e5)
-PWL_BLOB = Blob(
-    R_b=R_b, z=Distance(1e27, unit=u.cm).z, delta_D=10, Gamma=10, B=1 * u.G, n_e=PWL
-)
-
-# blob reproducing the EC scenarios in Finke 2016
-W_e = 6e42 * u.Unit("erg")
-BPWL = BrokenPowerLaw.from_total_energy(
-    W_e, V_b, m_e, p1=2.0, p2=3.5, gamma_b=1e4, gamma_min=20, gamma_max=5e7
-)
-BPWL_BLOB = Blob(R_b=R_b, z=1, delta_D=40, Gamma=40, B=0.56 * u.G, n_e=BPWL)
-BPWL_BLOB.set_gamma_e(gamma_size=400)
 
 # targets used for the EC scenario in Finke 2016
 L_disk = 2e46 * u.Unit("erg s-1")
-DISK = SSDisk(
+disk = SSDisk(
     M_BH=1.2 * 1e9 * M_sun.cgs,
     L_disk=L_disk,
     eta=1 / 12,
@@ -63,8 +53,8 @@ DISK = SSDisk(
     R_out=200,
     R_g_units=True,
 )
-BLR = SphericalShellBLR(L_disk, xi_line=0.024, line="Lyalpha", R_line=1e17 * u.cm)
-DT = RingDustTorus(L_disk, xi_dt=0.1, T_dt=1e3 * u.K)
+blr = SphericalShellBLR(L_disk, xi_line=0.024, line="Lyalpha", R_line=1e17 * u.cm)
+dt = RingDustTorus(L_disk, xi_dt=0.1, T_dt=1e3 * u.K)
 
 
 class TestSynchrotronSelfCompton:
@@ -72,9 +62,8 @@ class TestSynchrotronSelfCompton:
 
     @pytest.mark.parametrize("gamma_max, nu_range_max", [("1e5", 1e25), ("1e7", 1e27)])
     def test_ssc_reference_sed(self, gamma_max, nu_range_max):
-        """Test agnpy SSC SED against the ones in Figure 7.4 of Dermer Menon
+        """Test agnpy SSC SED against the ones in Figure 7.4 of Dermer and Menon
         2009."""
-
         # reference SED
         nu_ref, sed_ref = extract_columns_sample_file(
             f"{data_dir}/reference_seds/dermer_menon_2009/figure_7_4/ssc_gamma_max_{gamma_max}.txt",
@@ -83,9 +72,11 @@ class TestSynchrotronSelfCompton:
         )
 
         # agnpy
-        PWL_BLOB.n_e.gamma_max = float(gamma_max)
-        PWL_BLOB.set_gamma_e(gamma_size=200, gamma_max=float(gamma_max))
-        ssc = SynchrotronSelfCompton(PWL_BLOB)
+        n_e = PowerLaw.from_total_energy(
+            W_e, V_b, m_e, p=2.8, gamma_min=1e2, gamma_max=float(gamma_max)
+        )
+        blob = Blob(R_b=R_b, z=z, delta_D=10, Gamma=10, B=1 * u.G, n_e=n_e)
+        ssc = SynchrotronSelfCompton(blob)
         sed_agnpy = ssc.sed_flux(nu_ref)
 
         # sed comparison plot
@@ -99,18 +90,26 @@ class TestSynchrotronSelfCompton:
             "Synchrotron Self Compton, " + r"$\gamma_{max} = $" + gamma_max,
             f"{figures_dir_ssc}/ssc_comparison_gamma_max_{gamma_max}_figure_7_4_dermer_menon_2009.png",
             "sed",
-            y_range=[1e-13, 1e-9],
+            y_range=[1e-14, 1e-9],
             comparison_range=nu_range.to_value("Hz"),
         )
+
         # requires that the SED points deviate less than 20% from the figure
         assert check_deviation(nu_ref, sed_agnpy, sed_ref, 0.2, nu_range)
 
     def test_ssc_integration_methods(self):
-        """Test SSC SED for different integration methods against each other
+        """Test different integration methods against each other:
+        simple trapezoidal rule vs trapezoidal rule in log-log space.
         """
+        n_e = PowerLaw.from_total_energy(
+            W_e, V_b, m_e, p=2.8, gamma_min=1e2, gamma_max=1e7
+        )
+        blob = Blob(R_b=R_b, z=z, delta_D=10, Gamma=10, B=1 * u.G, n_e=n_e)
+
+        ssc_trapz = SynchrotronSelfCompton(blob, integrator=np.trapz)
+        ssc_trapz_loglog = SynchrotronSelfCompton(blob, integrator=trapz_loglog)
+
         nu = np.logspace(15, 28) * u.Hz
-        ssc_trapz = SynchrotronSelfCompton(PWL_BLOB, integrator=np.trapz)
-        ssc_trapz_loglog = SynchrotronSelfCompton(PWL_BLOB, integrator=trapz_loglog)
         sed_ssc_trapz = ssc_trapz.sed_flux(nu)
         sed_ssc_trapz_loglog = ssc_trapz_loglog.sed_flux(nu)
 
