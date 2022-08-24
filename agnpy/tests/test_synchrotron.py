@@ -14,18 +14,15 @@ from .utils import (
     make_comparison_plot,
     extract_columns_sample_file,
     check_deviation,
+    clean_and_make_dir,
 )
 
-agnpy_dir = Path(__file__).parent.parent
+agnpy_dir = Path(__file__).parent.parent.parent  # go to the agnpy root
 # where to read sampled files
-data_dir = agnpy_dir / "data"
+data_dir = agnpy_dir / "agnpy/data"
 # where to save figures, clean-up before making the new
-figures_dir = Path(agnpy_dir.parent / "crosschecks/figures/synchrotron")
-if figures_dir.exists() and figures_dir.is_dir():
-    shutil.rmtree(figures_dir)
-figures_dir.mkdir(parents=True, exist_ok=True)
+figures_dir = clean_and_make_dir(agnpy_dir, "crosschecks/figures/synchrotron")
 
-# definition of the blobs
 # as a default we use the same parameters of Figure 7.4 in Dermer Menon 2009
 W_e = 1e48 * u.Unit("erg")
 R_b = 1e16 * u.cm

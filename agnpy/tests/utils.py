@@ -1,4 +1,6 @@
 # utils for testing
+import shutil
+from pathlib import Path
 import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -12,6 +14,16 @@ TAU_Y_LABEL = r"$\tau_{\gamma\gamma}$"
 TAU_DEVIATION_LABEL = (
     r"$\tau_{\gamma\gamma, \rm agnpy}\,/\,\tau_{\gamma\gamma, \rm reference}$ - 1"
 )
+
+
+def clean_and_make_dir(main_dir, sub_dir):
+    """Generate a sub directory in a main directory, remove it (recursively) if
+    already existing. Returns the path of the created directory."""
+    _dir = Path(main_dir / sub_dir)
+    if _dir.exists() and _dir.is_dir():
+        shutil.rmtree(_dir)
+    _dir.mkdir(parents=True, exist_ok=True)
+    return _dir
 
 
 def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
