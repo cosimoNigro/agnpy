@@ -447,6 +447,7 @@ class Absorption:
     @staticmethod
     def evaluate_tau_blr_cubepy(
         nu,
+        eps_abs,
         z,
         mu_s,
         L_disk,
@@ -509,27 +510,29 @@ class Absorption:
         # set boundary for integration
         low = np.array(
             [
-                [-1.0],
-                [0.0],
+                [min(mu_to_integrate)],
+                [min(phi_to_integrate)],
                 [np.log(r.to_value('cm'))]
             ]
         )
 
         high = np.array(
             [
-                [1.0],
-                [2.0*np.pi],
+                [max(mu_to_integrate)],
+                [max(phi_to_integrate)],
                 [np.log(1e5*r.to_value('cm'))]
             ]
         )
 
-        eps = 1.e-3 /1e45
-        value, error = cp.integrate(f, low, high, abstol=eps)
-        integral = value[0]*u.cm
+
         prefactor = (L_disk * xi_line) / (
             (4 * np.pi) ** 2 * epsilon_line * m_e * c ** 3
         )
 
+        prefactor = prefactor.to("cm-1")
+        eps = eps_abs / prefactor.to_value("cm-1")
+        value, error = cp.integrate(f, low, high, abstol=eps)
+        integral = value[0]*u.cm
         return (prefactor * integral[0]).to_value("")
 
 
@@ -558,6 +561,7 @@ class Absorption:
         """
         return self.evaluate_tau_blr_mu_s(
             nu,
+            eps_abs,
             self.z,
             self.mu_s,
             self.target.L_disk,
@@ -570,13 +574,14 @@ class Absorption:
             phi=self.phi,
         )
 
-    def tau_blr_cubepy(self, nu):
+    def tau_blr_cubepy(self, nu, eps_abs):
         """Evaluates the gamma-gamma absorption produced by a spherical shell
         BLR for a general set of model parameters with cubepy integration
         method
         """
         return self.evaluate_tau_blr_cubepy(
             nu,
+            eps_abs,
             self.z,
             self.mu_s,
             self.target.L_disk,
