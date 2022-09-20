@@ -574,25 +574,30 @@ class Absorption:
             phi=self.phi,
         )
 
-    def tau_blr_cubepy(self, nu, eps_abs):
+    def tau_blr_cubepy(self, nu, eps_abs=1e-6):
         """Evaluates the gamma-gamma absorption produced by a spherical shell
         BLR for a general set of model parameters with cubepy integration
         method
         """
-        return self.evaluate_tau_blr_cubepy(
-            nu,
-            eps_abs,
-            self.z,
-            self.mu_s,
-            self.target.L_disk,
-            self.target.xi_line,
-            self.target.epsilon_line,
-            self.target.R_line,
-            self.r,
-            l_size=self.l_size,
-            mu=self.mu,
-            phi=self.phi,
-    )
+
+        tau_blr_list = []
+        for freq in nu:
+            tau_blr_list.append(
+            self.evaluate_tau_blr_cubepy(
+                freq,
+                eps_abs,
+                self.z,
+                self.mu_s,
+                self.target.L_disk,
+                self.target.xi_line,
+                self.target.epsilon_line,
+                self.target.R_line,
+                self.r,
+                l_size=self.l_size,
+                mu=self.mu,
+                phi=self.phi,
+                            ))
+        return tau_blr_list
 
     @staticmethod
     def evaluate_tau_dt(
