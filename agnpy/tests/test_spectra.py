@@ -101,10 +101,8 @@ def pwl_data(k_e_test,p_test,gamma_min_test,gamma_max_test):
 
     pwl_data = np.zeros((2,100),float)
     gamma1 = np.logspace(np.log10(gamma_min_test),np.log10(gamma_max_test),100)
-
-    for i in range(len(gamma1)):
-        pwl_data[0,i] = gamma1[i]
-        pwl_data[1,i] = pwl_test(gamma1[i]).value
+    pwl_data[0,:] = gamma1
+    pwl_data[1,:] = pwl_test(gamma1).value
 
     return pwl_data
 
@@ -113,10 +111,8 @@ def bpwl_data(k_e_test, p1_test, p2_test, gamma_b_test, gamma_min_test, gamma_ma
 
     bpwl_data = np.zeros((2,100),float)
     gamma1 = np.logspace(np.log10(gamma_min_test),np.log10(gamma_max_test),100)
-
-    for i in range(len(gamma1)):
-        bpwl_data[0,i] = gamma1[i]
-        bpwl_data[1,i] = bpwl_test(gamma1[i]).value
+    bpwl_data[0,:] = gamma1
+    bpwl_data[1,:] = bpwl_test(gamma1).value
 
     return bpwl_data
 
@@ -125,10 +121,8 @@ def logparabola_data(k_e_test, p1_test, p2_test, gamma_b_test, gamma_min_test, g
 
     lp_data = np.zeros((2,100),float)
     gamma1 = np.logspace(np.log10(gamma_min_test),np.log10(gamma_max_test),100)
-
-    for i in range(len(gamma1)):
-        lp_data[0,i] = gamma1[i]
-        lp_data[1,i] = lp_test(gamma1[i]).value
+    lp_data[0,:] = gamma1
+    lp_data[1,:] = lp_test(gamma1).value
 
     return lp_data
 
@@ -136,10 +130,8 @@ def epwl_data(k_e_test, p1_test, p2_test, gamma_b_test, gamma_min_test, gamma_ma
 
     ep_data = np.zeros((2,100),float)
     gamma1 = np.logspace(np.log10(gamma_min_test),np.log10(gamma_max_test),100)
-
-    for i in range(len(gamma1)):
-        ep_data[0,i] = gamma1[i]
-        ep_data[1,i] = epwl_test(gamma1[i]).value
+    ep_data[0,:] = gamma1
+    ep_data[1,:] = epwl_test(gamma1).value
 
     return ep_data
 
