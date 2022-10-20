@@ -503,7 +503,7 @@ class TestInterpolation:
     #corresponds to the brake.
     def test_SSA_bpwl(self):
          SSA_inter = bpwl_inter.SSA_integrand(gamma1).value
-         SSA_power = bpwl_test.SSA_integrand(bpwl_data).value
+         SSA_power = bpwl_test.SSA_integrand(gamma1).value
          assert np.allclose(bpwl_inter.SSA_integrand(gamma1).value, bpwl_test.SSA_integrand(gamma1).value, rtol = 1e-5, atol=0, equal_nan=False)
 
     def test_SSA_lp(self):
