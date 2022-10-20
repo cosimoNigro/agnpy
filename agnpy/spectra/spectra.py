@@ -13,7 +13,7 @@ __all__ = [
     "ExpCutoffPowerLaw",
     "BrokenPowerLaw",
     "LogParabola",
-    "Interpolation"
+    "InterpolatedDistribution"
 ]
 
 
@@ -479,35 +479,50 @@ class ExpCutoffPowerLaw(ElectronDistribution):
         )
 
 
-class Interpolation(ElectronDistribution):
+class InterpolatedDistribution(ElectronDistribution):
 
     def __init__(
         self,
         gamma_data,
-        n_data
+        n_data,
+        integrator=np.trapz,
+        k = 1 * u.Unit('cm-3')
     ):
+        super().__init__(integrator)
         self.gamma_data = gamma_data
-        self.n_data = n_data.value
         self.gamma_max = max(self.gamma_data)
         self.gamma_min = min(self.gamma_data)
-        self.f_log = CubicSpline(np.log10(self.gamma_data), np.log10(self.n_data))
+        self.k = k
+        if n_data.unit == u.Unit("cm-3"):
+            self.n_data = n_data.value
+        else:
+            self.n_data = n_data
+        self.f_log = self.interpolator()
 
-    #not a static method, since there's the self.f_log inside
-    #Had to be included, since CubicSpline extrapolates beyong gamma min and gamma max
-    def evaluate(self, gamma, gamma_min, gamma_max):
+    def interpolator(self):
+        interpolator = CubicSpline(np.log10(self.gamma_data), np.log10(self.n_data))
+        return interpolator
+
+    def evaluate(self, gamma, gamma_min, gamma_max, k):
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
-            np.power(10,self.f_log(np.log10(gamma)))* u.Unit('cm-3'),
+            k * np.power(10,self.f_log(np.log10(gamma))),
             0
         )
 
     def __call__(self, gamma):
         return self.evaluate(
-            gamma, self.gamma_min, self.gamma_max
+            gamma, self.gamma_min, self.gamma_max, self.k
         )
 
-    #deriv is the derivative of 10**(f_log(np.log10(gamma))). Chain rule is used
     def SSA_integrand(self, gamma):
-        df_log = self.f_log.derivative()
-        deriv = np.power(10, self.f_log(np.log10(gamma)))*(1/gamma)*df_log(np.log10(gamma))
-        return (deriv - 2*np.power(10,self.f_log(np.log10(gamma)))/gamma)*u.Unit('cm-3')
+        r""" integrand for the synchrotron absorption.
+        It is :math: \gamma^2 \frac{d}{d \gamma} (\frac{n_e(\gamma)}{\gamma^2}) = ( \frac{dn_e(\gamma)}{d\gamma}+\frac{2n_e(\gamma)}{\gamma})
+        The derivative is: :math: \frac{dn_e(\gamma)}{d\gamma} = \frac{d 10^{f(u(\gamma))}}{d\gamma} = \frac{d10^{f(u)}}{du} \cdot \frac{du(\gamma)}{d\gamma}
+        where we have :math: \frac{d 10^{f(u(\gamma))}}{d\gamma} = \frac{d10^{f(u)}}{du} \cdot \frac{du(\gamma)}{d\gamma} where u is the np.log10(gamma).
+        This is equal to :math: \frac{d 10^{f(u(\gamma))}}{d\gamma} =  10^{f(u)} \cdot \frac{df(u)}{du} \cdot \frac{1}{\gamma}
+        """
+        df_log  = self.f_log.derivative() #derivative of f_log(np.log10(gamma))
+        int_fun = self.evaluate(gamma,self.gamma_min, self.gamma_max, self.k) # interpolation function: k*10**(f_log(np.log10(gamma)))
+        deriv   = int_fun * (1/gamma)*df_log(np.log10(gamma))
+        return deriv - 2*int_fun / gamma

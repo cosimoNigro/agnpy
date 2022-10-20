@@ -2,7 +2,7 @@
 import numpy as np
 import astropy.units as u
 import pytest
-from agnpy.spectra import PowerLaw, BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw, Interpolation
+from agnpy.spectra import PowerLaw, BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw, InterpolatedDistribution
 from agnpy.utils.math import trapz_loglog
 from agnpy.utils.conversion import mec2
 
@@ -97,72 +97,31 @@ def broken_power_law_times_gamma_integral(k_e, p1, p2, gamma_b, gamma_min, gamma
 # The interpolation function is derived for each data set and then is interpolated and
 # data points are being compared:
 
-def pwl_data(k_e_test,p_test,gamma_min_test,gamma_max_test):
+gamma1 = np.logspace(np.log10(gamma_min_test),np.log10(gamma_max_test),100)
 
-    pwl_data = np.zeros((2,100),float)
-    gamma1 = np.logspace(np.log10(gamma_min_test),np.log10(gamma_max_test),100)
-    pwl_data[0,:] = gamma1
-    pwl_data[1,:] = pwl_test(gamma1).value
-
-    return pwl_data
-
-
-def bpwl_data(k_e_test, p1_test, p2_test, gamma_b_test, gamma_min_test, gamma_max_test):
-
-    bpwl_data = np.zeros((2,100),float)
-    gamma1 = np.logspace(np.log10(gamma_min_test),np.log10(gamma_max_test),100)
-    bpwl_data[0,:] = gamma1
-    bpwl_data[1,:] = bpwl_test(gamma1).value
-
-    return bpwl_data
-
-
-def logparabola_data(k_e_test, p1_test, p2_test, gamma_b_test, gamma_min_test, gamma_max_test):
-
-    lp_data = np.zeros((2,100),float)
-    gamma1 = np.logspace(np.log10(gamma_min_test),np.log10(gamma_max_test),100)
-    lp_data[0,:] = gamma1
-    lp_data[1,:] = lp_test(gamma1).value
-
-    return lp_data
-
-def epwl_data(k_e_test, p1_test, p2_test, gamma_b_test, gamma_min_test, gamma_max_test):
-
-    ep_data = np.zeros((2,100),float)
-    gamma1 = np.logspace(np.log10(gamma_min_test),np.log10(gamma_max_test),100)
-    ep_data[0,:] = gamma1
-    ep_data[1,:] = epwl_test(gamma1).value
-
-    return ep_data
-
-#power law data and interpolation
-pwl_data = pwl_data(
-    k_e_test,p_test,gamma_min_test,gamma_max_test
+pwl_data = pwl_test(gamma1).value
+pwl_inter = InterpolatedDistribution(
+    gamma1, pwl_data *u.Unit('cm-3')
 )
-pwl_inter = Interpolation(
-    pwl_data[0,:], pwl_data[1,:]*u.Unit('cm-3')
+
+bpwl_data = bpwl_test(gamma1).value
+bpwl_inter = InterpolatedDistribution(
+    gamma1, bpwl_data *u.Unit('cm-3')
 )
-# broken power law data and interpolation
-bpwl_data = bpwl_data(
-    k_e_test, p1_test, p2_test, gamma_b_test, gamma_min_test, gamma_max_test
+
+lp_data = lp_test(gamma1).value
+lp_inter = InterpolatedDistribution(
+    gamma1, lp_data *u.Unit('cm-3')
 )
-bpwl_inter = Interpolation(
-    bpwl_data[0,:], bpwl_data[1,:]*u.Unit('cm-3')
+
+# defining another gamma2 array just for the ExpCutoffPowerLaw, since the functions takes very low values for big gammas
+gamma2 = np.logspace(np.log10(gamma_min_test),np.log10(1e5),100)
+
+epwl_data = epwl_test(gamma2).value
+epwl_inter = InterpolatedDistribution(
+    gamma2, epwl_data *u.Unit('cm-3')
 )
-# log parabola data and interpolation
-lp_data = logparabola_data(
-    k_e_test, p1_test, p2_test, gamma_b_test, gamma_min_test, gamma_max_test
-)
-lp_inter = Interpolation(
-    lp_data[0,:], lp_data[1,:]*u.Unit('cm-3')
-)
-# exp cut off power law data and interpolation
-epwl_data = epwl_data(
-    k_e_test, p1_test, p2_test, gamma_b_test, gamma_min_test, 1e5
-)
-epwl_inter = Interpolation(
-    epwl_data[0,:], epwl_data[1,:]*u.Unit('cm-3')
-)
+
 class TestPowerLaw:
     """class grouping all tests related to the BrokenPowerLaw spectrum"""
 
@@ -485,6 +444,7 @@ class TestExpCutoffPowerLaw:
         )
         assert u.isclose(norm, epwl(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
+
 class TestInterpolation:
 
     """ 1. assert that outside the bounding box the function returns 0"""
@@ -517,49 +477,41 @@ class TestInterpolation:
         # check that outside the boundaries values are all 0
         assert not np.all(values[~condition])
 
-    """ 2. assert that the interpolated function does not have large deviations from the original one """
+    """ 2. assert that the interpolated function does not have large deviations from the original one. """
 
     def test_power_vs_inter(self):
-        a = abs(pwl_inter(pwl_data[0,:]).value - pwl_data[1,:])/pwl_data[1,:]
-        assert max(a) < 1e-5
+        assert np.allclose(pwl_inter(gamma1).value, pwl_data, rtol=1e-05, atol=0, equal_nan=False)
 
     def test_bpwl_vs_inter(self):
-        a = abs(bpwl_inter(bpwl_data[0,:]).value - bpwl_data[1,:])/bpwl_data[1,:]
-        assert max(a) < 1e-5
+        assert np.allclose(bpwl_inter(gamma1).value, bpwl_data, rtol=1e-05, atol=0, equal_nan=False)
 
     def test_lp_vs_inter(self):
-        a = abs(lp_inter(pwl_data[0,:]).value - lp_data[1,:])/lp_data[1,:]
-        assert max(a) < 1e-5
+        assert np.allclose(lp_inter(gamma1).value, lp_data, rtol=1e-05, atol=0, equal_nan=False)
 
     def test_ep_vs_inter(self):
-        a = abs(epwl_inter(epwl_data[0,:]).value - epwl_data[1,:])/epwl_data[1,:]
-        assert max(a) < 1e-5
+        assert np.allclose(epwl_inter(gamma2).value, epwl_data, rtol=1e-05, atol=0, equal_nan=False)
 
 
     """ 3. assert that the SSA integrand of the interpolated function does not have large deviations from the original one """
 
     def test_SSA_pow(self):
-        SSA_inter = pwl_inter.SSA_integrand(pwl_data[0,:]).value
-        SSA_power = pwl_test.SSA_integrand(pwl_data[0,:]).value
-        a = abs((SSA_inter - SSA_power)/SSA_power)
-        assert max(a) < 1e-2
+        SSA_inter = pwl_inter.SSA_integrand(gamma1).value
+        SSA_power = pwl_test.SSA_integrand(gamma1).value
+        assert np.allclose(pwl_inter.SSA_integrand(gamma1).value, pwl_test.SSA_integrand(gamma1).value, rtol=1e-5, atol=0, equal_nan=False)
 
     #only test that does not pass. The problem is where the distribution breaks. For the 100 points, only 1 does not pass the test, the one that
     #corresponds to the brake.
     def test_SSA_bpwl(self):
-        SSA_inter = bpwl_inter.SSA_integrand(bpwl_data[0,:]).value
-        SSA_power = bpwl_test.SSA_integrand(bpwl_data[0,:]).value
-        a = abs((SSA_inter - SSA_power)/SSA_power)
-        assert max(a) < 1e-2
+         SSA_inter = bpwl_inter.SSA_integrand(gamma1).value
+         SSA_power = bpwl_test.SSA_integrand(bpwl_data).value
+         assert np.allclose(bpwl_inter.SSA_integrand(gamma1).value, bpwl_test.SSA_integrand(gamma1).value, rtol = 1e-5, atol=0, equal_nan=False)
 
     def test_SSA_lp(self):
-        SSA_inter = lp_inter.SSA_integrand(lp_data[0,:]).value
-        SSA_power = lp_test.SSA_integrand(lp_data[0,:]).value
-        a = abs((SSA_inter - SSA_power)/SSA_power)
-        assert max(a) < 1e-2
+        SSA_inter = lp_inter.SSA_integrand(gamma1).value
+        SSA_power = lp_test.SSA_integrand(gamma1).value
+        assert np.allclose(lp_inter.SSA_integrand(gamma1).value, lp_test.SSA_integrand(gamma1).value, rtol = 1e-5, atol=0, equal_nan=False)
 
     def test_SSA_ep(self):
-        SSA_inter = epwl_inter.SSA_integrand(epwl_data[0,:]).value
-        SSA_power = epwl_test.SSA_integrand(epwl_data[0,:]).value
-        a = abs((SSA_inter - SSA_power)/SSA_power)
-        assert max(a) < 1e-2
+        SSA_inter = epwl_inter.SSA_integrand(gamma2).value
+        SSA_power = epwl_test.SSA_integrand(gamma2).value
+        assert np.allclose(epwl_inter.SSA_integrand(gamma2).value, epwl_test.SSA_integrand(gamma2).value, rtol = 1e-5, atol=1e-20, equal_nan=False)
