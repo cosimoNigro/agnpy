@@ -514,4 +514,4 @@ class TestInterpolation:
     def test_SSA_ep(self):
         SSA_inter = epwl_inter.SSA_integrand(gamma2).value
         SSA_power = epwl_test.SSA_integrand(gamma2).value
-        assert np.allclose(epwl_inter.SSA_integrand(gamma2).value, epwl_test.SSA_integrand(gamma2).value, rtol = 1e-5, atol=1e-20, equal_nan=False)
+        assert np.allclose(epwl_inter.SSA_integrand(gamma2).value, epwl_test.SSA_integrand(gamma2).value, rtol = 1e-5, atol=0, equal_nan=False)
