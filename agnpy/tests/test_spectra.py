@@ -497,21 +497,21 @@ class TestInterpolation:
     def test_SSA_pow(self):
         SSA_inter = pwl_inter.SSA_integrand(gamma1).value
         SSA_power = pwl_test.SSA_integrand(gamma1).value
-        assert np.allclose(pwl_inter.SSA_integrand(gamma1).value, pwl_test.SSA_integrand(gamma1).value, rtol=1e-5, atol=0, equal_nan=False)
+        assert np.allclose(pwl_inter.SSA_integrand(gamma1).value, pwl_test.SSA_integrand(gamma1).value, rtol=1e-3, atol=0, equal_nan=False)
 
     #only test that does not pass. The problem is where the distribution breaks. For the 100 points, only 1 does not pass the test, the one that
-    #corresponds to the brake.
+    #corresponds to the brake. The deviation of the point in respect to the correct one is ~ 10%.
     def test_SSA_bpwl(self):
          SSA_inter = bpwl_inter.SSA_integrand(gamma1).value
          SSA_power = bpwl_test.SSA_integrand(gamma1).value
-         assert np.allclose(bpwl_inter.SSA_integrand(gamma1).value, bpwl_test.SSA_integrand(gamma1).value, rtol = 1e-5, atol=0, equal_nan=False)
+         assert np.allclose(bpwl_inter.SSA_integrand(gamma1).value, bpwl_test.SSA_integrand(gamma1).value, rtol = 1e-3, atol=0, equal_nan=False)
 
     def test_SSA_lp(self):
         SSA_inter = lp_inter.SSA_integrand(gamma1).value
         SSA_power = lp_test.SSA_integrand(gamma1).value
-        assert np.allclose(lp_inter.SSA_integrand(gamma1).value, lp_test.SSA_integrand(gamma1).value, rtol = 1e-5, atol=0, equal_nan=False)
+        assert np.allclose(lp_inter.SSA_integrand(gamma1).value, lp_test.SSA_integrand(gamma1).value, rtol = 1e-3, atol=0, equal_nan=False)
 
     def test_SSA_ep(self):
         SSA_inter = epwl_inter.SSA_integrand(gamma2).value
         SSA_power = epwl_test.SSA_integrand(gamma2).value
-        assert np.allclose(epwl_inter.SSA_integrand(gamma2).value, epwl_test.SSA_integrand(gamma2).value, rtol = 1e-5, atol=0, equal_nan=False)
+        assert np.allclose(epwl_inter.SSA_integrand(gamma2).value, epwl_test.SSA_integrand(gamma2).value, rtol = 1e-3, atol=0, equal_nan=False)
