@@ -3,6 +3,9 @@ import numpy as np
 import astropy.units as u
 from ..utils.math import trapz_loglog
 from ..utils.conversion import mec2
+from scipy.interpolate import CubicSpline
+
+
 
 __all__ = [
     "ElectronDistribution",
@@ -10,11 +13,12 @@ __all__ = [
     "ExpCutoffPowerLaw",
     "BrokenPowerLaw",
     "LogParabola",
+    "InterpolatedDistribution"
 ]
 
 
 class ElectronDistribution:
-    """Base class grouping common functionalities to be used by all electron 
+    """Base class grouping common functionalities to be used by all electron
     distributions. Choose the function to be used for integration. The
     default is :class:`~numpy.trapz`"""
 
@@ -25,7 +29,7 @@ class ElectronDistribution:
     def general_integral(
         self, gamma_low, gamma_up, gamma_power=0, integrator=np.trapz, **kwargs
     ):
-        """integral of the electron distribution over the range gamma_low, 
+        """integral of the electron distribution over the range gamma_low,
         gamma_up for a general set of parameters
 
         Parameters
@@ -47,7 +51,7 @@ class ElectronDistribution:
         return integrator(values, gamma, axis=0)
 
     def integral(self, gamma_low, gamma_up, gamma_power=0):
-        """integral of **this particular** electron distribution over the range 
+        """integral of **this particular** electron distribution over the range
         gamma_low, gamma_up
 
         Parameters
@@ -64,7 +68,7 @@ class ElectronDistribution:
 
     @classmethod
     def from_normalised_density(cls, n_e_tot, **kwargs):
-        r"""sets the normalisation :math:`k_e` from the total particle density 
+        r"""sets the normalisation :math:`k_e` from the total particle density
         :math:`n_{e,\,tot}`"""
         # use gamma_min and gamma_max of the electron distribution as
         # integration limits
@@ -79,7 +83,7 @@ class ElectronDistribution:
 
     @classmethod
     def from_normalised_energy_density(cls, u_e, **kwargs):
-        r"""sets the normalisation :math:`k_e` from the total energy density 
+        r"""sets the normalisation :math:`k_e` from the total energy density
         :math:`u_e`, Eq. 6.64 in [DermerMenon2009]_"""
         # use gamma_min and gamma_max of the electron distribution as
         # integration limits
@@ -108,11 +112,11 @@ class ElectronDistribution:
 
 
 class PowerLaw(ElectronDistribution):
-    r"""Class for power-law particle spectrum. 
+    r"""Class for power-law particle spectrum.
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
-        n_e(\gamma') = k_e \, \gamma'^{-p} \, H(\gamma'; \gamma'_{\rm min}, \gamma'_{\rm max}) 
+        n_e(\gamma') = k_e \, \gamma'^{-p} \, H(\gamma'; \gamma'_{\rm min}, \gamma'_{\rm max})
 
     Parameters
     ----------
@@ -188,7 +192,7 @@ class BrokenPowerLaw(ElectronDistribution):
     .. math::
         n_e(\gamma') = k_e \left[
         \left(\frac{\gamma'}{\gamma'_b}\right)^{-p_1} \, H(\gamma'; \gamma'_{\rm min}, \gamma'_b) +
-        \left(\frac{\gamma'}{\gamma'_b}\right)^{-p_2} \, H(\gamma'; \gamma'_{b}, \gamma'_{\rm max}) 
+        \left(\frac{\gamma'}{\gamma'_b}\right)^{-p_2} \, H(\gamma'; \gamma'_{b}, \gamma'_{\rm max})
         \right]
 
     Parameters
@@ -198,9 +202,9 @@ class BrokenPowerLaw(ElectronDistribution):
     p1 : float
         spectral index before the break (positive by definition)
     p2 : float
-        spectral index after the break (positive by definition)   
+        spectral index after the break (positive by definition)
     gamma_b : float
-        Lorentz factor at which the change in spectral index is occurring 
+        Lorentz factor at which the change in spectral index is occurring
     gamma_min : float
         minimum Lorentz factor of the electron distribution
     gamma_max : float
@@ -298,7 +302,7 @@ class LogParabola(ElectronDistribution):
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
-        n_e(\gamma') = k_e \, \left(\frac{\gamma'}{\gamma'_0}\right)^{-(p + q \log_{10}(\gamma' / \gamma'_0))}  
+        n_e(\gamma') = k_e \, \left(\frac{\gamma'}{\gamma'_0}\right)^{-(p + q \log_{10}(\gamma' / \gamma'_0))}
 
     Parameters
     ----------
@@ -393,11 +397,11 @@ class LogParabola(ElectronDistribution):
 
 
 class ExpCutoffPowerLaw(ElectronDistribution):
-    r"""Class for power-law with an exponetial cutoff particle spectrum. 
+    r"""Class for power-law with an exponetial cutoff particle spectrum.
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
-        n_e(\gamma') = k_e \, \gamma'^{-p} exp(-\gamma'/\gamma_c) \, H(\gamma'; \gamma'_{\rm min}, \gamma'_{\rm max}) 
+        n_e(\gamma') = k_e \, \gamma'^{-p} exp(-\gamma'/\gamma_c) \, H(\gamma'; \gamma'_{\rm min}, \gamma'_{\rm max})
 
     Parameters
     ----------
@@ -473,3 +477,52 @@ class ExpCutoffPowerLaw(ElectronDistribution):
             + f" - gamma_min: {self.gamma_min:.2e}\n"
             + f" - gamma_max: {self.gamma_max:.2e}"
         )
+
+
+class InterpolatedDistribution(ElectronDistribution):
+
+    def __init__(
+        self,
+        gamma_data,
+        n_data,
+        integrator=np.trapz,
+        k = 1 * u.Unit('cm-3')
+    ):
+        super().__init__(integrator)
+        self.gamma_data = gamma_data
+        self.gamma_max = max(self.gamma_data)
+        self.gamma_min = min(self.gamma_data)
+        self.k = k
+        if n_data.unit == u.Unit("cm-3"):
+            self.n_data = n_data.value
+        else:
+            self.n_data = n_data
+        self.f_log = self.interpolator()
+
+    def interpolator(self):
+        interpolator = CubicSpline(np.log10(self.gamma_data), np.log10(self.n_data))
+        return interpolator
+
+    def evaluate(self, gamma, gamma_min, gamma_max, k):
+        return np.where(
+            (gamma_min <= gamma) * (gamma <= gamma_max),
+            k * np.power(10,self.f_log(np.log10(gamma))),
+            0
+        )
+
+    def __call__(self, gamma):
+        return self.evaluate(
+            gamma, self.gamma_min, self.gamma_max, self.k
+        )
+
+    def SSA_integrand(self, gamma):
+        r""" integrand for the synchrotron absorption.
+        It is :math: \gamma^2 \frac{d}{d \gamma} (\frac{n_e(\gamma)}{\gamma^2}) = ( \frac{dn_e(\gamma)}{d\gamma}+\frac{2n_e(\gamma)}{\gamma})
+        The derivative is: :math: \frac{dn_e(\gamma)}{d\gamma} = \frac{d 10^{f(u(\gamma))}}{d\gamma} = \frac{d10^{f(u)}}{du} \cdot \frac{du(\gamma)}{d\gamma}
+        where we have :math: \frac{d 10^{f(u(\gamma))}}{d\gamma} = \frac{d10^{f(u)}}{du} \cdot \frac{du(\gamma)}{d\gamma} where u is the np.log10(gamma).
+        This is equal to :math: \frac{d 10^{f(u(\gamma))}}{d\gamma} =  10^{f(u)} \cdot \frac{df(u)}{du} \cdot \frac{1}{\gamma}
+        """
+        df_log  = self.f_log.derivative() #derivative of f_log(np.log10(gamma))
+        int_fun = self.evaluate(gamma,self.gamma_min, self.gamma_max, self.k) # interpolation function: k*10**(f_log(np.log10(gamma)))
+        deriv   = int_fun * (1/gamma)*df_log(np.log10(gamma))
+        return deriv - 2*int_fun / gamma
