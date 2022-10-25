@@ -3,7 +3,7 @@ import numpy as np
 from astropy.constants import c, sigma_T, G
 from ..utils.math import (
     axes_reshaper,
-    gamma_to_integrate,
+    gamma_e_to_integrate,
     mu_to_integrate,
     phi_to_integrate,
 )
@@ -38,9 +38,6 @@ class ExternalCompton:
 
     def __init__(self, blob, target, r=None, integrator=np.trapz):
         self.blob = blob
-        # we integrate on a larger grid to account for the transformation
-        # of the electron density in the reference frame of the BH
-        self.gamma = self.blob.gamma_to_integrate
         self.target = target
         self.r = r
         self.integrator = integrator
@@ -75,7 +72,7 @@ class ExternalCompton:
         n_e,
         *args,
         integrator=np.trapz,
-        gamma=gamma_to_integrate,
+        gamma=gamma_e_to_integrate,
         mu=mu_to_integrate,
         phi=phi_to_integrate
     ):
@@ -157,7 +154,7 @@ class ExternalCompton:
             self.blob.n_e,
             *self.blob.n_e.parameters,
             integrator=self.integrator,
-            gamma=self.gamma,
+            gamma=self.blob.gamma_e_external_frame,
             mu=self.mu,
             phi=self.phi
         )
@@ -176,7 +173,7 @@ class ExternalCompton:
         n_e,
         *args,
         integrator=np.trapz,
-        gamma=gamma_to_integrate
+        gamma=gamma_e_to_integrate
     ):
         r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for external Compton 
         on a point source of photons behind the jet, for a general set of model parameters
@@ -257,7 +254,7 @@ class ExternalCompton:
             self.blob.n_e,
             *self.blob.n_e.parameters,
             integrator=self.integrator,
-            gamma=self.gamma
+            gamma=self.blob.gamma_e_external_frame
         )
 
     @staticmethod
@@ -277,7 +274,7 @@ class ExternalCompton:
         n_e,
         *args,
         integrator=np.trapz,
-        gamma=gamma_to_integrate,
+        gamma=gamma_e_to_integrate,
         mu_size=100,
         phi=phi_to_integrate
     ):
@@ -392,7 +389,7 @@ class ExternalCompton:
             self.blob.n_e,
             *self.blob.n_e.parameters,
             integrator=self.integrator,
-            gamma=self.gamma,
+            gamma=self.blob.gamma_e_external_frame,
             mu_size=self.mu_size,
             phi=self.phi
         )
@@ -413,7 +410,7 @@ class ExternalCompton:
         n_e,
         *args,
         integrator=np.trapz,
-        gamma=gamma_to_integrate,
+        gamma=gamma_e_to_integrate,
         mu=mu_to_integrate,
         phi=phi_to_integrate
     ):
@@ -508,7 +505,7 @@ class ExternalCompton:
             self.blob.n_e,
             *self.blob.n_e.parameters,
             integrator=self.integrator,
-            gamma=self.gamma,
+            gamma=self.blob.gamma_e_external_frame,
             mu=self.mu,
             phi=self.phi
         )
@@ -529,7 +526,7 @@ class ExternalCompton:
         n_e,
         *args,
         integrator=np.trapz,
-        gamma=gamma_to_integrate,
+        gamma=gamma_e_to_integrate,
         phi=phi_to_integrate
     ):
         r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for External Compton on 
@@ -618,7 +615,7 @@ class ExternalCompton:
             self.blob.n_e,
             *self.blob.n_e.parameters,
             integrator=self.integrator,
-            gamma=self.gamma,
+            gamma=self.blob.gamma_e_external_frame,
             phi=self.phi
         )
 

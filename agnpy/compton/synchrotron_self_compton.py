@@ -6,7 +6,7 @@ from .kernels import isotropic_kernel
 from ..synchrotron import Synchrotron
 from ..utils.math import (
     axes_reshaper,
-    gamma_to_integrate,
+    gamma_e_to_integrate,
     nu_to_integrate,
 )
 from ..utils.conversion import nu_to_epsilon_prime
@@ -45,7 +45,7 @@ class SynchrotronSelfCompton:
         *args,
         ssa=False,
         integrator=np.trapz,
-        gamma=gamma_to_integrate,
+        gamma=gamma_e_to_integrate,
     ):
         r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for synchrotron self-Compton,
         for a general set of model parameters. Eq. 9 in [Finke2008]_.

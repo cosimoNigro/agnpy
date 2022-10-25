@@ -170,15 +170,21 @@ class Blob:
     @property
     def gamma_e(self):
         """Array of electrons Lorentz factors, to be used for integration in the
-        frame comoving with the emission region."""
+        reference frame comoving with the emission region."""
         return np.logspace(
             np.log10(self.gamma_e_min), np.log10(self.gamma_e_max), self.gamma_e_size
         )
 
     @property
+    def gamma_e_external_frame(self):
+        """Array of electrons Lorentz factors, to be used for integration in the
+        reference frame external to the emission region."""
+        return np.logspace(1, 9, self.gamma_e_size)
+
+    @property
     def gamma_p(self):
         """Array of protons Lorentz factors, to be used for integration in the
-        frame comoving with the emission region."""
+        reference frame comoving with the emission region."""
         if self._n_p is not None:
             return np.logspace(
                 np.log10(self.gamma_p_min),
