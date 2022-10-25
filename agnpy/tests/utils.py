@@ -1,6 +1,6 @@
 # utils for testing
 import shutil
-from pathlib import Path
+from pathlib import Path, PosixPath
 import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -16,13 +16,35 @@ TAU_DEVIATION_LABEL = (
 )
 
 
-def clean_and_make_dir(main_dir, sub_dir):
-    """Generate a sub directory in a main directory, remove it (recursively) if
-    already existing. Returns the path of the created directory."""
-    _dir = Path(main_dir / sub_dir)
+def clean_and_make_dir(main_dir, sub_dir=None):
+    """Generate a sub directory in a main directory, remove it (recursively if
+    already exisiting. Returns the path of the created directory.
+
+    Parameters
+    ----------
+    main_dir : string or ~pathlib.PosixPath
+        path of the main directory
+    sub_dir : string
+        the sub directory to be created
+    """
+    if isinstance(main_dir, str) and sub_dir is None:
+        _dir = Path(main_dir)
+    elif isinstance(main_dir, str) and sub_dir is not None:
+        _dir = Path(f"{main_dir}/{sub_dir}")
+    elif isinstance(main_dir, PosixPath) and sub_dir is None:
+        _dir = main_dir
+    elif isinstance(main_dir, PosixPath) and sub_dir is not None:
+        _dir = Path(main_dir / sub_dir)
+    else:
+        raise TypeError(
+            f"wrong types, provided a {type(main_dir)} and {type(sub_dir)}, both should be str or PosixPath"
+        )
+
     if _dir.exists() and _dir.is_dir():
         shutil.rmtree(_dir)
+
     _dir.mkdir(parents=True, exist_ok=True)
+
     return _dir
 
 
