@@ -3,7 +3,13 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import m_e, m_p
 import pytest
-from agnpy.spectra import PowerLaw, BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw
+from agnpy.spectra import (
+    PowerLaw,
+    BrokenPowerLaw,
+    LogParabola,
+    ExpCutoffPowerLaw,
+    InterpolatedDistribution,
+)
 from agnpy.utils.math import trapz_loglog
 from agnpy.utils.conversion import mec2, mpc2
 
@@ -85,9 +91,9 @@ class TestPowerLaw:
         # check that outside the boundaries values are all 0
         assert not np.all(values[~condition])
 
-    @pytest.mark.parametrize("p", np.arange(1, 5, 0.5))
-    @pytest.mark.parametrize("gamma_min", np.logspace(0, 3, 4))
-    @pytest.mark.parametrize("gamma_max", np.logspace(4, 7, 4))
+    @pytest.mark.parametrize("p", np.arange(1, 4, 0.5))
+    @pytest.mark.parametrize("gamma_min", np.logspace(0, 2, 3))
+    @pytest.mark.parametrize("gamma_max", np.logspace(4, 6, 3))
     @pytest.mark.parametrize("gamma_power", [0, 1])
     @pytest.mark.parametrize("integrator", [np.trapz, trapz_loglog])
     def test_power_law_integral(self, p, gamma_min, gamma_max, gamma_power, integrator):
@@ -105,13 +111,14 @@ class TestPowerLaw:
             analytical_integral = power_law_times_gamma_integral(
                 k, p, gamma_min, gamma_max
             )
+
         assert u.isclose(
             numerical_integral, analytical_integral, atol=0 * u.Unit("cm-3"), rtol=0.05
         )
 
-    @pytest.mark.parametrize("p", np.arange(1, 5, 0.5))
-    @pytest.mark.parametrize("gamma_min", np.logspace(0, 3, 4))
-    @pytest.mark.parametrize("gamma_max", np.logspace(4, 7, 4))
+    @pytest.mark.parametrize("p", np.arange(1, 4, 0.5))
+    @pytest.mark.parametrize("gamma_min", np.logspace(0, 2, 3))
+    @pytest.mark.parametrize("gamma_max", np.logspace(4, 6, 3))
     def test_init(self, p, gamma_min, gamma_max):
         """Test the intialisation of the power law with the different methods."""
         # initialisation from total density
@@ -183,8 +190,8 @@ class TestBrokenPowerLaw:
         # check that outside the boundaries values are all 0
         assert not np.all(values[~condition])
 
-    @pytest.mark.parametrize("p1", np.arange(1, 5, 0.5))
-    @pytest.mark.parametrize("p2", np.arange(1, 5, 0.5))
+    @pytest.mark.parametrize("p1", np.arange(1, 2, 0.5))
+    @pytest.mark.parametrize("p2", np.arange(3, 4, 0.5))
     @pytest.mark.parametrize("gamma_b", np.logspace(3, 5, 3))
     @pytest.mark.parametrize("gamma_min", np.logspace(0, 2, 3))
     @pytest.mark.parametrize("gamma_max", np.logspace(6, 8, 3))
@@ -211,12 +218,13 @@ class TestBrokenPowerLaw:
             analytical_integral = broken_power_law_times_gamma_integral(
                 k, p1, p2, gamma_b, gamma_min, gamma_max
             )
+
         assert u.isclose(
             numerical_integral, analytical_integral, atol=0 * u.Unit("cm-3"), rtol=0.05
         )
 
-    @pytest.mark.parametrize("p1", np.arange(1, 5, 0.5))
-    @pytest.mark.parametrize("p2", np.arange(1, 5, 0.5))
+    @pytest.mark.parametrize("p1", np.arange(1, 2, 0.5))
+    @pytest.mark.parametrize("p2", np.arange(3, 4, 0.5))
     @pytest.mark.parametrize("gamma_b", np.logspace(3, 5, 3))
     @pytest.mark.parametrize("gamma_min", np.logspace(0, 2, 3))
     @pytest.mark.parametrize("gamma_max", np.logspace(6, 8, 3))
@@ -327,8 +335,8 @@ class TestLogParabola:
         # check that outside the boundaries values are all 0
         assert not np.all(values[~condition])
 
-    @pytest.mark.parametrize("p", np.arange(1, 5, 0.5))
-    @pytest.mark.parametrize("q", [0.01, 0.02, 0.05, 0.1, 0.2, 0.5])
+    @pytest.mark.parametrize("p", np.arange(1, 4, 0.5))
+    @pytest.mark.parametrize("q", [0.02, 0.05, 0.2, 0.5])
     @pytest.mark.parametrize("gamma_0", np.logspace(3, 5, 3))
     @pytest.mark.parametrize("gamma_min", np.logspace(0, 2, 3))
     @pytest.mark.parametrize("gamma_max", np.logspace(6, 8, 3))
@@ -438,7 +446,7 @@ class TestExpCutoffPowerLaw:
         # check that outside the boundaries values are all 0
         assert not np.all(values[~condition])
 
-    @pytest.mark.parametrize("p", np.arange(1, 5, 0.5))
+    @pytest.mark.parametrize("p", np.arange(1, 4, 0.5))
     @pytest.mark.parametrize("gamma_c", np.logspace(3, 5, 3))
     @pytest.mark.parametrize("gamma_min", np.logspace(0, 2, 3))
     @pytest.mark.parametrize("gamma_max", np.logspace(6, 8, 3))
@@ -519,3 +527,33 @@ class TestExpCutoffPowerLaw:
         # check that the value at gamma=1 is close to the value we set initially
         assert u.isclose(n_1, epwl_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
         assert u.isclose(n_1, epwl_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+
+
+class TestInterpolatedDistribution:
+    @pytest.mark.parametrize(
+        "n", [PowerLaw(), BrokenPowerLaw(), LogParabola(), ExpCutoffPowerLaw()]
+    )
+    def test_interpolation(self, n):
+        """Assert that the interpolated distribution does not have large
+        deviations from the original one."""
+        gamma = np.logspace(np.log10(n.gamma_min), np.log10(n.gamma_max))
+        n_interp = InterpolatedDistribution(gamma, n(gamma))
+
+        assert u.allclose(n(gamma), n_interp(gamma), atol=0 * u.Unit("cm-3"), rtol=1e-6)
+
+        # also assert that outside the bounding box the values are 0
+        gamma_broad = np.logspace(0, 8)
+        values = n_interp(gamma_broad).to_value("cm-3")
+        condition = (n_interp.gamma_min <= gamma_broad) * (
+            gamma_broad <= n_interp.gamma_max
+        )
+
+        assert not np.all(values[~condition])
+
+        # test the part of the SSA integrand involving the electron distribution
+        ssa_integrand = n.SSA_integrand(gamma)
+        ssa_integrand_interp = n_interp.SSA_integrand(gamma)
+
+        assert u.allclose(
+            ssa_integrand, ssa_integrand_interp, atol=0 * u.Unit("cm-3"), rtol=1e-1
+        )
