@@ -133,7 +133,7 @@ class TestFit:
         wrappers return the same results."""
         # electron energy distribution
         n_e = BrokenPowerLaw(
-            k_e=1e-8 * u.Unit("cm-3"),
+            k=1e-8 * u.Unit("cm-3"),
             p1=2.02,
             p2=3.43,
             gamma_b=1e5,
@@ -201,8 +201,8 @@ class TestFit:
 
         # assert that the final parameters are compatible as well
         assert np.isclose(
-            ssc_model_gammapy.log10_k_e.value,
-            ssc_model_sherpa.log10_k_e.val,
+            ssc_model_gammapy.log10_k.value,
+            ssc_model_sherpa.log10_k.val,
             atol=0,
             rtol=0.01,
         )
@@ -236,12 +236,7 @@ class TestFit:
         wrappers return the same results."""
         # electron energy distribution
         n_e = LogParabola(
-            k_e=1 * u.Unit("cm-3"),
-            p=2.0,
-            q=0.2,
-            gamma_0=1e2,
-            gamma_min=1,
-            gamma_max=3e4,
+            k=1 * u.Unit("cm-3"), p=2.0, q=0.2, gamma_0=1e2, gamma_min=1, gamma_max=3e4,
         )
 
         # initialise the wrappers
@@ -352,8 +347,8 @@ class TestFit:
 
         # assert that the final parameters are compatible as well
         assert np.isclose(
-            ec_model_gammapy.log10_k_e.value,
-            ec_model_sherpa.log10_k_e.val,
+            ec_model_gammapy.log10_k.value,
+            ec_model_sherpa.log10_k.val,
             atol=0,
             rtol=0.01,
         )
