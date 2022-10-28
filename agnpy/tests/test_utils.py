@@ -205,11 +205,14 @@ class TestPlotUtils:
     def test_plot_sed(self):
         """check that the functions for plotting SED can be called and that the
         **kwargs are correctly passed to matploltib"""
+        import matplotlib.pyplot as plt
+
         kwargs = {"linewidth": 3, "color": "crimson"}
         nu = np.logspace(10, 20) * u.Hz
         sed = np.logspace(-10, -20) * u.Unit("erg cm-2 s-1")
 
-        ax = plot_sed(nu, sed, **kwargs)
+        fig, ax = plt.subplots()
+        ax = plot_sed(nu, sed, ax, **kwargs)
         line_2d = ax.get_lines()[0]
 
         assert line_2d.get_linewidth() == kwargs["linewidth"]
