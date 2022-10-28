@@ -657,8 +657,8 @@ class Absorption:
 
         # first derive the ranges of the synchrotron spectrum using delta approximation
         # add margin on both sides to allow for the energy distribution
-        nu_s_min = nu_synch_peak(blob.B, blob.gamma_min) * delta_margin_low
-        nu_s_max = nu_synch_peak(blob.B, blob.gamma_max) * 1.0e2
+        nu_s_min = nu_synch_peak(blob.B, blob.n_e.gamma_min) * delta_margin_low
+        nu_s_max = nu_synch_peak(blob.B, blob.n_e.gamma_max) * 1.0e2
 
         # frequencies in the blob frame
         nu_s = (
