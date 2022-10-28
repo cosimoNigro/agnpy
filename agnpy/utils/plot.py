@@ -20,11 +20,9 @@ def plot_sed(nu, sed, ax=None, **kwargs):
     Parameters
     ----------
     nu: :class:`~astropy.units.Quantity`
-        frequencies over which the comparison plot has to be plotted
-    y_range : list of float
-        lower and upper limit of the y axis limt
-    comparison_range : list of float
-        plot the range over which the residuals were checked
+        frequency values
+    sed : :class:`~astropy.units.Quantity`
+        SED values
     """
     ax = plt.gca() if ax is None else ax
 
