@@ -27,7 +27,7 @@ def nu_synch_peak(B, gamma):
     """observed peak frequency for monoenergetic electrons
     Eq. 7.19 in [DermerMenon2009]_"""
     B = B_to_cgs(B)
-    nu_peak = (e * B / (2 * np.pi * m_e * c)) * np.power(gamma, 2)
+    nu_peak = (e * B / (2 * np.pi * m_p * c)) * np.power(gamma, 2)
     return nu_peak.to("Hz")
 
 
@@ -39,7 +39,7 @@ def calc_x(B_cgs, epsilon, gamma):
         4
         * np.pi
         * epsilon
-        * np.power(m_e, 2)
+        * np.power(m_p, 2)
         * np.power(c, 3)
         / (3 * e * B_cgs * h * np.power(gamma, 2))
     )
@@ -67,7 +67,7 @@ def tau_to_attenuation(tau):
     return np.where(tau < 1e-3, 1, 3 * u / tau)
 
 
-class Synchrotron:
+class ProtonSynchrotron:
     """Class for synchrotron radiation computation
 
     Parameters

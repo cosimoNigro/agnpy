@@ -1,12 +1,11 @@
 import numpy as np
 import astropy.units as u
-from agnpy.spectra import PowerLaw, BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw
+from agnpy.spectra import PowerLaw, BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw, InterpolatedDistribution
 from agnpy.utils.math import trapz_loglog
 from agnpy.utils.conversion import mec2
 import matplotlib.pyplot as plt
 from scipy.misc import derivative
 from scipy.interpolate import CubicSpline
-from sspectra import InterpolatedDistribution
 
 """Initiating the 4 distributions """
 # global PowerLaw
@@ -76,9 +75,10 @@ fig,ax=plt.subplots(2,2)
 
 ax[0][0].loglog(g1, n_pwl, label = 'Interpolated Function', c = 'orange')
 ax[0][0].loglog(gamma1, pwl_data, '.', label='Data', c = 'black')
-ax[0][0].set_xlabel('γ')
-ax[0][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')))
+ax[0][0].set_xlabel(' γ ', fontsize= 13 )
+ax[0][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')), fontsize= 13 )
 #plt.ylim(1e-12, 1e-7)
+
 #ax[0][0].legend(loc='upper right')
 
 
@@ -86,8 +86,8 @@ ax[0][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')
 
 ax[0][1].loglog(g1, n_bpwl, label = 'Interpolated Function', c = 'orange')
 ax[0][1].loglog(gamma1, bpwl_data, '.', label='Data' , c = 'black')
-ax[0][1].set_xlabel('γ')
-ax[0][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')))
+ax[0][1].set_xlabel('γ', fontsize= 13 )
+ax[0][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')), fontsize= 13 )
 #plt.ylim(1e-12, 1e-7)
 #ax[0][1].legend(loc='upper right')
 
@@ -95,8 +95,8 @@ ax[0][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')
 
 ax[1][0].loglog(g1, n_lp, label = 'Interpolated Function', c = 'orange')
 ax[1][0].loglog(gamma1, lp_data, '.', label='Data' , c = 'black')
-ax[1][0].set_xlabel('γ')
-ax[1][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')))
+ax[1][0].set_xlabel('γ',fontsize= 13 )
+ax[1][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')),fontsize= 13 )
 #plt.ylim(1e-12, 1e-7)
 
 
@@ -104,8 +104,8 @@ ax[1][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')
 
 ax[1][1].loglog(g2, n_epwl, label = 'Interpolated Function', c = 'orange')
 ax[1][1].loglog(gamma2, epwl_data, '.', label='Data' , c = 'black')
-ax[1][1].set_xlabel('γ')
-ax[1][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')))
+ax[1][1].set_xlabel('γ',fontsize= 13 )
+ax[1][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')),fontsize= 13 )
 #plt.ylim(1e-12, 1e-7)
 
 
@@ -121,8 +121,8 @@ SSA_pwl = pwl_test.SSA_integrand(gamma1).value
 
 ax[0][0].loglog(g1, abs(SSA_inter), label = 'SSA of Interpolated Function', c = 'orange')
 ax[0][0].loglog(gamma1, abs(SSA_pwl), '.', label='SSA of from the Original Function' , c = 'black')
-ax[0][0].set_xlabel('γ')
-ax[0][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')))
+ax[0][0].set_xlabel('γ',fontsize= 13 )
+ax[0][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')),fontsize= 13 )
 #plt.ylim(1e-12, 1e-7)
 
 # Broken Power Law
@@ -131,8 +131,8 @@ SSA_bpwl = bpwl_test.SSA_integrand(gamma1).value
 
 ax[0][1].loglog(g1, abs(SSA_inter), label = 'SSA of Interpolated Function', c = 'orange')
 ax[0][1].loglog(gamma1, abs(SSA_bpwl), '.', label='SSA of from the Original Function' , c = 'black')
-ax[0][1].set_xlabel('Lorentz factor')
-ax[0][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')))
+ax[0][1].set_xlabel(' γ ',fontsize= 13 )
+ax[0][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')),fontsize= 13 )
 #plt.ylim(1e-12, 1e-7)
 
 
@@ -142,8 +142,8 @@ SSA_lp = lp_test.SSA_integrand(gamma1).value
 
 ax[1][0].loglog(g1, abs(SSA_inter), label = 'SSA of Interpolated Function', c = 'orange')
 ax[1][0].loglog(gamma1, abs(SSA_lp), '.', label='SSA of from the Original Function' , c = 'black')
-ax[1][0].set_xlabel('γ')
-ax[1][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')))
+ax[1][0].set_xlabel('γ',fontsize= 13 )
+ax[1][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')),fontsize= 13 )
 #plt.ylim(1e-12, 1e-7)
 
 # Exp cut off
@@ -152,8 +152,8 @@ SSA_epwl = epwl_test.SSA_integrand(gamma2).value
 
 ax[1][1].loglog(g2, abs(SSA_inter), label = 'SSA of Interpolated Function', c = 'orange')
 ax[1][1].loglog(gamma2, abs(SSA_epwl), '.', label='SSA of from the Original Function' , c = 'black')
-ax[1][1].set_xlabel('γ')
-ax[1][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')))
+ax[1][1].set_xlabel('γ',fontsize= 13 )
+ax[1][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')),fontsize= 13 )
 #plt.ylim(1e-12, 1e-7)
 
 plt.tight_layout()
