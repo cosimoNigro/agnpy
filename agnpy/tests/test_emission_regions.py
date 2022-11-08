@@ -44,10 +44,11 @@ class TestBlob:
         blob = Blob(n_e=n_e)
         # assert that the proton distribution is not set
         with pytest.raises(AttributeError):
+            assert blob.gamma_p
             assert blob.n_p
-        assert blob.gamma_p is None
-        # now let us set the proton distribution
+        # now let us set the proton distribution, should automatically set gamma_p
         blob.n_p = n_p
+        assert blob.gamma_p is not None
         # change the grid of Lorentz factors
         gamma = np.logspace(2, 6, 50)
         blob.set_gamma_e(len(gamma), gamma[0], gamma[-1])
@@ -154,3 +155,19 @@ class TestBlob:
         assert np.isclose(
             blob.k_eq, (2 * u_tot / U_B_expected).to_value(""), atol=0, rtol=0.02
         )
+
+    def test_plot_particles_distribution(self):
+        """Test the plotting functions for the particles distributions."""
+        n_e = BrokenPowerLaw()
+        n_p = PowerLaw(mass=m_p)
+
+        # first we initialise the blob without the protons distribution
+        blob = Blob(n_e=n_e)
+        blob.plot_n_e()
+        with pytest.raises(AttributeError):
+            assert blob.plot_n_p()
+
+        # second blob with electrons and protons
+        blob = Blob(n_e=n_e, n_p=n_p)
+        blob.plot_n_e()
+        blob.plot_n_p()
