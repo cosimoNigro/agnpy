@@ -23,15 +23,15 @@ def R(x):
     return term_1_num / term_1_denom * term_2_num / term_2_denom * np.exp(-x)
 
 
-def nu_synch_peak(B, gamma):
+def nu_synch_peak(B, gamma, mass=m_e):
     """observed peak frequency for monoenergetic electrons
     Eq. 7.19 in [DermerMenon2009]_"""
     B = B_to_cgs(B)
-    nu_peak = (e * B / (2 * np.pi * m_e * c)) * np.power(gamma, 2)
+    nu_peak = (e * B / (2 * np.pi * mass * c)) * np.power(gamma, 2)
     return nu_peak.to("Hz")
 
 
-def calc_x(B_cgs, epsilon, gamma):
+def calc_x(B_cgs, epsilon, gamma, mass=m_e):
     """ratio of the frequency to the critical synchrotron frequency from
     Eq. 7.34 in [DermerMenon2009]_, argument of R(x),
     note B has to be in cgs Gauss units"""
@@ -39,7 +39,7 @@ def calc_x(B_cgs, epsilon, gamma):
         4
         * np.pi
         * epsilon
-        * np.power(m_e, 2)
+        * np.power(mass, 2)
         * np.power(c, 3)
         / (3 * e * B_cgs * h * np.power(gamma, 2))
     )
@@ -51,11 +51,11 @@ def epsilon_B(B):
     return (B / B_cr).to_value("")
 
 
-def single_electron_synch_power(B_cgs, epsilon, gamma):
+def single_electron_synch_power(B_cgs, epsilon, gamma, mass=m_e): #Can I change to "single_particle_synch_power"?
     """angle-averaged synchrotron power for a single electron,
     to be folded with the electron distribution
     """
-    x = calc_x(B_cgs, epsilon, gamma)
+    x = calc_x(B_cgs, epsilon, gamma, mass)
     prefactor = np.sqrt(3) * np.power(e, 3) * B_cgs / h
     return prefactor * R(x)
 

@@ -5,13 +5,15 @@ from astropy.constants import e, h, c, m_e, m_p, sigma_T
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
 
+from agnpy.synchrotron import Synchrotron
 
-__all__ = ["R_proton", "nu_synch_peak_proton", "ProtonSynchrotron"]
+#__all__ = ["R_proton", "nu_synch_peak_proton", "ProtonSynchrotron"]
+__all__ = ["ProtonSynchrotron"]
 
 e = e.gauss
 B_cr = 4.414e13 * u.G  # critical magnetic field
 
-
+'''
 def R_proton(x):
     """Eq. 7.45 in [Dermer2009]_, angle-averaged integrand of the radiated power, the
     approximation of this function, given in Eq. D7 of [Aharonian2010]_, is used.
@@ -57,7 +59,7 @@ def single_electron_synch_power(B_cgs, epsilon, gamma):
     """
     x = calc_x(B_cgs, epsilon, gamma)
     prefactor = np.sqrt(3) * np.power(e, 3) * B_cgs / h
-    return prefactor * R(x)
+    return prefactor * R_proton(x)
 
 
 def tau_to_attenuation(tau):
@@ -65,7 +67,7 @@ def tau_to_attenuation(tau):
     Eq. 7.122 in [DermerMenon2009]_."""
     u = 1 / 2 + np.exp(-tau) / tau - (1 - np.exp(-tau)) / np.power(tau, 2)
     return np.where(tau < 1e-3, 1, 3 * u / tau)
-
+'''
 
 class ProtonSynchrotron:
     """Class for synchrotron radiation computation
@@ -89,35 +91,35 @@ class ProtonSynchrotron:
         self.ssa = ssa
         self.integrator = integrator
 
-    @staticmethod
-    def evaluate_tau_ssa(
-        nu,
-        z,
-        d_L,
-        delta_D,
-        B,
-        R_b,
-        n_e,
-        *args,
-        integrator=np.trapz,
-        gamma=gamma_e_to_integrate,
-    ):
-        """Computes the syncrotron self-absorption opacity for a general set
-        of model parameters, see :func:`~agnpy:sycnhrotron.Synchrotron.evaluate_sed_flux`
-        for parameters defintion. Eq. before 7.122 in [DermerMenon2009]_."""
-        # conversions
-        epsilon = nu_to_epsilon_prime(nu, z, delta_D)
-        B_cgs = B_to_cgs(B)
-        # multidimensional integration
-        _gamma, _epsilon = axes_reshaper(gamma, epsilon)
-        SSA_integrand = n_e.evaluate_SSA_integrand(_gamma, *args)
-        integrand = SSA_integrand * single_electron_synch_power(B_cgs, _epsilon, _gamma)
-        integral = integrator(integrand, gamma, axis=0)
-        prefactor_k_epsilon = (
-            -1 / (8 * np.pi * m_e * np.power(epsilon, 2)) * np.power(lambda_c / c, 3)
-        )
-        k_epsilon = (prefactor_k_epsilon * integral).to("cm-1")
-        return (2 * k_epsilon * R_b).to_value("")
+    # @staticmethod
+    # def evaluate_tau_ssa(
+    #     nu,
+    #     z,
+    #     d_L,
+    #     delta_D,
+    #     B,
+    #     R_b,
+    #     n_e,
+    #     *args,
+    #     integrator=np.trapz,
+    #     gamma=gamma_e_to_integrate,
+    # ):
+    #     """Computes the syncrotron self-absorption opacity for a general set
+    #     of model parameters, see :func:`~agnpy:sycnhrotron.Synchrotron.evaluate_sed_flux`
+    #     for parameters defintion. Eq. before 7.122 in [DermerMenon2009]_."""
+    #     # conversions
+    #     epsilon = nu_to_epsilon_prime(nu, z, delta_D)
+    #     B_cgs = B_to_cgs(B)
+    #     # multidimensional integration
+    #     _gamma, _epsilon = axes_reshaper(gamma, epsilon)
+    #     SSA_integrand = n_e.evaluate_SSA_integrand(_gamma, *args)
+    #     integrand = SSA_integrand * single_electron_synch_power(B_cgs, _epsilon, _gamma)
+    #     integral = integrator(integrand, gamma, axis=0)
+    #     prefactor_k_epsilon = (
+    #         -1 / (8 * np.pi * m_e * np.power(epsilon, 2)) * np.power(lambda_c / c, 3)
+    #     )
+    #     k_epsilon = (prefactor_k_epsilon * integral).to("cm-1")
+    #     return (2 * k_epsilon * R_b).to_value("")
 
     @staticmethod
     def evaluate_sed_flux(
@@ -127,7 +129,7 @@ class ProtonSynchrotron:
         delta_D,
         B,
         R_b,
-        n_e,
+        n_p,
         *args,
         ssa=False,
         integrator=np.trapz,
@@ -176,37 +178,37 @@ class ProtonSynchrotron:
         # reshape for multidimensional integration
         _gamma, _epsilon = axes_reshaper(gamma, epsilon)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
-        N_e = V_b * n_e.evaluate(_gamma, *args)
+        N_e = V_b * n_p.evaluate(_gamma, *args)
         # fold the electron distribution with the synchrotron power
-        integrand = N_e * single_electron_synch_power(B_cgs, _epsilon, _gamma)
+        integrand = N_e * Synchrotron.single_electron_synch_power(B_cgs, _epsilon, _gamma)
         emissivity = integrator(integrand, gamma, axis=0)
         prefactor = np.power(delta_D, 4) / (4 * np.pi * np.power(d_L, 2))
         sed = (prefactor * epsilon * emissivity).to("erg cm-2 s-1")
 
-        if ssa:
-            tau = Synchrotron.evaluate_tau_ssa(
-                nu,
-                z,
-                d_L,
-                delta_D,
-                B,
-                R_b,
-                n_e,
-                *args,
-                integrator=integrator,
-                gamma=gamma,
-            )
-            attenuation = tau_to_attenuation(tau)
-            sed *= attenuation
-
-        return sed
+        # if ssa:
+        #     tau = Synchrotron.evaluate_tau_ssa(
+        #         nu,
+        #         z,
+        #         d_L,
+        #         delta_D,
+        #         B,
+        #         R_b,
+        #         n_e,
+        #         *args,
+        #         integrator=integrator,
+        #         gamma=gamma,
+        #     )
+        #     attenuation = tau_to_attenuation(tau)
+        #     sed *= attenuation
+        #
+        # return sed
 
     @staticmethod
     def evaluate_sed_flux_delta_approx(nu, z, d_L, delta_D, B, R_b, n_e, *args):
         """Synchrotron flux SED using the delta approximation for the
         synchrotron radiation Eq. 7.70 [DermerMenon2009]_."""
         epsilon_prime = nu_to_epsilon_prime(nu, z, delta_D)
-        gamma_s = np.sqrt(epsilon_prime / epsilon_B(B))
+        gamma_s = np.sqrt(epsilon_prime / Synchrotron.epsilon_B(B))
         B_cgs = B_to_cgs(B)
         U_B = np.power(B_cgs, 2) / (8 * np.pi)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
@@ -214,7 +216,7 @@ class ProtonSynchrotron:
         prefactor = (
             np.power(delta_D, 4) * c * sigma_T * U_B / (6 * np.pi * np.power(d_L, 2))
         )
-        value = prefactor * np.power(gamma_s, 3) * N_e
+        value = prefactor * np.power(gamma_s, 3) * N_p
         return value.to("erg cm-2 s-1")
 
     def sed_flux(self, nu):
@@ -227,11 +229,11 @@ class ProtonSynchrotron:
             self.blob.delta_D,
             self.blob.B,
             self.blob.R_b,
-            self.blob.n_e,
-            *self.blob.n_e.parameters,
+            self.blob.n_p,
+            *self.blob.n_p.parameters,
             ssa=self.ssa,
             integrator=self.integrator,
-            gamma=self.blob.gamma_e,
+            gamma=self.blob.gamma_p,
         )
 
     def sed_flux_delta_approx(self, nu):
@@ -244,8 +246,8 @@ class ProtonSynchrotron:
             self.blob.delta_D,
             self.blob.B,
             self.blob.R_b,
-            self.blob.n_e,
-            *self.blob.n_e.parameters,
+            self.blob.n_p,
+            *self.blob.n_p.parameters,
         )
 
     def sed_luminosity(self, nu):
