@@ -68,7 +68,7 @@ class ParticleDistribution:
         return integrator(values, gamma, axis=0)
 
     def integrate(self, gamma_low, gamma_up, gamma_power=0):
-        """Integral of **this particular** particle distribution over the range 
+        """Integral of **this particular** particle distribution over the range
         gamma_low, gamma_up.
 
         Parameters
@@ -202,7 +202,7 @@ class PowerLaw(ParticleDistribution):
     When called, the particle density :math:`n(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
-        n(\gamma') = k \, \gamma'^{-p} \, H(\gamma'; \gamma'_{\rm min}, \gamma'_{\rm max}) 
+        n(\gamma') = k \, \gamma'^{-p} \, H(\gamma'; \gamma'_{\rm min}, \gamma'_{\rm max})
 
     Parameters
     ----------
@@ -394,7 +394,7 @@ class LogParabola(ParticleDistribution):
     When called, the particle density :math:`n(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
-        n(\gamma') = k \, \left(\frac{\gamma'}{\gamma'_0}\right)^{-(p + q \log_{10}(\gamma' / \gamma'_0))}  
+        n(\gamma') = k \, \left(\frac{\gamma'}{\gamma'_0}\right)^{-(p + q \log_{10}(\gamma' / \gamma'_0))}
 
     Parameters
     ----------
@@ -480,11 +480,11 @@ class LogParabola(ParticleDistribution):
 
 
 class ExpCutoffPowerLaw(ParticleDistribution):
-    r"""Class describing a power-law with an exponetial cutoff particle distribution. 
+    r"""Class describing a power-law with an exponetial cutoff particle distribution.
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
-        n(\gamma') = k \, \gamma'^{-p} exp(-\gamma'/\gamma_c) \, H(\gamma'; \gamma'_{\rm min}, \gamma'_{\rm max}) 
+        n(\gamma') = k \, \gamma'^{-p} exp(-\gamma'/\gamma_c) \, H(\gamma'; \gamma'_{\rm min}, \gamma'_{\rm max})
 
     Parameters
     ----------
