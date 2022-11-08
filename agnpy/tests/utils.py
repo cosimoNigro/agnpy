@@ -49,7 +49,7 @@ def clean_and_make_dir(main_dir, sub_dir=None):
 
 
 def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
-    """return two arrays of quantities from a sample file"""
+    """Return two arrays of quantities from a sample file."""
     sample_table = np.loadtxt(sample_file, delimiter=",", comments="#")
     x = sample_table[:, 0] * u.Unit(x_unit)
     y = sample_table[:, 1] if y_unit is None else sample_table[:, 1] * u.Unit(y_unit)
@@ -57,7 +57,7 @@ def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
 
 
 def check_deviation(x, y_comp, y_ref, rtol, x_range=None):
-    """check the deviation of two quantities within a given range of x
+    """Check the deviation of two quantities within a given range of x
     when setting atol = 0 in np.allclose it will check that
     |a - b| <= rtol * |b|, that is |a / b - 1| <= rtol.
     If we choose the agnpy values to be a and the reference (code ro figure from
@@ -82,11 +82,9 @@ def make_comparison_plot(
     fig_path,
     plot_type,
     y_range=None,
-    comparison_range=None,
-    x_scale="log",
-    y_scale="log",
+    comparison_range=None
 ):
-    """make a comparison plot, for SED or gamma-gamma absorption
+    """Make a comparison plot, for SED or gamma-gamma absorption
     between two different sources: a reference (literature or another code)
     and a comparison (usually the agnpy result)
 
@@ -113,6 +111,9 @@ def make_comparison_plot(
         lower and upper limit of the y axis limt
     comparison_range : list of float
         plot the range over which the residuals were checked
+
+    NOTE: the default scale is logarithmic on the x and y axis of the quantities
+    and on the x axis of the deviation.
     """
     if plot_type == "sed":
         # set the axes labels for an SED plot
