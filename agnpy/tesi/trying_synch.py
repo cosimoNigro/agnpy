@@ -33,6 +33,8 @@ sed = synch.sed_flux(nu)
 psed= psynch.sed_flux(nu)
 psed2 = psynch2.sed_flux(nu)
 
+print(psed2)
+
 # plot it
 plot_sed(nu, sed, label="Synchrotron")
 plot_sed(nu, psed, label = 'ProtonSynchrotron')

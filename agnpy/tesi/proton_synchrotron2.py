@@ -359,8 +359,8 @@ class ProtonSynchrotron2:
         #     )
         #     attenuation = tau_to_attenuation(tau)
         #     sed *= attenuation
-        #
-        # return sed
+
+        return sed
 
     @staticmethod
     def evaluate_sed_flux_delta_approx(nu, z, d_L, delta_D, B, R_b, n_p, *args):

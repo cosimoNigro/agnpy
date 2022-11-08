@@ -200,8 +200,8 @@ class ProtonSynchrotron:
         #     )
         #     attenuation = tau_to_attenuation(tau)
         #     sed *= attenuation
-        #
-        # return sed
+
+        return sed
 
     @staticmethod
     def evaluate_sed_flux_delta_approx(nu, z, d_L, delta_D, B, R_b, n_e, *args):
@@ -212,7 +212,7 @@ class ProtonSynchrotron:
         B_cgs = B_to_cgs(B)
         U_B = np.power(B_cgs, 2) / (8 * np.pi)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
-        N_e = V_b * n_e.evaluate(gamma_s, *args)
+        N_p = V_b * n_e.evaluate(gamma_s, *args)
         prefactor = (
             np.power(delta_D, 4) * c * sigma_T * U_B / (6 * np.pi * np.power(d_L, 2))
         )
