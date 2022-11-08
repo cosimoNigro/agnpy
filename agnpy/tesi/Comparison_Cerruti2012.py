@@ -18,11 +18,9 @@ from agnpy.absorption import EBL
 pks_sed = np.loadtxt('PKS2155-304_data_circa.txt')
 lognu = pks_sed[:,0]
 lognuFnu = pks_sed[:,1]
-nu = 10**lognu
-nuFnu = 10**lognuFnu
+nu_data = 10**lognu
+nuFnu_data = 10**lognuFnu
 
-print(nu)
-print(nuFnu)
 
 # Define source parameters
 B = 80 * u.G
@@ -85,17 +83,9 @@ ebl = EBL("saldana-lopez")
 absorption = ebl.absorption(redshift, nu)
 psed2_obs_abs = psed2_obs * absorption # Check if it is correct
 
-nu2 = [3.63894599e+14, 4.81866605e+14, 5.70292370e+14, 1.56719108e+17, 2.19514602e+17, 3.25233387e+17, 4.07151555e+17, 4.81866605e+17,
- 7.98801781e+17, 1.18350673e+18, 8.93757115e+17, 1.25187503e+18, 1.48160252e+18, 1.75348655e+18, 1.85478119e+18, 2.07526313e+18,
- 2.59797009e+18, 3.07471508e+18, 3.63894599e+18, 6.74944857e+22, 1.32419279e+23, 2.45608788e+23, 5.09702863e+23, 9.45387283e+23,
- 1.75348655e+24, 5.70292370e+24, 6.38084285e+25, 1.18350673e+26, 2.32195425e+26, 4.30671707e+26, 7.98801781e+26]
-nuFnu2 = [9.34519215e-11, 1.02283109e-10, 1.40300372e-10, 7.45674033e-11, 6.51216642e-11, 6.08574464e-11, 5.31484001e-11, 4.85595339e-11,
- 3.78818668e-11, 3.87467512e-11, 3.30832253e-11, 2.70005462e-11, 2.52325292e-11, 2.30539368e-11, 2.05932784e-11, 1.83952580e-11,
- 1.68069998e-11, 1.53558729e-11, 1.37168662e-11, 2.52325292e-11, 3.38385515e-11, 4.33765395e-11, 4.64158883e-11, 4.64158883e-11,
- 4.85595339e-11, 6.81292069e-11, 3.30832253e-11, 1.37168662e-11, 5.43618362e-12, 2.46693021e-12, 1.83952580e-12]
 # plot it
 plt.figure()
-plt.scatter(nu2, nuFnu2, color = 'black')
+plt.scatter(nu_data, nuFnu_data, color = 'black')
 #plot_sed(nu, sed, label="Synchrotron")
 plot_sed(nu, psed2_obs_abs, label = 'ProtonSynchrotron2')
 plt.ylim(1e-14, 1e-9)
