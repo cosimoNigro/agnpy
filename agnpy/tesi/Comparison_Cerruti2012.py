@@ -109,7 +109,7 @@ plt.figure()
 plt.scatter(nu_data, nuFnu_data, color = 'black')
 plot_sed(nu,  sed_abs, label = 'ElectronSynctrotron')
 plot_sed(nu, psed_abs, label = 'ProtonSynchrotron')
-plt.ylim(1e-14, 1e-5)
+plt.ylim(1e-14, 1e-8)
 plt.xlim(1e10, 1e28) # For frequencies
 
 plt.show()
