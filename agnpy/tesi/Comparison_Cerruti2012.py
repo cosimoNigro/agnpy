@@ -4,8 +4,8 @@ from agnpy.spectra import ExpCutoffPowerLaw, BrokenPowerLaw
 from agnpy.emission_regions import Blob
 #from agnpy.synchrotron import Synchrotron
 from synchrotron_new import Synchrotron
-#from proton_synchrotron import ProtonSynchrotron
-from proton_synchrotron2 import ProtonSynchrotron2
+from proton_synchrotron import ProtonSynchrotron
+
 from agnpy.utils.plot import plot_sed
 import matplotlib.pyplot as plt
 #from agnpy.utils.plot import load_mpl_rc
@@ -35,31 +35,48 @@ vol = (4. / 3) * np.pi * R ** 3
 # "power-law defined above gamma_p_min, with slope alpha_p and with an
 # exponential cut-off at gamma_p_max" (from M. Cerruti 2012)
 #
-# Proton dostribution parameters
-alpha_p = 2.0
-gamma_pcut = 1e9 # Cut-off Lorentz factor
-gamma_pmin = 1
-norm_p = 12e3 / u.Unit('cm3')
+
+
+
+# So I made a bit 'cleaner' the code.
+# Also, I deleted my proton_synch program and I kept only yours, renaming it
+# from proton_synchrotron2 to just proton_synchrotron.
+#
+# About the SED:
+#
+# The doppler factor to the power of 4 is already implemented so we dont
+# have to put it (look like 183,184 from the original synchrotron file).
+# I playd a bit with the normalization of the electron, there's a pretty good
+# fit for a k ~ 1e-4 or something like that for the electron synch. So this k = 1e2 is strange,
+# maybe the definition of the norm is different? I will check tomorrow to the documentation of their software that they did the fit.
+# As for the proton, I really have no idea. So my idea is that first of all,
+# we try to fit just the electron synchrotron to the data that Cosimo already has,
+# just to be sure that we are doing everything correctly. Then we try to fit these data.
+# As for the implementation of the broken exp, I think it can wait until we manage to
+# have some reasonable fits. I think very important there's something that we are missing.
+
+
+
+
 u_p = 3.7e2 * u.Unit('erg cm-3')
 
 # define the proton distribution
-n_p = ExpCutoffPowerLaw(k=norm_p,
-        p=alpha_p,
-        gamma_c=gamma_pcut,
-        gamma_min=gamma_pmin,
+n_p = ExpCutoffPowerLaw(k= 12e3 * u.Unit('cm-3'),
+        p = 2.0 ,
+        gamma_c= 1e9,
+        gamma_min= 1,
         gamma_max=1e12,
-        mass=m_p,
-                        )
+        mass=m_p
+)
 
 # Define electron distribution
-n_e = BrokenPowerLaw(k=6e2 * u.Unit("cm-3"),
+n_e = BrokenPowerLaw(k=6e-5 * u.Unit("cm-3"), # k = 6e2, kp = 12e3
         p1=2.0,
         p2=4.32,
         gamma_b=4e3,
         gamma_min=1,
-        gamma_max=6e3,
-        mass=m_e,
-                     )
+        gamma_max=6e4,
+)
 
 blob = Blob(R_b=R,
         z=redshift,
@@ -67,28 +84,32 @@ blob = Blob(R_b=R,
         Gamma=Gamma_bulk,
         B=B,
         n_e=n_e,
-        n_p=n_p,
-            )
+        n_p=n_p
+)
 
 synch = Synchrotron(blob)
-psynch2 = ProtonSynchrotron2(blob)
+psynch = ProtonSynchrotron(blob)
 
 # compute the SED over an array of frequencies
 nu = np.logspace(8, 28) * u.Hz
-#sed = synch.sed_flux(nu)
-psed2 = psynch2.sed_flux(nu)
-psed2_obs = psed2 * doppler_s**4
+
+sed = synch.sed_flux(nu)
+psed = psynch.sed_flux(nu)
+
 
 ebl = EBL("saldana-lopez")
 absorption = ebl.absorption(redshift, nu)
-psed2_obs_abs = psed2_obs * absorption # Check if it is correct
+
+
+sed_abs  = sed  * absorption
+psed_abs = psed * absorption # Check if it is correct
 
 # plot it
 plt.figure()
 plt.scatter(nu_data, nuFnu_data, color = 'black')
-#plot_sed(nu, sed, label="Synchrotron")
-plot_sed(nu, psed2_obs_abs, label = 'ProtonSynchrotron2')
-plt.ylim(1e-14, 1e-9)
+plot_sed(nu,  sed_abs, label = 'ElectronSynctrotron')
+plot_sed(nu, psed_abs, label = 'ProtonSynchrotron')
+plt.ylim(1e-14, 1e-5)
 plt.xlim(1e10, 1e28) # For frequencies
 
 plt.show()
