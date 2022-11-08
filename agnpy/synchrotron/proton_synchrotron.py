@@ -7,67 +7,10 @@ from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
 
 from agnpy.synchrotron import Synchrotron
 
-#__all__ = ["R_proton", "nu_synch_peak_proton", "ProtonSynchrotron"]
 __all__ = ["ProtonSynchrotron"]
 
 e = e.gauss
 B_cr = 4.414e13 * u.G  # critical magnetic field
-
-'''
-def R_proton(x):
-    """Eq. 7.45 in [Dermer2009]_, angle-averaged integrand of the radiated power, the
-    approximation of this function, given in Eq. D7 of [Aharonian2010]_, is used.
-    """
-    term_1_num = 1.808 * np.power(x, 1 / 3)
-    term_1_denom = np.sqrt(1 + 3.4 * np.power(x, 2 / 3))
-    term_2_num = 1 + 2.21 * np.power(x, 2 / 3) + 0.347 * np.power(x, 4 / 3)
-    term_2_denom = 1 + 1.353 * np.power(x, 2 / 3) + 0.217 * np.power(x, 4 / 3)
-    return term_1_num / term_1_denom * term_2_num / term_2_denom * np.exp(-x)
-
-
-def nu_synch_peak_proton(B, gamma):
-    """observed peak frequency for monoenergetic electrons
-    Eq. 7.19 in [DermerMenon2009]_"""
-    B = B_to_cgs(B)
-    nu_peak = (e * B / (2 * np.pi * m_p * c)) * np.power(gamma, 2)
-    return nu_peak.to("Hz")
-
-
-def calc_x(B_cgs, epsilon, gamma):
-    """ratio of the frequency to the critical synchrotron frequency from
-    Eq. 7.34 in [DermerMenon2009]_, argument of R(x),
-    note B has to be in cgs Gauss units"""
-    x = (
-        4
-        * np.pi
-        * epsilon
-        * np.power(m_p, 2)
-        * np.power(c, 3)
-        / (3 * e * B_cgs * h * np.power(gamma, 2))
-    )
-    return x.to_value("")
-
-
-def epsilon_B(B):
-    r""":math:`\epsilon_B`, Eq. 7.21 [DermerMenon2009]_"""
-    return (B / B_cr).to_value("")
-
-
-def single_electron_synch_power(B_cgs, epsilon, gamma):
-    """angle-averaged synchrotron power for a single electron,
-    to be folded with the electron distribution
-    """
-    x = calc_x(B_cgs, epsilon, gamma)
-    prefactor = np.sqrt(3) * np.power(e, 3) * B_cgs / h
-    return prefactor * R_proton(x)
-
-
-def tau_to_attenuation(tau):
-    """Converts the synchrotron self-absorption optical depth to an attenuation
-    Eq. 7.122 in [DermerMenon2009]_."""
-    u = 1 / 2 + np.exp(-tau) / tau - (1 - np.exp(-tau)) / np.power(tau, 2)
-    return np.where(tau < 1e-3, 1, 3 * u / tau)
-'''
 
 class ProtonSynchrotron:
     """Class for synchrotron radiation computation
