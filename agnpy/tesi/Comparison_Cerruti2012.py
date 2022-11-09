@@ -10,7 +10,7 @@ from agnpy.utils.plot import plot_sed
 import matplotlib.pyplot as plt
 #from agnpy.utils.plot import load_mpl_rc
 #from astropy.constants import e, h, c, m_e, m_p, sigma_T
-from astropy.constants import m_p#, m_e
+from astropy.constants import m_p, m_e
 from astropy.coordinates import Distance
 from agnpy.absorption import EBL
 
@@ -108,9 +108,8 @@ psed_abs = psed * absorption # Check if it is correct
 plt.figure()
 plt.scatter(nu_data, nuFnu_data, color = 'black')
 plot_sed(nu,  sed_abs, label = 'ElectronSynctrotron')
-plot_sed(nu, psed, label = 'ProtonSynchrotron')
-plot_sed(nu, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
-plt.ylim(1e-14, 1e-8)
+plot_sed(nu, psed_abs, label = 'ProtonSynchrotron')
+plt.ylim(1e-14, 1e-5)
 plt.xlim(1e10, 1e28) # For frequencies
 
 plt.show()
