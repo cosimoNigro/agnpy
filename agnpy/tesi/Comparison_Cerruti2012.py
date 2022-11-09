@@ -16,7 +16,11 @@ from agnpy.absorption import EBL
 import matplotlib.style
 
 load_mpl_rc()  # adopt agnpy plotting style
-matplotlib.style.use('/Users/ilaria/Desktop/Dottorato_data/Plot_style/file.mplstyle')
+
+# Try user-defined plot style
+#matplotlib.style.use('/Users/ilaria/Desktop/Dottorato_data/Plot_style/file.mplstyle')
+#matplotlib.style.use('seaborn-muted')
+#print(matplotlib.style.available)
 
 # Extract data of PKS 2155-304
 pks_sed = np.loadtxt('PKS2155-304_data_circa.txt')
@@ -110,7 +114,7 @@ sed_abs  = sed  * absorption
 psed_abs = psed * absorption # Check if it is correct
 
 # plot it
-plt.figure(figsize = (8, 5))
+plt.figure(figsize = (6.92, 4.29))
 plt.scatter(nu_data, nuFnu_data, color = 'black')
 plot_sed(nu,  sed_abs, label = 'ElectronSynctrotron')
 plot_sed(nu_obs, psed, label = 'ProtonSynchrotron')
