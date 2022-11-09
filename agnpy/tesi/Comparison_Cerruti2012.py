@@ -1,6 +1,6 @@
 import numpy as np
 import astropy.units as u
-from agnpy.spectra import ExpCutoffPowerLaw, ExpCutoffBrokenPowerLaw
+from agnpy.spectra import ExpCutoffPowerLaw, BrokenPowerLaw
 from agnpy.emission_regions import Blob
 #from agnpy.synchrotron import Synchrotron
 from synchrotron_new import Synchrotron
@@ -34,7 +34,7 @@ nuFnu_data = 10**lognuFnu
 # Define source parameters
 B = 80 * u.G
 redshift = 0.117
-distPKS = Distance(z=redshift)
+distPKS = Distance(z=redshift) # Already inside blob definition
 doppler_s = 30
 Gamma_bulk = 16
 R = 5.2e14 * u.cm #radius of the blob
@@ -45,8 +45,6 @@ vol = (4. / 3) * np.pi * R ** 3
 # exponential cut-off at gamma_p_max" (from M. Cerruti 2012)
 #
 
-<<<<<<< HEAD
-=======
 
 # So I made a bit 'cleaner' the code.
 # Also, I deleted my proton_synch program and I kept only yours, renaming it
@@ -67,18 +65,13 @@ vol = (4. / 3) * np.pi * R ** 3
 
 
 
-<<<<<<< HEAD
 norm_p2 = 12e3 / u.Unit('cm3')
-=======
-
->>>>>>> a84338685a7ad6899b520c8836b897db63c629bd
->>>>>>> 57579d11f17af5b73730c6f69eeeaa6dcada97b8
 u_p = 3.7e2 * u.Unit('erg cm-3')
 #k = (norm_p2 / mpc2.to('eV')) * vol
 print(norm_p2 / mpc2.to('eV'))
 
 # define the proton distribution
-n_p = ExpCutoffPowerLaw(k=12e3 / u.Unit('cm3'), #k,
+n_p = ExpCutoffPowerLaw(k=12e3 / u.Unit('cm3'), #12e3 / u.Unit('cm3'),
         p = 2.0 ,
         gamma_c= 1e9,
         gamma_min= 1,
@@ -87,13 +80,12 @@ n_p = ExpCutoffPowerLaw(k=12e3 / u.Unit('cm3'), #k,
 )
 
 # Define electron distribution
-n_e = ExpCutoffBrokenPowerLaw(k=6e-5 * u.Unit("cm-3"), # k = 6e2, kp = 12e3
+n_e = BrokenPowerLaw(k=6e-5 * u.Unit("cm-3"), # k = 6e2, kp = 12e3
         p1=2.0,
         p2=4.32,
         gamma_b=4e3,
         gamma_min=1,
-        gamma_cutoff=6e4,
-        gamma_max=6e5
+        gamma_max=6e4,
 )
 
 blob = Blob(R_b=R,
@@ -113,7 +105,7 @@ psynch = ProtonSynchrotron(blob)
 
 # compute the SED over an array of frequencies
 nu = np.logspace(10, 30) * u.Hz
-nu_obs = nu * blob.delta_D
+nu_obs = nu * blob.delta_D / (1+redshift)
 
 sed = synch.sed_flux(nu)
 psed = psynch.sed_flux(nu)
@@ -134,7 +126,7 @@ plot_sed(nu_obs, psed, label = 'ProtonSynchrotron')
 plot_sed(nu_obs, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
 plt.ylim(1e-14, 1e-8)
 plt.xlim(1e10, 1e28) # For frequencies
-plt.savefig('Comparison.png')
+#plt.savefig('Comparison.png')
 plt.show()
 
 
@@ -144,4 +136,4 @@ blob.plot_n_p(label = 'Proton distribution')
 #n_e.plot()
 plt.ylim(1e-44, 1e5)
 plt.legend()
-plt.savefig('Particle_distr.png')
+#plt.savefig('Particle_distr.png')

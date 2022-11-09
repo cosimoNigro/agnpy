@@ -505,7 +505,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
         function to be used for integration, default is :class:`~numpy.trapz`
     """
 
-    def _init_(
+    def __init__(
         self,
         k=1e-13 * u.Unit("cm-3"),
         p=2.1,
@@ -515,7 +515,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super()._init_(mass, integrator)
+        super().__init__(mass, integrator)
         self.k = k
         self.p = p
         self.gamma_c = gamma_c
@@ -534,7 +534,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
             0,
         )
 
-    def _call_(self, gamma):
+    def __call__(self, gamma):
         return self.evaluate(
             gamma, self.k, self.p, self.gamma_c, self.gamma_min, self.gamma_max
         )
