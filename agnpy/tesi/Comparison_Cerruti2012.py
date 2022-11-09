@@ -13,6 +13,7 @@ from agnpy.utils.plot import load_mpl_rc
 from astropy.constants import m_p#, m_e
 from astropy.coordinates import Distance
 from agnpy.absorption import EBL
+from agnpy.utils.conversion import mec2, mpc2
 #import matplotlib.style
 
 load_mpl_rc()  # adopt agnpy plotting style
@@ -64,11 +65,13 @@ vol = (4. / 3) * np.pi * R ** 3
 
 
 
-
+norm_p2 = 12e3 / u.Unit('cm3')
 u_p = 3.7e2 * u.Unit('erg cm-3')
+#k = (norm_p2 / mpc2.to('eV')) * vol
+print(norm_p2 / mpc2.to('eV'))
 
 # define the proton distribution
-n_p = ExpCutoffPowerLaw(k= 12e3 * u.Unit('cm-3'),
+n_p = ExpCutoffPowerLaw(k=12e3 / u.Unit('cm3'), #k,
         p = 2.0 ,
         gamma_c= 1e9,
         gamma_min= 1,
