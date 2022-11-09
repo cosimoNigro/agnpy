@@ -10,7 +10,7 @@ from agnpy.utils.plot import plot_sed
 import matplotlib.pyplot as plt
 from agnpy.utils.plot import load_mpl_rc
 #from astropy.constants import e, h, c, m_e, m_p, sigma_T
-from astropy.constants import m_p#, m_e
+from astropy.constants import m_p, m_e
 from astropy.coordinates import Distance
 from agnpy.absorption import EBL
 import matplotlib.style
