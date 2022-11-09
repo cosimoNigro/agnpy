@@ -1,6 +1,6 @@
 import numpy as np
 import astropy.units as u
-from agnpy.spectra import ExpCutoffPowerLaw, BrokenPowerLaw
+from agnpy.spectra import ExpCutoffPowerLaw, ExpCutoffBrokenPowerLaw
 from agnpy.emission_regions import Blob
 #from agnpy.synchrotron import Synchrotron
 from synchrotron_new import Synchrotron
@@ -45,6 +45,8 @@ vol = (4. / 3) * np.pi * R ** 3
 # exponential cut-off at gamma_p_max" (from M. Cerruti 2012)
 #
 
+<<<<<<< HEAD
+=======
 
 # So I made a bit 'cleaner' the code.
 # Also, I deleted my proton_synch program and I kept only yours, renaming it
@@ -65,7 +67,12 @@ vol = (4. / 3) * np.pi * R ** 3
 
 
 
+<<<<<<< HEAD
 norm_p2 = 12e3 / u.Unit('cm3')
+=======
+
+>>>>>>> a84338685a7ad6899b520c8836b897db63c629bd
+>>>>>>> 57579d11f17af5b73730c6f69eeeaa6dcada97b8
 u_p = 3.7e2 * u.Unit('erg cm-3')
 #k = (norm_p2 / mpc2.to('eV')) * vol
 print(norm_p2 / mpc2.to('eV'))
@@ -80,12 +87,13 @@ n_p = ExpCutoffPowerLaw(k=12e3 / u.Unit('cm3'), #k,
 )
 
 # Define electron distribution
-n_e = BrokenPowerLaw(k=6e-5 * u.Unit("cm-3"), # k = 6e2, kp = 12e3
+n_e = ExpCutoffBrokenPowerLaw(k=6e-5 * u.Unit("cm-3"), # k = 6e2, kp = 12e3
         p1=2.0,
         p2=4.32,
         gamma_b=4e3,
         gamma_min=1,
-        gamma_max=6e4,
+        gamma_cutoff=6e4,
+        gamma_max=6e5
 )
 
 blob = Blob(R_b=R,
