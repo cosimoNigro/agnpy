@@ -576,6 +576,7 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         gamma_b=1e3,
         gamma_min=10,
         gamma_max=1e7,
+        gamma_cutoff = 1e5,
         mass=m_e,
         integrator=np.trapz,
     ):
@@ -586,6 +587,7 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         self.gamma_b = gamma_b
         self.gamma_min = gamma_min
         self.gamma_max = gamma_max
+        self.gamma_cutoff = gamma_cutoff
 
     @property
     def parameters(self):
@@ -596,16 +598,16 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             self.gamma_b,
             self.gamma_min,
             self.gamma_max,
+            self.gamma_cutoff
         ]
 
     @staticmethod
-    def evaluate(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max):
+    def evaluate(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max, gamma_cutoff):
         index = np.where(gamma <= gamma_b, p1, p2)
-        k_p = np.where(gamma <= gamma_b, k, k*gamma_b**(p2-p1))
         return np.where(
-            (gamma_min <= gamma),
-            k_p * (gamma ) ** (-index) * np.exp(-gamma/gamma_max),
-            0,
+            (gamma_min <= gamma) * (gamma <= gamma_max),
+            k * (gamma/gamma_b) ** (-index) * np.exp(-gamma/gamma_cutoff),
+            0
         )
 
     def __call__(self, gamma):
@@ -617,17 +619,18 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             self.gamma_b,
             self.gamma_min,
             self.gamma_max,
+            self.gamma_cutoff
         )
 
     @staticmethod
-    def evaluate_SSA_integrand(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max):
+    def evaluate_SSA_integrand(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max, gamma_cutoff):
         r"""Analytical integrand for the synchrotron self-absorption:
         :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`."""
         index = np.where(gamma <= gamma_b, p1, p2)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
-            k * -(index + 2) / gamma * (gamma / gamma_b) ** (-index),
-            0,
+            k * (gamma / gamma_b) ** (-index) * np.exp(-gamma/gamma_cutoff)*(-(index+2)/gamma - 1/gamma_cutoff),
+            0
         )
 
     def SSA_integrand(self, gamma):
@@ -639,6 +642,7 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             self.gamma_b,
             self.gamma_min,
             self.gamma_max,
+            self.gamma_cutoff
         )
 
     def __str__(self):
@@ -651,6 +655,7 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             + f" - gamma_b: {self.gamma_b:.2e}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
             + f" - gamma_max: {self.gamma_max:.2e}\n"
+            + f" - gamma_cutoff: {self.gamma_cutoff:.2e}\n"
         )
 
 

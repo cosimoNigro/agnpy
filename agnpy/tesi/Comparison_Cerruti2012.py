@@ -1,6 +1,6 @@
 import numpy as np
 import astropy.units as u
-from agnpy.spectra import ExpCutoffPowerLaw, BrokenPowerLaw
+from agnpy.spectra import ExpCutoffPowerLaw, ExpCutoffBrokenPowerLaw
 from agnpy.emission_regions import Blob
 #from agnpy.synchrotron import Synchrotron
 from synchrotron_new import Synchrotron
@@ -44,28 +44,6 @@ vol = (4. / 3) * np.pi * R ** 3
 # exponential cut-off at gamma_p_max" (from M. Cerruti 2012)
 #
 
-
-
-# So I made a bit 'cleaner' the code.
-# Also, I deleted my proton_synch program and I kept only yours, renaming it
-# from proton_synchrotron2 to just proton_synchrotron.
-#
-# About the SED:
-#
-# The doppler factor to the power of 4 is already implemented so we dont
-# have to put it (look like 183,184 from the original synchrotron file).
-# I playd a bit with the normalization of the electron, there's a pretty good
-# fit for a k ~ 1e-4 or something like that for the electron synch. So this k = 1e2 is strange,
-# maybe the definition of the norm is different? I will check tomorrow to the documentation of their software that they did the fit.
-# As for the proton, I really have no idea. So my idea is that first of all,
-# we try to fit just the electron synchrotron to the data that Cosimo already has,
-# just to be sure that we are doing everything correctly. Then we try to fit these data.
-# As for the implementation of the broken exp, I think it can wait until we manage to
-# have some reasonable fits. I think very important there's something that we are missing.
-
-
-
-
 u_p = 3.7e2 * u.Unit('erg cm-3')
 
 # define the proton distribution
@@ -78,12 +56,13 @@ n_p = ExpCutoffPowerLaw(k= 12e3 * u.Unit('cm-3'),
 )
 
 # Define electron distribution
-n_e = BrokenPowerLaw(k=6e-5 * u.Unit("cm-3"), # k = 6e2, kp = 12e3
+n_e = ExpCutoffBrokenPowerLaw(k=6e-5 * u.Unit("cm-3"), # k = 6e2, kp = 12e3
         p1=2.0,
         p2=4.32,
         gamma_b=4e3,
         gamma_min=1,
-        gamma_max=6e4,
+        gamma_cutoff=6e4,
+        gamma_max=6e5
 )
 
 blob = Blob(R_b=R,
