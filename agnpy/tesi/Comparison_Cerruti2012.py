@@ -95,6 +95,9 @@ blob = Blob(R_b=R,
         n_p=n_p
 )
 
+print(blob)
+print(n_p)
+
 synch = Synchrotron(blob, ssa=True)
 psynch = ProtonSynchrotron(blob)
 
@@ -122,4 +125,12 @@ plot_sed(nu_obs, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
 plt.ylim(1e-14, 1e-8)
 plt.xlim(1e10, 1e28) # For frequencies
 plt.savefig('Comparison.png')
+
+
+plt.figure(figsize = (6.92, 4.29))
+blob.plot_n_e(label = 'Electron distribution')
+blob.plot_n_p(label = 'Proton distribution')
+#n_e.plot()
+plt.ylim(1e-44, 1e5)
+plt.legend()
 plt.show()
