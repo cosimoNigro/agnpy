@@ -5,10 +5,11 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import m_e, c, M_sun, sigma_T, k_B
 from astropy.coordinates import Distance
+from agnpy.spectra import PowerLaw, BrokenPowerLaw
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron
 from agnpy.targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
-from agnpy.absorption import Absorption, EBL, ebl_files_dict
+from agnpy.absorption import Absorption, EBL
 from agnpy.utils.math import axes_reshaper
 from .utils import (
     make_comparison_plot,
@@ -450,24 +451,21 @@ class TestAbsorptionMuS:
         """
 
         # create a test blob
-        r_b = 1.0e16 * u.cm
+        R_b = 1.0e16 * u.cm
         z = 2.01
         delta_D = 10.1
         Gamma = 10.05
         B0 = 1.1 * u.G
-        gmin = 10
-        gbreak = 1.0e3
-        gmax = 1.0e5
-        spectrum_norm = 0.1 * u.Unit("erg cm-3")
-        parameters = {
-            "p1": 1.5,
-            "p2": 2.5,
-            "gamma_b": gbreak,
-            "gamma_min": gmin,
-            "gamma_max": gmax,
-        }
-        spectrum_dict = {"type": "BrokenPowerLaw", "parameters": parameters}
-        blob = Blob(r_b, z, delta_D, Gamma, B0, spectrum_norm, spectrum_dict)
+        n_e = BrokenPowerLaw.from_total_energy_density(
+            0.1 * u.Unit("erg cm-3"),
+            m_e,
+            p1=1.5,
+            p2=2.5,
+            gamma_b=1e3,
+            gamma_min=10,
+            gamma_max=1e5,
+        )
+        blob = Blob(R_b=R_b, z=z, delta_D=delta_D, Gamma=Gamma, B=B0, n_e=n_e)
 
         nu_tau = np.logspace(22, 34, 100) * u.Hz  # for absorption calculations
         e_tau = nu_tau.to("eV", equivalencies=u.spectral())
@@ -514,7 +512,10 @@ class TestAbsorptionMuS:
     def test_absorption_pointlike_and_homogeneous(self):
         """Simple test for checking the attenuation factors in both considered cases."""
 
-        blob = Blob()
+        n_e = PowerLaw.from_total_density(
+            10 * u.Unit("cm-3"), m_e, p=2.8, gamma_min=1e2, gamma_max=1e7
+        )
+        blob = Blob(n_e=n_e)
         absorb = Absorption(blob)
 
         nu_tau = np.logspace(22, 34, 100) * u.Hz  # for absorption calculations
@@ -535,7 +536,9 @@ class TestAbsorptionMuS:
 class TestEBL:
     """class grouping all tests related to the EBL class"""
 
-    @pytest.mark.parametrize("model", ["franceschini", "finke", "dominguez", "saldana-lopez"])
+    @pytest.mark.parametrize(
+        "model", ["franceschini", "finke", "dominguez", "saldana-lopez"]
+    )
     @pytest.mark.parametrize("z", [0.5, 1.5])
     def test_correct_interpolation(self, model, z):
         # define the ebl model, evaluate it at the reference energies

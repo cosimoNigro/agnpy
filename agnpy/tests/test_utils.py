@@ -2,11 +2,11 @@
 import pytest
 import numpy as np
 import astropy.units as u
-from agnpy.spectra import PowerLaw
+from pathlib import Path
 import agnpy.utils.math as math
 import agnpy.utils.geometry as geom
-from agnpy.utils.plot import load_mpl_rc, plot_eed, plot_sed
-
+from agnpy.utils.plot import load_mpl_rc, plot_sed
+from .utils import clean_and_make_dir
 
 twopi = 2 * np.pi
 
@@ -202,32 +202,17 @@ class TestPlotUtils:
         assert mpl.rcParams["xtick.major.size"] == 7
         assert mpl.rcParams["xtick.minor.size"] == 4
 
-    def test_plot_eed(self):
-        """check that the functions for plotting EED can be called and that the
-        **kwargs are correctly passed to matploltib"""
-        kwargs = {"linewidth": 3, "color": "crimson"}
-        gamma = np.logspace(2, 5)
-        n_e = PowerLaw()
-
-        # plot it without scaling by a power of gamma
-        ax = plot_eed(gamma, n_e, **kwargs)
-        line_2d = ax.get_lines()[0]
-
-        assert line_2d.get_linewidth() == kwargs["linewidth"]
-        assert line_2d.get_color() == kwargs["color"]
-
-        # plot it by scaling by a power of gamma
-        ax = plot_eed(gamma, n_e, gamma_power=2)
-        assert ax.get_ylabel() == r"$\gamma^{2}$$\,n_e(\gamma)\,/\,{\rm cm}^{-3}$"
-
     def test_plot_sed(self):
         """check that the functions for plotting SED can be called and that the
         **kwargs are correctly passed to matploltib"""
+        import matplotlib.pyplot as plt
+
         kwargs = {"linewidth": 3, "color": "crimson"}
         nu = np.logspace(10, 20) * u.Hz
         sed = np.logspace(-10, -20) * u.Unit("erg cm-2 s-1")
 
-        ax = plot_sed(nu, sed, **kwargs)
+        fig, ax = plt.subplots()
+        ax = plot_sed(nu, sed, ax, **kwargs)
         line_2d = ax.get_lines()[0]
 
         assert line_2d.get_linewidth() == kwargs["linewidth"]

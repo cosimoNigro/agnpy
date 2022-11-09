@@ -3,85 +3,25 @@ acceleration of particles to relativistic energies. Beside physical quantities
 related to the emission itself it contains the electrons energy distributions"""
 import numpy as np
 import astropy.units as u
-from astropy.constants import c, sigma_T
 from astropy.coordinates import Distance
-import matplotlib.pyplot as plt
-from .. import spectra
-from ..utils.conversion import mec2, B_to_cgs
-from ..utils.plot import plot_eed
+from astropy.constants import c, sigma_T, m_e
+from ..spectra import PowerLaw
+from ..utils.conversion import mec2, mpc2, B_to_cgs
+
 
 __all__ = ["Blob"]
-
-
-def init_spectrum_norm_dict(norm, spectrum_dict, norm_type="integral", V_b=None):
-    """initialize a spectrum from a normalisation and a spectrum dictionary of
-    the following type
-
-    .. code-block:: python
-
-        spectrum_dict = {
-            "type": "PowerLaw",
-            "parameters": {
-                "p": 2.8,
-                "gamma_min": 1e2,
-                "gamma_max": 1e7
-            }
-        }
-
-    Parameters
-    ----------
-    norm : :class:`~astropy.units.Quantity`
-        normalisation of the spectrum, might be in cm-3, erg cm-3 or erg,
-        if erg are specified then V_b has to be provided
-    spectrum_dict : dictionary
-        dictionary with the spectrum type and parameters
-    norm_type : ["integral", "differential", "gamma=1"]
-        normalisation type
-    V_b : :class:`~astropy.units.Quantity`
-        volume of the emission region, to be provided only if the normalisation
-        is in erg
-    """
-    model = getattr(spectra, spectrum_dict["type"])
-
-    if norm.unit in (u.Unit("erg"), u.Unit("erg cm-3")) and norm_type != "integral":
-        raise NameError(
-            "Normalisation different than 'integral' available only for 'spectrum_norm' in cm-3"
-        )
-
-    # check the units of the normalisation
-    # cm-3 is the only one allowing more than one normalisation type
-    if norm.unit == u.Unit("cm-3"):
-        if norm_type == "differential":
-            final_model = model(norm, **spectrum_dict["parameters"])
-        elif norm_type == "gamma=1":
-            final_model = model.from_norm_at_gamma_1(
-                norm, **spectrum_dict["parameters"]
-            )
-        elif norm_type == "integral":
-            final_model = model.from_normalised_density(
-                norm, **spectrum_dict["parameters"]
-            )
-
-    elif norm.unit == u.Unit("erg cm-3"):
-        final_model = model.from_normalised_energy_density(
-            norm, **spectrum_dict["parameters"]
-        )
-
-    elif norm.unit == u.Unit("erg"):
-        if V_b is None:
-            raise ValueError(
-                "if normalisation in erg provided, the volume V_b must be specified"
-            )
-        final_model = model.from_total_energy(norm, V_b, **spectrum_dict["parameters"])
-
-    return final_model
 
 
 class Blob:
     r"""Simple spherical emission region.
 
-    **Note:** all these quantities are defined in the comoving frame so they are actually
-    primed quantities, when referring the notation in [DermerMenon2009]_.
+    **Note:** all these quantities are defined in the comoving frame so they are
+    actually primed quantities, when referring the notation in [DermerMenon2009]_.
+
+    All the quantities returned from the base attributes (e.g. volume of the
+    emission region and variability time scale are derived from the blob radius)
+    will be returned as properties, such that their value will be updated if the
+    parameter from which they are derived is updated.
 
     Parameters
     ----------
@@ -95,47 +35,19 @@ class Blob:
         Lorentz factor of the relativistic outflow
     B : :class:`~astropy.units.Quantity`
         magnetic field in the blob (Gauss)
+    n_e : :class:`~agnpy.spectra.ParticleDistribution`
+        electron distribution contained in the blob
+    n_p : :class:`~agnpy.spectra.ParticleDistribution`
+        proton distribution contained in the blob
     xi : float
         acceleration coefficient :math:`\xi` for first-order Fermi acceleration
         :math:`(\mathrm{d}E/\mathrm{d}t \propto v \approx c)`
         used to compute limits on the maximum Lorentz factor via
         :math:`(\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} = \xi c E / R_L`
-
-    spectrum_norm : :class:`~astropy.units.Quantity`
-        normalisation of the electron spectra, by default can be, following
-        the notation in [DermerMenon2009]_:
-
-            - :math:`n_{e,\,tot}`: total electrons density, in :math:`\mathrm{cm}^{-3}`
-            - :math:`u_e` : total electrons energy density, in :math:`\mathrm{erg}\,\mathrm{cm}^{-3}`
-            - :math:`W_e` : total energy in electrons, in :math:`\mathrm{erg}`
-
-        see `spectrum_norm_type` for more details on the normalisation
-
-    spectrum_dict : dictionary
-        dictionary containing type and spectral shape information, e.g.:
-
-        .. code-block:: python
-
-            spectrum_dict = {
-                "type": "PowerLaw",
-                "parameters": {
-                    "p": 2.8,
-                    "gamma_min": 1e2,
-                    "gamma_max": 1e7
-                }
-            }
-
-    spectrum_norm_type : ["integral", "differential", "gamma=1"]
-        only with a normalisation in "cm-3" one can select among three types:
-
-        * ``"integral"``: (default) the spectrum is set such that :math:`n_{e,\,tot}` equals the value provided by ``spectrum_norm``;
-
-        * ``"differential"``: the spectrum is set such that :math:`k_e` equals the value provided by ``spectrum_norm``;
-
-        * ``"gamma=1"``: the spectrum is set such that :math:`n_e(\gamma=1)` equals the value provided by ``spectrum_norm``.
-
-    gamma_size : int
+    gamma_e_size : int
         size of the array of electrons Lorentz factors
+    gamma_p_size : int
+        size of the array of protons Lorentz factors
     """
 
     def __init__(
@@ -145,78 +57,146 @@ class Blob:
         delta_D=10,
         Gamma=10,
         B=1 * u.G,
-        spectrum_norm=1e48 * u.Unit("erg"),
-        spectrum_dict={
-            "type": "PowerLaw",
-            "parameters": {"p": 2.8, "gamma_min": 1e2, "gamma_max": 1e7},
-        },
-        spectrum_norm_type="integral",
+        n_e=PowerLaw(mass=m_e),
+        n_p=None,
         xi=1.0,
-        gamma_size=200,
+        gamma_e_size=200,
+        gamma_p_size=200,
     ):
         self.R_b = R_b.to("cm")
         self.z = z
-        self.d_L = Distance(z=self.z).cgs
-        self.V_b = 4 / 3 * np.pi * np.power(self.R_b, 3)
         self.delta_D = delta_D
         self.Gamma = Gamma
-        self.Beta = np.sqrt(1 - 1 / np.power(self.Gamma, 2))
-        self.t_var = (((1 + self.z) * self.R_b) / (c * self.delta_D)).to("d")
-        # viewing angle
-        self.mu_s = (1 - 1 / (self.Gamma * self.delta_D)) / self.Beta
-        self.theta_s = (np.arccos(self.mu_s) * u.rad).to("deg")
         self.B = B
-        # B decomposed in Gaussian-cgs units
-        self.B_cgs = B_to_cgs(B)
-        self.spectrum_norm = spectrum_norm
-        self.spectrum_norm_type = spectrum_norm_type
-        self.spectrum_dict = spectrum_dict
+        self._n_e = n_e
+        self._n_p = n_p
         self.xi = xi
-        # default grid of Lorentz factors for integration in the external frame
-        self.gamma_to_integrate = np.logspace(1, 9, gamma_size)
-        # model for the electron density
-        self.set_spectrum(
-            self.spectrum_norm, self.spectrum_dict, self.spectrum_norm_type, gamma_size
+
+        # we might want to have different array of Lorentz factors for e and p
+        self.set_gamma_e(gamma_e_size, self._n_e.gamma_min, self._n_e.gamma_max)
+        if self._n_p is not None:
+            self.set_gamma_p(gamma_p_size, self._n_p.gamma_min, self._n_p.gamma_max)
+
+    @property
+    def V_b(self):
+        """Volume of the blob."""
+        return 4 / 3 * np.pi * np.power(self.R_b, 3)
+
+    @property
+    def t_var(self):
+        """Variability time scale, defined as:
+        :math:`t_{\rm var} = \frac{(1 + z) R_{\rm b}}{c \delta_{\rm D}}`.
+        """
+        return (((1 + self.z) * self.R_b) / (c * self.delta_D)).to("d")
+
+    @property
+    def d_L(self):
+        """Luminosity distance."""
+        return Distance(z=self.z).cgs
+
+    @property
+    def Beta(self):
+        """Bulk Lorentz factor of the Blob."""
+        return np.sqrt(1 - 1 / np.power(self.Gamma, 2))
+
+    @property
+    def mu_s(self):
+        """Cosine of the viewing angle from the jet axis to the observer."""
+        return (1 - 1 / (self.Gamma * self.delta_D)) / self.Beta
+
+    @property
+    def theta_s(self):
+        """Viewing angle from the jet axis to the observer."""
+        return (np.arccos(self.mu_s) * u.rad).to("deg")
+
+    @property
+    def B_cgs(self):
+        """Magnetic field decomposed in Gaussian-cgs units."""
+        return B_to_cgs(self.B)
+
+    def set_delta_D(self, Gamma, theta_s):
+        """Set the Doppler factor by specifying the bulk Lorentz factor of the
+        outflow and the viewing angle.
+
+        Parameters
+        ----------
+        Gamma : float
+            Lorentz factor of the relativistic outflow
+        theta_s : :class:`~astropy.units.Quantity`
+            viewing angle of the jet
+        """
+        self.Gamma = Gamma
+        mu_s = np.cos(theta_s.to("rad").value)
+        self.delta_D = 1 / (self.Gamma * (1 - self.Beta * mu_s))
+
+    def set_gamma_e(self, gamma_size, gamma_min=1, gamma_max=1e8):
+        """Set the array of Lorentz factors for the electrons."""
+        self.gamma_e_size = gamma_size
+        self.gamma_e_min = gamma_min
+        self.gamma_e_max = gamma_max
+
+    def set_gamma_p(self, gamma_size, gamma_min=1, gamma_max=1e8):
+        """Set the array of Lorentz factors for the protons."""
+        self.gamma_p_size = gamma_size
+        self.gamma_p_min = gamma_min
+        self.gamma_p_max = gamma_max
+
+    @property
+    def gamma_e(self):
+        """Array of electrons Lorentz factors, to be used for integration in the
+        reference frame comoving with the emission region."""
+        return np.logspace(
+            np.log10(self.gamma_e_min), np.log10(self.gamma_e_max), self.gamma_e_size
         )
 
-    def set_gamma_size(self, gamma_size):
-        """change size of the array of electrons Lorentz factors"""
-        self.gamma_size = gamma_size
-        self.gamma = np.logspace(
-            np.log10(self.gamma_min), np.log10(self.gamma_max), self.gamma_size
-        )
-        self.gamma_to_integrate = np.logspace(1, 9, self.gamma_size)
+    @property
+    def gamma_e_external_frame(self):
+        """Array of electrons Lorentz factors, to be used for integration in the
+        reference frame external to the emission region."""
+        return np.logspace(1, 9, self.gamma_e_size)
 
-    def set_gamma(self, gamma_min, gamma_max, gamma_size):
-        """set the array of Lorentz factors to be used for integration in the
-        frame comoving with the blob"""
-        self.gamma_min = gamma_min
-        self.gamma_max = gamma_max
-        self.gamma_size = gamma_size
-        # grid of Lorentz factor for the integration in the blob comoving frame
-        self.gamma = np.logspace(
-            np.log10(self.gamma_min), np.log10(self.gamma_max), self.gamma_size
-        )
+    @property
+    def gamma_p(self):
+        """Array of protons Lorentz factors, to be used for integration in the
+        reference frame comoving with the emission region."""
+        if self._n_p is not None:
+            return np.logspace(
+                np.log10(self.gamma_p_min),
+                np.log10(self.gamma_p_max),
+                self.gamma_p_size,
+            )
+        else:
+            raise AttributeError("No proton distribution initialised for this blob.")
 
-    def set_spectrum(
-        self, spectrum_norm, spectrum_dict, spectrum_norm_type, gamma_size=200
-    ):
-        r"""set the spectrum :math:`n_e` for the electrons accelerated in the
-        blob, reset also the array of Lorentz factor given the `gamma_min` and
-        `gamma_max` in the parameters dictionary"""
-        self.set_gamma(
-            spectrum_dict["parameters"]["gamma_min"],
-            spectrum_dict["parameters"]["gamma_max"],
-            gamma_size,
-        )
-        self.n_e = init_spectrum_norm_dict(
-            spectrum_norm, spectrum_dict, spectrum_norm_type, self.V_b
-        )
+    @property
+    def n_e(self):
+        """Electron distribution."""
+        return self._n_e
+
+    @n_e.setter
+    def n_e(self, spectrum):
+        """Setter of the electron distribution."""
+        self._n_e = spectrum
+
+    @property
+    def n_p(self):
+        """Proton distribution."""
+        if self._n_p is None:
+            raise AttributeError("No proton distribution initialised for this blob.")
+        else:
+            return self._n_p
+
+    @n_p.setter
+    def n_p(self, spectrum):
+        """Setter of the proton distribution."""
+        self._n_p = spectrum
+        # set also the array of Lorentz factor of the protons
+        self.set_gamma_p(200, self._n_p.gamma_min,  self._n_p.gamma_max)
 
     def __str__(self):
-        """printable summary of the blob"""
-        return (
-            "* spherical emission region\n"
+        """Printable summary of the blob."""
+        resume = (
+            "* Spherical emission region\n"
             + f" - R_b (radius of the blob): {self.R_b.cgs:.2e}\n"
             + f" - t_var (variability time scale): {self.t_var:.2e}\n"
             + f" - V_b (volume of the blob): {self.V_b.cgs:.2e}\n"
@@ -228,74 +208,114 @@ class Blob:
             + f" - theta_s (jet viewing angle): {self.theta_s:.2e}\n"
             + f" - B (magnetic field tangled to the jet): {self.B:.2e}\n"
             + f" - xi (coefficient for 1st order Fermi acceleration) : {self.xi:.2e}\n"
-            + str(self.n_e)
+            + str(self._n_e)
         )
+        if self._n_p is not None:
+            resume += str(self._n_p)
+        return resume
 
-    def set_delta_D(self, Gamma, theta_s):
-        """set the viewing angle and the Lorentz factor of the outflow to
-        obtain a specific Doppler factor
+    def N_e(self, gamma):
+        r"""Number of electrons as a function of the Lorentz factor,
+        :math:`N_{\rm e}(\gamma') = V_b\,n_{\rm e}(\gamma')`.
 
         Parameters
         ----------
-        Gamma : float
-            Lorentz factor of the relativistic outflow
-        theta_s : :class:`~astropy.units.Quantity`
-            viewing angle of the jet
+        gamma : :class:`~numpy.ndarray`
+            array of Lorentz factor over which to evaluate the number of electrons
         """
-        mu_s = np.cos(theta_s.to("rad").value)
-        Beta = np.sqrt(1 - 1 / np.power(Gamma, 2))
-        delta_D = 1 / (Gamma * (1 - Beta * mu_s))
-
-        self.theta_s = theta_s
-        self.mu_s = mu_s
-        self.Gamma = Gamma
-        self.Beta = Beta
-        self.delta_D = delta_D
-
-    def N_e(self, gamma):
-        r"""number of electrons as a function of the Lorentz factor,
-        :math:`N_e(\gamma') = V_b\,n_e(\gamma')`"""
         return self.V_b * self.n_e(gamma)
+
+    def N_p(self, gamma):
+        r"""Number of protons as a function of the Lorentz factor,
+        :math:`N_{\rm p}(\gamma') = V_b\,n_{\rm p}(\gamma')`.
+
+        Parameters
+        ----------
+        gamma : :class:`~numpy.ndarray`
+            array of Lorentz factor over which to evaluate the number of electrons
+        """
+        return self.V_b * self.n_p(gamma)
 
     @property
     def n_e_tot(self):
-        r"""total electrons density
+        r"""Total density of electrons
 
         .. math::
-            n_{e,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' n_e(\gamma')
+            n_{\rm e,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' n_{\rm e}(\gamma').
         """
-        return np.trapz(self.n_e(self.gamma), self.gamma)
+        return np.trapz(self.n_e(self.gamma_e), self.gamma_e)
+
+    @property
+    def n_p_tot(self):
+        r"""Total density of protons
+
+        .. math::
+            n_{\rm p,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' n_{\rm p}(\gamma').
+        """
+        return np.trapz(self.n_p(self.gamma_p), self.gamma_p)
 
     @property
     def N_e_tot(self):
+        r"""Total number of electrons
+
+        .. math::
+            N_{\rm e,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' N_{\rm e}(\gamma').
+        """
+        return self.V_b * self.n_e_tot
+
+    @property
+    def N_p_tot(self):
         r"""total number of electrons
 
         .. math::
-            N_{e,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' N_e(\gamma')
+            N_{\rm p,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' N_{\rm p}(\gamma').
         """
-        return np.trapz(self.N_e(self.gamma), self.gamma)
+        return self.V_b * self.n_p_tot
 
     @property
     def u_e(self):
-        r"""total energy density in non-thermal electrons
+        r"""Total energy density of electrons
 
         .. math::
-            u_{e} = m_e c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' \gamma' n_e(\gamma')
+            u_{\rm e} = m_{\rm e} c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' \gamma' n_{\rm e}(\gamma').
         """
-        return mec2 * np.trapz(self.gamma * self.n_e(self.gamma), self.gamma)
+        return mec2 * np.trapz(self.gamma_e * self.n_e(self.gamma_e), self.gamma_e)
+
+    @property
+    def u_p(self):
+        r"""Total energy density of protons
+
+        .. math::
+            u_{\rm p} = m_{\rm p} c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' \gamma' n_{\rm p}(\gamma').
+        """
+        if self.n_p is None:
+            raise AttributeError(
+                "The proton density, Blob.n_p, was not initialised for this blob."
+            )
+        else:
+            return mpc2 * np.trapz(self.gamma_p * self.n_p(self.gamma_p), self.gamma_p)
 
     @property
     def W_e(self):
-        r"""total energy in non-thermal electrons
+        r"""Total energy in electrons
 
         .. math::
-            W_{e} = m_e c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' \gamma' N_e(\gamma')
+            W_{\rm e} = m_{\rm e} c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' \gamma' N_{\rm e}(\gamma').
         """
-        return mec2 * np.trapz(self.gamma * self.N_e(self.gamma), self.gamma)
+        return self.V_b * self.u_e
+
+    @property
+    def W_p(self):
+        r"""Total energy in protons
+
+        .. math::
+            W_{\rm p} = m_{\rm p} c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' \gamma' N_{\rm p}(\gamma').
+        """
+        return self.V_b * self.u_p
 
     @property
     def U_B(self):
-        r"""energy density of magnetic field
+        r"""Energy density of magnetic field
 
         .. math::
             U_B = B^2 / (8 \pi)
@@ -305,28 +325,34 @@ class Blob:
 
     @property
     def k_eq(self):
-        """equipartition parameter: ratio between totoal electron energy density
-        magnetic field energy density, Eq. 7.75 of [DermerMenon2009]_"""
-        return (self.u_e / self.U_B).to_value("")
+        """Equipartition parameter: ratio between totoal particle energy density
+        and magnetic field energy density, Eq. 7.75 of [DermerMenon2009]_"""
+        if self._n_p is None:
+            return (self.u_e / self.U_B).to_value("")
+        else:
+            return ((self.u_e + self.u_p) / self.U_B).to_value("")
 
     @property
-    def P_jet_e(self):
-        r"""jet power in electrons
+    def P_jet_ke(self):
+        r"""Total jet power in kinetic energy of the particles
 
         .. math::
-            P_{\mathrm{jet},\,e} = 2 \pi R_b^2 \beta \Gamma^2 c u_e
+            P_{{\rm jet},\,{\rm ke}} = 2 \pi R_b^2 \beta \Gamma^2 c u_{\rm e,p}.
         """
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
         )
-        return (prefactor * self.u_e).to("erg s-1")
+        if self._n_p is None:
+            return (prefactor * self.u_e).to("erg s-1")
+        else:
+            return (prefactor * (self.u_e + self.u_p)).to("erg s-1")
 
     @property
     def P_jet_B(self):
-        r"""jet power in magnetic field
+        r"""Jet power in magnetic field
 
         .. math::
-            P_{\mathrm{jet},\,B} = 2 \pi R_b^2 \beta \Gamma^2 c \frac{B^2}{8\pi}
+            P_{\mathrm{jet},\,B} = 2 \pi R_b^2 \beta \Gamma^2 c \frac{B^2}{8\pi}.
         """
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
@@ -335,7 +361,7 @@ class Blob:
 
     @property
     def u_ph_synch(self):
-        r"""energy density of the synchrotron photons energy losses are:
+        r"""Energy density of the synchrotron photons energy losses are:
 
         .. math::
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} = 4 / 3 \sigma_T c U_B \gamma^2
@@ -367,14 +393,70 @@ class Blob:
         )
         return u_ph.to("erg cm-3")
 
-    def plot_n_e(self, ax=None, gamma_power=0, **kwargs):
-        """plot the  electron distribution
+    def plot_n_e(self, gamma_power=0, ax=None, **kwargs):
+        """Plot the electron energy distribution.
+    
+        Parameters
+        ----------
+        gamma_power : float
+            power of gamma to raise the electron distribution
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            Axis
+        """
+        import matplotlib.pyplot as plt
+
+        ax = plt.gca() if ax is None else ax
+
+        ax.loglog(
+            self.gamma_e,
+            np.power(self.gamma_e, gamma_power) * self.n_e(self.gamma_e),
+            **kwargs
+        )
+        ax.set_xlabel(r"$\gamma$")
+
+        if gamma_power == 0:
+            ax.set_ylabel(r"$n_{\rm e}(\gamma)\,/\,{\rm cm}^{-3}$")
+
+        else:
+            ax.set_ylabel(
+                r"$\gamma^{"
+                + str(gamma_power)
+                + r"}$"
+                + r"$\,n_{\rm e}(\gamma)\,/\,{\rm cm}^{-3}$"
+            )
+
+        return ax
+
+    def plot_n_p(self, gamma_power=0, ax=None, **kwargs):
+        """Plot the proton energy distributions.
 
         Parameters
         ----------
-        ax : :class:`~matplotlib.axes.Axes`, optional
-            Axis
         gamma_power : float
             power of gamma to raise the electron distribution
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            Axis
         """
-        plot_eed(self.gamma, self.n_e, gamma_power, ax, **kwargs)
+        import matplotlib.pyplot as plt
+
+        ax = plt.gca() if ax is None else ax
+
+        ax.loglog(
+            self.gamma_p,
+            np.power(self.gamma_p, gamma_power) * self.n_p(self.gamma_p),
+            **kwargs
+        )
+        ax.set_xlabel(r"$\gamma$")
+
+        if gamma_power == 0:
+            ax.set_ylabel(r"$n_{\rm p}(\gamma)\,/\,{\rm cm}^{-3}$")
+
+        else:
+            ax.set_ylabel(
+                r"$\gamma^{"
+                + str(gamma_power)
+                + r"}$"
+                + r"$\,n_{\rm p}(\gamma)\,/\,{\rm cm}^{-3}$"
+            )
+
+        return ax

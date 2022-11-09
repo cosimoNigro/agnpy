@@ -2,11 +2,11 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import e, h, c, m_e, sigma_T
-from ..utils.math import axes_reshaper, gamma_to_integrate
+from ..utils.math import axes_reshaper, gamma_e_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
 
 
-__all__ = ["R", "nu_synch_peak", "epsilon_B", "Synchrotron"]
+__all__ = ["R", "nu_synch_peak", "Synchrotron"]
 
 e = e.gauss
 B_cr = 4.414e13 * u.G  # critical magnetic field
@@ -100,7 +100,7 @@ class Synchrotron:
         n_e,
         *args,
         integrator=np.trapz,
-        gamma=gamma_to_integrate,
+        gamma=gamma_e_to_integrate,
     ):
         """Computes the syncrotron self-absorption opacity for a general set
         of model parameters, see :func:`~agnpy:sycnhrotron.Synchrotron.evaluate_sed_flux`
@@ -131,7 +131,7 @@ class Synchrotron:
         *args,
         ssa=False,
         integrator=np.trapz,
-        gamma=gamma_to_integrate,
+        gamma=gamma_e_to_integrate,
     ):
         r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) due to synchrotron radiation,
         for a general set of model parameters. Eq. 21 in [Finke2008]_.
@@ -231,7 +231,7 @@ class Synchrotron:
             *self.blob.n_e.parameters,
             ssa=self.ssa,
             integrator=self.integrator,
-            gamma=self.blob.gamma,
+            gamma=self.blob.gamma_e,
         )
 
     def sed_flux_delta_approx(self, nu):

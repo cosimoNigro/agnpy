@@ -56,7 +56,7 @@ def get_spectral_parameters_from_n_e(n_e, backend, modelname=None):
 
     Parameters
     ----------
-    n_e : `~agnpy.spectra.ElectronDistribution`
+    n_e : `~agnpy.spectra.ParticleDistribution`
         electron distribution
     backend : str
         backend to be used (transform to gammapy or sherpa parameters)
@@ -72,13 +72,16 @@ def get_spectral_parameters_from_n_e(n_e, backend, modelname=None):
     _pars = []
 
     pars = vars(n_e).copy()
-    # particles distribution have the integrator among the attributes
+    # remove all the attributes that do not belong to the energy distribution
     pars.pop("integrator")
+    pars.pop("particle")
+    pars.pop("mass")
+    pars.pop("mc2")
 
     for name, value in zip(pars.keys(), pars.values()):
-        if name == "k_e":
+        if name == "k":
             par = Parameter(
-                "log10_k_e", np.log10(value.to_value("cm-3")), "", min=-10, max=10
+                "log10_k", np.log10(value.to_value("cm-3")), "", min=-10, max=10
             )
         elif name == "gamma_min":
             par = Parameter(

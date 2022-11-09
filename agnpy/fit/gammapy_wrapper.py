@@ -109,7 +109,7 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
 
         Parameters
         ----------
-        n_e : `~agnpy.spectra.ElectronDistribution`
+        n_e : `~agnpy.spectra.ParticleDistribution`
             electron distribution to be used for this modelling
         ssa : bool
             whether or not to calculate synchrotron self-absorption
@@ -196,7 +196,7 @@ class ExternalComptonSpectralModel(SpectralModel):
 
         Parameters
         ----------
-        n_e : `~agnpy.spectra.ElectronDistribution`
+        n_e : `~agnpy.spectra.ParticleDistribution`
             electron distribution to be used for this modelling
         targets : list of strings ["blr", "dt"]
             targets to be considered for external Compton

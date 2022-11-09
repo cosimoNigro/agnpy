@@ -1,9 +1,10 @@
 # conversion utilities for agnpy
-from astropy.constants import m_e, h, c, G
+from astropy.constants import m_e, m_p, h, c, G
 import astropy.units as u
 
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
+mpc2 = m_p.to("erg", equivalencies=u.mass_energy())
 lambda_c = (h / (m_e * c)).to("cm")  # Compton wavelength
 # equivalency for decomposing Gauss in Gaussian-cgs units (not available in astropy)
 Gauss_cgs_unit = "cm(-1/2) g(1/2) s-1"
