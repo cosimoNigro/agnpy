@@ -71,14 +71,11 @@ class Blob:
         self._n_e = n_e
         self._n_p = n_p
         self.xi = xi
+
         # we might want to have different array of Lorentz factors for e and p
         self.set_gamma_e(gamma_e_size, self._n_e.gamma_min, self._n_e.gamma_max)
-        # we initialise the array of gamma for protons, in case we later
-        # want to add a proton distribution to this blob
         if self._n_p is not None:
             self.set_gamma_p(gamma_p_size, self._n_p.gamma_min, self._n_p.gamma_max)
-        else:
-            self.set_gamma_p(gamma_p_size)
 
     @property
     def V_b(self):
@@ -132,29 +129,6 @@ class Blob:
         mu_s = np.cos(theta_s.to("rad").value)
         self.delta_D = 1 / (self.Gamma * (1 - self.Beta * mu_s))
 
-    @property
-    def n_e(self):
-        """Electron distribution."""
-        return self._n_e
-
-    @n_e.setter
-    def n_e(self, spectrum):
-        """Setter of the electron distribution."""
-        self._n_e = spectrum
-
-    @property
-    def n_p(self):
-        """Proton distribution."""
-        if self._n_p is None:
-            raise AttributeError("No proton distribution initialised for this blob.")
-        else:
-            return self._n_p
-
-    @n_p.setter
-    def n_p(self, spectrum):
-        """Setter of the proton distribution."""
-        self._n_p = spectrum
-
     def set_gamma_e(self, gamma_size, gamma_min=1, gamma_max=1e8):
         """Set the array of Lorentz factors for the electrons."""
         self.gamma_e_size = gamma_size
@@ -191,6 +165,33 @@ class Blob:
                 np.log10(self.gamma_p_max),
                 self.gamma_p_size,
             )
+        else:
+            raise AttributeError("No proton distribution initialised for this blob.")
+
+    @property
+    def n_e(self):
+        """Electron distribution."""
+        return self._n_e
+
+    @n_e.setter
+    def n_e(self, spectrum):
+        """Setter of the electron distribution."""
+        self._n_e = spectrum
+
+    @property
+    def n_p(self):
+        """Proton distribution."""
+        if self._n_p is None:
+            raise AttributeError("No proton distribution initialised for this blob.")
+        else:
+            return self._n_p
+
+    @n_p.setter
+    def n_p(self, spectrum):
+        """Setter of the proton distribution."""
+        self._n_p = spectrum
+        # set also the array of Lorentz factor of the protons
+        self.set_gamma_p(200, self._n_p.gamma_min,  self._n_p.gamma_max)
 
     def __str__(self):
         """Printable summary of the blob."""
@@ -391,3 +392,71 @@ class Blob:
             * np.trapz(np.power(self.gamma, 2) * self.n_e(self.gamma), self.gamma)
         )
         return u_ph.to("erg cm-3")
+
+    def plot_n_e(self, gamma_power=0, ax=None, **kwargs):
+        """Plot the electron energy distribution.
+    
+        Parameters
+        ----------
+        gamma_power : float
+            power of gamma to raise the electron distribution
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            Axis
+        """
+        import matplotlib.pyplot as plt
+
+        ax = plt.gca() if ax is None else ax
+
+        ax.loglog(
+            self.gamma_e,
+            np.power(self.gamma_e, gamma_power) * self.n_e(self.gamma_e),
+            **kwargs
+        )
+        ax.set_xlabel(r"$\gamma$")
+
+        if gamma_power == 0:
+            ax.set_ylabel(r"$n_{\rm e}(\gamma)\,/\,{\rm cm}^{-3}$")
+
+        else:
+            ax.set_ylabel(
+                r"$\gamma^{"
+                + str(gamma_power)
+                + r"}$"
+                + r"$\,n_{\rm e}(\gamma)\,/\,{\rm cm}^{-3}$"
+            )
+
+        return ax
+
+    def plot_n_p(self, gamma_power=0, ax=None, **kwargs):
+        """Plot the proton energy distributions.
+
+        Parameters
+        ----------
+        gamma_power : float
+            power of gamma to raise the electron distribution
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            Axis
+        """
+        import matplotlib.pyplot as plt
+
+        ax = plt.gca() if ax is None else ax
+
+        ax.loglog(
+            self.gamma_p,
+            np.power(self.gamma_p, gamma_power) * self.n_p(self.gamma_p),
+            **kwargs
+        )
+        ax.set_xlabel(r"$\gamma$")
+
+        if gamma_power == 0:
+            ax.set_ylabel(r"$n_{\rm p}(\gamma)\,/\,{\rm cm}^{-3}$")
+
+        else:
+            ax.set_ylabel(
+                r"$\gamma^{"
+                + str(gamma_power)
+                + r"}$"
+                + r"$\,n_{\rm p}(\gamma)\,/\,{\rm cm}^{-3}$"
+            )
+
+        return ax
