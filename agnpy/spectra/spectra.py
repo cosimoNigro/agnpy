@@ -485,7 +485,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
-        n(\gamma') = k \, \gamma'^{-p} exp(-\gamma'/\gamma_c) \, H(\gamma'; \gamma'_{\rm min}, \gamma'_{\rm max})
+        n(\gamma') = k \, \gamma'^{-p} exp(-\gamma'/\gamma_c) \, H(\gamma'; \gamma'{\rm min}, \gamma'{\rm max})
 
     Parameters
     ----------
@@ -505,7 +505,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
         function to be used for integration, default is :class:`~numpy.trapz`
     """
 
-    def __init__(
+    def _init_(
         self,
         k=1e-13 * u.Unit("cm-3"),
         p=2.1,
@@ -515,7 +515,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(mass, integrator)
+        super()._init_(mass, integrator)
         self.k = k
         self.p = p
         self.gamma_c = gamma_c
@@ -534,7 +534,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
             0,
         )
 
-    def __call__(self, gamma):
+    def _call_(self, gamma):
         return self.evaluate(
             gamma, self.k, self.p, self.gamma_c, self.gamma_min, self.gamma_max
         )
@@ -554,7 +554,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
             gamma, self.k, self.p, self.gamma_c, self.gamma_min, self.gamma_max
         )
 
-    def __str__(self):
+    def _str_(self):
         return (
             f"* {self.particle} energy distribution\n"
             + f" - power law\n"
@@ -567,6 +567,36 @@ class ExpCutoffPowerLaw(ParticleDistribution):
 
 
 class ExpCutoffBrokenPowerLaw(ParticleDistribution):
+    r"""Class describing an exponential cutoff broken power-law particle distribution.
+    When called, the particle density :math:`n(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
+
+    .. math::
+        n(\gamma') = k \left[
+        \left(\frac{\gamma'}{\gamma'_b}\right)^{-p_1} exp(-\gamma'/\gamma_c) \, H(\gamma'; \gamma'_{\rm min}, \gamma'_b) +
+        \left(\frac{\gamma'}{\gamma'_b}\right)^{-p_2} exp(-\gamma'/\gamma_c)\, H(\gamma'; \gamma'_{b}, \gamma'_{\rm max})
+        \right]
+
+    Parameters
+    ----------
+    k : :class:`~astropy.units.Quantity`
+        spectral normalisation
+    p1 : float
+        spectral index before the break (positive by definition)
+    p2 : float
+        spectral index after the break (positive by definition)
+    gamma_b : float
+        Lorentz factor at which the change in spectral index is occurring
+    gamma_min : float
+        minimum Lorentz factor of the particle distribution
+    gamma_max : float
+        maximum Lorentz factor of the particle distribution
+    gamma_c : float
+        cutoff Lorentz factor of the particle distribution
+    mass : `~astropy.units.Quantity`
+        particle mass, default is the electron mass
+    integrator : func
+        function to be used for integration, default is :class:`~numpy.trapz`
+    """
 
     def __init__(
         self,
@@ -576,7 +606,7 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         gamma_b=1e3,
         gamma_min=10,
         gamma_max=1e7,
-        gamma_cutoff = 1e5,
+        gamma_c = 1e5,
         mass=m_e,
         integrator=np.trapz,
     ):
@@ -587,7 +617,7 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         self.gamma_b = gamma_b
         self.gamma_min = gamma_min
         self.gamma_max = gamma_max
-        self.gamma_cutoff = gamma_cutoff
+        self.gamma_c = gamma_c
 
     @property
     def parameters(self):
@@ -598,15 +628,15 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             self.gamma_b,
             self.gamma_min,
             self.gamma_max,
-            self.gamma_cutoff
+            self.gamma_c
         ]
 
     @staticmethod
-    def evaluate(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max, gamma_cutoff):
+    def evaluate(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max, gamma_c):
         index = np.where(gamma <= gamma_b, p1, p2)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
-            k * (gamma/gamma_b) ** (-index) * np.exp(-gamma/gamma_cutoff),
+            k * (gamma/gamma_b) ** (-index) * np.exp(-gamma/gamma_c),
             0
         )
 
@@ -619,17 +649,17 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             self.gamma_b,
             self.gamma_min,
             self.gamma_max,
-            self.gamma_cutoff
+            self.gamma_c
         )
 
     @staticmethod
-    def evaluate_SSA_integrand(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max, gamma_cutoff):
+    def evaluate_SSA_integrand(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max, gamma_c):
         r"""Analytical integrand for the synchrotron self-absorption:
         :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`."""
         index = np.where(gamma <= gamma_b, p1, p2)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
-            k * (gamma / gamma_b) ** (-index) * np.exp(-gamma/gamma_cutoff)*(-(index+2)/gamma - 1/gamma_cutoff),
+            k * (gamma / gamma_b) ** (-index) * np.exp(-gamma/gamma_c)*(-(index+2)/gamma - 1/gamma_c),
             0
         )
 
@@ -642,7 +672,7 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             self.gamma_b,
             self.gamma_min,
             self.gamma_max,
-            self.gamma_cutoff
+            self.gamma_c
         )
 
     def __str__(self):
