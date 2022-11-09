@@ -10,10 +10,10 @@ from agnpy.utils.plot import plot_sed
 import matplotlib.pyplot as plt
 from agnpy.utils.plot import load_mpl_rc
 #from astropy.constants import e, h, c, m_e, m_p, sigma_T
-from astropy.constants import m_p, m_e
+from astropy.constants import m_p#, m_e
 from astropy.coordinates import Distance
 from agnpy.absorption import EBL
-import matplotlib.style
+#import matplotlib.style
 
 load_mpl_rc()  # adopt agnpy plotting style
 
@@ -45,7 +45,6 @@ vol = (4. / 3) * np.pi * R ** 3
 #
 
 
-
 # So I made a bit 'cleaner' the code.
 # Also, I deleted my proton_synch program and I kept only yours, renaming it
 # from proton_synchrotron2 to just proton_synchrotron.
@@ -73,7 +72,7 @@ n_p = ExpCutoffPowerLaw(k= 12e3 * u.Unit('cm-3'),
         p = 2.0 ,
         gamma_c= 1e9,
         gamma_min= 1,
-        gamma_max=1e12,
+        gamma_max=1e20,
         mass=m_p
 )
 
@@ -96,21 +95,21 @@ blob = Blob(R_b=R,
 )
 
 print(blob)
-print(n_p)
+print(blob.delta_D)
 
 synch = Synchrotron(blob, ssa=True)
 psynch = ProtonSynchrotron(blob)
 
 # compute the SED over an array of frequencies
-nu = np.logspace(8, 28) * u.Hz
-nu_obs = nu * doppler_s**2
+nu = np.logspace(10, 30) * u.Hz
+nu_obs = nu * blob.delta_D
 
 sed = synch.sed_flux(nu)
 psed = psynch.sed_flux(nu)
 
 
 ebl = EBL("saldana-lopez")
-absorption = ebl.absorption(redshift, nu)
+absorption = ebl.absorption(redshift, nu_obs)
 
 
 sed_abs  = sed  * absorption
@@ -125,6 +124,7 @@ plot_sed(nu_obs, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
 plt.ylim(1e-14, 1e-8)
 plt.xlim(1e10, 1e28) # For frequencies
 plt.savefig('Comparison.png')
+plt.show()
 
 
 plt.figure(figsize = (6.92, 4.29))
@@ -133,4 +133,4 @@ blob.plot_n_p(label = 'Proton distribution')
 #n_e.plot()
 plt.ylim(1e-44, 1e5)
 plt.legend()
-plt.show()
+plt.savefig('Particle_distr.png')
