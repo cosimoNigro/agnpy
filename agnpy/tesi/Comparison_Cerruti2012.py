@@ -8,11 +8,15 @@ from proton_synchrotron import ProtonSynchrotron
 
 from agnpy.utils.plot import plot_sed
 import matplotlib.pyplot as plt
-#from agnpy.utils.plot import load_mpl_rc
+from agnpy.utils.plot import load_mpl_rc
 #from astropy.constants import e, h, c, m_e, m_p, sigma_T
 from astropy.constants import m_p#, m_e
 from astropy.coordinates import Distance
 from agnpy.absorption import EBL
+import matplotlib.style
+
+load_mpl_rc()  # adopt agnpy plotting style
+matplotlib.style.use('/Users/ilaria/Desktop/Dottorato_data/Plot_style/file.mplstyle')
 
 # Extract data of PKS 2155-304
 pks_sed = np.loadtxt('PKS2155-304_data_circa.txt')
@@ -87,11 +91,12 @@ blob = Blob(R_b=R,
         n_p=n_p
 )
 
-synch = Synchrotron(blob)
+synch = Synchrotron(blob, ssa=True)
 psynch = ProtonSynchrotron(blob)
 
 # compute the SED over an array of frequencies
 nu = np.logspace(8, 28) * u.Hz
+nu_obs = nu * doppler_s**2
 
 sed = synch.sed_flux(nu)
 psed = psynch.sed_flux(nu)
@@ -105,12 +110,12 @@ sed_abs  = sed  * absorption
 psed_abs = psed * absorption # Check if it is correct
 
 # plot it
-plt.figure()
+plt.figure(figsize = (8, 5))
 plt.scatter(nu_data, nuFnu_data, color = 'black')
 plot_sed(nu,  sed_abs, label = 'ElectronSynctrotron')
-plot_sed(nu, psed, label = 'ProtonSynchrotron')
-plot_sed(nu, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
+plot_sed(nu_obs, psed, label = 'ProtonSynchrotron')
+plot_sed(nu_obs, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
 plt.ylim(1e-14, 1e-8)
 plt.xlim(1e10, 1e28) # For frequencies
-
+plt.savefig('Comparison.png')
 plt.show()
