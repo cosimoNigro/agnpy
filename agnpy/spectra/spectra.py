@@ -685,12 +685,7 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             + f" - gamma_b: {self.gamma_b:.2e}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
             + f" - gamma_max: {self.gamma_max:.2e}\n"
-<<<<<<< HEAD
             + f" - gamma_c  : {self.gamma_c:.2e}\n"
-=======
-            + f" - gamma_c: {self.gamma_cutoff:.2e}\n"
->>>>>>> e7e909b1ab8c06cf5777f90f16f3346e6f09d73d
-        )
 
 
 class InterpolatedDistribution(ParticleDistribution):
