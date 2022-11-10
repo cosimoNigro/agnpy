@@ -38,7 +38,7 @@ def calc_x(B_cgs, epsilon, gamma, mass=m_e):
     x = (
         4
         * np.pi
-        * epsilon
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    * epsilon
         * np.power(mass, 2)
         * np.power(c, 3)
         / (3 * e * B_cgs * h * np.power(gamma, 2))
