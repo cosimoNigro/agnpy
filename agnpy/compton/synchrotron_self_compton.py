@@ -1,12 +1,12 @@
 # module containing the synchrotron self Compton radiative process
 import numpy as np
-from astropy.constants import h, c, m_e, sigma_T, G
+from astropy.constants import c, sigma_T
 import astropy.units as u
 from .kernels import isotropic_kernel
 from ..synchrotron import Synchrotron
 from ..utils.math import (
     axes_reshaper,
-    gamma_to_integrate,
+    gamma_e_to_integrate,
     nu_to_integrate,
 )
 from ..utils.conversion import nu_to_epsilon_prime
@@ -45,7 +45,7 @@ class SynchrotronSelfCompton:
         *args,
         ssa=False,
         integrator=np.trapz,
-        gamma=gamma_to_integrate,
+        gamma=gamma_e_to_integrate,
     ):
         r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for synchrotron self-Compton,
         for a general set of model parameters. Eq. 9 in [Finke2008]_.
@@ -140,7 +140,7 @@ class SynchrotronSelfCompton:
             *self.blob.n_e.parameters,
             ssa=self.ssa,
             integrator=self.integrator,
-            gamma=self.blob.gamma,
+            gamma=self.blob.gamma_e,
         )
 
     def sed_luminosity(self, nu):

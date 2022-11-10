@@ -1,4 +1,6 @@
 # utils for testing
+import shutil
+from pathlib import Path, PosixPath
 import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -14,8 +16,40 @@ TAU_DEVIATION_LABEL = (
 )
 
 
+def clean_and_make_dir(main_dir, sub_dir=None):
+    """Generate a sub directory in a main directory, remove it (recursively if
+    already exisiting. Returns the path of the created directory.
+
+    Parameters
+    ----------
+    main_dir : string or ~pathlib.PosixPath
+        path of the main directory
+    sub_dir : string
+        the sub directory to be created
+    """
+    if isinstance(main_dir, str) and sub_dir is None:
+        _dir = Path(main_dir)
+    elif isinstance(main_dir, str) and sub_dir is not None:
+        _dir = Path(f"{main_dir}/{sub_dir}")
+    elif isinstance(main_dir, PosixPath) and sub_dir is None:
+        _dir = main_dir
+    elif isinstance(main_dir, PosixPath) and sub_dir is not None:
+        _dir = Path(main_dir / sub_dir)
+    else:
+        raise TypeError(
+            f"wrong types, provided a {type(main_dir)} and {type(sub_dir)}, both should be str or PosixPath"
+        )
+
+    if _dir.exists() and _dir.is_dir():
+        shutil.rmtree(_dir)
+
+    _dir.mkdir(parents=True, exist_ok=True)
+
+    return _dir
+
+
 def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
-    """return two arrays of quantities from a sample file"""
+    """Return two arrays of quantities from a sample file."""
     sample_table = np.loadtxt(sample_file, delimiter=",", comments="#")
     x = sample_table[:, 0] * u.Unit(x_unit)
     y = sample_table[:, 1] if y_unit is None else sample_table[:, 1] * u.Unit(y_unit)
@@ -23,7 +57,7 @@ def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
 
 
 def check_deviation(x, y_comp, y_ref, rtol, x_range=None):
-    """check the deviation of two quantities within a given range of x
+    """Check the deviation of two quantities within a given range of x
     when setting atol = 0 in np.allclose it will check that
     |a - b| <= rtol * |b|, that is |a / b - 1| <= rtol.
     If we choose the agnpy values to be a and the reference (code ro figure from
@@ -48,11 +82,9 @@ def make_comparison_plot(
     fig_path,
     plot_type,
     y_range=None,
-    comparison_range=None,
-    x_scale="log",
-    y_scale="log",
+    comparison_range=None
 ):
-    """make a comparison plot, for SED or gamma-gamma absorption
+    """Make a comparison plot, for SED or gamma-gamma absorption
     between two different sources: a reference (literature or another code)
     and a comparison (usually the agnpy result)
 
@@ -79,6 +111,9 @@ def make_comparison_plot(
         lower and upper limit of the y axis limt
     comparison_range : list of float
         plot the range over which the residuals were checked
+
+    NOTE: the default scale is logarithmic on the x and y axis of the quantities
+    and on the x axis of the deviation.
     """
     if plot_type == "sed":
         # set the axes labels for an SED plot
@@ -102,6 +137,7 @@ def make_comparison_plot(
         gridspec_kw={"height_ratios": [2, 1], "hspace": 0.05},
         figsize=(8, 6),
     )
+
     # plot the SEDs or TAUs in the upper panel
     # plot the reference sed with a continuous line and agnpy sed with a dashed one
     ax[0].loglog(nu, y_ref, marker=".", ls="-", color="k", lw=1.5, label=ref_label)
@@ -113,6 +149,11 @@ def make_comparison_plot(
     ax[0].legend(loc="best")
     if y_range is not None:
         ax[0].set_ylim(y_range)
+    if comparison_range is not None:
+        ax[0].axvline(comparison_range[0], ls="--", color="dodgerblue")
+        ax[0].axvline(comparison_range[1], ls="--", color="dodgerblue")
+    ax[0].grid(ls=":")
+
     # plot the deviation in the bottom panel
     deviation = y_comp / y_ref - 1
     ax[1].axhline(0, ls="-", color="darkgray")
@@ -133,8 +174,9 @@ def make_comparison_plot(
     ax[1].set_xlabel(x_label)
     ax[1].legend(loc="best")
     if comparison_range is not None:
-        ax[1].axvline(comparison_range[0], ls="--", color="k")
-        ax[1].axvline(comparison_range[1], ls="--", color="k")
+        ax[1].axvline(comparison_range[0], ls="--", color="dodgerblue")
+        ax[1].axvline(comparison_range[1], ls="--", color="dodgerblue")
+
     fig.savefig(f"{fig_path}")
     # avoid RuntimeWarning: More than 20 figures have been opened.
     plt.close(fig)

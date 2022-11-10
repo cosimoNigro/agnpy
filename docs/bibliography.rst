@@ -30,8 +30,11 @@ Bibliography
 .. [Franceschini2008] `Franceschini et al. (2008) <https://ui.adsabs.harvard.edu/abs/2008A%26A...487..837F/abstract>`_,
    "Extragalactic optical-infrared background radiation, its time evolution and the cosmic photon-photon opacity"
 
-.. [Finke2010] `Finke et al. (2010) <https://ui.adsabs.harvard.edu/abs/2010ApJ...712..238F/abstract>`_,   
+.. [Finke2010] `Finke et al. (2010) <https://ui.adsabs.harvard.edu/abs/2010ApJ...712..238F/abstract>`_,
    "Modeling the Extragalactic Background Light from Stars and Dust"
 
 .. [Dominguez2011] `Dominguez et al. (2011) <https://ui.adsabs.harvard.edu/abs/2011MNRAS.410.2556D/abstract>`_,
    "Extragalactic background light inferred from AEGIS galaxy-SED-type fractions"
+
+.. [Saldana-Lopez2021] `Saldana-Lopez et al. (2021) <https://ui.adsabs.harvard.edu/abs/2021MNRAS.507.5144S/abstract>`_,
+   "An observational determination of the evolving extragalactic background light from the multiwavelength HST/CANDELS survey in the Fermi and CTA era"

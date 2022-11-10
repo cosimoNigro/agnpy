@@ -6,3 +6,4 @@ from .compton import *
 from .absorption import *
 from .constraints import *
 from .utils import *
+from .fit import *

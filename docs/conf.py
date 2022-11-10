@@ -18,11 +18,11 @@ sys.path.insert(0, os.path.abspath("../"))
 # -- Project information -----------------------------------------------------
 
 project = "agnpy"
-copyright = "2019, Cosimo Nigro"
+copyright = "2022, Cosimo Nigro"
 author = "Cosimo Nigro"
 
 # The full version, including alpha/beta/rc tags
-release = "0.1.8"
+release = "0.2.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -76,18 +76,4 @@ intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),
     "astropy": ("http://docs.astropy.org/en/latest/", None),
     "matplotlib": ("https://matplotlib.org", None),
-}
-
-# latex support
-mathjax_config = {
-    "TeX": {
-        "Macros": {
-            "Beta": r"{\mathcal{B}}",
-            "uunits": r"{{\rm erg}\,{\rm cm}^{-3}}",
-            "diff": r"{\mathrm{d}}",
-            "utransform": r"{\Gamma^3 (1 + \Beta \mu')^3}",
-            "rtilde": r"\tilde{r}",
-            "ltilde": r"\tilde{l}",
-        }
-    }
 }

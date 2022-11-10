@@ -7,18 +7,18 @@
     ],
     "creators": [
         {
-            "affiliation": "Institut de F\u00edsica d'Altes Energies (IFAE)",
+            "affiliation": "Institut de F\\u00edsica d'Altes Energies (IFAE)",
             "name": "Nigro, Cosimo",
             "orcid": "0000-0001-8375-1907"
         },
         {
             "affiliation": "University of Lodz",
-            "name": "Sitarek, Julian ",
+            "name": "Sitarek, Julian",
             "orcid": "0000-0002-1659-5374"
         },
         {
             "affiliation": "University of Lodz",
-            "name": "Gliwny, Pawe\u0142",
+            "name": "Gliwny, Pawe\\u0142",
             "orcid": "0000-0002-4183-391X"
         },
         {
@@ -34,6 +34,10 @@
             "affiliation": "Univ. Savoie Mont Blanc, CNRS, LAPP",
             "name": "Vuillaume, Thomas",
             "orcid": "0000-0002-5686-2078"
+        },
+        {
+            "affiliation": "Universit\u00e0 degli Studi di Padova ",
+            "name": "Viale, Ilaria"
         }
     ],
     "description": "agnpy is a python package focusing on the computation of the radiative processes of relativistic particles accelerated in the jets of Active Galactic Nuclei (AGN). It includes classes describing the galaxy components responsible for line and thermal emission and calculates the absorption due to gamma-gamma pair production on soft (IR-UV) photon fields.",
@@ -43,16 +47,27 @@
         }
     ],
     "keywords": [
-        "blazar",
-        "agn",
-        "jets",
-        "radiative processes",
-        "jupyter-notebook"
+        "CTA",
+        "Astroparticle physics",
+        "jupyter-notebook",
+        "active galactic nuclei",
+        "blazars",
+        "radio jets",
+        "radio active galactic nuclei",
+        "radiative processes"
     ],
     "language": "eng",
     "license": "BSD-3-Clause",
-    "publication_date": "2022-01-31",
+    "publication_date": "2022-08-11",
+    "related_identifiers": [
+        {
+            "identifier": "git+https://github.com/cosimoNigro/agnpy.git",
+            "relation": "isDerivedFrom",
+            "resource_type": "software",
+            "scheme": "url"
+        }
+    ],
     "title": "agnpy",
     "upload_type": "software",
-    "version": "0.1.8"
+    "version": "0.2.0"
 }
