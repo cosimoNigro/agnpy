@@ -59,7 +59,8 @@ n_p = ExpCutoffPowerLaw(k=12e3 / u.Unit('cm3'), #12e3 / u.Unit('cm3'),
 )
 
 # Define electron distribution
-n_e = ExpCutoffBrokenPowerLaw(k=6e-5 * u.Unit("cm-3"), # k = 6e2, kp = 12e3
+# k_m = k_c * gamma_b ** a
+n_e = ExpCutoffBrokenPowerLaw(k=3.75e-5 * u.Unit("cm-3"), # k_m = 6e2
         p1=2.0,
         p2=4.32,
         gamma_b=4e3,
@@ -85,14 +86,15 @@ psynch = ProtonSynchrotron(blob)
 
 # compute the SED over an array of frequencies
 nu = np.logspace(10, 30) * u.Hz
-nu_obs = nu * blob.delta_D / (1+redshift)
+# nu_obs = nu * blob.delta_D / (1+redshift): we don't need to do it in the end,
+# since the doppler shift of the freqs has already being done from "nu_to_epsilon_prime" of utils (line 174, original synchrotron.py)
 
 sed = synch.sed_flux(nu)
 psed = psynch.sed_flux(nu)
 
 
 ebl = EBL("saldana-lopez")
-absorption = ebl.absorption(redshift, nu_obs)
+absorption = ebl.absorption(redshift, nu)
 
 
 sed_abs  = sed  * absorption
@@ -102,8 +104,8 @@ psed_abs = psed * absorption # Check if it is correct
 plt.figure(figsize = (6.92, 4.29))
 plt.scatter(nu_data, nuFnu_data, color = 'black')
 plot_sed(nu,  sed_abs, label = 'ElectronSynctrotron')
-plot_sed(nu_obs, psed, label = 'ProtonSynchrotron')
-plot_sed(nu_obs, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
+plot_sed(nu, psed, label = 'ProtonSynchrotron')
+plot_sed(nu, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
 plt.ylim(1e-14, 1e-8)
 plt.xlim(1e10, 1e28) # For frequencies
 #plt.savefig('Comparison.png')
