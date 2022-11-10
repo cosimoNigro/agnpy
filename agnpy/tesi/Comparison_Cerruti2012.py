@@ -93,7 +93,7 @@ sed = synch.sed_flux(nu)
 psed = psynch.sed_flux(nu)
 
 
-ebl = EBL("saldana-lopez")
+ebl = EBL("dominguez")
 absorption = ebl.absorption(redshift, nu)
 
 
