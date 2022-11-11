@@ -92,10 +92,9 @@ nu = np.logspace(10, 30) * u.Hz
 sed = synch.sed_flux(nu)
 psed = psynch.sed_flux(nu)
 
-
-ebl = EBL("dominguez")
+#"franceschini", "dominguez", "finke", "saldana-lopez"
+ebl = EBL("finke")
 absorption = ebl.absorption(redshift, nu)
-
 
 sed_abs  = sed  * absorption
 psed_abs = psed * absorption # Check if it is correct
@@ -110,7 +109,6 @@ plt.ylim(1e-14, 1e-8)
 plt.xlim(1e10, 1e28) # For frequencies
 #plt.savefig('Comparison.png')
 plt.show()
-
 
 plt.figure(figsize = (6.92, 4.29))
 blob.plot_n_e(label = 'Electron distribution')

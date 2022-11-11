@@ -5,7 +5,7 @@ from astropy.constants import e, h, c, m_e, m_p, sigma_T, G
 
 import synchrotron_new as newsyn
 from utils.math import axes_reshaper, gamma_e_to_integrate
-from utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
+from utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_p
 
 #__all__ = ["R_proton", "nu_synch_peak_proton", "ProtonSynchrotron"]
 __all__ = ["ProtonSynchrotron"]
@@ -53,7 +53,7 @@ class ProtonSynchrotron:
     #     of model parameters, see :func:`~agnpy:sycnhrotron.Synchrotron.evaluate_sed_flux`
     #     for parameters defintion. Eq. before 7.122 in [DermerMenon2009]_."""
     #     # conversions
-    #     epsilon = nu_to_epsilon_prime(nu, z, delta_D)
+    #     epsilon = nu_to_epsilon_prime(nu, z, delta_D, m = m_p)
     #     B_cgs = B_to_cgs(B)
     #     # multidimensional integration
     #     _gamma, _epsilon = axes_reshaper(gamma, epsilon)
@@ -61,7 +61,7 @@ class ProtonSynchrotron:
     #     integrand = SSA_integrand * single_electron_synch_power(B_cgs, _epsilon, _gamma)
     #     integral = integrator(integrand, gamma, axis=0)
     #     prefactor_k_epsilon = (
-    #         -1 / (8 * np.pi * m_e * np.power(epsilon, 2)) * np.power(lambda_c / c, 3)
+    #         -1 / (8 * np.pi * m_e * np.power(epsilon, 2)) * np.power(lambda_c_p / c, 3)
     #     )
     #     k_epsilon = (prefactor_k_epsilon * integral).to("cm-1")
     #     return (2 * k_epsilon * R_b).to_value("")
@@ -118,7 +118,7 @@ class ProtonSynchrotron:
             array of the SED values corresponding to each frequency
         """
         # conversions
-        epsilon = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon = nu_to_epsilon_prime(nu, z, delta_D, m = m_p)
         B_cgs = B_to_cgs(B)
         # reshape for multidimensional integration
         _gamma, _epsilon = axes_reshaper(gamma, epsilon)
@@ -152,7 +152,7 @@ class ProtonSynchrotron:
     def evaluate_sed_flux_delta_approx(nu, z, d_L, delta_D, B, R_b, n_p, *args):
         """Synchrotron flux SED using the delta approximation for the
         synchrotron radiation Eq. 7.70 [DermerMenon2009]_."""
-        epsilon_prime = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon_prime = nu_to_epsilon_prime(nu, z, delta_D, m = m_p)
         gamma_s = np.sqrt(epsilon_prime / newsyn.epsilon_B(B))
         B_cgs = B_to_cgs(B)
         U_B = np.power(B_cgs, 2) / (8 * np.pi)
