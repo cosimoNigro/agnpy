@@ -91,9 +91,9 @@ class ParticleDistribution:
 
         Parameters
         ----------
-        n_tot : `~astropy.units.Quantity`
+        n_tot : :class:`~astropy.units.Quantity`
             total particle density (integral of :math:`n(\gamma)`), in cm-3
-        mass : `~astropy.units.Quantity`
+        mass : :class:`~astropy.units.Quantity`
             particle mass
         """
         # use gamma_min and gamma_max as integration limits
@@ -114,9 +114,9 @@ class ParticleDistribution:
 
         Parameters
         ----------
-        u_tot : `~astropy.units.Quantity`
-            total energy density (integral of :math:`\gamma n(\gamma)`), in erg cm-3
-        mass : `~astropy.units.Quantity`
+        u_tot : :class:`~astropy.units.Quantity`
+            total energy density (integral of :math:`\gamma\,n(\gamma)`), in erg cm-3
+        mass : :class:`~astropy.units.Quantity`
             particle mass
         """
         # use gamma_min and gamma_max as integration limits
@@ -132,31 +132,31 @@ class ParticleDistribution:
         return cls(k=k.to("cm-3"), **kwargs, mass=mass)
 
     @classmethod
-    def from_density_at_gamma_1(cls, n_1, mass, **kwargs):
+    def from_density_at_gamma_1(cls, n_gamma_1, mass, **kwargs):
         r"""Set the normalisation of the particle distribution,
         :math:`k [{\rm cm}^{-3}]`, such that `norm` = :math:`n(\gamma=1)`.
 
         Parameters
         ----------
-        n_1 : `~astropy.units.Quantity`
+        n_gamma_1 : :class:`~astropy.units.Quantity`
             value :math:`n(\gamma)` should have at :math:`\gamma=1`, in cm-3
-        mass : `~astropy.units.Quantity`
+        mass : :class:`~astropy.units.Quantity`
             particle mass
         """
-        k = n_1.to("cm-3") / cls.evaluate(1, 1, **kwargs)
+        k = n_gamma_1.to("cm-3") / cls.evaluate(1, 1, **kwargs)
         return cls(k=k.to("cm-3"), **kwargs, mass=mass)
 
     @classmethod
     def from_total_energy(cls, W, V, mass, **kwargs):
         r"""Set the normalisation of the particle distribution,
         :math:`k [{\rm cm}^{-3}]`, based on the total energy in particles
-        :math:`W = m c^2 \int {\rm d}\gamma \, \gamma n(\gamma)`.
+        :math:`W = m c^2 \, \int {\rm d}\gamma \, \gamma \, n(\gamma)`.
 
         Parameters
         ----------
-        W : `~astropy.units.Quantity`
+        W : :class:`~astropy.units.Quantity`
             total energy in particles, in erg
-        V : `~astropy.units.Quantity`
+        V : :class:`~astropy.units.Quantity`
             volume of the emission region, in cm^3
         mass : `~astropy.units.Quantity`
             particle mass
@@ -184,14 +184,14 @@ class ParticleDistribution:
         ax.set_xlabel(r"$\gamma$")
 
         if gamma_power == 0:
-            ax.set_ylabel(r"$n_e(\gamma)\,/\,{\rm cm}^{-3}$")
+            ax.set_ylabel(r"$n(\gamma)\,/\,{\rm cm}^{-3}$")
 
         else:
             ax.set_ylabel(
                 r"$\gamma^{"
                 + str(gamma_power)
                 + r"}$"
-                + r"$\,n_e(\gamma)\,/\,{\rm cm}^{-3}$"
+                + r"$\,n(\gamma)\,/\,{\rm cm}^{-3}$"
             )
 
         return ax
@@ -214,7 +214,7 @@ class PowerLaw(ParticleDistribution):
         minimum Lorentz factor of the particle distribution
     gamma_max : float
         maximum Lorentz factor of the particle distribution
-    mass : `~astropy.units.Quantity`
+    mass : :class:`~astropy.units.Quantity`
         particle mass, default is the electron mass
     integrator : func
         function to be used for integration, default is :class:`~numpy.trapz`
@@ -298,7 +298,7 @@ class BrokenPowerLaw(ParticleDistribution):
         minimum Lorentz factor of the particle distribution
     gamma_max : float
         maximum Lorentz factor of the particle distribution
-    mass : `~astropy.units.Quantity`
+    mass : :class:`~astropy.units.Quantity`
         particle mass, default is the electron mass
     integrator : func
         function to be used for integration, default is :class:`~numpy.trapz`
@@ -410,7 +410,7 @@ class LogParabola(ParticleDistribution):
         minimum Lorentz factor of the particle distribution
     gamma_max : float
         maximum Lorentz factor of the particle distribution
-    mass : `~astropy.units.Quantity`
+    mass : :class:`~astropy.units.Quantity`
         particle mass, default is the electron mass
     integrator : func
         function to be used for integration, default is :class:`~numpy.trapz`
@@ -620,11 +620,19 @@ class InterpolatedDistribution(ParticleDistribution):
         return self.evaluate(gamma, self.norm, self.gamma_min, self.gamma_max)
 
     def SSA_integrand(self, gamma):
-        r"""Integrand for the synchrotron self-absorption.
-        It is :math: \gamma^2 \frac{d}{d \gamma} (\frac{n_e(\gamma)}{\gamma^2}) = ( \frac{dn_e(\gamma)}{d\gamma}+\frac{2n_e(\gamma)}{\gamma})
-        The derivative is: :math: \frac{dn_e(\gamma)}{d\gamma} = \frac{d 10^{f(u(\gamma))}}{d\gamma} = \frac{d10^{f(u)}}{du} \cdot \frac{du(\gamma)}{d\gamma}
-        where we have :math: \frac{d 10^{f(u(\gamma))}}{d\gamma} = \frac{d10^{f(u)}}{du} \cdot \frac{du(\gamma)}{d\gamma} where u is the np.log10(gamma).
-        This is equal to :math: \frac{d 10^{f(u(\gamma))}}{d\gamma} =  10^{f(u)} \cdot \frac{df(u)}{du} \cdot \frac{1}{\gamma}
+        r"""Integrand for the synchrotron self-absorption. It is
+
+        .. math::
+            \gamma^2 \frac{d}{d \gamma} (\frac{n_e(\gamma)}{\gamma^2}) = ( \frac{dn_e(\gamma)}{d\gamma}+\frac{2n_e(\gamma)}{\gamma})
+
+        The derivative is: 
+        
+        .. math:: 
+            \frac{dn_e(\gamma)}{d\gamma} = \frac{d 10^{f(u(\gamma))}}{d\gamma} = \frac{d10^{f(u)}}{du} \cdot \frac{du(\gamma)}{d\gamma}
+
+        where we have :math:`\frac{d 10^{f(u(\gamma))}}{d\gamma} = \frac{d10^{f(u)}}{du} \cdot \frac{du(\gamma)}{d\gamma}`,
+        where :math:`u` is the :math:`log_{10}(\gamma)`.
+        This is equal to :math:`\frac{d 10^{f(u(\gamma))}}{d\gamma} =  10^{f(u)} \cdot \frac{df(u)}{du} \cdot \frac{1}{\gamma}`
         """
         log10_gamma = np.log10(gamma)
         df_log = self.log10_f.derivative()
