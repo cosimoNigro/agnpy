@@ -1,6 +1,7 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import e, h, c, m_e, m_p, sigma_T, G
+from scipy.special import gammaincc, gamma
 
 # default arrays to be used for integration
 gamma_e_to_integrate = np.logspace(1, 9, 200)
@@ -117,3 +118,6 @@ def trapz_loglog(y, x, axis=0):
     vals[tozero] = 0.0
 
     return np.add.reduce(vals, axis) * x_unit * y_unit
+
+def inc_gamma(a,z):
+    return gammaincc(a,z)*gamma(a)

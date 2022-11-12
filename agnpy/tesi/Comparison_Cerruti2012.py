@@ -15,6 +15,7 @@ from astropy.coordinates import Distance
 from agnpy.absorption import EBL
 from agnpy.utils.conversion import mec2, mpc2
 #import matplotlib.style
+from agnpy.compton import SynchrotronSelfCompton
 
 load_mpl_rc()  # adopt agnpy plotting style
 
@@ -83,6 +84,8 @@ print(blob.delta_D)
 
 synch = Synchrotron(blob, ssa=True)
 psynch = ProtonSynchrotron(blob)
+ssc = SynchrotronSelfCompton(blob, ssa = True)
+
 
 # compute the SED over an array of frequencies
 nu = np.logspace(10, 30) * u.Hz
@@ -91,6 +94,7 @@ nu = np.logspace(10, 30) * u.Hz
 
 sed = synch.sed_flux(nu)
 psed = psynch.sed_flux(nu)
+sscsed = ssc.sed_flux(nu)
 
 #"franceschini", "dominguez", "finke", "saldana-lopez"
 ebl = EBL("finke")
@@ -98,11 +102,15 @@ absorption = ebl.absorption(redshift, nu)
 
 sed_abs  = sed  * absorption
 psed_abs = psed * absorption # Check if it is correct
+#sscsed_abs = sscsed * absorption
 
 # plot it
 plt.figure(figsize = (6.92, 4.29))
 plt.scatter(nu_data, nuFnu_data, color = 'black')
 plot_sed(nu,  sed_abs, label = 'ElectronSynctrotron')
+# plot_sed(nu,  sscsed_abs, label = 'SynchrotronSelfCompton Absorbed')
+# plot_sed(nu,  sscsed, label = 'SynchrotronSelfCompton')
+
 plot_sed(nu, psed, label = 'ProtonSynchrotron')
 plot_sed(nu, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
 plt.ylim(1e-14, 1e-8)
