@@ -603,10 +603,10 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         k=1e-13 * u.Unit("cm-3"),
         p1=2.0,
         p2=3.0,
+        gamma_c = 1e5,
         gamma_b=1e3,
         gamma_min=10,
         gamma_max=1e7,
-        gamma_c = 1e5,
         mass=m_e,
         integrator=np.trapz,
     ):
@@ -614,10 +614,10 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         self.k = k
         self.p1 = p1
         self.p2 = p2
+        self.gamma_c = gamma_c
         self.gamma_b = gamma_b
         self.gamma_min = gamma_min
         self.gamma_max = gamma_max
-        self.gamma_c = gamma_c
 
     @property
     def parameters(self):
@@ -625,14 +625,14 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             self.k,
             self.p1,
             self.p2,
+            self.gamma_c,
             self.gamma_b,
             self.gamma_min,
             self.gamma_max,
-            self.gamma_c
         ]
 
     @staticmethod
-    def evaluate(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max, gamma_c):
+    def evaluate(gamma, k, p1, p2,  gamma_c, gamma_b, gamma_min, gamma_max):
         index = np.where(gamma <= gamma_b, p1, p2)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
@@ -646,10 +646,10 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             self.k,
             self.p1,
             self.p2,
+            self.gamma_c,
             self.gamma_b,
             self.gamma_min,
             self.gamma_max,
-            self.gamma_c
         )
 
     @staticmethod
@@ -669,10 +669,10 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             self.k,
             self.p1,
             self.p2,
+            self.gamma_c,
             self.gamma_b,
             self.gamma_min,
-            self.gamma_max,
-            self.gamma_c
+            self.gamma_max
         )
 
     def __str__(self):
@@ -682,10 +682,10 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             + f" - k: {self.k:.2e}\n"
             + f" - p1: {self.p1:.2f}\n"
             + f" - p2: {self.p2:.2f}\n"
+            + f" - gamma_c: {self.gamma_c:.2e}\n"
             + f" - gamma_b: {self.gamma_b:.2e}\n"
             + f" - gamma_min: {self.gamma_min:.2e}\n"
             + f" - gamma_max: {self.gamma_max:.2e}\n"
-            + f" - gamma_c: {self.gamma_c:.2e}\n"
         )
 
 

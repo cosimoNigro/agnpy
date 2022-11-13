@@ -11,7 +11,7 @@ from agnpy.spectra import (
     ExpCutoffBrokenPowerLaw,
     InterpolatedDistribution,
 )
-from agnpy.utils.math import trapz_loglog, inc_gamma
+from agnpy.utils.math import trapz_loglog
 from agnpy.utils.conversion import mec2, mpc2
 
 
@@ -65,35 +65,6 @@ def broken_power_law_times_gamma_integral(k_e, p1, p2, gamma_b, gamma_min, gamma
             / (2 - p2)
         )
     return k_e * (term_1 + term_2)
-
-
-def exp_cutoff_broken_power_law_integral(k_e, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max):
-    """Analytical integral of the exponential cutoff broken power law."""
-    if np.allclose(p1, 1.0):
-        term_1 = gamma_b * ( inc_gamma(0,gamma_min/gamma_c) - inc_gamma(0,gamma_b/gamma_c) )
-    else:
-        term_1 = np.power(gamma_b,p1) * np.power(gamma_c,1-p1) * ( inc_gamma(1-p1,gamma_min/gamma_c) - inc_gamma(1-p1,gamma_b/gamma_c) )
-
-    if np.allclose(p1, 1.0):
-        term_2 = gamma_b * ( inc_gamma(0,gamma_b/gamma_c) - inc_gamma(0,gamma_max/gamma_c) )
-    else:
-        term_2 = np.power(gamma_b,p2) * np.power(gamma_c,1-p2) * ( inc_gamma(1-p2,gamma_b/gamma_c) - inc_gamma(1-p2,gamma_max/gamma_c) )
-
-    return k_e * (term_1 + term_2)
-
-
-def exp_cutoff_broken_power_law_times_gamma_integral(k_e, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max):
-    """Analytical integral of the exponential cutoff broken power law multiplied by gamma."""
-    if np.allclose(p1, 1.0):
-        term_1 = gamma_b * ( inc_gamma(0,gamma_min/gamma_c) - inc_gamma(0,gamma_b/gamma_c) )
-    else:
-        term_1 = np.power(gamma_b,p1) * np.power(gamma_c,2-p1) * ( inc_gamma(2-p1,gamma_min/gamma_c) - inc_gamma(2-p1,gamma_b/gamma_c) )
-    if np.allclose(p1, 1.0):
-        term_2 = gamma_b * ( inc_gamma(0,gamma_b/gamma_c) - inc_gamma(0,gamma_max/gamma_c) )
-    else:
-        term_2 = np.power(gamma_b,p2) * np.power(gamma_c,2-p2) * ( inc_gamma(2-p2,gamma_b/gamma_c) - inc_gamma(2-p2,gamma_max/gamma_c) )
-    return k_e * (term_1 + term_2)
-
 
 class TestParticleDistribution:
     """Class grouping all the tests related to the general class
@@ -575,41 +546,6 @@ class TestExpCutoffBrokenPowerLaw:
     @pytest.mark.parametrize("gamma_min", np.logspace(0, 2, 3))
     @pytest.mark.parametrize("gamma_max", np.logspace(6, 8, 3))
     @pytest.mark.parametrize("gamma_c", np.logspace(3, 5, 3))
-    @pytest.mark.parametrize("gamma_power", [0, 1])
-    @pytest.mark.parametrize("integrator", [np.trapz, trapz_loglog])
-
-    def test_exp_cutoff_broken_power_law_integral(
-        self, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max, gamma_power, integrator
-    ):
-        """Test the integration of the broken power law for different parameters
-        and integrating function."""
-        k = 1e-5 * u.Unit("cm-3")
-        ebpwl = ExpCutoffBrokenPowerLaw(
-            k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max, integrator=integrator
-        )
-        numerical_integral = ebpwl.integrate(
-            gamma_min, gamma_max, gamma_power=gamma_power
-        )
-
-        if gamma_power == 0:
-            analytical_integral = exp_cutoff_broken_power_law_integral(
-                k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max
-            )
-        if gamma_power == 1:
-            analytical_integral = exp_cutoff_broken_power_law_times_gamma_integral(
-                k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max
-            )
-
-        assert u.isclose(
-            numerical_integral, analytical_integral, atol=0 * u.Unit("cm-3"), rtol=0.05
-        )
-
-    @pytest.mark.parametrize("p1", np.arange(1, 2, 0.5))
-    @pytest.mark.parametrize("p2", np.arange(3, 4, 0.5))
-    @pytest.mark.parametrize("gamma_b", np.logspace(3, 5, 3))
-    @pytest.mark.parametrize("gamma_min", np.logspace(0, 2, 3))
-    @pytest.mark.parametrize("gamma_max", np.logspace(6, 8, 3))
-    @pytest.mark.parametrize("gamma_c", np.logspace(3, 5, 3))
     def test_init(self, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max):
         """Test the intialisation of the broken power law with the different methods."""
         # initialisation from total density
@@ -648,7 +584,7 @@ class TestExpCutoffBrokenPowerLaw:
         u_tot = 3e-4 * u.Unit("erg cm-3")
 
         # initialisation from total energy density
-        ebpwl_e = BrokenPowerLaw.from_total_energy_density(
+        ebpwl_e = ExpCutoffBrokenPowerLaw.from_total_energy_density(
             u_tot=u_tot,
             mass=m_e,
             p1=p1,
