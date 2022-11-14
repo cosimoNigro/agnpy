@@ -653,13 +653,15 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         )
 
     @staticmethod
-    def evaluate_SSA_integrand(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max, gamma_c):
+    def evaluate_SSA_integrand(gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max):
         r"""Analytical integrand for the synchrotron self-absorption:
         :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`."""
         index = np.where(gamma <= gamma_b, p1, p2)
+        prefactor = -(index + 2) / gamma + (-1 / gamma_c)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
-            k * (gamma / gamma_b) ** (-index) * np.exp(-gamma/gamma_c)*(-(index+2)/gamma - 1/gamma_c),
+            prefactor * ExpCutoffBrokenPowerLaw.evaluate(
+            gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max),
             0
         )
 

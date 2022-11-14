@@ -648,7 +648,7 @@ class TestExpCutoffBrokenPowerLaw:
 
 class TestInterpolatedDistribution:
     @pytest.mark.parametrize(
-        "n", [PowerLaw(), BrokenPowerLaw(), LogParabola(), ExpCutoffPowerLaw()]
+        "n", [PowerLaw(), BrokenPowerLaw(), LogParabola(), ExpCutoffPowerLaw(), ExpCutoffBrokenPowerLaw()]
     )
     def test_interpolation(self, n):
         """Assert that the interpolated distribution does not have large
