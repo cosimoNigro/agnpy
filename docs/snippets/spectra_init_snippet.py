@@ -54,7 +54,7 @@ n_4 = LogParabola.from_density_at_gamma_1(
     mass=m_e,
 )
 
-# let us plot the particle distributions
+# let us plot all the particles distributions
 fig, ax = plt.subplots()
 
 n_1.plot(ax=ax, gamma_power=2, label="from " + r"$n_{\rm tot}$")

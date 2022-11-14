@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 # electron distribution
 n_e = BrokenPowerLaw(
-    k=1e-7 * u.Unit("cm-3"),
+    k=1e-8 * u.Unit("cm-3"),
     p1=1.9,
     p2=2.6,
     gamma_b=1e4,
@@ -15,7 +15,7 @@ n_e = BrokenPowerLaw(
 )
 
 # proton distribution
-n_p = PowerLaw(k=1e-2 * u.Unit("cm-3"), p=2.3, gamma_min=10, gamma_max=1e6, mass=m_p)
+n_p = PowerLaw(k=1 * u.Unit("cm-3"), p=2.3, gamma_min=10, gamma_max=1e6, mass=m_p)
 
 # let us plot both particle distributions
 fig, ax = plt.subplots()

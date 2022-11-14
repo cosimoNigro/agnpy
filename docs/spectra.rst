@@ -7,7 +7,7 @@ Non-thermal Particles Energy Distributions
 The ``agnpy.spectra`` module provides classes describing the energy distributions of particles accelerated in the jets.
 The energy distribution is commonly represented by an analytical function, usually a power law, returning the volume
 density of particles, :math:`n [{\rm cm}]^{-3}`, as a function of their Lorentz factor, :math:`\gamma`.
-The following analyitcal functions are available:
+The following analytical functions are available:
 
 - :class:`~agnpy.spectra.PowerLaw`;
 - :class:`~agnpy.spectra.BrokenPowerLaw`;
@@ -15,8 +15,9 @@ The following analyitcal functions are available:
 - :class:`~agnpy.spectra.ExpCutoffPowerLaw`.
 
 Additionaly, an :class:`~agnpy.spectra.InterpolatedDistribution` is available to interpolate an array of densities and
-Lorentz factors (e.g. you might have obtained an electron distribution from a software performing the time evolution of
-the particles accounting for acceleration and energy losses).
+Lorentz factors. This might be useful if you have obtained an electron distribution from another software (e.g. performing
+the time evolution of the particles distribution accounting for acceleration and energy losses) and want to use this
+result in ``agnpy``.
 
 Since ``v0.3.0``, ``agnpy`` includes both electrons and protons energy distributions.
 
@@ -36,18 +37,19 @@ Some authors use an *integral* normalisation. That is, the normalisation value p
 
 - the total volume density, :math:`n_{\rm tot} = \int {\rm d \gamma} \, n(\gamma)`, in :math:`{\rm cm}^{-3}`;
 - the total energy density, :math:`u_{\rm tot} = \int {\rm d \gamma} \, \gamma \, n(\gamma)`, in :math:`{\rm erg}\,{\rm cm}^{-3}`;
-- the total energy in particles, :math:`W = m c^2 \, \int {\rm d \gamma} \, \gamma \, n(\gamma)`, in :math:`{\rm erg}`;
+- the total energy in particles, :math:`W = m c^2 \, \int {\rm d \gamma} \, \gamma \, n(\gamma)`, in :math:`{\rm erg}`.
 
-Others use a *differential* normalisation, that is, the normalisation value provided directly represents the constant :math:`k`
-multiplying the particle distribution, e.g. for a power law
+Others use a *differential* normalisation, that is, the normalisation value provided directly represents the constant,
+:math:`k`, multiplying the particle distribution, e.g. for a power law
 
 .. math::
-    n(\gamma) = k \, \gamma^{-p}
+    n(\gamma) = k \, \gamma^{-p}.
 
 Finally, some authors use a normalisation *at* :math:`\gamma=1`, that means the normalisation value provided represents
 the value of the denisty at :math:`\gamma=1`.
 
-We offer all of the aforementioned alternatives to initialise a particle distribution in ``agnpy``, here an example demonstrating it:
+We offer all of the aforementioned alternatives to initialise a particle distribution in ``agnpy``.
+Here follows an example illustrating them:
 
 .. plot:: snippets/spectra_init_snippet.py
    :include-source:
