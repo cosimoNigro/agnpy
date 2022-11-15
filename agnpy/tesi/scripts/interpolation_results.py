@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 from scipy.misc import derivative
 from scipy.interpolate import CubicSpline
 
-"""Initiating the 4 distributions """
-# global PowerLaw
+#plt.style.use('thesis')
+'''1. Initializing the four distributions'''
+
 k_e_test = 1e-13 * u.Unit("cm-3")
 p_test = 2.1
 gamma_min_test = 10
@@ -69,15 +70,16 @@ n_epwl = epwl_inter(g2)
 
 """ Diagrams """
 #Style
+plt.style.use('thesis')
 
 # Interpolation function vs Original
 fig,ax=plt.subplots(2,2)
 # Power law
 
-ax[0][0].loglog(g1, n_pwl, label = 'Interpolated Function', c = 'orange')
+ax[0][0].loglog(g1, n_pwl, label = 'IF', c = 'orange')
 ax[0][0].loglog(gamma1, pwl_data, '.', label='Power Law Data', c = 'black')
-ax[0][0].set_xlabel(' γ ', fontsize= 13 )
-ax[0][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')), fontsize= 13 )
+ax[0][0].set_xlabel(' γ ')
+ax[0][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')) )
 #plt.ylim(1e-12, 1e-7)
 
 ax[0][0].legend(loc='lower left')
@@ -85,31 +87,30 @@ ax[0][0].legend(loc='lower left')
 
 # Broken Power Law Parabola
 
-ax[0][1].loglog(g1, n_bpwl, label = 'Interpolated Function', c = 'orange')
+ax[0][1].loglog(g1, n_bpwl, label = 'IF', c = 'orange')
 ax[0][1].loglog(gamma1, bpwl_data, '.', label='Broken Power Law Data' , c = 'black')
-ax[0][1].set_xlabel('γ', fontsize= 13 )
-ax[0][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')), fontsize= 13 )
+ax[0][1].set_xlabel('γ')
+ax[0][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')) )
 #plt.ylim(1e-12, 1e-7)
 ax[0][1].legend(loc='lower left')
 
 # Log Parabola
 
-ax[1][0].loglog(g1, n_lp, label = 'Interpolated Function', c = 'orange')
+ax[1][0].loglog(g1, n_lp, label = 'IF', c = 'orange')
 ax[1][0].loglog(gamma1, lp_data, '.', label='Log Parabola Data' , c = 'black')
-ax[1][0].set_xlabel('γ',fontsize= 13 )
-ax[1][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')),fontsize= 13 )
+ax[1][0].set_xlabel('γ')
+ax[1][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')))
 #plt.ylim(1e-12, 1e-7)
 ax[1][0].legend(loc='lower left')
 
 # Exp cut off power law
 
-ax[1][1].loglog(g2, n_epwl, label = 'Interpolated Function', c = 'orange')
+ax[1][1].loglog(g2, n_epwl, label = 'IF', c = 'orange')
 ax[1][1].loglog(gamma2, epwl_data, '.', label='Exp Cutoff Power Law Data' , c = 'black')
-ax[1][1].set_xlabel('γ',fontsize= 13 )
-ax[1][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')),fontsize= 13 )
+ax[1][1].set_xlabel('γ')
+ax[1][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')))
 #plt.ylim(1e-12, 1e-7)
 ax[1][1].legend(loc='lower left')
-
 plt.tight_layout()
 plt.show()
 
@@ -120,20 +121,24 @@ fig,ax=plt.subplots(2,2)
 SSA_inter = pwl_inter.SSA_integrand(g1).value
 SSA_pwl = pwl_test.SSA_integrand(gamma1).value
 
-ax[0][0].loglog(g1, abs(SSA_inter), label = 'SSA int of the interpolated function', c = 'orange')
-ax[0][0].loglog(gamma1, abs(SSA_pwl), '.', label='SSA int - Power law data' , c = 'black')
-ax[0][0].set_xlabel('γ',fontsize= 13 )
-ax[0][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')),fontsize= 13 )
+ax[0][0].loglog(g1, abs(SSA_inter), label = 'SSA - Power Law IF', c = 'orange')
+ax[0][0].loglog(gamma1, abs(SSA_pwl), '.', label='SSA - Power law function' , c = 'black')
+ax[0][0].set_xlabel('γ' )
+ax[0][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')) )
+ax[0][0].legend(loc='lower left')
+
 #plt.ylim(1e-12, 1e-7)
 
 # Broken Power Law
 SSA_inter = bpwl_inter.SSA_integrand(g1).value
 SSA_bpwl = bpwl_test.SSA_integrand(gamma1).value
 
-ax[0][1].loglog(g1, abs(SSA_inter), label = 'SSA of Interpolated Function', c = 'orange')
-ax[0][1].loglog(gamma1, abs(SSA_bpwl), '.', label='SSA of from the Original Function' , c = 'black')
-ax[0][1].set_xlabel(' γ ',fontsize= 13 )
-ax[0][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')),fontsize= 13 )
+ax[0][1].loglog(g1, abs(SSA_inter), label = 'Broken Power Law IF', c = 'orange')
+ax[0][1].loglog(gamma1, abs(SSA_bpwl), '.', label='SSA - Broken Power law function' , c = 'black')
+ax[0][1].set_xlabel(' γ ' )
+ax[0][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')) )
+ax[0][1].legend(loc='lower left')
+
 #plt.ylim(1e-12, 1e-7)
 
 
@@ -141,21 +146,24 @@ ax[0][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')
 SSA_inter = lp_inter.SSA_integrand(g1).value
 SSA_lp = lp_test.SSA_integrand(gamma1).value
 
-ax[1][0].loglog(g1, abs(SSA_inter), label = 'SSA of Interpolated Function', c = 'orange')
-ax[1][0].loglog(gamma1, abs(SSA_lp), '.', label='SSA of from the Original Function' , c = 'black')
-ax[1][0].set_xlabel('γ',fontsize= 13 )
-ax[1][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')),fontsize= 13 )
+ax[1][0].loglog(g1, abs(SSA_inter), label = 'SSA int - Log Parabola IF', c = 'orange')
+ax[1][0].loglog(gamma1, abs(SSA_lp), '.', label='SSA - Log Parabola function' , c = 'black')
+ax[1][0].set_xlabel('γ' )
+ax[1][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')) )
+ax[1][0].legend(loc='lower left')
 #plt.ylim(1e-12, 1e-7)
 
 # Exp cut off
 SSA_inter = epwl_inter.SSA_integrand(g2).value
 SSA_epwl = epwl_test.SSA_integrand(gamma2).value
 
-ax[1][1].loglog(g2, abs(SSA_inter), label = 'SSA of Interpolated Function', c = 'orange')
-ax[1][1].loglog(gamma2, abs(SSA_epwl), '.', label='SSA of from the Original Function' , c = 'black')
-ax[1][1].set_xlabel('γ',fontsize= 13 )
-ax[1][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')),fontsize= 13 )
+ax[1][1].loglog(g2, abs(SSA_inter), label = 'SSA - Exp Cut-off Power Law IF', c = 'orange')
+ax[1][1].loglog(gamma2, abs(SSA_epwl), '.', label='SSA - Exp Cut-off Power Law function' , c = 'black')
+ax[1][1].set_xlabel('γ' )
+ax[1][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')) )
+ax[1][1].legend(loc='lower left')
 #plt.ylim(1e-12, 1e-7)
+
 
 plt.tight_layout()
 plt.show()
