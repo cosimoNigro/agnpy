@@ -24,3 +24,22 @@ n_e = BrokenPowerLaw(
 )
 
 blob = Blob(R_b, z, delta_D, Gamma, B, n_e=n_e)
+
+
+# set the Doppler factor from the bulk Lorentz factor and the viewing angle
+blob = Blob()
+blob.set_delta_D(Gamma=20, theta_s=10 * u.deg)
+print(f"{blob.delta_D:.2f}")
+
+
+# add a proton energy distribution
+n_p = PowerLaw(k=0.1 * u.Unit("cm-3"), p=2.3, gamma_min=10, gamma_max=1e6, mass=m_p)
+blob = Blob(R_b, z, delta_D, Gamma, B, n_e=n_e, n_p=n_p)
+print(blob)
+
+
+# print energy densities
+print(f"{blob.u_e:.2e}")
+print(f"{blob.u_p:.2e}")
+print(f"{blob.U_B:.2e}")
+print(f"{blob.u_ph_synch:.2e}")
