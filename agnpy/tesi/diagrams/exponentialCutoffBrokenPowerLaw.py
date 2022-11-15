@@ -22,7 +22,8 @@ gamma = np.logspace(np.log10(gamma_min),np.log10(gamma_max),100) #just for exp
 n_ex = n_exp(gamma)
 
 plt.loglog(gamma,n_ex, color = 'black')
-plt.xlabel('γ' )
+plt.xlabel('γ')
 plt.ylabel('$ n $ [{0}]'.format(n_ex.unit.to_string('latex_inline')) )
+plt.legend(loc = 'lower left')
 
 plt.show()
