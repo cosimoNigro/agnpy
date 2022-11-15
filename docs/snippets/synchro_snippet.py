@@ -5,12 +5,9 @@ from astropy.coordinates import Distance
 from agnpy.spectra import PowerLaw
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron
-from agnpy.utils.plot import plot_sed
+from agnpy.utils.plot import load_mpl_rc, plot_sed
 import matplotlib.pyplot as plt
-from agnpy.utils.plot import load_mpl_rc
 
-# matplotlib adjustments
-load_mpl_rc()
 
 # set the quantities defining the blob
 R_b = 1e16 * u.cm
@@ -40,6 +37,8 @@ synch = Synchrotron(blob)
 nu = np.logspace(8, 23) * u.Hz
 sed = synch.sed_flux(nu)
 
-# plot it
+# load matplotlib configuration for agnpy
+load_mpl_rc()
+
 plot_sed(nu, sed, label="synchrotron")
 plt.show()

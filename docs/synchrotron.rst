@@ -9,7 +9,7 @@ The synchrotron radiation is computed following the approach of [DermerMenon2009
 It is here illustrated how to produce a synchrotron spectral energy distribution (SED) staring from a :class:`~agnpy.emission_regions.Blob`. 
 
 .. plot:: snippets/synchro_snippet.py
-	:include-source:
+   :include-source:
 
 Note two aspects valid for all the radiative processes in ``agnpy``:
 
@@ -17,14 +17,14 @@ Note two aspects valid for all the radiative processes in ``agnpy``:
 
 .. code-block:: python
 
-	synch = Synchrotron(blob)
+   synch = Synchrotron(blob)
 
 2. the SEDs are always compute over an array of frequencies (astropy units), passed to the ``sed_flux`` function
 
 .. code-block:: python
 
-	nu = np.logspace(8, 23) * u.Hz
-	sed = synch.sed_flux(nu)
+   nu = np.logspace(8, 23) * u.Hz
+   sed = synch.sed_flux(nu)
 
 this produces an array of :class:`~astropy.units.Quantity`.
 
