@@ -155,19 +155,3 @@ class TestBlob:
         assert np.isclose(
             blob.k_eq, (2 * u_tot / U_B_expected).to_value(""), atol=0, rtol=0.02
         )
-
-    def test_plot_particles_distribution(self):
-        """Test the plotting functions for the particles distributions."""
-        n_e = BrokenPowerLaw()
-        n_p = PowerLaw(mass=m_p)
-
-        # first we initialise the blob without the protons distribution
-        blob = Blob(n_e=n_e)
-        blob.plot_n_e()
-        with pytest.raises(AttributeError):
-            assert blob.plot_n_p()
-
-        # second blob with electrons and protons
-        blob = Blob(n_e=n_e, n_p=n_p)
-        blob.plot_n_e()
-        blob.plot_n_p()
