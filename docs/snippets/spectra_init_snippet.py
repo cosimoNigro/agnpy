@@ -41,7 +41,7 @@ n_3 = LogParabola.from_total_energy(
     mass=m_e,
 )
 
-# from the denisty at gamma = 1
+# - from the denisty at gamma = 1
 n_gamma_1 = 1e-4 * u.Unit("cm-3")
 
 n_4 = LogParabola.from_density_at_gamma_1(

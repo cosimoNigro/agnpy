@@ -1,8 +1,8 @@
 .. _spectra:
 
 
-Non-thermal Particles Energy Distributions
-==========================================
+Non-thermal Particle Energy Distributions
+=========================================
 
 The ``agnpy.spectra`` module provides classes describing the energy distributions of particles accelerated in the jets.
 The energy distribution is commonly represented by an analytical function, usually a power law, returning the volume
@@ -28,9 +28,9 @@ the particle, for example:
    :include-source:
 
 
-Different ways to initialise (or normalise) the particle energy distributions
------------------------------------------------------------------------------
-Authors use different approaches to define the particle distributions :math:`n(\gamma)`.
+Different ways to initialise (or normalise) the particle energy distribution
+----------------------------------------------------------------------------
+Authors use different approaches to define the particles distribution :math:`n(\gamma)`.
 A *normalisation* of the distribution is often provided, which can be of different types.
 
 Some authors use an *integral* normalisation. That is, the normalisation value provided might represent:
@@ -40,7 +40,7 @@ Some authors use an *integral* normalisation. That is, the normalisation value p
 - the total energy in particles, :math:`W = m c^2 \, \int {\rm d \gamma} \, \gamma \, n(\gamma)`, in :math:`{\rm erg}`.
 
 Others use a *differential* normalisation, that is, the normalisation value provided directly represents the constant,
-:math:`k`, multiplying the particle distribution, e.g. for a power law
+:math:`k`, multiplying the analytical function, e.g. for a power law
 
 .. math::
     n(\gamma) = k \, \gamma^{-p}.
@@ -48,7 +48,7 @@ Others use a *differential* normalisation, that is, the normalisation value prov
 Finally, some authors use a normalisation *at* :math:`\gamma=1`, that means the normalisation value provided represents
 the value of the denisty at :math:`\gamma=1`.
 
-We offer all of the aforementioned alternatives to initialise a particle distribution in ``agnpy``.
+We offer all of the aforementioned alternatives to initialise a particles distribution in ``agnpy``.
 Here follows an example illustrating them:
 
 .. plot:: snippets/spectra_init_snippet.py
