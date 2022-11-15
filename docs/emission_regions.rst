@@ -23,14 +23,12 @@ The physical quantities *needed* to define the blob are:
 Follows a snippet initialising the `Blob` (using `astropy` quantities) with its physical quantities and an electrons disitribtuion.
 
 .. literalinclude:: snippets/blob_snippet.py
+   :lines: 1-26
 
 Note that defining :math:`\delta_{\rm D}` and :math:`\Gamma` implicitly defines the viewing angle :math:`\theta_{\rm s}`. If you want to set the Doppler factor from :math:`\Gamma` and :math:`\theta_{\rm s}`, you can do so by using the :py:meth:`~agnpy.emission_regions.Blob.set_delta_D` function;
 
-.. code-block:: python
-
-   blob = Blob()
-   blob.set_delta_D(Gamma=20, theta_s=10 * u.deg)
-   print(f"{blob.delta_D:.2f}")
+.. literalinclude:: snippets/blob_snippet.py
+   :lines: 29-32
 
 .. code-block:: text
 
@@ -38,16 +36,8 @@ Note that defining :math:`\delta_{\rm D}` and :math:`\Gamma` implicitly defines 
 
 Since version ``0.3.0``, we can also specify a non-thermal proton distribution
 
-.. code-block:: python
-
-   n_p = PowerLaw(k=0.1 * u.Unit("cm-3"), p=2.3, gamma_min=10, gamma_max=1e6, mass=m_p)
-   blob = Blob(R_b, z, delta_D, Gamma, B, n_e=n_e, n_p=n_p)
-
-The :class:`~agnpy.emission_regions.Blob` can be printed at any moment to obtain a resume of the blob characterisitcs
-
-.. code-block:: python
-
-   print(blob)
+.. literalinclude:: snippets/blob_snippet.py
+   :lines: 35-38
 
 .. code-block:: text
 
@@ -78,19 +68,17 @@ The :class:`~agnpy.emission_regions.Blob` can be printed at any moment to obtain
     - gamma_min: 1.00e+01
     - gamma_max: 1.00e+06
 
+As shown above, the :class:`~agnpy.emission_regions.Blob` can be printed at any moment to obtain a resume of the blob characterisitcs
 
 Additional quantities computed by the blob
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..........................................
+
 The quantities listed in the previous section, needed to initialise the blob, are then used to evaluate several other physical quantities.
 Among the most interesting are the energy densities in electrons and protons :math:`u_{\rm e},\;u_{\rm p}`; the energy density of the magnetic field :math:`U_B`, and of the synchrotron radiation :math:`u_{\rm ph,\, synch}`.
 You can examine all of the physical quantities automatically computed by the :class:`~agnpy.emission_regions.Blob` in the API.
 
-.. code-block:: python
-
-   print(f"{blob.u_e:.2e}")
-   print(f"{blob.u_p:.2e}")
-   print(f"{blob.U_B:.2e}")
-   print(f"{blob.u_ph_synch:.2e}")
+.. literalinclude:: snippets/blob_snippet.py
+   :lines: 41-45
 
 .. code-block:: text
 

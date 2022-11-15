@@ -32,13 +32,13 @@ The code is available in the `python package index <https://pypi.org/project/agn
 
 .. code-block:: bash
 
-    pip install agnpy
+   pip install agnpy
 
 The code can also be installed with ``conda``
 
 .. code-block:: bash
 
-    conda install -c conda-forge agnpy
+   conda install -c conda-forge agnpy
 
 
 Dependencies
