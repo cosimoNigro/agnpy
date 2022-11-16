@@ -16,10 +16,12 @@ def epsilon_equivalency(m = m_e):
         epsilon_equivalency = [
             (u.Hz, u.Unit(""), lambda x: h.cgs * x / mec2, lambda x: x * mec2 / h.cgs)
             ]
-    else:
+    elif m == m_p:
         epsilon_equivalency = [
             (u.Hz, u.Unit(""), lambda x: h.cgs * x / mpc2, lambda x: x * mpc2 / h.cgs)
             ]
+    else:
+        print ('asdasd') #fix it, raise error
     return epsilon_equivalency
 
 
