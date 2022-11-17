@@ -161,21 +161,21 @@ class TestPowerLaw:
         assert u.isclose(u_p_tot, u_tot, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
         # initialisation from the density at gamma=1
-        n_1 = 1e-13 * u.Unit("cm-3")
+        n_gamma_1 = 1e-13 * u.Unit("cm-3")
 
         pwl_e = PowerLaw.from_density_at_gamma_1(
-            n_1=n_1, mass=m_e, p=p, gamma_min=1, gamma_max=gamma_max
+            n_gamma_1=n_gamma_1, mass=m_e, p=p, gamma_min=1, gamma_max=gamma_max
         )
         assert pwl_e.particle == "electrons"
 
         pwl_p = PowerLaw.from_density_at_gamma_1(
-            n_1=n_1, mass=m_p, p=p, gamma_min=1, gamma_max=gamma_max
+            n_gamma_1=n_gamma_1, mass=m_p, p=p, gamma_min=1, gamma_max=gamma_max
         )
         assert pwl_p.particle == "protons"
 
         # check that the value at gamma=1 is the value we set initially
-        assert u.isclose(n_1, pwl_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
-        assert u.isclose(n_1, pwl_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+        assert u.isclose(n_gamma_1, pwl_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+        assert u.isclose(n_gamma_1, pwl_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
 
 class TestBrokenPowerLaw:
@@ -293,10 +293,10 @@ class TestBrokenPowerLaw:
         assert u.isclose(u_p_tot, u_tot, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
         # initialisation from the density at gamma=1
-        n_1 = 1e-13 * u.Unit("cm-3")
+        n_gamma_1 = 1e-13 * u.Unit("cm-3")
 
         bpwl_e = BrokenPowerLaw.from_density_at_gamma_1(
-            n_1=n_1,
+            n_gamma_1=n_gamma_1,
             mass=m_e,
             p1=p1,
             p2=p2,
@@ -307,7 +307,7 @@ class TestBrokenPowerLaw:
         assert bpwl_e.particle == "electrons"
 
         bpwl_p = BrokenPowerLaw.from_density_at_gamma_1(
-            n_1=n_1,
+            n_gamma_1=n_gamma_1,
             mass=m_p,
             p1=p1,
             p2=p2,
@@ -318,8 +318,8 @@ class TestBrokenPowerLaw:
         assert bpwl_p.particle == "protons"
 
         # check that the value at gamma=1 is the value we set initially
-        assert u.isclose(n_1, bpwl_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
-        assert u.isclose(n_1, bpwl_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+        assert u.isclose(n_gamma_1, bpwl_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+        assert u.isclose(n_gamma_1, bpwl_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
 
 class TestLogParabola:
@@ -405,10 +405,10 @@ class TestLogParabola:
         assert u.isclose(u_p_tot, u_tot, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
         # initialisation from the density at gamma=1
-        n_1 = 1e-13 * u.Unit("cm-3")
+        n_gamma_1 = 1e-13 * u.Unit("cm-3")
 
         lp_e = LogParabola.from_density_at_gamma_1(
-            n_1=n_1,
+            n_gamma_1=n_gamma_1,
             mass=m_e,
             p=p,
             q=q,
@@ -419,7 +419,7 @@ class TestLogParabola:
         assert lp_e.particle == "electrons"
 
         lp_p = LogParabola.from_density_at_gamma_1(
-            n_1=n_1,
+            n_gamma_1=n_gamma_1,
             mass=m_p,
             p=p,
             q=q,
@@ -430,8 +430,8 @@ class TestLogParabola:
         assert lp_p.particle == "protons"
 
         # check that the value at gamma=1 is the value we set initially
-        assert u.isclose(n_1, lp_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
-        assert u.isclose(n_1, lp_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+        assert u.isclose(n_gamma_1, lp_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+        assert u.isclose(n_gamma_1, lp_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
 
 class TestExpCutoffPowerLaw:
@@ -512,21 +512,31 @@ class TestExpCutoffPowerLaw:
         assert u.isclose(u_p_tot, u_tot, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
         # initialisation from the density at gamma=1
-        n_1 = 1e-13 * u.Unit("cm-3")
+        n_gamma_1 = 1e-13 * u.Unit("cm-3")
 
         epwl_e = ExpCutoffPowerLaw.from_density_at_gamma_1(
-            n_1=n_1, mass=m_e, p=p, gamma_c=gamma_c, gamma_min=1, gamma_max=gamma_max,
+            n_gamma_1=n_gamma_1,
+            mass=m_e,
+            p=p,
+            gamma_c=gamma_c,
+            gamma_min=1,
+            gamma_max=gamma_max,
         )
         assert epwl_e.particle == "electrons"
 
         epwl_p = ExpCutoffPowerLaw.from_density_at_gamma_1(
-            n_1=n_1, mass=m_p, p=p, gamma_c=gamma_c, gamma_min=1, gamma_max=gamma_max,
+            n_gamma_1=n_gamma_1,
+            mass=m_p,
+            p=p,
+            gamma_c=gamma_c,
+            gamma_min=1,
+            gamma_max=gamma_max,
         )
         assert epwl_p.particle == "protons"
 
         # check that the value at gamma=1 is close to the value we set initially
-        assert u.isclose(n_1, epwl_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
-        assert u.isclose(n_1, epwl_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+        assert u.isclose(n_gamma_1, epwl_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+        assert u.isclose(n_gamma_1, epwl_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
 
 class TestInterpolatedDistribution:
