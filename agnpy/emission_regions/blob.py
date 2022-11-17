@@ -84,7 +84,7 @@ class Blob:
 
     @property
     def t_var(self):
-        """Variability time scale, defined as:
+        r"""Variability time scale, defined as
         :math:`t_{\rm var} = \frac{(1 + z) R_{\rm b}}{c \delta_{\rm D}}`.
         """
         return (((1 + self.z) * self.R_b) / (c * self.delta_D)).to("d")
@@ -216,7 +216,7 @@ class Blob:
 
     def N_e(self, gamma):
         r"""Number of electrons as a function of the Lorentz factor,
-        :math:`N_{\rm e}(\gamma') = V_b\,n_{\rm e}(\gamma')`.
+        :math:`N_{\rm e}(\gamma') = V_{\rm b}\,n_{\rm e}(\gamma')`.
 
         Parameters
         ----------
@@ -227,7 +227,7 @@ class Blob:
 
     def N_p(self, gamma):
         r"""Number of protons as a function of the Lorentz factor,
-        :math:`N_{\rm p}(\gamma') = V_b\,n_{\rm p}(\gamma')`.
+        :math:`N_{\rm p}(\gamma') = V_{\rm b}\,n_{\rm p}(\gamma')`.
 
         Parameters
         ----------
@@ -337,7 +337,7 @@ class Blob:
         r"""Total jet power in kinetic energy of the particles
 
         .. math::
-            P_{{\rm jet},\,{\rm ke}} = 2 \pi R_b^2 \beta \Gamma^2 c u_{\rm e,p}.
+            P_{{\rm jet},\,{\rm ke}} = 2 \pi R_{\rm b}^2 \beta \Gamma^2 c (u_{\rm e} + u_{\rm p}).
         """
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
@@ -352,7 +352,7 @@ class Blob:
         r"""Jet power in magnetic field
 
         .. math::
-            P_{\mathrm{jet},\,B} = 2 \pi R_b^2 \beta \Gamma^2 c \frac{B^2}{8\pi}.
+            P_{\mathrm{jet},\,B} = 2 \pi R_{\rm b}^2 \beta \Gamma^2 c \frac{B^2}{8\pi}.
         """
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
