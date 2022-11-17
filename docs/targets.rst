@@ -11,14 +11,14 @@ The following objects are implemented:
 * :class:`~agnpy.targets.CMB`, representing the Cosmic Microwave Background;
 
 * :class:`~agnpy.targets.PointSourceBehindJet`, representing a monochromatic point source behind the jet. 
-  This is mostly used to crosscheck that the energy densities and External Compton SEDs of the other targets reduce to
-  this simplified case for large enough distances;
+  This is mostly used to crosscheck that the energy densities and external Compton SEDs of the other targets reduce to
+  this simplified case for large enough distances ([Dermer1994]_, [Dermer2002]_);
 
 * :class:`~agnpy.targets.SSDisk`, representing a [Shakura1973]_ (i.e. a geometrically thin, optically thick) accretion disk;
 
-* :class:`~agnpy.targets.SphericalShellBLR`, representing the Broad Line Region as an infinitesimally thin spherical shell, on the lines of [Finke2016]_;
+* :class:`~agnpy.targets.SphericalShellBLR`, representing the broad line region (BLR) as an infinitesimally thin spherical shell, on the lines of [Finke2016]_;
 
-* :class:`~agnpy.targets.RingDustTorus`, representing the Dust Torus as an infintesimally thin ring, see treatment of [Finke2016]_.
+* :class:`~agnpy.targets.RingDustTorus`, representing the dust torus (DT) as an infintesimally thin ring, see treatment of [Finke2016]_.
 
 
 Shakura Sunyaev disk
@@ -56,7 +56,7 @@ The BLR can be initialised specifying:
 
 - the luminosity of the disk whose radiation is being reprocessed, :math:`L_{\mathrm{disk}}`;
 - the fraction of radiation reprocessed, :math:`\xi_{\mathrm{line}}`;
-- the type of line emitted (for a complete list see the :func:`~agnpy.targets.print_lines_list`);
+- the type of line emitted (for a complete list see the :py:meth:`~agnpy.targets.SphericalShellBLR.print_lines_list` function);
 - the radius at which the line is emitted, :math:`R_{\mathrm{line}}`.
 
 Let us continue from the previous snippet considering a BLR reprocessing the previous disk luminosity and re-emitting the :math:`\mathrm{Ly}\alpha` line:
@@ -98,9 +98,9 @@ Let us continue from the previous snippet considering a DT reprocessing the disk
 
 Black-Body SEDs
 ---------------
-The SEDs due to the black-body (BB) emission by the disk and the DT can be computed via the `sed_flux` members of the two classes.
+The SEDs due to the black-body (BB) emission by the disk and the DT can be computed via the ``sed_flux`` method of the two classes.
 A multi-temperature BB is considered for the disk and a simple single-temperature BB for the DT.
-An array of frequencies over which to compute the SED and the redshift of the galaxy have to be specified to the `sed_flux` function.
+An array of frequencies over which to compute the SED and the redshift of the host galaxy have to be specified to the ``sed_flux`` function.
 
 .. literalinclude:: snippets/targets_snippet.py
    :lines: 41-59

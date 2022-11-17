@@ -11,7 +11,7 @@ Blob
 ----
 
 The blob represents a spherical region of plasma streaming along the jet.
-The physical quantities *needed* to define the blob are:
+The physical quantities *needed* to define the :class:`~agnpy.emission_regions.Blob` are:
 
 - its radius, :math:`R_{\rm b}`;
 - its distance from the observer, expressed through the redshift :math:`z` of the host galaxy;
@@ -20,7 +20,7 @@ The physical quantities *needed* to define the blob are:
 - the magnetic field tangled to the blob, :math:`B`, assumed to be uniform; 
 - the energy distributions of particles accelerated in the blob.
 
-Follows a snippet initialising the `Blob` (using `astropy` quantities) with its physical quantities and an electrons disitribtuion.
+Follows a snippet initialising the :class:`~agnpy.emission_regions.Blob` (using ``astropy`` quantities) with its physical quantities and an electrons disitribtuion.
 
 .. literalinclude:: snippets/blob_snippet.py
    :lines: 1-26
@@ -74,7 +74,7 @@ Additional quantities computed by the blob
 ..........................................
 
 The quantities listed in the previous section, needed to initialise the blob, are then used to evaluate several other physical quantities.
-Among the most interesting are the energy densities in electrons and protons :math:`u_{\rm e},\;u_{\rm p}`; the energy density of the magnetic field :math:`U_B`, and of the synchrotron radiation :math:`u_{\rm ph,\, synch}`.
+Among the most interesting are the energy densities in electrons and protons :math:`u_{\rm e},\;u_{\rm p}`; the energy density of the magnetic field, :math:`U_B`, and of the synchrotron radiation, :math:`u_{\rm ph,\, synch}`.
 You can examine all of the physical quantities automatically computed by the :class:`~agnpy.emission_regions.Blob` in the API.
 
 .. literalinclude:: snippets/blob_snippet.py
