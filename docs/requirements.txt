@@ -1,6 +1,7 @@
-sphinx
+sphinx>=4.3.0
 sphinx-astropy
 nbsphinx
 ipython
 ipykernel
-docutils<0.18
+docutils
+sphinx-rtd-theme>=0.5.1
