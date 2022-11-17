@@ -84,7 +84,7 @@ class Blob:
 
     @property
     def t_var(self):
-        """Variability time scale, defined as:
+        r"""Variability time scale, defined as
         :math:`t_{\rm var} = \frac{(1 + z) R_{\rm b}}{c \delta_{\rm D}}`.
         """
         return (((1 + self.z) * self.R_b) / (c * self.delta_D)).to("d")
@@ -216,7 +216,7 @@ class Blob:
 
     def N_e(self, gamma):
         r"""Number of electrons as a function of the Lorentz factor,
-        :math:`N_{\rm e}(\gamma') = V_b\,n_{\rm e}(\gamma')`.
+        :math:`N_{\rm e}(\gamma') = V_{\rm b}\,n_{\rm e}(\gamma')`.
 
         Parameters
         ----------
@@ -227,7 +227,7 @@ class Blob:
 
     def N_p(self, gamma):
         r"""Number of protons as a function of the Lorentz factor,
-        :math:`N_{\rm p}(\gamma') = V_b\,n_{\rm p}(\gamma')`.
+        :math:`N_{\rm p}(\gamma') = V_{\rm b}\,n_{\rm p}(\gamma')`.
 
         Parameters
         ----------
@@ -337,7 +337,7 @@ class Blob:
         r"""Total jet power in kinetic energy of the particles
 
         .. math::
-            P_{{\rm jet},\,{\rm ke}} = 2 \pi R_b^2 \beta \Gamma^2 c u_{\rm e,p}.
+            P_{{\rm jet},\,{\rm ke}} = 2 \pi R_{\rm b}^2 \beta \Gamma^2 c (u_{\rm e} + u_{\rm p}).
         """
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
@@ -352,7 +352,7 @@ class Blob:
         r"""Jet power in magnetic field
 
         .. math::
-            P_{\mathrm{jet},\,B} = 2 \pi R_b^2 \beta \Gamma^2 c \frac{B^2}{8\pi}.
+            P_{\mathrm{jet},\,B} = 2 \pi R_{\rm b}^2 \beta \Gamma^2 c \frac{B^2}{8\pi}.
         """
         prefactor = (
             2 * np.pi * np.power(self.R_b, 2) * self.Beta * np.power(self.Gamma, 2) * c
@@ -389,74 +389,6 @@ class Blob:
             sigma_T.cgs
             * self.U_B
             * self.R_b
-            * np.trapz(np.power(self.gamma, 2) * self.n_e(self.gamma), self.gamma)
+            * np.trapz(np.power(self.gamma_e, 2) * self.n_e(self.gamma_e), self.gamma_e)
         )
         return u_ph.to("erg cm-3")
-
-    def plot_n_e(self, gamma_power=0, ax=None, **kwargs):
-        """Plot the electron energy distribution.
-    
-        Parameters
-        ----------
-        gamma_power : float
-            power of gamma to raise the electron distribution
-        ax : :class:`~matplotlib.axes.Axes`, optional
-            Axis
-        """
-        import matplotlib.pyplot as plt
-
-        ax = plt.gca() if ax is None else ax
-
-        ax.loglog(
-            self.gamma_e,
-            np.power(self.gamma_e, gamma_power) * self.n_e(self.gamma_e),
-            **kwargs
-        )
-        ax.set_xlabel(r"$\gamma$")
-
-        if gamma_power == 0:
-            ax.set_ylabel(r"$n_{\rm e}(\gamma)\,/\,{\rm cm}^{-3}$")
-
-        else:
-            ax.set_ylabel(
-                r"$\gamma^{"
-                + str(gamma_power)
-                + r"}$"
-                + r"$\,n_{\rm e}(\gamma)\,/\,{\rm cm}^{-3}$"
-            )
-
-        return ax
-
-    def plot_n_p(self, gamma_power=0, ax=None, **kwargs):
-        """Plot the proton energy distributions.
-
-        Parameters
-        ----------
-        gamma_power : float
-            power of gamma to raise the electron distribution
-        ax : :class:`~matplotlib.axes.Axes`, optional
-            Axis
-        """
-        import matplotlib.pyplot as plt
-
-        ax = plt.gca() if ax is None else ax
-
-        ax.loglog(
-            self.gamma_p,
-            np.power(self.gamma_p, gamma_power) * self.n_p(self.gamma_p),
-            **kwargs
-        )
-        ax.set_xlabel(r"$\gamma$")
-
-        if gamma_power == 0:
-            ax.set_ylabel(r"$n_{\rm p}(\gamma)\,/\,{\rm cm}^{-3}$")
-
-        else:
-            ax.set_ylabel(
-                r"$\gamma^{"
-                + str(gamma_power)
-                + r"}$"
-                + r"$\,n_{\rm p}(\gamma)\,/\,{\rm cm}^{-3}$"
-            )
-
-        return ax

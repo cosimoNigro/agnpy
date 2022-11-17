@@ -3,7 +3,7 @@
 
 Self-consistent modelling
 =========================
-`agnpy` does not foresee time evolution of the electron spectra, it allows though for self-consistent modelling.
+``agnpy`` does not foresee time evolution of the electron spectra, it allows though for self-consistent modelling.
 
 In particular, the break and maximum Lorentz factor of the electron distribution (:math:`\gamma_{\rm b}` and 
 :math:`\gamma_{\rm max}`) can be constrained accounting for the interplay between acceleration, cooling and escape processes.
@@ -42,10 +42,3 @@ should return
  
 Self-consistent modelling is available also considering cooling due to external Compton on line and thermal emitters.
 Check the API for more possibilties.
-
-API
----
-
-.. automodule:: agnpy.constraints
-   :noindex:
-   :members: SpectralConstraints

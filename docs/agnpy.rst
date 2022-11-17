@@ -1,14 +1,14 @@
 agnpy package
 =============
 
-Submodules
-----------
+Modules
+-------
 
 agnpy.spectra module
 --------------------
 
 .. automodule:: agnpy.spectra
-   :members: PowerLaw, BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw, ElectronDistribution
+   :members: ParticleDistribution, PowerLaw, BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw, InterpolatedDistribution
    :undoc-members:
    :show-inheritance:
 
