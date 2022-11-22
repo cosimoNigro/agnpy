@@ -25,7 +25,7 @@ load_mpl_rc()  # adopt agnpy plotting style
 #print(matplotlib.style.available)
 
 # Extract data of PKS 2155-304
-pks_sed = np.loadtxt('data/PKS2155-304_data_circa.txt')
+pks_sed = np.loadtxt('data/PKS2155-304/PKS2155-304_data_circa.txt')
 lognu = pks_sed[:,0]
 lognuFnu = pks_sed[:,1]
 nu_data = 10**lognu
@@ -112,7 +112,7 @@ plot_sed(nu,  sed_abs, label = 'ElectronSynctrotron')
 # plot_sed(nu,  sscsed, label = 'SynchrotronSelfCompton')
 
 plot_sed(nu, psed, label = 'ProtonSynchrotron')
-plot_sed(nu, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
+# plot_sed(nu, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
 plt.ylim(1e-14, 1e-8)
 plt.xlim(1e10, 1e28) # For frequencies
 #plt.savefig('Comparison.png')
