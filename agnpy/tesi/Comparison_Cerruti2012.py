@@ -47,7 +47,6 @@ vol = (4. / 3) * np.pi * R ** 3
 
 norm_p2 = 12e3 / u.Unit('cm3')
 u_p = 3.7e2 * u.Unit('erg cm-3')
-#k = (norm_p2 / mpc2.to('eV')) * vol
 print(norm_p2 / mpc2.to('eV'))
 
 # define the proton distribution
@@ -97,7 +96,7 @@ psed = psynch.sed_flux(nu)
 sscsed = ssc.sed_flux(nu)
 
 #"franceschini", "dominguez", "finke", "saldana-lopez"
-ebl = EBL("finke")
+ebl = EBL("franceschini")
 absorption = ebl.absorption(redshift, nu)
 
 sed_abs  = sed  * absorption
@@ -115,7 +114,7 @@ plot_sed(nu, psed, label = 'ProtonSynchrotron')
 plot_sed(nu, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
 plt.ylim(1e-14, 1e-8)
 plt.xlim(1e10, 1e28) # For frequencies
-#plt.savefig('Comparison.png')
+plt.savefig('Comparison.png')
 plt.show()
 
 plt.figure(figsize = (6.92, 4.29))
