@@ -31,7 +31,7 @@ B = 10 * u.G
 redshift = 0.32
 distPKS = Distance(z=redshift) # Already inside blob definition
 doppler_s = 30
-Gamma_bulk = 16
+Gamma_bulk = 15 # viewing angle: 0.1 degrees
 R = 1e16 * u.cm #radius of the blob
 vol = (4. / 3) * np.pi * R ** 3
 
@@ -56,7 +56,7 @@ blob = Blob(R_b=R,
 psynch = ProtonSynchrotron(blob, ssa = True)
 
 # compute the SED over an array of frequencies
-nu = np.logspace(9, 29) * u.Hz
+nu = np.logspace(9, 29, 100) * u.Hz
 psed = psynch.sed_flux(nu)
 
 # plot
@@ -64,4 +64,24 @@ plt.figure(figsize = (6.92, 4.29))
 plt.scatter(nu_data, nuFnu_data, color = 'black')
 plot_sed(nu, psed, label = 'ProtonSynchrotron')
 
+plt.show()
+
+
+# Comparing the two distributions:
+
+
+gamma, dndg = np.genfromtxt('data/Cerruti/second_email/test_ps.dat',  dtype = 'float', comments = '#', usecols = (2,3), unpack = True)
+
+n_p = ExpCutoffPowerLaw(k=120000 * u.Unit('cm-3'),
+        p = 2.2,
+        gamma_c= 2.5e9,
+        gamma_min= 1,
+        gamma_max=1e20,
+        mass=m_p
+)
+
+n = n_p(gamma)
+# If you zoom in you can see the two seperate points
+plt.loglog(gamma,n, '.')
+plt.loglog(gamma,dndg, '.')
 plt.show()
