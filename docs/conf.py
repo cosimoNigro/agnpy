@@ -22,7 +22,7 @@ copyright = "2022, Cosimo Nigro"
 author = "Cosimo Nigro"
 
 # The full version, including alpha/beta/rc tags
-release = "0.2.0"
+release = "0.3.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -55,6 +55,9 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 numfig = True
+
+# allow for errors (e.g. when executing snippets)
+nbsphinx_allow_errors = True
 
 # -- Options for HTML output -------------------------------------------------
 

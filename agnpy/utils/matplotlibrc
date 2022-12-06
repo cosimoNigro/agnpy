@@ -362,13 +362,13 @@ axes.grid:          true   # display grid or not
 #axes.grid.axis:     both    # which axis the grid should apply to
 #axes.grid.which:    major   # grid lines at {major, minor, both} ticks
 #axes.titlelocation: center  # alignment of the title: {left, right, center}
-#axes.titlesize:     large   # font size of the axes title
+axes.titlesize:     large   # font size of the axes title
 #axes.titleweight:   normal  # font weight of title
 #axes.titlecolor:    auto    # color of the axes title, auto falls back to
                              # text.color as default value
 #axes.titley:        None    # position title (axes relative units).  None implies auto
 #axes.titlepad:      6.0     # pad between axes and title in points
-#axes.labelsize:     medium  # font size of the x and y labels
+axes.labelsize:     large  # font size of the x and y labels
 #axes.labelpad:      4.0     # space between label and axis
 #axes.labelweight:   normal  # weight of the x and y labels
 #axes.labelcolor:    black
@@ -472,7 +472,7 @@ xtick.minor.width:   0.7     # minor tick width in points
 #xtick.minor.pad:     3.4     # distance to the minor tick label in points
 #xtick.color:         black   # color of the ticks
 #xtick.labelcolor:    inherit # color of the tick labels or inherit from xtick.color
-#xtick.labelsize:     medium  # font size of the tick labels
+xtick.labelsize:     large  # font size of the tick labels
 #xtick.direction:     out     # direction: {in, out, inout}
 xtick.minor.visible: True   # visibility of minor ticks on x-axis
 #xtick.major.top:     True    # draw x axis top major ticks
@@ -493,7 +493,7 @@ ytick.minor.width:   0.7     # minor tick width in points
 #ytick.minor.pad:     3.4     # distance to the minor tick label in points
 #ytick.color:         black   # color of the ticks
 #ytick.labelcolor:    inherit # color of the tick labels or inherit from ytick.color
-#ytick.labelsize:     medium  # font size of the tick labels
+ytick.labelsize:     large  # font size of the tick labels
 #ytick.direction:     out     # direction: {in, out, inout}
 ytick.minor.visible: True   # visibility of minor ticks on y-axis
 #ytick.major.left:    True    # draw y axis left major ticks
