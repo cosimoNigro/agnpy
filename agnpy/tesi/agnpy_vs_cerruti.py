@@ -63,7 +63,7 @@ psed = psynch.sed_flux(nu)
 plt.figure(figsize = (6.92, 4.29))
 plt.scatter(nu_data, nuFnu_data, color = 'black')
 plot_sed(nu, psed, label = 'ProtonSynchrotron')
-
+plt.ylim(1e-22,1e-9)
 plt.show()
 
 
@@ -84,4 +84,4 @@ n = n_p(gamma)
 # If you zoom in you can see the two seperate points
 plt.loglog(gamma,n, '.')
 plt.loglog(gamma,dndg, '.')
-plt.show()
+# plt.show()

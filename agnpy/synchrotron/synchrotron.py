@@ -3,7 +3,7 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import e, h, c, m_e, m_p, sigma_T
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
-from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
+from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e
 
 
 __all__ = ["R", "nu_synch_peak", "Synchrotron"]
@@ -38,7 +38,7 @@ def calc_x(B_cgs, epsilon, gamma, mass=m_e):
     x = (
         4
         * np.pi
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    * epsilon
+        * epsilon
         * np.power(mass, 2)
         * np.power(c, 3)
         / (3 * e * B_cgs * h * np.power(gamma, 2))
@@ -51,7 +51,7 @@ def epsilon_B(B):
     return (B / B_cr).to_value("")
 
 
-def single_electron_synch_power(B_cgs, epsilon, gamma, mass=m_e): #Can I change to "single_particle_synch_power"?
+def single_particle_synch_power(B_cgs, epsilon, gamma, mass=m_e): #Can I change to "single_particle_synch_power"?
     """angle-averaged synchrotron power for a single electron,
     to be folded with the electron distribution
     """
@@ -106,15 +106,15 @@ class Synchrotron:
         of model parameters, see :func:`~agnpy:sycnhrotron.Synchrotron.evaluate_sed_flux`
         for parameters defintion. Eq. before 7.122 in [DermerMenon2009]_."""
         # conversions
-        epsilon = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon = nu_to_epsilon_prime(nu, z, delta_D, m = m_e)
         B_cgs = B_to_cgs(B)
         # multidimensional integration
         _gamma, _epsilon = axes_reshaper(gamma, epsilon)
         SSA_integrand = n_e.evaluate_SSA_integrand(_gamma, *args)
-        integrand = SSA_integrand * single_electron_synch_power(B_cgs, _epsilon, _gamma)
+        integrand = SSA_integrand * single_particle_synch_power(B_cgs, _epsilon, _gamma)
         integral = integrator(integrand, gamma, axis=0)
         prefactor_k_epsilon = (
-            -1 / (8 * np.pi * m_e * np.power(epsilon, 2)) * np.power(lambda_c / c, 3)
+            -1 / (8 * np.pi * m_e * np.power(epsilon, 2)) * np.power(lambda_c_e / c, 3)
         )
         k_epsilon = (prefactor_k_epsilon * integral).to("cm-1")
         return (2 * k_epsilon * R_b).to_value("")
@@ -171,14 +171,14 @@ class Synchrotron:
             array of the SED values corresponding to each frequency
         """
         # conversions
-        epsilon = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon = nu_to_epsilon_prime(nu, z, delta_D, m = m_e)
         B_cgs = B_to_cgs(B)
         # reshape for multidimensional integration
         _gamma, _epsilon = axes_reshaper(gamma, epsilon)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
         N_e = V_b * n_e.evaluate(_gamma, *args)
         # fold the electron distribution with the synchrotron power
-        integrand = N_e * single_electron_synch_power(B_cgs, _epsilon, _gamma)
+        integrand = N_e * single_particle_synch_power(B_cgs, _epsilon, _gamma)
         emissivity = integrator(integrand, gamma, axis=0)
         prefactor = np.power(delta_D, 4) / (4 * np.pi * np.power(d_L, 2))
         sed = (prefactor * epsilon * emissivity).to("erg cm-2 s-1")
@@ -205,7 +205,7 @@ class Synchrotron:
     def evaluate_sed_flux_delta_approx(nu, z, d_L, delta_D, B, R_b, n_e, *args):
         """Synchrotron flux SED using the delta approximation for the
         synchrotron radiation Eq. 7.70 [DermerMenon2009]_."""
-        epsilon_prime = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon_prime = nu_to_epsilon_prime(nu, z, delta_D, m = m_e)
         gamma_s = np.sqrt(epsilon_prime / epsilon_B(B))
         B_cgs = B_to_cgs(B)
         U_B = np.power(B_cgs, 2) / (8 * np.pi)

@@ -2,7 +2,6 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import e, h, c, m_e, m_p, sigma_T, G
-
 import synchrotron_new as newsyn
 from utils.math import axes_reshaper, gamma_e_to_integrate
 from utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_p
@@ -11,6 +10,7 @@ __all__ = ["ProtonSynchrotron"]
 
 
 e = e.gauss
+
 
 class ProtonSynchrotron:
     """Class for synchrotron radiation computation
@@ -146,7 +146,6 @@ class ProtonSynchrotron:
 
         return sed
 
-
     def sed_flux(self, nu):
         r"""Evaluates the synchrotron flux SED for a Synchrotron object built
         from a Blob."""
@@ -163,7 +162,6 @@ class ProtonSynchrotron:
             integrator=self.integrator,
             gamma=self.blob.gamma_p,
         )
-
 
     def sed_luminosity(self, nu):
         r"""Evaluates the synchrotron luminosity SED

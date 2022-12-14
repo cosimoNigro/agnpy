@@ -22,7 +22,7 @@ def epsilon_equivalency(m = m_e):
             ]
     else:
         raise ValueError(
-            f"Provide either the electron mass m_e or the proton mass m_p."
+            f"Provide either the electron or the proton mass. "
         )
     return epsilon_equivalency
 
