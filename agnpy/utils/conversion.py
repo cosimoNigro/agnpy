@@ -2,10 +2,10 @@
 from astropy.constants import m_e, m_p, h, c, G
 import astropy.units as u
 
-
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 mpc2 = m_p.to("erg", equivalencies=u.mass_energy())
-lambda_c = (h / (m_e * c)).to("cm")  # Compton wavelength
+lambda_c_e = (h / (m_e * c)).to("cm")  # Compton wavelength
+lambda_c_p = (h / (m_p * c)).to("cm")  # Compton wavelength of protons
 # equivalency for decomposing Gauss in Gaussian-cgs units (not available in astropy)
 Gauss_cgs_unit = "cm(-1/2) g(1/2) s-1"
 Gauss_cgs_equivalency = [(u.G, u.Unit(Gauss_cgs_unit), lambda x: x, lambda x: x)]

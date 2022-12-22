@@ -7,10 +7,10 @@ import pytest
 from pathlib import Path
 from agnpy.emission_regions import Blob
 from agnpy.spectra import ExpCutoffPowerLaw
-from synchrotron_new import Synchrotron, nu_synch_peak
-from proton_synchrotron import ProtonSynchrotron
+from agnpy.synchrotron import Synchrotron, nu_synch_peak
+from agnpy.proton_synchrotron import ProtonSynchrotron
 from agnpy.utils.math import trapz_loglog
-from utils_pytes import (
+from .utils import (
     make_comparison_plot,
     extract_columns_sample_file,
     check_deviation,
@@ -39,7 +39,7 @@ class TestProtonSynchrotron:
     def test_synch_reference_sed(self):
         """Test agnpy proton synchrotron SED against the SED produced by the same particle distribution from Matteo Cerruti's code."""
         # reference SED
-        lognu, lognuFnu = np.genfromtxt(f"{data_dir}/reference_seds/cerruti_model/test_pss.dat",  dtype = 'float', comments = '#', usecols = (0,4), unpack = True)
+        lognu, lognuFnu = np.genfromtxt(f"{data_dir}/reference_seds/cerruti_psynch/test_pss.dat",  dtype = 'float', comments = '#', usecols = (0,4), unpack = True)
         nu_ref = 10**lognu * u.Unit('Hz')
         sed_ref = 10**lognuFnu *u.Unit("erg cm-2 s-1")
 
