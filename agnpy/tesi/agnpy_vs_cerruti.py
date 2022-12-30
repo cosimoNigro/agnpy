@@ -3,8 +3,9 @@ import astropy.units as u
 from agnpy.spectra import BrokenPowerLaw, ExpCutoffPowerLaw, ExpCutoffBrokenPowerLaw
 from agnpy.emission_regions import Blob
 #from agnpy.synchrotron import Synchrotron
-from synchrotron_new import Synchrotron
-from proton_synchrotron import ProtonSynchrotron
+#from synchrotron_new import Synchrotron
+from agnpy.synchrotron import ProtonSynchrotron
+#from proton_synchrotron import ProtonSynchrotron
 
 from agnpy.utils.plot import plot_sed
 import matplotlib.pyplot as plt
@@ -70,7 +71,7 @@ plt.show()
 # Comparing the two distributions:
 
 
-gamma, dndg = np.genfromtxt('data/Cerruti/second_email/test_ps.dat',  dtype = 'float', comments = '#', usecols = (2,3), unpack = True)
+gamma, dndg = np.genfromtxt('./data/Cerruti/second_email/test_ps.dat',  dtype = 'float', comments = '#', usecols = (2,3), unpack = True)
 
 n_p = ExpCutoffPowerLaw(k=120000 * u.Unit('cm-3'),
         p = 2.2,

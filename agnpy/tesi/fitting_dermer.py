@@ -2,9 +2,9 @@ import numpy as np
 import astropy.units as u
 from agnpy.spectra import PowerLaw
 from agnpy.emission_regions import Blob
-#from agnpy.synchrotron import Synchrotron
-from synchrotron_new import Synchrotron
-from proton_synchrotron import ProtonSynchrotron
+from agnpy.synchrotron import Synchrotron
+#from synchrotron_new import Synchrotron
+#from proton_synchrotron import ProtonSynchrotron
 
 from agnpy.utils.plot import plot_sed
 import matplotlib.pyplot as plt

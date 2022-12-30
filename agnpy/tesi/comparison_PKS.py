@@ -2,9 +2,10 @@ import numpy as np
 import astropy.units as u
 from agnpy.spectra import ExpCutoffPowerLaw, ExpCutoffBrokenPowerLaw
 from agnpy.emission_regions import Blob
-#from agnpy.synchrotron import Synchrotron
-from synchrotron_new import Synchrotron
-from proton_synchrotron import ProtonSynchrotron
+from agnpy.synchrotron import Synchrotron
+#from synchrotron_new import Synchrotron
+from agnpy.synchrotron.proton_synchrotron import ProtonSynchrotron
+#from proton_synchrotron import ProtonSynchrotron
 
 from agnpy.utils.plot import plot_sed
 import matplotlib.pyplot as plt
@@ -18,11 +19,6 @@ from agnpy.utils.conversion import mec2, mpc2
 from agnpy.compton import SynchrotronSelfCompton
 
 load_mpl_rc()  # adopt agnpy plotting style
-
-# Try user-defined plot style
-#matplotlib.style.use('/Users/ilaria/Desktop/Dottorato_data/Plot_style/file.mplstyle')
-#matplotlib.style.use('seaborn-muted')
-#print(matplotlib.style.available)
 
 # Extract data of PKS 2155-304
 pks_sed = np.loadtxt('data/PKS2155-304/PKS2155-304_data_circa.txt')
@@ -117,10 +113,10 @@ plt.xlim(1e10, 1e28) # For frequencies
 plt.savefig('Comparison.png')
 plt.show()
 
-plt.figure(figsize = (6.92, 4.29))
-blob.plot_n_e(label = 'Electron distribution')
-blob.plot_n_p(label = 'Proton distribution')
+#plt.figure(figsize = (6.92, 4.29))
+#blob.plot_n_e(label = 'Electron distribution')
+#blob.plot_n_p(label = 'Proton distribution')
 #n_e.plot()
-plt.ylim(1e-44, 1e5)
-plt.legend()
+#plt.ylim(1e-44, 1e5)
+#plt.legend()
 #plt.savefig('Particle_distr.png')

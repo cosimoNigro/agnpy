@@ -11,7 +11,6 @@ __all__ = ["ProtonSynchrotron"]
 
 e = e.gauss
 
-
 class ProtonSynchrotron:
     """Class for synchrotron radiation computation
 
