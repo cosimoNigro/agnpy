@@ -8,6 +8,7 @@ from agnpy.spectra import (
     BrokenPowerLaw,
     LogParabola,
     ExpCutoffPowerLaw,
+    ExpCutoffBrokenPowerLaw,
     InterpolatedDistribution,
 )
 from agnpy.utils.math import trapz_loglog
@@ -65,13 +66,12 @@ def broken_power_law_times_gamma_integral(k_e, p1, p2, gamma_b, gamma_min, gamma
         )
     return k_e * (term_1 + term_2)
 
-
 class TestParticleDistribution:
     """Class grouping all the tests related to the general class
     ParticleDistribution, from which all the other classes inherit."""
 
     @pytest.mark.parametrize(
-        "n_e", [PowerLaw(), BrokenPowerLaw(), LogParabola(), ExpCutoffPowerLaw()]
+        "n_e", [PowerLaw(), BrokenPowerLaw(), LogParabola(), ExpCutoffPowerLaw(), ExpCutoffBrokenPowerLaw()]
     )
     @pytest.mark.parametrize("gamma_power", [0, 1, 2])
     def test_plot(self, n_e, gamma_power):
@@ -538,10 +538,127 @@ class TestExpCutoffPowerLaw:
         assert u.isclose(n_gamma_1, epwl_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
         assert u.isclose(n_gamma_1, epwl_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
+class TestExpCutoffBrokenPowerLaw:
+    """Class grouping all tests related to the ExpCutoffBrokenPowerLaw spectrum."""
+
+    def test_call(self):
+        """Assert that outside the bounding box the function returns 0."""
+        gamma = np.logspace(0, 8)
+        ebpwl = ExpCutoffBrokenPowerLaw()
+        values = ebpwl(gamma).value
+        condition = (ebpwl.gamma_min <= gamma) * (gamma <= ebpwl.gamma_max)
+        # check that outside the boundaries values are all 0
+        assert not np.all(values[~condition])
+
+    @pytest.mark.parametrize("p1", np.arange(1, 2, 0.5))
+    @pytest.mark.parametrize("p2", np.arange(3, 4, 0.5))
+    @pytest.mark.parametrize("gamma_b", np.logspace(3, 5, 3))
+    @pytest.mark.parametrize("gamma_min", np.logspace(0, 2, 3))
+    @pytest.mark.parametrize("gamma_max", np.logspace(6, 8, 3))
+    @pytest.mark.parametrize("gamma_c", np.logspace(3, 5, 3))
+    def test_init(self, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max):
+        """Test the intialisation of the broken power law with the different methods."""
+        # initialisation from total density
+        n_tot = 1e-5 * u.Unit("cm-3")
+
+        ebpwl_e = ExpCutoffBrokenPowerLaw.from_total_density(
+            n_tot=n_tot,
+            mass=m_e,
+            p1=p1,
+            p2=p2,
+            gamma_c=gamma_c,
+            gamma_b=gamma_b,
+            gamma_min=gamma_min,
+            gamma_max=gamma_max,
+        )
+        assert ebpwl_e.particle == "electrons"
+
+        ebpwl_p = ExpCutoffBrokenPowerLaw.from_total_density(
+            n_tot=n_tot,
+            mass=m_p,
+            p1=p1,
+            p2=p2,
+            gamma_c=gamma_c,
+            gamma_b=gamma_b,
+            gamma_min=gamma_min,
+            gamma_max=gamma_max,
+        )
+        assert ebpwl_p.particle == "protons"
+
+        # check the total density is the same value we set initially
+        n_e_tot = ebpwl_e.integrate(gamma_min, gamma_max)
+        n_p_tot = ebpwl_p.integrate(gamma_min, gamma_max)
+        assert u.isclose(n_e_tot, n_tot, atol=0 * u.Unit("cm-3"), rtol=1e-2)
+        assert u.isclose(n_p_tot, n_tot, atol=0 * u.Unit("cm-3"), rtol=1e-2)
+
+        u_tot = 3e-4 * u.Unit("erg cm-3")
+
+        # initialisation from total energy density
+        ebpwl_e = ExpCutoffBrokenPowerLaw.from_total_energy_density(
+            u_tot=u_tot,
+            mass=m_e,
+            p1=p1,
+            p2=p2,
+            gamma_c=gamma_c,
+            gamma_b=gamma_b,
+            gamma_min=gamma_min,
+            gamma_max=gamma_max,
+        )
+        assert ebpwl_e.particle == "electrons"
+
+        ebpwl_p = ExpCutoffBrokenPowerLaw.from_total_energy_density(
+            u_tot=u_tot,
+            mass=m_p,
+            p1=p1,
+            p2=p2,
+            gamma_c=gamma_c,
+            gamma_b=gamma_b,
+            gamma_min=gamma_min,
+            gamma_max=gamma_max,
+        )
+        assert ebpwl_p.particle == "protons"
+
+        # check the total energy density is the same value we set initially
+        u_e_tot = mec2 * ebpwl_e.integrate(gamma_min, gamma_max, gamma_power=1)
+        u_p_tot = mpc2 * ebpwl_p.integrate(gamma_min, gamma_max, gamma_power=1)
+        assert u.isclose(u_e_tot, u_tot, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
+        assert u.isclose(u_p_tot, u_tot, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
+
+        # initialisation from the density at gamma=1
+        n_1 = 1e-13 * u.Unit("cm-3")
+
+        ebpwl_e = ExpCutoffBrokenPowerLaw.from_density_at_gamma_1(
+            n_1=n_1,
+            mass=m_e,
+            p1=p1,
+            p2=p2,
+            gamma_c=gamma_c,
+            gamma_b=gamma_b,
+            gamma_min=1,
+            gamma_max=gamma_max,
+        )
+        assert ebpwl_e.particle == "electrons"
+
+        ebpwl_p = ExpCutoffBrokenPowerLaw.from_density_at_gamma_1(
+            n_1=n_1,
+            mass=m_p,
+            p1=p1,
+            p2=p2,
+            gamma_c=gamma_c,
+            gamma_b=gamma_b,
+            gamma_min=1,
+            gamma_max=gamma_max,
+        )
+        assert ebpwl_p.particle == "protons"
+
+        # check that the value at gamma=1 is the value we set initially
+        assert u.isclose(n_1, ebpwl_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+        assert u.isclose(n_1, ebpwl_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+
 
 class TestInterpolatedDistribution:
     @pytest.mark.parametrize(
-        "n", [PowerLaw(), BrokenPowerLaw(), LogParabola(), ExpCutoffPowerLaw()]
+        "n", [PowerLaw(), BrokenPowerLaw(), LogParabola(), ExpCutoffPowerLaw(), ExpCutoffBrokenPowerLaw()]
     )
     def test_interpolation(self, n):
         """Assert that the interpolated distribution does not have large
