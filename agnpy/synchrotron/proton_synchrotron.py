@@ -4,7 +4,8 @@ import astropy.units as u
 from astropy.constants import e, h, c, m_e, m_p, sigma_T, G
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_p
-from agnpy.synchrotron import Synchrotron as syn
+from .synchrotron import Synchrotron
+from .synchrotron import single_particle_synch_power, tau_to_attenuation
 
 __all__ = ["ProtonSynchrotron"]
 
@@ -55,7 +56,7 @@ class ProtonSynchrotron:
         # multidimensional integration
         _gamma, _epsilon = axes_reshaper(gamma, epsilon)
         SSA_integrand = n_p.evaluate_SSA_integrand(_gamma, *args)
-        integrand = SSA_integrand * syn.single_particle_synch_power(B_cgs, _epsilon, _gamma, mass = m_p)
+        integrand = SSA_integrand * single_particle_synch_power(B_cgs, _epsilon, _gamma, mass = m_p)
         integral = integrator(integrand, gamma, axis=0)
         prefactor_k_epsilon = (
             -1 / (8 * np.pi * m_p * np.power(epsilon, 2)) * np.power(lambda_c_p / c, 3)
@@ -120,9 +121,9 @@ class ProtonSynchrotron:
         # reshape for multidimensional integration
         _gamma, _epsilon = axes_reshaper(gamma, epsilon)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
-        N_e = V_b * n_p.evaluate(_gamma, *args)
+        N_p = V_b * n_p.evaluate(_gamma, *args)
         # fold the electron distribution with the synchrotron power
-        integrand = N_p * syn.single_particle_synch_power(B_cgs, _epsilon, _gamma, mass=m_p)
+        integrand = N_p * single_particle_synch_power(B_cgs, _epsilon, _gamma, mass=m_p)
         emissivity = integrator(integrand, gamma, axis=0)
         prefactor = np.power(delta_D, 4) / (4 * np.pi * np.power(d_L, 2))
         sed = (prefactor * epsilon * emissivity).to("erg cm-2 s-1")
@@ -135,12 +136,12 @@ class ProtonSynchrotron:
                 delta_D,
                 B,
                 R_b,
-                n_e,
+                n_p,
                 *args,
                 integrator=integrator,
                 gamma=gamma,
             )
-            attenuation = syn.tau_to_attenuation(tau)
+            attenuation = tau_to_attenuation(tau)
             sed *= attenuation
 
         return sed

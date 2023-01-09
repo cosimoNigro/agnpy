@@ -51,7 +51,7 @@ def epsilon_B(B):
     return (B / B_cr).to_value("")
 
 
-def single_particle_synch_power(B_cgs, epsilon, gamma, mass=m_e): #Can I change to "single_particle_synch_power"?
+def single_particle_synch_power(B_cgs, epsilon, gamma, mass=m_e):
     """angle-averaged synchrotron power for a single electron,
     to be folded with the electron distribution
     """
