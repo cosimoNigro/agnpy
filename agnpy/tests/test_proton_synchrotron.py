@@ -8,7 +8,7 @@ from pathlib import Path
 from agnpy.emission_regions import Blob
 from agnpy.spectra import ExpCutoffPowerLaw
 from agnpy.synchrotron import Synchrotron, nu_synch_peak
-from agnpy.proton_synchrotron import ProtonSynchrotron
+from agnpy.synchrotron import ProtonSynchrotron
 from agnpy.utils.math import trapz_loglog
 from .utils import (
     make_comparison_plot,
