@@ -82,7 +82,8 @@ class TestProtonSynchrotron:
 
 
     def test_sed_integration_methods(self):
-        """Test different integration methods against each other:
+        """
+        Test different integration methods against each other:
         simple trapezoidal rule vs trapezoidal rule in log-log space.
         """
         n_p = ExpCutoffPowerLaw(k=12e4 / u.Unit('cm3'), #12e3 / u.Unit('cm3'),
