@@ -552,10 +552,10 @@ class TestExpCutoffBrokenPowerLaw:
 
     @pytest.mark.parametrize("p1", np.arange(1, 2, 0.5))
     @pytest.mark.parametrize("p2", np.arange(3, 4, 0.5))
+    @pytest.mark.parametrize("gamma_c", np.logspace(3, 5, 3))
     @pytest.mark.parametrize("gamma_b", np.logspace(3, 5, 3))
     @pytest.mark.parametrize("gamma_min", np.logspace(0, 2, 3))
     @pytest.mark.parametrize("gamma_max", np.logspace(6, 8, 3))
-    @pytest.mark.parametrize("gamma_c", np.logspace(3, 5, 3))
     def test_init(self, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max):
         """Test the intialisation of the broken power law with the different methods."""
         # initialisation from total density
@@ -628,7 +628,7 @@ class TestExpCutoffBrokenPowerLaw:
         n_1 = 1e-13 * u.Unit("cm-3")
 
         ebpwl_e = ExpCutoffBrokenPowerLaw.from_density_at_gamma_1(
-            n_1=n_1,
+            n_gamma_1=n_1,
             mass=m_e,
             p1=p1,
             p2=p2,
@@ -640,7 +640,7 @@ class TestExpCutoffBrokenPowerLaw:
         assert ebpwl_e.particle == "electrons"
 
         ebpwl_p = ExpCutoffBrokenPowerLaw.from_density_at_gamma_1(
-            n_1=n_1,
+            n_gamma_1=n_1,
             mass=m_p,
             p1=p1,
             p2=p2,

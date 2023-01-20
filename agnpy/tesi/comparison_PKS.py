@@ -71,14 +71,14 @@ blob = Blob(R_b=R,
         Gamma=Gamma_bulk,
         B=B,
         n_e=n_e,
-        n_p=n_p
+        n_p=None
 )
 
 print(blob)
 print(blob.delta_D)
 
 synch = Synchrotron(blob, ssa=True)
-psynch = ProtonSynchrotron(blob)
+#psynch = ProtonSynchrotron(blob)
 ssc = SynchrotronSelfCompton(blob, ssa = True)
 
 
@@ -88,7 +88,7 @@ nu = np.logspace(10, 30) * u.Hz
 # since the doppler shift of the freqs has already being done from "nu_to_epsilon_prime" of utils (line 174, original synchrotron.py)
 
 sed = synch.sed_flux(nu)
-psed = psynch.sed_flux(nu)
+#psed = psynch.sed_flux(nu)
 sscsed = ssc.sed_flux(nu)
 
 #"franceschini", "dominguez", "finke", "saldana-lopez"
@@ -96,7 +96,7 @@ ebl = EBL("franceschini")
 absorption = ebl.absorption(redshift, nu)
 
 sed_abs  = sed  * absorption
-psed_abs = psed * absorption # Check if it is correct
+#psed_abs = psed * absorption # Check if it is correct
 #sscsed_abs = sscsed * absorption
 
 # plot it
@@ -106,7 +106,7 @@ plot_sed(nu,  sed_abs, label = 'ElectronSynctrotron')
 # plot_sed(nu,  sscsed_abs, label = 'SynchrotronSelfCompton Absorbed')
 # plot_sed(nu,  sscsed, label = 'SynchrotronSelfCompton')
 
-plot_sed(nu, psed, label = 'ProtonSynchrotron')
+#plot_sed(nu, psed, label = 'ProtonSynchrotron')
 # plot_sed(nu, psed_abs, label = 'ProtonSynchrotron, EBL corrected')
 plt.ylim(1e-14, 1e-8)
 plt.xlim(1e10, 1e28) # For frequencies
