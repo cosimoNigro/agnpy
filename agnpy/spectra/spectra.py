@@ -554,7 +554,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
             gamma, self.k, self.p, self.gamma_c, self.gamma_min, self.gamma_max
         )
 
-    def _str_(self):
+    def __str__(self):
         return (
             f"* {self.particle} energy distribution\n"
             + f" - exponential cut-off power law\n"
@@ -759,7 +759,7 @@ class InterpolatedDistribution(ParticleDistribution):
         where we have :math:`\frac{d 10^{f(u(\gamma))}}{d\gamma} = \frac{d10^{f(u)}}{du} \cdot \frac{du(\gamma)}{d\gamma}`,
         where :math:`u` is the :math:`log_{10}(\gamma)`.
         This is equal to :math:`\frac{d 10^{f(u(\gamma))}}{d\gamma} =  10^{f(u)} \cdot \frac{df(u)}{du} \cdot \frac{1}{\gamma}`
-        
+
         """
         log10_gamma = np.log10(gamma)
         df_log = self.log10_f.derivative()

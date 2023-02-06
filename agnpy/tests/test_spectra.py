@@ -625,10 +625,10 @@ class TestExpCutoffBrokenPowerLaw:
         assert u.isclose(u_p_tot, u_tot, atol=0 * u.Unit("erg cm-3"), rtol=1e-2)
 
         # initialisation from the density at gamma=1
-        n_1 = 1e-13 * u.Unit("cm-3")
+        n_gamma_1 = 1e-13 * u.Unit("cm-3")
 
         ebpwl_e = ExpCutoffBrokenPowerLaw.from_density_at_gamma_1(
-            n_1=n_1,
+            n_gamma_1=n_gamma_1,
             mass=m_e,
             p1=p1,
             p2=p2,
@@ -640,7 +640,7 @@ class TestExpCutoffBrokenPowerLaw:
         assert ebpwl_e.particle == "electrons"
 
         ebpwl_p = ExpCutoffBrokenPowerLaw.from_density_at_gamma_1(
-            n_1=n_1,
+            n_gamma_1=n_gamma_1,
             mass=m_p,
             p1=p1,
             p2=p2,
@@ -652,8 +652,8 @@ class TestExpCutoffBrokenPowerLaw:
         assert ebpwl_p.particle == "protons"
 
         # check that the value at gamma=1 is the value we set initially
-        assert u.isclose(n_1, ebpwl_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
-        assert u.isclose(n_1, ebpwl_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+        assert u.isclose(n_gamma_1, ebpwl_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
+        assert u.isclose(n_gamma_1, ebpwl_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
 
 class TestInterpolatedDistribution:
