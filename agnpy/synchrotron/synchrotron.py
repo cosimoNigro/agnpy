@@ -1,7 +1,7 @@
 # module containing the synchrotron radiative process
 import numpy as np
 import astropy.units as u
-from astropy.constants import e, h, c, m_e, m_p, sigma_T
+from astropy.constants import e, h, c, m_e, sigma_T
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e
 
@@ -52,7 +52,7 @@ def epsilon_B(B):
 
 
 def single_particle_synch_power(B_cgs, epsilon, gamma, mass=m_e):
-    """angle-averaged synchrotron power for a single electron,
+    """angle-averaged synchrotron power for a single particle of mass m_e,
     to be folded with the electron distribution
     """
     x = calc_x(B_cgs, epsilon, gamma, mass)

@@ -1,10 +1,9 @@
 # module containing the synchrotron radiative process
 import numpy as np
 import astropy.units as u
-from astropy.constants import e, h, c, m_e, m_p, sigma_T, G
+from astropy.constants import e, c, m_p
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_p
-from .synchrotron import Synchrotron
 from .synchrotron import single_particle_synch_power, tau_to_attenuation
 
 __all__ = ["ProtonSynchrotron"]
@@ -18,7 +17,7 @@ class ProtonSynchrotron:
     Parameters
     ----------
     blob : :class:`~agnpy.emission_region.Blob`
-        emitting region and electron distribution
+        emitting region and proton distribution
     ssa : bool
         whether or not to consider synchrotron self absorption (SSA).
         The absorption factor will be taken into account in
@@ -47,7 +46,7 @@ class ProtonSynchrotron:
         integrator=np.trapz,
         gamma=gamma_e_to_integrate,
     ):
-        """Computes the syncrotron self-absorption opacity for a general set
+        """Computes the synchrotron self-absorption opacity for a general set
         of model parameters, see :func:`~agnpy:sycnhrotron.Synchrotron.evaluate_sed_flux`
         for parameters defintion. Eq. before 7.122 in [DermerMenon2009]_."""
         # conversions
