@@ -60,7 +60,7 @@ class TestProtonSynchrotron:
                 n_p=n_p
         )
 
-        psynch = ProtonSynchrotron(blob, ssa = True)
+        psynch = ProtonSynchrotron(blob)#, ssa = True)
         sed_agnpy = psynch.sed_flux(nu_ref)
 
         # sed comparison plot

@@ -28,9 +28,10 @@ class ProtonSynchrotron:
         function to be used for integration (default = `np.trapz`)
 	"""
 
-    def __init__(self, blob, ssa=False, integrator=np.trapz):
+    #def __init__(self, blob, ssa=False, integrator=np.trapz):
+    def __init__(self, blob, integrator=np.trapz):
         self.blob = blob
-        self.ssa = ssa
+        #self.ssa = ssa
         self.integrator = integrator
 
     # @staticmethod
