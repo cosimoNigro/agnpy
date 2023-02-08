@@ -78,7 +78,7 @@ class ProtonSynchrotron:
         gamma=gamma_e_to_integrate,
     ):
         r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) due to synchrotron radiation,
-        for a general set of model parameters. As for electrons, we implement Eq. 21 in 
+        for a general set of model parameters. As for electrons, we implement Eq. 21 in
         [Finke2008]_ with just a change in the mass value (we are using the proton mass now).
         For a reference on proton synchrotron and other hadronic processes see [Cerruti2015]_.
 
@@ -102,13 +102,13 @@ class ProtonSynchrotron:
         n_p : :class:`~agnpy.spectra.ProtonDistribution`
             proton energy distribution
         \*args
-            parameters of the electron energy distribution (k_e, p, ...)
+            parameters of the proton energy distribution (k_e, p, ...)
         # ssa : bool
         #     whether to consider or not the self-absorption, default false
         integrator : func
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
-            array of Lorentz factor over which to integrate the electron
+            array of Lorentz factor over which to integrate the proton
             distribution
 
         Returns
@@ -123,7 +123,7 @@ class ProtonSynchrotron:
         _gamma, _epsilon = axes_reshaper(gamma, epsilon)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
         N_p = V_b * n_p.evaluate(_gamma, *args)
-        # fold the electron distribution with the synchrotron power
+        # fold the proton distribution with the synchrotron power
         integrand = N_p * single_particle_synch_power(B_cgs, _epsilon, _gamma, mass=m_p)
         emissivity = integrator(integrand, gamma, axis=0)
         prefactor = np.power(delta_D, 4) / (4 * np.pi * np.power(d_L, 2))
