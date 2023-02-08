@@ -5,7 +5,6 @@ from matplotlib import pyplot as plt
 
 plt.style.use('one_distribution')
 
-
 k = 1e-13 * u.Unit("cm-3")
 p1 = 2.1
 p2 = 4.1
@@ -21,7 +20,7 @@ n_exp = ExpCutoffBrokenPowerLaw(
 gamma = np.logspace(np.log10(gamma_min),np.log10(gamma_max),100) #just for exp
 n_ex = n_exp(gamma)
 
-plt.loglog(gamma,n_ex, color = 'black')
+plt.loglog(gamma,n_ex, color = 'orange')
 plt.xlabel('γ')
 plt.ylabel('$ n $ [{0}]'.format(n_ex.unit.to_string('latex_inline')) )
 plt.legend(loc = 'lower left')

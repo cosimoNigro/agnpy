@@ -54,7 +54,7 @@ blob = Blob(R_b=R,
         n_p=n_p
 )
 
-psynch = ProtonSynchrotron(blob, ssa = True)
+psynch = ProtonSynchrotron(blob, ssa = False)
 
 # compute the SED over an array of frequencies
 nu = np.logspace(9, 29, 100) * u.Hz

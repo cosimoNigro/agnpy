@@ -29,7 +29,9 @@ def epsilon_equivalency(m = m_e):
 
 def nu_to_epsilon_prime(nu, z=0, delta_D=1, m = m_e):
     """convert the frequency to a dimensionless energy in another reference
-    frame with redshift z and moving with doppler factor delta_D"""
+    frame with redshift z and moving with doppler factor delta_D,
+    making use of eq.2.25 in [DermerMenon2009]
+    """
     epsilon_eq = epsilon_equivalency(m)
     epsilon = nu.to("", equivalencies=epsilon_eq)
     return (1 + z) * epsilon / delta_D

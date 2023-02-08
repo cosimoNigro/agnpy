@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from scipy.misc import derivative
 from scipy.interpolate import CubicSpline
 
+plt.style.use('interp')
 
 '''1. Initializing the four distributions'''
 
@@ -54,6 +55,8 @@ pwl_inter = InterpolatedDistribution(
 )
 n_pwl = pwl_inter(g1)
 
+SSA_inter_pwl = pwl_inter.SSA_integrand(gamma1).value
+SSA_pwl = pwl_test.SSA_integrand(gamma1).value
 
 # BrokenPowerLaw
 bpwl_data = bpwl_test(gamma1).value
@@ -62,6 +65,8 @@ bpwl_inter = InterpolatedDistribution(
 )
 n_bpwl = bpwl_inter(g1)
 
+SSA_inter_bpwl = bpwl_inter.SSA_integrand(gamma1).value
+SSA_bpwl = bpwl_test.SSA_integrand(gamma1).value
 
 #LogParabola
 lp_data = lp_test(gamma1).value
@@ -70,6 +75,8 @@ lp_inter = InterpolatedDistribution(
 )
 n_lp = lp_inter(g1)
 
+SSA_inter_lp = lp_inter.SSA_integrand(gamma1).value
+SSA_lp = lp_test.SSA_integrand(gamma1).value
 
 #ExpCutoffPowerLaw
 epwl_data = epwl_test(gamma2).value
@@ -78,30 +85,13 @@ epwl_inter = InterpolatedDistribution(
 )
 n_epwl = epwl_inter(g2)
 
-""" SSA Data """
+SSA_inter_epwl = epwl_inter.SSA_integrand(g2).value
+SSA_epwl = epwl_test.SSA_integrand(gamma2).value
 
-
-# Power Law
-SSA_inter = pwl_inter.SSA_integrand(g1).value
-SSA_pwl = pwl_test.SSA_integrand(g1).value
-
-# Broken Power Law
-SSA_inter = bpwl_inter.SSA_integrand(g1).value
-SSA_bpwl = bpwl_test.SSA_integrand(g1).value
-
-# Log Parabola
-SSA_inter = lp_inter.SSA_integrand(g1).value
-SSA_lp = lp_test.SSA_integrand(g1).value
-
-# Exp cut off
-SSA_inter = epwl_inter.SSA_integrand(g2).value
-SSA_epwl = epwl_test.SSA_integrand(g2).value
 
 
 """ Diagrams """
 
-#Style
-plt.style.use('interp')
 
 # Interpolation function vs Original
 
@@ -138,7 +128,7 @@ ax[1][0].legend(loc='lower left')
 # Exp cut off power law
 
 ax[1][1].loglog(g2, n_epwl, label = 'IDF', c = 'orange')
-ax[1][1].loglog(gamma2, epwl_data, '.', label='Exp Cut-off Power Law Data' , c = 'black', markersize=8)
+ax[1][1].loglog(gamma2, epwl_data, '.', label='Exp Cut-off PL Data' , c = 'black', markersize=8)
 ax[1][1].set_xlabel('γ')
 ax[1][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')))
 #plt.ylim(1e-12, 1e-7)
@@ -148,11 +138,12 @@ plt.show()
 
 
 # SSA
+
 fig,ax=plt.subplots(2,2)
 # Power Law
 
-ax[0][0].loglog(g1, abs(SSA_inter), label = 'IDF', c = 'orange' ,linewidth=3)
-ax[0][0].loglog(gamma1, abs(SSA_pwl), '--', label='Power Law function' , c = 'black')
+ax[0][0].loglog(gamma1, abs(SSA_inter_pwl), label = 'SSA int - IDF', c = 'orange')
+ax[0][0].loglog(gamma1, abs(SSA_pwl), '.', label='SSA int - Power Law function' , c = 'black', markersize=8)
 ax[0][0].set_xlabel('γ' )
 ax[0][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')) )
 ax[0][0].legend(loc='lower left')
@@ -162,8 +153,8 @@ ax[0][0].legend(loc='lower left')
 # Broken Power Law
 
 
-ax[0][1].loglog(g1, abs(SSA_inter), label = 'IDF', c = 'orange',linewidth=3)
-ax[0][1].loglog(g1, abs(SSA_bpwl), '--', label='Broken Power Law function' , c = 'black')
+ax[0][1].loglog(gamma1, abs(SSA_inter_bpwl), label = 'SSA int - IDF', c = 'orange')
+ax[0][1].loglog(gamma1, abs(SSA_bpwl), '.', label='SSA int - Broken Power Law function' , c = 'black', markersize=8)
 ax[0][1].set_xlabel(' γ ' )
 ax[0][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')) )
 ax[0][1].legend(loc='lower left')
@@ -174,8 +165,8 @@ ax[0][1].legend(loc='lower left')
 # Log Parabola
 
 
-ax[1][0].loglog(g1, abs(SSA_inter), label = 'IDF', c = 'orange',linewidth=3)
-ax[1][0].loglog(g1, abs(SSA_lp), '--', label='Log Parabola function' , c = 'black')
+ax[1][0].loglog(gamma1, abs(SSA_inter_lp), label = 'SSA int - IDF', c = 'orange')
+ax[1][0].loglog(gamma1, abs(SSA_lp), '.', label='SSA int - Log Parabola data' , c = 'black', markersize=8)
 ax[1][0].set_xlabel('γ' )
 ax[1][0].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')) )
 ax[1][0].legend(loc='lower left')
@@ -184,12 +175,12 @@ ax[1][0].legend(loc='lower left')
 # Exp cut off
 
 
-ax[1][1].loglog(g2, abs(SSA_inter), label = 'IDF', c = 'orange',linewidth=3)
-ax[1][1].loglog(g2, abs(SSA_epwl), '--' , label='Exp Cut-off Power Law function' , c = 'black')
+ax[1][1].loglog(g2, abs(SSA_inter_epwl), label = 'SSA int - IDF', c = 'orange')
+ax[1][1].loglog(gamma2, abs(SSA_epwl), '.' , label='SSA int - Exp Cut-off Power Law data' , c = 'black', markersize=8)
 ax[1][1].set_xlabel('γ' )
 ax[1][1].set_ylabel('$ n $ [{0}]'.format(pwl_data.unit.to_string('latex_inline')) )
 ax[1][1].legend(loc='lower left')
-#plt.ylim(1e-12, 1e-7)
+#plt.ylim(1e-60, 1e-7)
 
 
 plt.tight_layout()

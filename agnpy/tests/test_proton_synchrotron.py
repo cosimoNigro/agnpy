@@ -77,6 +77,7 @@ class TestProtonSynchrotron:
             # y_range=[1e-16, 1e-8],
             comparison_range=nu_range.to_value("Hz"),
         )
+        
         # requires that the SED points deviate less than 25% from the figure
         assert check_deviation(nu_ref, sed_agnpy, sed_ref, 0.25, nu_range)
 
