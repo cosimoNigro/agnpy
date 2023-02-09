@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import timeit
 import re
-from agnpy.photomeson.photomeson2 import PhotoHadronicInteraction
+from agnpy.photomeson.kenurio import PhotoHadronicInteraction
 from agnpy.spectra import ExpCutoffPowerLaw as ECPL
 from agnpy.emission_regions import Blob
 
@@ -49,13 +49,12 @@ blob = Blob(R_b=R,
 )
 
 nu = np.logspace(26,43,15)*u.Hz
-gamma = np.logspace(1,20,15)
-
+gamma = np.logspace(3,22,15)
 
 proton_gamma = PhotoHadronicInteraction(['photon','electron'], blob, BlackBody)
 
-# sed = proton_gamma.sed_flux(nu)
-# print ('sed2: .....')
+#sed = proton_gamma.sed_flux(nu)
+print ('sed2: .....')
 sed2= proton_gamma.sed_flux_particle(gamma, 'electron')
 
 #plt.loglog((nu), (sed * nu), lw=2.2, ls='-', color='orange',label = 'agnpy')

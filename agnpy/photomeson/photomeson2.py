@@ -167,74 +167,66 @@ def phi_gamma(eta, x, particle): # CHANGE: you put out power (psi) since you wan
         return 0
 
 
-def H_integrand(gamma, eta, gamma_limit, particle_distribution, soft_photon_dist, particle, *args):
-    #print (soft_photon_dist((eta /  (4*gamma))))
+
+def H_integrand(gamma, eta, gamma_limit, particle_distribution, soft_photon_dist, particle):
+
     return (1 / gamma ** 2  *
-        particle_distribution(gamma, *args).value *
+        particle_distribution(gamma).value *
         soft_photon_dist((eta /  (4*gamma))).value *
         phi_gamma(eta, gamma_limit/gamma , particle)
     )
 
 
-def particle_name_check(particle):
-    for i in particle:
-        if i not in ('photon','positron','antinu_muon','nu_electron','nu_muon','electron','antinu_electron'):
-            raise ValueError(
-                f"Provide at least one of the following particle types: photon, positron, antinu_muon, nu_electron, nu_muon, electron or antinu_electron instead of {particle}"
-            )
-        else:
-            return 'ok'
-
 class PhotoHadronicInteraction:
 
     def __init__(self, particle, blob, soft_photon_distribution, integrator = np.trapz):
 
-        if particle_name_check(particle) == 'ok':
-            self.particle = particle
         self.blob = blob
         self.soft_photon_distribution = soft_photon_distribution
         self.integrator = integrator
+
+    @staticmethod
+    def dNdE(gamma, particle, soft_photon_distribution, n_p):
+
+        if particle in ('electron','positron'):
+            gamma_limit = gamma * (mec2/mpc2)
+        else:
+            gamma_limit = gamma
+
+        gamma_range = [gamma_limit,1e13]
+
+        if particle in ('electron','nu_muon'):
+            eta_range = [0.945, 31.3]
+        else:
+            eta_range = [0.3443, 31.3]
+
+
+        dNdE = (1 / 4) * (mpc2.value) *  nquad(H_integrand,
+                                [gamma_range, eta_range],
+                                args=[gamma_limit,
+                                n_p,
+                                soft_photon_distribution,
+                                particle]
+                                )[0]
+
+        return dNdE
 
     @staticmethod
     def spectrum(
         particle,
         gammas,
         soft_photon_distribution,
-        z,
-        d_L,
-        delta_D,
         n_p,
-        *args
     ):
+        outspecene = gammas
+        spectrum_array = np.zeros(len(outspecene))
 
-        spectrum_array = np.zeros(len(gammas))
+        for i, g in enumerate(outspecene):
 
-        for i, g in enumerate(gammas):
-
-            if particle in ('electron','positron'):
-                gamma_limit = g * (mec2/mpc2)
-            else:
-                gamma_limit = g
-
-            gamma_range = [gamma_limit, n_p.gamma_max]
-
-            if particle in ('electron','nu_muon'):
-                eta_range = [0.945, 31.3]
-            else:
-                eta_range = [0.3443, 31.3]
-
-            dNdE = (1 / 4) * (mpc2.value) *  nquad(H_integrand,
-                                        [gamma_range, eta_range],
-                                        args=[gamma_limit,
-                                        n_p.evaluate,
-                                        soft_photon_distribution,
-                                        particle,
-                                        *args]
-                                        )[0]
-            spectrum_array[i] = dNdE
-
+            spectrum_array[i] = PhotoHadronicInteraction.dNdE(
+                g, particle, soft_photon_distribution, n_p)
             print("Executing {} out of {} steps...\n dNdE={}"
-                        .format(i + 1, len(gammas), spectrum_array[i]))
+                        .format(i + 1, len(outspecene), spectrum_array[i]))
 
         return (spectrum_array * u.Unit('eV-1 cm-3 s-1')).to('erg-1 cm-3 s-1')
 
@@ -249,19 +241,23 @@ class PhotoHadronicInteraction:
         B,
         R_b,
         n_p,
-        *args,
         integrator=np.trapz,
         gamma=gamma_p_to_integrate,
     ):
         #input_array here is either the frequencies in the case of photons or gammas in the case of the other particles
 
+        vol = ((4. / 3) * np.pi * R_b ** 3)
+        area = (4 * np.pi * d_L ** 2)
+
         epsilon = nu_to_epsilon_prime(nu, z, delta_D, m = m_p)
 
-        sed = (
+        sed_source_frame = (
                 PhotoHadronicInteraction.spectrum(
-                'photon', epsilon, soft_photon_distribution, z, d_L, delta_D, n_p, *args
-                ) * (epsilon * mpc2.to('erg')) ** 2
+                'photon', epsilon, soft_photon_distribution, n_p
+                ) * (vol / area) * (epsilon * mpc2.to('erg')) ** 2
         ).to("erg cm-2 s-1")
+
+        sed = sed_source_frame * np.power(delta_D, 4)
 
         return sed
 
@@ -276,7 +272,6 @@ class PhotoHadronicInteraction:
         B,
         R_b,
         n_p,
-        *args,
         integrator=np.trapz,
         gamma=gamma_p_to_integrate,
     ):
@@ -285,11 +280,10 @@ class PhotoHadronicInteraction:
         area = (4 * np.pi * d_L ** 2)
 
         gamma_prime =  gammas / delta_D
-        print (gamma_prime)
 
         sed_source_frame = (
                 PhotoHadronicInteraction.spectrum(
-                particle, gamma_prime, soft_photon_distribution, z, d_L, delta_D, n_p, *args
+                particle, gamma_prime, soft_photon_distribution, n_p
                 ) * (vol / area) * (gamma_prime * mec2.to('erg')) ** 2
         ).to("erg cm-2 s-1")
 
@@ -309,7 +303,6 @@ class PhotoHadronicInteraction:
             self.blob.B,
             self.blob.R_b,
             self.blob.n_p,
-            *self.blob.n_p.parameters,
             integrator=self.integrator,
             gamma=self.blob.gamma_p,
         )
@@ -327,7 +320,6 @@ class PhotoHadronicInteraction:
             self.blob.B,
             self.blob.R_b,
             self.blob.n_p,
-            *self.blob.n_p.parameters,
             integrator=self.integrator,
             gamma=self.blob.gamma_p,
         )
