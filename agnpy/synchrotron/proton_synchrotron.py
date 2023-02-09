@@ -61,6 +61,7 @@ class ProtonSynchrotron:
     #         -1 / (8 * np.pi * m_p * np.power(epsilon, 2)) * np.power(lambda_c_p / c, 3)
     #     )
     #     k_epsilon = (prefactor_k_epsilon * integral).to("cm-1")
+    
     #     return (2 * k_epsilon * R_b).to_value("")
 
     @staticmethod
