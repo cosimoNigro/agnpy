@@ -9,6 +9,7 @@ from agnpy.emission_regions import Blob
 from agnpy.spectra import PowerLaw, LogParabola, BrokenPowerLaw
 from agnpy.synchrotron import Synchrotron, nu_synch_peak
 from agnpy.utils.math import trapz_loglog
+
 from .utils import (
     make_comparison_plot,
     extract_columns_sample_file,
