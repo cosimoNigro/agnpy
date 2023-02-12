@@ -62,7 +62,7 @@
     ],
     "language": "eng",
     "license": "BSD-3-Clause",
-    "publication_date": "2022-11-17",
+    "publication_date": "2023-02-12",
     "related_identifiers": [
         {
             "identifier": "https://github.com/cosimoNigro/agnpy",
@@ -79,5 +79,5 @@
     ],
     "title": "agnpy",
     "upload_type": "software",
-    "version": "0.3.0"
+    "version": "0.4.0"
 }
