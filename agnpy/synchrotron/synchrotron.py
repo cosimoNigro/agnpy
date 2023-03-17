@@ -3,7 +3,7 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import e, h, c, m_e, sigma_T
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
-from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c
+from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e
 
 
 __all__ = ["R", "nu_synch_peak", "Synchrotron"]
@@ -23,15 +23,15 @@ def R(x):
     return term_1_num / term_1_denom * term_2_num / term_2_denom * np.exp(-x)
 
 
-def nu_synch_peak(B, gamma):
+def nu_synch_peak(B, gamma, mass=m_e):
     """observed peak frequency for monoenergetic electrons
     Eq. 7.19 in [DermerMenon2009]_"""
     B = B_to_cgs(B)
-    nu_peak = (e * B / (2 * np.pi * m_e * c)) * np.power(gamma, 2)
+    nu_peak = (e * B / (2 * np.pi * mass * c)) * np.power(gamma, 2)
     return nu_peak.to("Hz")
 
 
-def calc_x(B_cgs, epsilon, gamma):
+def calc_x(B_cgs, epsilon, gamma, mass=m_e):
     """ratio of the frequency to the critical synchrotron frequency from
     Eq. 7.34 in [DermerMenon2009]_, argument of R(x),
     note B has to be in cgs Gauss units"""
@@ -39,7 +39,7 @@ def calc_x(B_cgs, epsilon, gamma):
         4
         * np.pi
         * epsilon
-        * np.power(m_e, 2)
+        * np.power(mass, 2)
         * np.power(c, 3)
         / (3 * e * B_cgs * h * np.power(gamma, 2))
     )
@@ -51,11 +51,11 @@ def epsilon_B(B):
     return (B / B_cr).to_value("")
 
 
-def single_electron_synch_power(B_cgs, epsilon, gamma):
-    """angle-averaged synchrotron power for a single electron,
+def single_particle_synch_power(B_cgs, epsilon, gamma, mass=m_e):
+    """angle-averaged synchrotron power for a single particle of mass m_e,
     to be folded with the electron distribution
     """
-    x = calc_x(B_cgs, epsilon, gamma)
+    x = calc_x(B_cgs, epsilon, gamma, mass)
     prefactor = np.sqrt(3) * np.power(e, 3) * B_cgs / h
     return prefactor * R(x)
 
@@ -106,15 +106,15 @@ class Synchrotron:
         of model parameters, see :func:`~agnpy:sycnhrotron.Synchrotron.evaluate_sed_flux`
         for parameters defintion. Eq. before 7.122 in [DermerMenon2009]_."""
         # conversions
-        epsilon = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon = nu_to_epsilon_prime(nu, z, delta_D, m = m_e)
         B_cgs = B_to_cgs(B)
         # multidimensional integration
         _gamma, _epsilon = axes_reshaper(gamma, epsilon)
         SSA_integrand = n_e.evaluate_SSA_integrand(_gamma, *args)
-        integrand = SSA_integrand * single_electron_synch_power(B_cgs, _epsilon, _gamma)
+        integrand = SSA_integrand * single_particle_synch_power(B_cgs, _epsilon, _gamma)
         integral = integrator(integrand, gamma, axis=0)
         prefactor_k_epsilon = (
-            -1 / (8 * np.pi * m_e * np.power(epsilon, 2)) * np.power(lambda_c / c, 3)
+            -1 / (8 * np.pi * m_e * np.power(epsilon, 2)) * np.power(lambda_c_e / c, 3)
         )
         k_epsilon = (prefactor_k_epsilon * integral).to("cm-1")
         return (2 * k_epsilon * R_b).to_value("")
@@ -171,7 +171,7 @@ class Synchrotron:
             array of the SED values corresponding to each frequency
         """
         # conversions
-        epsilon = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon = nu_to_epsilon_prime(nu, z, delta_D, m = m_e)
         B_cgs = B_to_cgs(B)
         # reshape for multidimensional integration
         _gamma, _epsilon = axes_reshaper(gamma, epsilon)
@@ -205,7 +205,7 @@ class Synchrotron:
     def evaluate_sed_flux_delta_approx(nu, z, d_L, delta_D, B, R_b, n_e, *args):
         """Synchrotron flux SED using the delta approximation for the
         synchrotron radiation Eq. 7.70 [DermerMenon2009]_."""
-        epsilon_prime = nu_to_epsilon_prime(nu, z, delta_D)
+        epsilon_prime = nu_to_epsilon_prime(nu, z, delta_D, m = m_e)
         gamma_s = np.sqrt(epsilon_prime / epsilon_B(B))
         B_cgs = B_to_cgs(B)
         U_B = np.power(B_cgs, 2) / (8 * np.pi)

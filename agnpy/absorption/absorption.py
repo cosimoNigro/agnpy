@@ -782,7 +782,7 @@ class EBL:
         f = fits.open(self.model_file)
         self.energy_ref = (
             np.sqrt(f["ENERGIES"].data["ENERG_LO"] * f["ENERGIES"].data["ENERG_HI"])
-            * u.eV
+            * u.keV
         )
         # Franceschini file has two columns repeated, eliminate them
         self.z_ref = np.unique(f["SPECTRA"].data["PARAMVAL"])
