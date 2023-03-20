@@ -121,7 +121,7 @@ class SynchrotronSelfCompton:
             _u_synch / np.power(_epsilon, 2) * N_e / np.power(_gamma, 2) * kernel
         )
         integral_gamma = integrator(integrand, gamma, axis=0)
-        integral_epsilon = integrator(integral_gamma, epsilon, axis=0)
+        integral_epsilon = integrator(integral_gamma, epsilon, axis=0).reshape(epsilon_s.shape)
         emissivity = 3 / 4 * c * sigma_T * np.power(epsilon_s, 2) * integral_epsilon
         prefactor = np.power(delta_D, 4) / (4 * np.pi * np.power(d_L, 2))
         return (prefactor * emissivity).to("erg cm-2 s-1")
