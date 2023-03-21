@@ -16,14 +16,12 @@ class TestBlob:
         attributes are modified."""
         blob = Blob()
         blob.R_b = 1e17 * u.cm
-        blob.z = 2.1
         blob.delta_D = 8
         blob.Gamma = 5
         blob.B = 2 * u.G
         assert u.isclose(
             blob.V_b, 4.1887902e51 * u.Unit("cm3"), atol=0 * u.Unit("cm3"), rtol=1e-3
         )
-        assert u.isclose(blob.d_L, 5.21497473e28 * u.cm, atol=0 * u.cm, rtol=1e-3)
         assert np.isclose(blob.Beta, 0.9798, atol=0, rtol=1e-3)
         assert u.isclose(blob.theta_s, 5.67129265 * u.deg, atol=0 * u.deg, rtol=1e-3)
         assert u.isclose(
@@ -32,9 +30,19 @@ class TestBlob:
             atol=0 * u.Unit(Gauss_cgs_unit),
             rtol=1e-3,
         )
+
         # test the manual setting of delta_D
         blob.set_delta_D(Gamma=10, theta_s=20 * u.deg)
         assert np.allclose(blob.delta_D, 1.53804, atol=0, rtol=1e-3)
+
+        # test on z and d_L
+        # - automatically set d_L
+        blob = Blob(z=2.1)
+        assert u.isclose(blob.d_L, 5.21497473e28 * u.cm, atol=0 * u.cm, rtol=1e-3)
+        # - set a different d_L, not computed from z
+        d_L = 1.5e27 * u.cm
+        blob = Blob(z=0.1, d_L=d_L)
+        assert u.isclose(blob.d_L, d_L, atol=0 * u.cm, rtol=1e-5)
 
     def test_particles_spectra(self):
         """Test for the blob properties related to the particle spectra."""
