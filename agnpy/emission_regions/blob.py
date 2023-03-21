@@ -189,7 +189,7 @@ class Blob:
         """Setter of the proton distribution."""
         self._n_p = spectrum
         # set also the array of Lorentz factor of the protons
-        self.set_gamma_p(200, self._n_p.gamma_min,  self._n_p.gamma_max)
+        self.set_gamma_p(200, self._n_p.gamma_min, self._n_p.gamma_max)
 
     def __str__(self):
         """Printable summary of the blob."""
