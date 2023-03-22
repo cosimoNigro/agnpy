@@ -4,7 +4,7 @@ import numpy as np
 import astropy.units as u
 from astropy.io import fits
 from astropy.constants import c, G, m_e, sigma_T
-from scipy.interpolate import interp2d
+from scipy.interpolate import RegularGridInterpolator
 from ..utils.math import (
     axes_reshaper,
     log,
@@ -122,7 +122,7 @@ class Absorption:
         epsilon_1 = nu_to_epsilon_prime(nu, z)
         s = epsilon_0 * epsilon_1 * (1 - mu_s) / 2
         integral = (1 - mu_s) * sigma(s) / r
-        prefactor = L_0 / (4 * np.pi * epsilon_0 * m_e * c ** 3)
+        prefactor = L_0 / (4 * np.pi * epsilon_0 * m_e * c**3)
         return (prefactor * integral).to_value("")
 
     def tau_ps_behind_blob(self, nu):
@@ -174,10 +174,10 @@ class Absorption:
         _cos_psi = cos_psi(mu_s, _mu, phi)
         s = _epsilon_1 * epsilon_0 * (1 - _cos_psi) / 2
 
-        integrand = (1 - _cos_psi) / x ** 2 * sigma(s)
+        integrand = (1 - _cos_psi) / x**2 * sigma(s)
         # integrate
         integral = np.trapz(integrand, uu, axis=0)
-        prefactor = L_0 / (4 * np.pi * epsilon_0 * m_e * c ** 3)
+        prefactor = L_0 / (4 * np.pi * epsilon_0 * m_e * c**3)
         return (prefactor * integral).to_value("")
 
     def tau_ps_behind_blob_mu_s(self, nu):
@@ -239,7 +239,7 @@ class Absorption:
             array of the tau values corresponding to each frequency
         """
         # conversions
-        R_g = (G * M_BH / c ** 2).to("cm")
+        R_g = (G * M_BH / c**2).to("cm")
         r_tilde = to_R_g_units(r, M_BH)
         R_in_tilde = to_R_g_units(R_in, M_BH)
         R_out_tilde = to_R_g_units(R_out, M_BH)
@@ -252,14 +252,14 @@ class Absorption:
         )
         _epsilon = SSDisk.evaluate_epsilon(L_disk, M_BH, eta, _R_tilde)
         _phi_disk = 1 - (R_in_tilde / _R_tilde) ** (1 / 2)
-        _mu = (1 + (_R_tilde ** 2 / _l_tilde ** 2)) ** (-1 / 2)
+        _mu = (1 + (_R_tilde**2 / _l_tilde**2)) ** (-1 / 2)
         _cos_psi = cos_psi(mu_s, _mu, _phi)
         s = _epsilon * _epsilon_1 * (1 - _cos_psi) / 2
         integrand = (
             1
-            / _l_tilde ** 2
-            / _R_tilde ** 2
-            / (1 + (_R_tilde ** 2 / _l_tilde ** 2)) ** (3 / 2)
+            / _l_tilde**2
+            / _R_tilde**2
+            / (1 + (_R_tilde**2 / _l_tilde**2)) ** (3 / 2)
             * _phi_disk
             / _epsilon
             * sigma(s)
@@ -268,7 +268,7 @@ class Absorption:
         integral_R_tilde = np.trapz(integrand, R_tilde, axis=0)
         integral_phi = np.trapz(integral_R_tilde, phi, axis=0)
         integral = np.trapz(integral_phi, l_tilde, axis=0)
-        prefactor = 3 * L_disk / ((4 * np.pi) ** 2 * eta * m_e * c ** 3 * R_g)
+        prefactor = 3 * L_disk / ((4 * np.pi) ** 2 * eta * m_e * c**3 * R_g)
         return (prefactor * integral).to_value("")
 
     def tau_ss_disk(self, nu):
@@ -350,13 +350,13 @@ class Absorption:
         _mu_star = mu_star_shell(_mu, R_line, _l)
         _cos_psi = cos_psi(mu_s, _mu_star, _phi)
         s = _epsilon_1 * epsilon_line * (1 - _cos_psi) / 2
-        integrand = (1 - _cos_psi) / x ** 2 * sigma(s)
+        integrand = (1 - _cos_psi) / x**2 * sigma(s)
         # integrate
         integral_mu = np.trapz(integrand, mu, axis=0)
         integral_phi = np.trapz(integral_mu, phi, axis=0)
         integral = np.trapz(integral_phi, l, axis=0)
         prefactor = (L_disk * xi_line) / (
-            (4 * np.pi) ** 2 * epsilon_line * m_e * c ** 3
+            (4 * np.pi) ** 2 * epsilon_line * m_e * c**3
         )
         return (prefactor * integral).to_value("")
 
@@ -413,7 +413,7 @@ class Absorption:
         uu = np.logspace(-5, 5, u_size) * r
 
         # check if for any uu value the position of the photon is too close to the BLR
-        x_cross = np.sqrt(r ** 2 + uu ** 2 + 2 * uu * r * mu_s)
+        x_cross = np.sqrt(r**2 + uu**2 + 2 * uu * r * mu_s)
         idx = np.isclose(x_cross, R_line, rtol=min_rel_distance)
         if idx.any():
             uu[idx] += min_rel_distance * R_line
@@ -433,13 +433,13 @@ class Absorption:
         # angle between the soft photon and gamma ray
         _cos_psi = cos_psi(mu_s, _mu_star, _phi)
         s = _epsilon_1 * epsilon_line * (1 - _cos_psi) / 2
-        integrand = (1 - _cos_psi) / x ** 2 * sigma(s)
+        integrand = (1 - _cos_psi) / x**2 * sigma(s)
         # integrate
         integral_mu = np.trapz(integrand, mu, axis=0)
         integral_phi = np.trapz(integral_mu, phi, axis=0)
         integral = np.trapz(integral_phi, uu, axis=0)
         prefactor = (L_disk * xi_line) / (
-            (4 * np.pi) ** 2 * epsilon_line * m_e * c ** 3
+            (4 * np.pi) ** 2 * epsilon_line * m_e * c**3
         )
         return (prefactor * integral).to_value("")
 
@@ -532,11 +532,11 @@ class Absorption:
         _mu = _l / x
         _cos_psi = cos_psi(mu_s, _mu, _phi)
         s = _epsilon_1 * epsilon_dt * (1 - _cos_psi) / 2
-        integrand = (1 - _cos_psi) / x ** 2 * sigma(s)
+        integrand = (1 - _cos_psi) / x**2 * sigma(s)
         # integrate
         integral_phi = np.trapz(integrand, phi, axis=0)
         integral = np.trapz(integral_phi, l, axis=0)
-        prefactor = (L_disk * xi_dt) / (8 * np.pi ** 2 * epsilon_dt * m_e * c ** 3)
+        prefactor = (L_disk * xi_dt) / (8 * np.pi**2 * epsilon_dt * m_e * c**3)
         return (prefactor * integral).to_value("")
 
     @staticmethod
@@ -597,11 +597,11 @@ class Absorption:
         _phi, _mu = phi_mu_re_ring(R_dt, r, _phi_re, _u, mu_s)
         _cos_psi = cos_psi(mu_s, _mu, _phi)
         s = _epsilon_1 * epsilon_dt * (1 - _cos_psi) / 2
-        integrand = (1 - _cos_psi) / x ** 2 * sigma(s)
+        integrand = (1 - _cos_psi) / x**2 * sigma(s)
         # integrate
         integral_phi = np.trapz(integrand, phi_re, axis=0)
         integral = np.trapz(integral_phi, uu, axis=0)
-        prefactor = (L_disk * xi_dt) / (8 * np.pi ** 2 * epsilon_dt * m_e * c ** 3)
+        prefactor = (L_disk * xi_dt) / (8 * np.pi**2 * epsilon_dt * m_e * c**3)
         return (prefactor * integral).to_value("")
 
     def tau_dt(self, nu):
@@ -685,9 +685,9 @@ class Absorption:
                 c
                 * np.power(blob.R_b, 2)
                 * np.power(blob.delta_D, 4)
-                * epsilon ** 2
+                * epsilon**2
                 * m_e
-                * c ** 2
+                * c**2
             )
         ).to("cm-3")
 
@@ -788,15 +788,21 @@ class EBL:
         self.z_ref = np.unique(f["SPECTRA"].data["PARAMVAL"])
         self.values_ref = np.unique(f["SPECTRA"].data["INTPSPEC"], axis=0)
 
-    def interpolate_absorption_table(self, kind="linear"):
+    def interpolate_absorption_table(self, method="linear"):
         """interpolate the reference values, choose the kind of interpolation"""
-        log10_energy_ref = np.log10(self.energy_ref.to_value("eV"))
-        self.interpolated_model = interp2d(
-            log10_energy_ref, self.z_ref, self.values_ref, kind=kind
+        log10_energy_ref = np.log10(self.energy_ref.to_value("keV"))
+        self.interpolated_model = RegularGridInterpolator(
+            (log10_energy_ref, self.z_ref),
+            self.values_ref.T,
+            method=method,
+            bounds_error=False,
+            fill_value=1,
         )
 
-    def absorption(self, z, nu):
+    def absorption(self, nu, z):
         "This function returns the attenuation of the emission by EBL"
-        energy = nu.to_value("eV", equivalencies=u.spectral())
+        energy = nu.to_value("keV", equivalencies=u.spectral())
         log10_energy = np.log10(energy)
-        return self.interpolated_model(log10_energy, z)
+        z = z * np.ones_like(log10_energy)
+        xx = np.column_stack((log10_energy, z))
+        return self.interpolated_model(xx)

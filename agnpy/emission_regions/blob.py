@@ -54,6 +54,7 @@ class Blob:
         self,
         R_b=1e16 * u.cm,
         z=0.069,
+        d_L=None,
         delta_D=10,
         Gamma=10,
         B=1 * u.G,
@@ -65,6 +66,8 @@ class Blob:
     ):
         self.R_b = R_b.to("cm")
         self.z = z
+        # if the luminosity distance is not specified, it will be computed from z
+        self.d_L = Distance(z=self.z).cgs if d_L is None else d_L
         self.delta_D = delta_D
         self.Gamma = Gamma
         self.B = B
@@ -88,11 +91,6 @@ class Blob:
         :math:`t_{\rm var} = \frac{(1 + z) R_{\rm b}}{c \delta_{\rm D}}`.
         """
         return (((1 + self.z) * self.R_b) / (c * self.delta_D)).to("d")
-
-    @property
-    def d_L(self):
-        """Luminosity distance."""
-        return Distance(z=self.z).cgs
 
     @property
     def Beta(self):
@@ -191,7 +189,7 @@ class Blob:
         """Setter of the proton distribution."""
         self._n_p = spectrum
         # set also the array of Lorentz factor of the protons
-        self.set_gamma_p(200, self._n_p.gamma_min,  self._n_p.gamma_max)
+        self.set_gamma_p(200, self._n_p.gamma_min, self._n_p.gamma_max)
 
     def __str__(self):
         """Printable summary of the blob."""
