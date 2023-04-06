@@ -76,3 +76,9 @@ Bibliography
    Monthly Notices of the Royal Astronomical Society, Volume 507, Issue 4, pp. 5144-5160 (2021).
    <https://ui.adsabs.harvard.edu/abs/2021MNRAS.507.5144S/abstract>`_
 
+..  [Cerruti2015]
+   `Cerruti, M. et al.
+   "A hadronic origin for ultra-high-frequency-peaked BL Lac objects".
+   Monthly Notices of the Royal Astronomical Society, Volume 448, Issue 1, pp. 910-927 (2015).
+   <https://ui.adsabs.harvard.edu/abs/2015MNRAS.448..910C/abstract>`_
+

@@ -5,8 +5,9 @@ Synchrotron Radiation
 =====================
 
 The synchrotron radiation is computed following the approach of [DermerMenon2009]_ and [Finke2008]_.
+To compute the single-particle synchrotron power, the appoximation of [Aharonian2010]_ (Eq. D7) is used.
 
-It is here illustrated how to produce a synchrotron spectral energy distribution (SED) staring from a :class:`~agnpy.emission_regions.Blob`. 
+It is here illustrated how to produce a synchrotron spectral energy distribution (SED) staring from a :class:`~agnpy.emission_regions.Blob`.
 
 .. plot:: snippets/synchro_snippet.py
    :include-source:

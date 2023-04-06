@@ -5,22 +5,21 @@ from agnpy.absorption import EBL
 import matplotlib.pyplot as plt
 from agnpy.utils.plot import load_mpl_rc
 
+load_mpl_rc()
 
 # redshift and array of frequencies over which to evaluate the absorption
-z = 1
-nu = np.logspace(15, 25) * u.Hz
-
-
-load_mpl_rc()
+z = 1.0
+nu = np.logspace(22, 28, 200) * u.Hz
+E = nu.to("TeV", equivalencies=u.spectral())
 
 for model in ["franceschini", "dominguez", "finke", "saldana-lopez"]:
     ebl = EBL(model)
-    absorption = ebl.absorption(z, nu)
-    plt.loglog(nu, absorption, label=model)
+    absorption = ebl.absorption(nu, z)
+    plt.loglog(E, absorption, label=model)
 
-plt.xlabel(r"$\nu\,/\,{Hz}$")
+plt.xlabel(r"$E\,/\,{\rm TeV}$")
 plt.title("EBL absorption at z=1")
 plt.ylabel("absorption")
+plt.ylim([1e-2, 2])
 plt.legend()
-plt.ylim([1e-5, 2])
 plt.show()

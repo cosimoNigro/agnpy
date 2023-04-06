@@ -235,8 +235,8 @@ def sigma_pp(b):
         sigma_T
         * 3.0
         / 16.0
-        * (1 - b ** 2)
-        * (2 * b * (b ** 2 - 2) + (3 - b ** 4) * np.log((1 + b) / (1 - b)))
+        * (1 - b**2)
+        * (2 * b * (b**2 - 2) + (3 - b**4) * np.log((1 + b) / (1 - b)))
     )
 
 
@@ -265,11 +265,11 @@ class TestAbsorptionMuS:
 
         eps = (2.7 * temp * k_B).to("eV")  # energy of soft photons
         # soft photon density
-        nph = (L_disk * xi_DT / (4 * np.pi * (r ** 2 + R_DT ** 2)) / c / eps).to("cm-3")
+        nph = (L_disk * xi_DT / (4 * np.pi * (r**2 + R_DT**2)) / c / eps).to("cm-3")
 
         E = nu_ref.to("eV", equivalencies=u.spectral())
         cospsi = 0  # assume perpendicular scattering
-        beta2 = 1 - 2 * mec2 ** 2 / (E * eps * (1 - cospsi))
+        beta2 = 1 - 2 * mec2**2 / (E * eps * (1 - cospsi))
         beta2[beta2 < 0] = 0  # below the threshold
         # for tau calculations we assume that gamma ray moves
         # roughtly the characteristic distance of ~R_DT
@@ -311,12 +311,12 @@ class TestAbsorptionMuS:
         _x = np.sqrt(r * r + _u * _u + 2 * mu_s * _u * r)
 
         # soft photon density
-        _nph = (L_disk * xi_DT / (4 * np.pi * _x ** 2) / c / eps).to("cm-3")
+        _nph = (L_disk * xi_DT / (4 * np.pi * _x**2) / c / eps).to("cm-3")
 
         _E = _nu_ref.to("eV", equivalencies=u.spectral())
-        _cospsi = (_u ** 2 + _x ** 2 - r ** 2) / (2 * _u * _x)
+        _cospsi = (_u**2 + _x**2 - r**2) / (2 * _u * _x)
 
-        _beta2 = 1 - 2 * mec2 ** 2 / (_E * eps * (1 - _cospsi))
+        _beta2 = 1 - 2 * mec2**2 / (_E * eps * (1 - _cospsi))
         _beta2[_beta2 < 0] = 0
 
         integrand = sigma_pp(np.sqrt(_beta2)) * _nph * (1 - _cospsi)
@@ -335,7 +335,7 @@ class TestAbsorptionMuS:
 
     @pytest.mark.parametrize("r_to_R", ["0.11", "10."])
     def test_abs_blr_mu_s_vs_on_axis(self, r_to_R):
-        """check if the codes computing absorption on BLR for mu_s = 1 and !=1 cases are consistent """
+        """check if the codes computing absorption on BLR for mu_s = 1 and !=1 cases are consistent"""
         # broad line region
         L_disk = 2e46 * u.Unit("erg s-1")
         xi_line = 0.024
@@ -406,7 +406,7 @@ class TestAbsorptionMuS:
         """
         # u = alpha * r
         alpha = 1.0e-5 * 1.0e10 ** (ipoint / (npoints - 1.0))
-        return 1 / np.sqrt(alpha ** 2 + 2 * alpha * mu_s + 1)
+        return 1 / np.sqrt(alpha**2 + 2 * alpha * mu_s + 1)
 
     @pytest.mark.parametrize("r_R_line", [1, find_r_for_x_cross(0.99, 60, 100)])
     def test_tau_blr_mus_Rline(self, r_R_line):
@@ -475,10 +475,10 @@ class TestAbsorptionMuS:
         tau = absorb.tau(nu_tau)
 
         # now simplified calculations using Eq. 37 of Finke 2008
-        mec2 = (m_e * c ** 2).to("eV")
+        mec2 = (m_e * c**2).to("eV")
         eps1 = e_tau / mec2
         eps1p = eps1 * (1 + z) / blob.delta_D
-        eps_bar = 2 * blob.delta_D ** 2 / (1 + z) ** 2 / eps1
+        eps_bar = 2 * blob.delta_D**2 / (1 + z) ** 2 / eps1
         nu_bar = (eps_bar * mec2).to("Hz", equivalencies=u.spectral())
         synch = Synchrotron(blob, ssa=True)
         synch_sed_ebar = synch.sed_flux(nu_bar)
@@ -488,7 +488,7 @@ class TestAbsorptionMuS:
             * sigma_T
             * Distance(z=z) ** 2
             * eps1p
-            / (2 * m_e * c ** 3 * blob.R_b * blob.delta_D ** 4)
+            / (2 * m_e * c**3 * blob.R_b * blob.delta_D**4)
         )
         tau_delta = tau_delta.to("")
 
@@ -544,7 +544,7 @@ class TestEBL:
         # define the ebl model, evaluate it at the reference energies
         ebl = EBL(model)
         nu_ref = ebl.energy_ref.to("Hz", equivalencies=u.spectral())
-        absorption = ebl.absorption(z, nu_ref)
+        absorption = ebl.absorption(nu_ref, z)
         # find in the reference values the spectra for this redshift
         z_idx = np.abs(z - ebl.z_ref).argmin()
         absorption_ref = ebl.values_ref[z_idx]

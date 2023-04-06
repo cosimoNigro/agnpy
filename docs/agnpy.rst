@@ -32,7 +32,7 @@ agnpy.synchrotron module
 ------------------------
 
 .. automodule:: agnpy.synchrotron
-   :members: Synchrotron
+   :members: Synchrotron, ProtonSynchrotron
    :undoc-members:
    :show-inheritance:
 
