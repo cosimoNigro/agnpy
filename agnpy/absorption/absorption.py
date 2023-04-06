@@ -456,7 +456,6 @@ class Absorption:
         epsilon_line,
         R_line,
         r,
-        l_size=50,
         mu=mu_to_integrate,
         phi=phi_to_integrate,
     ):
@@ -482,8 +481,6 @@ class Absorption:
             radius of the BLR spherical shell
         r : :class:`~astropy.units.Quantity`
             distance between the Broad Line Region and the blob
-        l_size : int
-            size of the array of distances from the BH to integrate over
         mu, phi : :class:`~numpy.ndarray`
             arrays of cosine of zenith and azimuth angles to integrate over
 
@@ -594,7 +591,6 @@ class Absorption:
                 self.target.epsilon_line,
                 self.target.R_line,
                 self.r,
-                l_size=self.l_size,
                 mu=self.mu,
                 phi=self.phi,
                             ))
