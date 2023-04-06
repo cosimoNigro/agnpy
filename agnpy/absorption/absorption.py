@@ -23,7 +23,7 @@ from ..utils.geometry import (
     x_re_shell_mu_s,
 )
 from ..utils.conversion import nu_to_epsilon_prime, to_R_g_units
-from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
+from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus, lines_dictionary
 from ..emission_regions import Blob
 from ..synchrotron import nu_synch_peak, Synchrotron
 
@@ -595,6 +595,33 @@ class Absorption:
                 phi=self.phi,
                             ))
         return tau_blr_list
+    # TO DO
+    def tau_blr_all_lines_cubepy(self, 
+                                nu, 
+                                eps_abs=1e-6, 
+                                 E, 
+                                 L_disk, 
+                                 R_line, 
+                                 r_blob_bh, 
+                                 z):
+          """"
+        Function to calculate absorption in BLR shells.
+        Radius and luminosity are normalized to Hbeta
+        Parameters
+        ----------
+        E: numpy array 
+                Energy array with unit
+        L_disk : astropy.units.Quantity
+                Luminosity of the disk whose radiation is being reprocessed by the BLR
+        R_line astropy.units.Quantity
+                radius of the BLR spherical shell
+        r_blob_bh : astropy.units.Quantity
+                distance between the Broad Line Region and the blob
+        z : float
+                redshift of the source
+        """
+        for line in list(lines_dictionary.keys()):
+            xi_line_this=lines_dictionary[line]['L_Hbeta_ratio']
 
     @staticmethod
     def evaluate_tau_dt(
