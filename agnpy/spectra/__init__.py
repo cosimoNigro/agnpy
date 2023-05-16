@@ -1,1 +1,2 @@
-from .spectra import *
+from .analytical import *
+from .physical import *
