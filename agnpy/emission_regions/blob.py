@@ -5,7 +5,7 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import Distance
 from astropy.constants import c, sigma_T, m_e
-from ..spectra import PowerLaw
+from ..spectra import PowerLaw, SteadyStateSynchrotronCooling
 from ..utils.conversion import mec2, mpc2, B_to_cgs
 
 
@@ -64,19 +64,31 @@ class Blob:
         gamma_e_size=200,
         gamma_p_size=200,
     ):
-        self.R_b = R_b.to("cm")
+        # if this is a physical solutions, then we want to inherit its B and R parameters
+        if isinstance(n_e, SteadyStateSynchrotronCooling):
+            self.R_b = n_e.R_b.to("cm")
+            self.B = n_e.B
+        else:
+            self.R_b = R_b.to("cm")
+            self.B = B
+
         self.z = z
         # if the luminosity distance is not specified, it will be computed from z
         self.d_L = Distance(z=self.z).cgs if d_L is None else d_L
         self.delta_D = delta_D
         self.Gamma = Gamma
-        self.B = B
         self._n_e = n_e
         self._n_p = n_p
         self.xi = xi
 
+        # set the parameters of the array of electrons Lorentz factors
+        # physical solutions don't have gamma_min and gamma_max
+        if isinstance(n_e, SteadyStateSynchrotronCooling):
+            self.set_gamma_e(gamma_e_size, 10, 1e6)
+        else:
+            self.set_gamma_e(gamma_e_size, self._n_e.gamma_min, self._n_e.gamma_max)
+
         # we might want to have different array of Lorentz factors for e and p
-        self.set_gamma_e(gamma_e_size, self._n_e.gamma_min, self._n_e.gamma_max)
         if self._n_p is not None:
             self.set_gamma_p(gamma_p_size, self._n_p.gamma_min, self._n_p.gamma_max)
 
