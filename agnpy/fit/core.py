@@ -2,6 +2,7 @@
 import numpy as np
 from sherpa.models import model
 from gammapy import modeling
+from ..spectra import InterpolatedDistribution
 
 
 class Parameter:
@@ -77,6 +78,10 @@ def get_spectral_parameters_from_n_e(n_e, backend, modelname=None):
     pars.pop("particle")
     pars.pop("mass")
     pars.pop("mc2")
+    if isinstance(n_e, InterpolatedDistribution):
+        pars.pop("gamma_input")
+        pars.pop("n_input")
+        pars.pop("log10_interp")
 
     for name, value in zip(pars.keys(), pars.values()):
         if name == "k":
@@ -97,6 +102,9 @@ def get_spectral_parameters_from_n_e(n_e, backend, modelname=None):
             par = Parameter(name, value, "", min=1, max=5)
         elif name == "q":
             par = Parameter(name, value, "", min=0.001, max=1)
+        # for the interpolated distribution
+        elif name == "norm":
+            par = Parameter("log10_norm", np.log10(value), "", min=-3, max=3)
 
         _pars_names.append(par.name)
         _pars.append(par)

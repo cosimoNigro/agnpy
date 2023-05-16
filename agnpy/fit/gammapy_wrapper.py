@@ -30,7 +30,7 @@ def _sort_spectral_parameters(spectral_pars_names, **kwargs):
         10 ** (kwargs[key].value) if key.startswith("log10_") else kwargs[key].value
         for key in spectral_pars_names
     ]
-    # add unit to the norm, which is always the first one
+    # add unit to k, which is always the first one
     args[0] *= u.Unit("cm-3")
     return args
 
@@ -183,7 +183,7 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         # https://github.com/gammapy/gammapy/blob/master/gammapy/modeling/models/spectral.py#L2119
 
         # gammapy requires a differential flux in input
-        return (sed / energy ** 2).to("1 / (cm2 eV s)")
+        return (sed / energy**2).to("1 / (cm2 eV s)")
 
 
 class ExternalComptonSpectralModel(SpectralModel):
@@ -365,4 +365,4 @@ class ExternalComptonSpectralModel(SpectralModel):
         # sed = sed.reshape(energy.shape)
         # see the same comment in the SSC model
 
-        return (sed / energy ** 2).to("1 / (cm2 eV s)")
+        return (sed / energy**2).to("1 / (cm2 eV s)")

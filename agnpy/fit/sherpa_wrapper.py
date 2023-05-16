@@ -5,7 +5,13 @@ from astropy.coordinates import Distance
 from astropy.constants import c, k_B
 from sherpa.models import model
 from ..utils.conversion import mec2
-from ..spectra import PowerLaw
+from ..spectra import (
+    BrokenPowerLaw,
+    LogParabola,
+    ExpCutoffPowerLaw,
+    ExpCutoffBrokenPowerLaw,
+    InterpolatedDistribution,
+)
 from ..targets import SSDisk, RingDustTorus
 from ..synchrotron import Synchrotron
 from ..compton import SynchrotronSelfCompton, ExternalCompton
@@ -20,16 +26,23 @@ gamma_size = 300
 gamma_to_integrate = np.logspace(1, 9, gamma_size)
 
 
-def _sort_spectral_parameters(args, n_e):
+def _scale_spectral_parameters(args, n_e):
     """Sort and scale the parameters of the electron distribution."""
-    # parameters of the spectrum are in log10 scale, first comes the norm
-    args[0] = 10 ** args[0] * u.Unit("cm-3")
-    # last two are the gamma min and gamma max
-    args[-2] = 10 ** args[-2]
-    args[-1] = 10 ** args[-1]
-    # if this is not a power law, then there is a break or pivot Lorentz factor
-    if not isinstance(n_e, PowerLaw):
-        args[-3] = 10 ** args[-3]
+    if isinstance(n_e, InterpolatedDistribution):
+        # parameters should be log10_gamma_min, log10_gamma_max, log10_norm
+        args = [10**arg for arg in args]
+    else:
+        # parameters of the spectrum are in log10 scale, first comes the k
+        args[0] = 10 ** args[0] * u.Unit("cm-3")
+        # last two are the gamma min and gamma max
+        args[-2] = 10 ** args[-2]
+        args[-1] = 10 ** args[-1]
+        # if this is not a power law, then there is a break or pivot Lorentz factor
+        if isinstance(n_e, (BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw)):
+            args[-3] = 10 ** args[-3]
+        if isinstance(n_e, (ExpCutoffBrokenPowerLaw)):
+            args[-3] = 10 ** args[-3]
+            args[-4] = 10 ** args[-4]
 
 
 def _evaluate_sed_ssc_scenario(x, pars, n_e, ssa):
@@ -39,10 +52,10 @@ def _evaluate_sed_ssc_scenario(x, pars, n_e, ssa):
     NOTE: sherpa parameters are NOT `~astropy.Quantities`, properly set them."""
     (*args, z, delta_D, log10_B, t_var) = pars
 
-    _sort_spectral_parameters(args, n_e)
+    _scale_spectral_parameters(args, n_e)
 
     # parameters of the emission region
-    B = 10 ** log10_B * u.G
+    B = 10**log10_B * u.G
     # compute the luminosity distance and the size of the emission region
     d_L = Distance(z=z).to("cm")
     R_b = (c.to_value("cm s-1") * t_var * delta_D) / (1 + z) * u.cm
@@ -82,17 +95,17 @@ def _evaluate_sed_ec_blr_scenario(x, pars, n_e, ssa):
         R_line,
     ) = pars
 
-    _sort_spectral_parameters(args, n_e)
+    _scale_spectral_parameters(args, n_e)
 
     # parameters of the emission region
-    B = 10 ** log10_B * u.G
+    B = 10**log10_B * u.G
     # compute the luminosity distance and the size of the emission region
     d_L = Distance(z=z).to("cm")
     R_b = (c.to_value("cm s-1") * t_var * delta_D) / (1 + z) * u.cm
-    r = 10 ** log10_r * u.cm
+    r = 10**log10_r * u.cm
 
     # target parameters
-    L_disk = 10 ** log10_L_disk * u.Unit("erg s-1")
+    L_disk = 10**log10_L_disk * u.Unit("erg s-1")
     M_BH *= u.g
     m_dot *= u.Unit("g s-1")
     R_in *= u.cm
@@ -156,17 +169,17 @@ def _evaluate_sed_ec_dt_scenario(x, pars, n_e, ssa):
         R_dt,
     ) = pars
 
-    _sort_spectral_parameters(args, n_e)
+    _scale_spectral_parameters(args, n_e)
 
     # parameters of the emission region
-    B = 10 ** log10_B * u.G
+    B = 10**log10_B * u.G
     # compute the luminosity distance and the size of the emission region
     d_L = Distance(z=z).to("cm")
     R_b = (c.to_value("cm s-1") * t_var * delta_D) / (1 + z) * u.cm
-    r = 10 ** log10_r * u.cm
+    r = 10**log10_r * u.cm
 
     # target parameters
-    L_disk = 10 ** log10_L_disk * u.Unit("erg s-1")
+    L_disk = 10**log10_L_disk * u.Unit("erg s-1")
     M_BH *= u.g
     m_dot *= u.Unit("g s-1")
     R_in *= u.cm
@@ -235,17 +248,17 @@ def _evaluate_sed_ec_blr_dt_scenario(x, pars, n_e, ssa):
         R_dt,
     ) = pars
 
-    _sort_spectral_parameters(args, n_e)
+    _scale_spectral_parameters(args, n_e)
 
     # parameters of the emission region
-    B = 10 ** log10_B * u.G
+    B = 10**log10_B * u.G
     # compute the luminosity distance and the size of the emission region
     d_L = Distance(z=z).to("cm")
     R_b = (c.to_value("cm s-1") * t_var * delta_D) / (1 + z) * u.cm
-    r = 10 ** log10_r * u.cm
+    r = 10**log10_r * u.cm
 
     # target parameters
-    L_disk = 10 ** log10_L_disk * u.Unit("erg s-1")
+    L_disk = 10**log10_L_disk * u.Unit("erg s-1")
     M_BH *= u.g
     m_dot *= u.Unit("g s-1")
     R_in *= u.cm
