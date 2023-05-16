@@ -1,4 +1,5 @@
 # tests on agnpy.spectra module
+from pathlib import Path
 import numpy as np
 import astropy.units as u
 from astropy.constants import m_e, m_p
@@ -13,6 +14,11 @@ from agnpy.spectra import (
 )
 from agnpy.utils.math import trapz_loglog
 from agnpy.utils.conversion import mec2, mpc2
+
+
+agnpy_dir = Path(__file__).parent.parent.parent  # go to the agnpy root
+# where to read sampled files
+data_dir = agnpy_dir / "agnpy/data"
 
 
 def power_law_integral(k_e, p, gamma_min, gamma_max):
@@ -660,7 +666,7 @@ class TestInterpolatedDistribution:
     @pytest.mark.parametrize(
         "n", [PowerLaw(), BrokenPowerLaw(), LogParabola(), ExpCutoffPowerLaw(), ExpCutoffBrokenPowerLaw()]
     )
-    def test_interpolation(self, n):
+    def test_interpolation_analytical(self, n):
         """Assert that the interpolated distribution does not have large
         deviations from the original one."""
         gamma = np.logspace(np.log10(n.gamma_min), np.log10(n.gamma_max))
@@ -684,3 +690,14 @@ class TestInterpolatedDistribution:
         assert u.allclose(
             ssa_integrand, ssa_integrand_interp, atol=0 * u.Unit("cm-3"), rtol=1e-1
         )
+
+    def test_interpolation_physical(self):
+        """Test the interpolation of a physical distribution, test also the norm factor."""
+        data = np.loadtxt(f"{data_dir}/particles_distributions/eed_lepton_cooling.txt")
+        gamma_init = data[:, 0]
+        n_init = data[:, 1] * u.Unit("cm-3")
+
+        # interpolate its values, change the scale factor
+        n_e = InterpolatedDistribution(gamma_init, n_init, norm=2)
+
+        assert u.allclose(n_e(gamma_init), 2 * n_init, atol=0 * u.Unit("cm-3"), rtol=1e-3)
