@@ -445,12 +445,20 @@ class LogParabola(ParticleDistribution):
         gamma_ratio = gamma / gamma_0
         index = -p - q * np.log10(gamma_ratio)
         return np.where(
-            (gamma_min <= gamma) * (gamma <= gamma_max), k * gamma_ratio ** index, 0,
+            (gamma_min <= gamma) * (gamma <= gamma_max),
+            k * gamma_ratio**index,
+            0,
         )
 
     def __call__(self, gamma):
         return self.evaluate(
-            gamma, self.k, self.p, self.q, self.gamma_0, self.gamma_min, self.gamma_max,
+            gamma,
+            self.k,
+            self.p,
+            self.q,
+            self.gamma_0,
+            self.gamma_min,
+            self.gamma_max,
         )
 
     @staticmethod
@@ -464,7 +472,13 @@ class LogParabola(ParticleDistribution):
 
     def SSA_integrand(self, gamma):
         return self.evaluate_SSA_integrand(
-            gamma, self.k, self.p, self.q, self.gamma_0, self.gamma_min, self.gamma_max,
+            gamma,
+            self.k,
+            self.p,
+            self.q,
+            self.gamma_0,
+            self.gamma_min,
+            self.gamma_max,
         )
 
     def __str__(self):
@@ -603,7 +617,7 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         k=1e-13 * u.Unit("cm-3"),
         p1=2.0,
         p2=3.0,
-        gamma_c = 1e5,
+        gamma_c=1e5,
         gamma_b=1e3,
         gamma_min=10,
         gamma_max=1e7,
@@ -632,12 +646,12 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         ]
 
     @staticmethod
-    def evaluate(gamma, k, p1, p2,  gamma_c, gamma_b, gamma_min, gamma_max):
+    def evaluate(gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max):
         index = np.where(gamma <= gamma_b, p1, p2)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
-            k * (gamma/gamma_b) ** (-index) * np.exp(-gamma/gamma_c),
-            0
+            k * (gamma / gamma_b) ** (-index) * np.exp(-gamma / gamma_c),
+            0,
         )
 
     def __call__(self, gamma):
@@ -653,16 +667,20 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         )
 
     @staticmethod
-    def evaluate_SSA_integrand(gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max):
+    def evaluate_SSA_integrand(
+        gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max
+    ):
         r"""Analytical integrand for the synchrotron self-absorption:
         :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`."""
         index = np.where(gamma <= gamma_b, p1, p2)
         prefactor = -(index + 2) / gamma + (-1 / gamma_c)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
-            prefactor * ExpCutoffBrokenPowerLaw.evaluate(
-            gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max),
-            0
+            prefactor
+            * ExpCutoffBrokenPowerLaw.evaluate(
+                gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max
+            ),
+            0,
         )
 
     def SSA_integrand(self, gamma):
@@ -674,7 +692,7 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             self.gamma_c,
             self.gamma_b,
             self.gamma_min,
-            self.gamma_max
+            self.gamma_max,
         )
 
     def __str__(self):
@@ -702,7 +720,8 @@ class InterpolatedDistribution(ParticleDistribution):
     n : :class:`~astropy.units.Quantity`
         array of densities to be interpolated
     norm : float
-        parameter to scale the density
+        a  multiplicative factor to scale the density, will be used as a free
+        parameter in a fitting
     mass : :class:`~astropy.units.Quantity`
         particle mass, default is the electron mass
     integrator : func
@@ -711,58 +730,92 @@ class InterpolatedDistribution(ParticleDistribution):
 
     def __init__(self, gamma, n, norm=1, mass=m_e, integrator=np.trapz):
         super().__init__(mass, integrator)
-        self.gamma = gamma
-        self.gamma_max = np.max(self.gamma)
-        self.gamma_min = np.min(self.gamma)
-        self.norm = norm
         if n.unit != u.Unit("cm-3"):
             raise ValueError(
                 f"Provide a particle distribution in cm-3, instead of {n.unit}"
             )
-        else:
-            self.n = n
-        # call make the interpolation
-        self.log10_f = self.log10_interpolation()
+        # sae the input data
+        self.gamma_input = gamma
+        self.n_input = n
+        # perform the interpolation
+        self.log10_interp = self.log10_interpolation(gamma, n)
+        # scaling parameter
+        self.norm = norm
 
-    def log10_interpolation(self):
-        """Returns the function interpolating in log10 the particle spectrum.
+    def log10_interpolation(self, gamma, n):
+        """Returns the function interpolating in log10 the particle spectrum as
+        a function of the Lorentz factor.
         TODO: make possible to pass arguments to CubicSpline.
         """
-        interpolator = CubicSpline(
-            np.log10(self.gamma), np.log10(self.n.to_value("cm-3"))
-        )
+        # remove values with zero densities otherwise we will have troubles
+        # when passing to log for the interpolation
+        valid = ~(n.to_value("cm-3") == 0)
+        _gamma = gamma[valid]
+        _n = n.to_value("cm-3")[valid]
+        interpolator = CubicSpline(np.log10(_gamma), np.log10(_n))
+
+        # min and max lorentz factor are now the first gamma values for which
+        # the input distribution is not null
+        self.gamma_min = np.min(_gamma)
+        self.gamma_max = np.max(_gamma)
+
         return interpolator
+
+    @property
+    def parameters(self):
+        return [
+            self.norm,
+            self.gamma_min,
+            self.gamma_max,
+        ]
 
     def evaluate(self, gamma, norm, gamma_min, gamma_max):
         log10_gamma = np.log10(gamma)
         values = np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
-            norm * np.power(10, self.log10_f(log10_gamma)),
+            np.power(10, self.log10_interp(log10_gamma)),
             0,
         )
-        return values * u.Unit("cm-3")
+        return norm * values * u.Unit("cm-3")
 
     def __call__(self, gamma):
         return self.evaluate(gamma, self.norm, self.gamma_min, self.gamma_max)
 
-    def SSA_integrand(self, gamma):
-        r"""Integrand for the synchrotron self-absorption. It is
+    def evaluate_SSA_integrand(self, gamma, norm, gamma_min, gamma_max):
+        r"""Starting from the formula for the integrand of the synchrotron self-absorption
 
         .. math::
-            \gamma^2 \frac{d}{d \gamma} (\frac{n_e(\gamma)}{\gamma^2}) = ( \frac{dn_e(\gamma)}{d\gamma}+\frac{2n_e(\gamma)}{\gamma})
+            \gamma^2 \frac{{\rm d}}{{\rm d} \gamma} \left( \frac{n_(\gamma)}{\gamma^2} \right) =
+            \left(\frac{{\rm d}n(\gamma)}{{\rm d}\gamma} - \frac{2 n(\gamma)}{\gamma} \right).
 
-        The derivative is:
+        Since, numerically, we interpolate a function to the log values of densities and Lorentz factors,
+        we obtain a function of the log of :math:`\gamma`, that is :math:`f(u(\gamma))`, where :math:`u = \log_{10}`.
+        Considering the derivative of the particle distribution in :math:`\gamma`:
 
         .. math::
-            \frac{dn_e(\gamma)}{d\gamma} = \frac{d 10^{f(u(\gamma))}}{d\gamma} = \frac{d10^{f(u)}}{du} \cdot \frac{du(\gamma)}{d\gamma}
+            \frac{{\rm d} n(\gamma)}{{\rm d}\gamma} =
+            \frac{{\rm d}}{{\rm d} \gamma} \left( 10^{f(u(\gamma))} \right) =
+            \frac{{\rm d} 10^{f(u(\gamma))}}{{\rm d} u(\gamma)} \frac{{\rm d} u(\gamma)}{{\rm d} \gamma} =
+            \ln(10) \, 10^{f(u(\gamma))} \, \frac{{\rm d}f}{{\rm d}u} \, \frac{1}{\ln(10) \gamma}.
 
-        where we have :math:`\frac{d 10^{f(u(\gamma))}}{d\gamma} = \frac{d10^{f(u)}}{du} \cdot \frac{du(\gamma)}{d\gamma}`,
-        where :math:`u` is the :math:`log_{10}(\gamma)`.
-        This is equal to :math:`\frac{d 10^{f(u(\gamma))}}{d\gamma} =  10^{f(u)} \cdot \frac{df(u)}{du} \cdot \frac{1}{\gamma}`
-
+        and :math:`\frac{{\rm d}f}{{\rm d}u}`, the derivative of the interpolated function,
+        is directly available from the interpolation algorythm.
         """
         log10_gamma = np.log10(gamma)
-        df_log = self.log10_f.derivative()
-        int_fun = self.evaluate(gamma, self.norm, self.gamma_min, self.gamma_max)
-        deriv = int_fun * (1 / gamma) * df_log(log10_gamma)
-        return deriv - 2 * int_fun / gamma
+        df_du = self.log10_interp.derivative()
+        n = self.evaluate(gamma, norm, gamma_min, gamma_max)
+        return n * df_du(log10_gamma) / gamma - 2 * n / gamma
+
+    def SSA_integrand(self, gamma):
+        return self.evaluate_SSA_integrand(
+            gamma, self.norm, self.gamma_min, self.gamma_max
+        )
+
+    def __str__(self):
+        return (
+            f"* {self.particle} energy distribution\n"
+            + f" - interpolated energy distribution\n"
+            + f" - norm: {self.norm:.2e}\n"
+            + f" - gamma_min: {self.gamma_min:.2e}\n"
+            + f" - gamma_max: {self.gamma_max:.2e}\n"
+        )
