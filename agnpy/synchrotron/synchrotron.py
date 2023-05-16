@@ -178,7 +178,7 @@ class Synchrotron:
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
         N_e = V_b * n_e.evaluate(_gamma, *args)
         # fold the electron distribution with the synchrotron power
-        integrand = N_e * single_electron_synch_power(B_cgs, _epsilon, _gamma)
+        integrand = N_e * single_particle_synch_power(B_cgs, _epsilon, _gamma)
         emissivity = integrator(integrand, gamma, axis=0).reshape(epsilon.shape)
         prefactor = np.power(delta_D, 4) / (4 * np.pi * np.power(d_L, 2))
         sed = (prefactor * epsilon * emissivity).to("erg cm-2 s-1")
