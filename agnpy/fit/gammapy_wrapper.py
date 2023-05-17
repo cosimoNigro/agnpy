@@ -6,6 +6,7 @@ from astropy.coordinates import Distance
 from gammapy.modeling import Parameter, Parameters
 from gammapy.modeling.models import SpectralModel
 from ..utils.conversion import mec2
+from ..spectra import InterpolatedDistribution
 from ..synchrotron import Synchrotron
 from ..compton import SynchrotronSelfCompton, ExternalCompton
 from ..targets import SSDisk, RingDustTorus
@@ -20,7 +21,7 @@ gamma_size = 300
 gamma_to_integrate = np.logspace(1, 9, gamma_size)
 
 
-def _sort_spectral_parameters(spectral_pars_names, **kwargs):
+def _sort_spectral_parameters(spectral_pars_names, n_e, **kwargs):
     """All the model parameters will be passed as **kwargs by
     SpectralModel.evaluate(). This function helps sort out those related to the
     particle energy distribution.
@@ -30,8 +31,9 @@ def _sort_spectral_parameters(spectral_pars_names, **kwargs):
         10 ** (kwargs[key].value) if key.startswith("log10_") else kwargs[key].value
         for key in spectral_pars_names
     ]
-    # add unit to k, which is always the first one
-    args[0] *= u.Unit("cm-3")
+    if not isinstance(n_e, InterpolatedDistribution):
+        # add unit to k, which is always the first one
+        args[0] *= u.Unit("cm-3")
     return args
 
 
@@ -163,8 +165,11 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
 
         nu = energy.to("Hz", equivalencies=u.spectral())
 
-        args = _sort_spectral_parameters(self._spectral_pars_names, **kwargs)
+        args = _sort_spectral_parameters(self._spectral_pars_names, self._n_e, **kwargs)
         z, d_L, delta_D, B, R_b = _sort_emission_region_parameters("ssc", **kwargs)
+
+        print("parameters I am using for the evaluation")
+        print(args)
 
         # evaluate the synch. and SSC SEDs
         sed_synch = Synchrotron.evaluate_sed_flux(
@@ -293,7 +298,7 @@ class ExternalComptonSpectralModel(SpectralModel):
 
         nu = energy.to("Hz", equivalencies=u.spectral())
 
-        args = _sort_spectral_parameters(self._spectral_pars_names, **kwargs)
+        args = _sort_spectral_parameters(self._spectral_pars_names, self._n_e, **kwargs)
         z, d_L, delta_D, B, R_b, mu_s, r = _sort_emission_region_parameters(
             "ec", **kwargs
         )

@@ -737,10 +737,10 @@ class InterpolatedDistribution(ParticleDistribution):
         # sae the input data
         self.gamma_input = gamma
         self.n_input = n
-        # perform the interpolation
-        self.log10_interp = self.log10_interpolation(gamma, n)
         # scaling parameter
         self.norm = norm
+        # perform the interpolation
+        self.log10_interp = self.log10_interpolation(gamma, n)
 
     def log10_interpolation(self, gamma, n):
         """Returns the function interpolating in log10 the particle spectrum as

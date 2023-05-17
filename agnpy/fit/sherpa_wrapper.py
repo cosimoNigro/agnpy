@@ -29,8 +29,10 @@ gamma_to_integrate = np.logspace(1, 9, gamma_size)
 def _scale_spectral_parameters(args, n_e):
     """Sort and scale the parameters of the electron distribution."""
     if isinstance(n_e, InterpolatedDistribution):
-        # parameters should be log10_gamma_min, log10_gamma_max, log10_norm
-        args = [10**arg for arg in args]
+        # first three parameters should be log10_gamma_min, log10_gamma_max, log10_norm
+        args[0] = 10 ** args[0]
+        args[1] = 10 ** args[1]
+        args[2] = 10 ** args[2]
     else:
         # parameters of the spectrum are in log10 scale, first comes the k
         args[0] = 10 ** args[0] * u.Unit("cm-3")
@@ -40,6 +42,7 @@ def _scale_spectral_parameters(args, n_e):
         # if this is not a power law, then there is a break or pivot Lorentz factor
         if isinstance(n_e, (BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw)):
             args[-3] = 10 ** args[-3]
+        # if this is a ExpCutoffBrokenPowerLaw there is a break and a cutoff
         if isinstance(n_e, (ExpCutoffBrokenPowerLaw)):
             args[-3] = 10 ** args[-3]
             args[-4] = 10 ** args[-4]
