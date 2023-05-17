@@ -4,9 +4,16 @@ import astropy.units as u
 from astropy.constants import m_e, M_sun
 from astropy.coordinates import Distance
 import pytest
-import shutil
+import matplotlib.pyplot as plt
 from pathlib import Path
-from agnpy.spectra import PowerLaw, BrokenPowerLaw, InterpolatedDistribution
+from agnpy.spectra import (
+    PowerLaw,
+    BrokenPowerLaw,
+    LogParabola,
+    ExpCutoffPowerLaw,
+    ExpCutoffBrokenPowerLaw,
+    InterpolatedDistribution,
+)
 from agnpy.emission_regions import Blob
 from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
 from agnpy.synchrotron import Synchrotron
@@ -282,17 +289,29 @@ class TestWrappers:
         # requires that the SED points deviate less than 1% from the figure
         assert check_deviation(nu, sed_wrapper, sed_agnpy, 0.1)
 
+    @pytest.mark.parametrize(
+        "n_e",
+        [
+            PowerLaw(),
+            BrokenPowerLaw(),
+            LogParabola(),
+            ExpCutoffPowerLaw(),
+            ExpCutoffBrokenPowerLaw(),
+        ],
+    )
     @pytest.mark.parametrize("backend", ["gammapy", "sherpa"])
-    def test_synchrotron_self_compton_model_interpolated_distribution(self, backend):
+    def test_synchrotron_self_compton_model_interpolated_distribution(
+        self, n_e, backend
+    ):
         """Test the evaluation of the SSC model when using an InterpolatedDistribuion."""
         # let us interpolate first the n_e we used for the SSC
-        gamma_init = np.logspace(2, 7)
-        n_init = n_e_ssc(gamma_init)
-        n_e_ssc_interp = InterpolatedDistribution(gamma_init, n_init)
+        gamma_init = np.logspace(np.log10(n_e.gamma_min), np.log10(n_e.gamma_max), 100)
+        n_init = n_e(gamma_init)
+        n_e_interp = InterpolatedDistribution(gamma_init, n_init)
 
-        ssc_model = SynchrotronSelfComptonModel(n_e_ssc, ssa=True, backend=backend)
+        ssc_model = SynchrotronSelfComptonModel(n_e, ssa=True, backend=backend)
         ssc_model_interp = SynchrotronSelfComptonModel(
-            n_e_ssc_interp, ssa=True, backend=backend
+            n_e_interp, ssa=True, backend=backend
         )
 
         if backend == "gammapy":
@@ -301,5 +320,12 @@ class TestWrappers:
         if backend == "sherpa":
             sed_wrapper = ssc_model(E.to_value("eV")).to("erg cm-2 s-1")
             sed_wrapper_interp = ssc_model_interp(E.to_value("eV")).to("erg cm-2 s-1")
+
+        fig, ax = plt.subplots()
+        ax.loglog(E, sed_wrapper, label=f"{n_e.tag}")
+        ax.loglog(E, sed_wrapper_interp, ls="--", label=f"{n_e_interp.tag}")
+        ax.set_title(backend)
+        ax.legend()
+        fig.savefig(f"{n_e.tag}_interpolation_test_{backend}_wrapper.png")
 
         assert check_deviation(nu, sed_wrapper, sed_wrapper_interp, 0.1)

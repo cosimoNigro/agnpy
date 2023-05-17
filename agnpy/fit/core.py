@@ -74,10 +74,11 @@ def get_spectral_parameters_from_n_e(n_e, backend, modelname=None):
 
     pars = vars(n_e).copy()
     # remove all the attributes that do not belong to the energy distribution
-    pars.pop("integrator")
-    pars.pop("particle")
     pars.pop("mass")
+    pars.pop("particle")
     pars.pop("mc2")
+    pars.pop("integrator")
+    pars.pop("tag")
     if isinstance(n_e, InterpolatedDistribution):
         pars.pop("gamma_input")
         pars.pop("n_input")
@@ -86,7 +87,7 @@ def get_spectral_parameters_from_n_e(n_e, backend, modelname=None):
     for name, value in zip(pars.keys(), pars.values()):
         if name == "k":
             par = Parameter(
-                "log10_k", np.log10(value.to_value("cm-3")), "", min=-10, max=10
+                "log10_k", np.log10(value.to_value("cm-3")), "", min=-15, max=15
             )
         elif name == "gamma_min":
             par = Parameter(
