@@ -29,8 +29,7 @@ class ParticleDistribution:
         function to be used to integrate the particle distribution
     """
 
-    def __init__(self, mass=m_e, integrator=np.trapz):
-        self.integrator = integrator
+    def __init__(self, mass=m_e, integrator=np.trapz, tag="ParticleDistribution"):
         if mass is m_e:
             self.mass = m_e
             self.particle = "electrons"
@@ -42,6 +41,8 @@ class ParticleDistribution:
                 f"No distribution for particles with mass {mass} is available."
             )
         self.mc2 = self.mass.to("erg", equivalencies=u.mass_energy())
+        self.integrator = integrator
+        self.tag = tag
 
     @staticmethod
     def integral(
@@ -230,7 +231,7 @@ class PowerLaw(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(mass, integrator)
+        super().__init__(mass, integrator, "PowerLaw")
         self.k = k
         self.p = p
         self.gamma_min = gamma_min
@@ -266,7 +267,7 @@ class PowerLaw(ParticleDistribution):
 
     def __str__(self):
         return (
-            f"* {self.particle} energy distribution\n"
+            f"* {self.particle} {self.tag} energy distribution\n"
             + f" - power law\n"
             + f" - k: {self.k:.2e}\n"
             + f" - p: {self.p:.2f}\n"
@@ -316,7 +317,7 @@ class BrokenPowerLaw(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(mass, integrator)
+        super().__init__(mass, integrator, "BrokenPowerLaw")
         self.k = k
         self.p1 = p1
         self.p2 = p2
@@ -428,7 +429,7 @@ class LogParabola(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(mass, integrator)
+        super().__init__(mass, integrator, "LogParabola")
         self.k = k
         self.p = p
         self.q = q
@@ -529,7 +530,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(mass, integrator)
+        super().__init__(mass, integrator, "ExpCutoffPowerLaw")
         self.k = k
         self.p = p
         self.gamma_c = gamma_c
@@ -624,7 +625,7 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(mass, integrator)
+        super().__init__(mass, integrator, "ExpCutoffBrokenPowerLaw")
         self.k = k
         self.p1 = p1
         self.p2 = p2
@@ -729,7 +730,7 @@ class InterpolatedDistribution(ParticleDistribution):
     """
 
     def __init__(self, gamma, n, norm=1, mass=m_e, integrator=np.trapz):
-        super().__init__(mass, integrator)
+        super().__init__(mass, integrator, "InterpolatedDistribution")
         if n.unit != u.Unit("cm-3"):
             raise ValueError(
                 f"Provide a particle distribution in cm-3, instead of {n.unit}"
