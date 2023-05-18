@@ -20,6 +20,9 @@ agnpy_dir = Path(__file__).parent.parent.parent  # go to the agnpy root
 # where to read sampled files
 data_dir = agnpy_dir / "agnpy/data"
 
+gamma_init_interp = np.logspace(2, 5)
+n_e_interp = 1e-3 * u.Unit("cm-3") * gamma_init_interp ** (-2.1)
+
 
 def power_law_integral(k_e, p, gamma_min, gamma_max):
     """Analytical integral of the power law."""
@@ -85,7 +88,7 @@ class TestParticleDistribution:
             LogParabola(),
             ExpCutoffPowerLaw(),
             ExpCutoffBrokenPowerLaw(),
-            InterpolatedDistribution(),
+            InterpolatedDistribution(gamma_init_interp, n_e_interp),
         ],
     )
     @pytest.mark.parametrize("gamma_power", [0, 1, 2])
@@ -101,10 +104,13 @@ class TestParticleDistribution:
             (LogParabola(), "LogParabola"),
             (ExpCutoffPowerLaw(), "ExpCutoffPowerLaw"),
             (ExpCutoffBrokenPowerLaw(), "ExpCutoffBrokenPowerLaw"),
-            (InterpolatedDistribution(), "InterpolatedDistribution"),
+            (
+                InterpolatedDistribution(gamma_init_interp, n_e_interp),
+                "InterpolatedDistribution",
+            ),
         ],
     )
-    def test_tags(n_e, tag):
+    def test_tags(self, n_e, tag):
         assert n_e.tag == tag
 
 
