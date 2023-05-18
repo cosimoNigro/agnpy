@@ -321,11 +321,16 @@ class TestWrappers:
             sed_wrapper = ssc_model(E.to_value("eV")).to("erg cm-2 s-1")
             sed_wrapper_interp = ssc_model_interp(E.to_value("eV")).to("erg cm-2 s-1")
 
-        fig, ax = plt.subplots()
-        ax.loglog(E, sed_wrapper, label=f"{n_e.tag}")
-        ax.loglog(E, sed_wrapper_interp, ls="--", label=f"{n_e_interp.tag}")
-        ax.set_title(backend)
-        ax.legend()
-        fig.savefig(f"{n_e.tag}_interpolation_test_{backend}_wrapper.png")
+        make_comparison_plot(
+            nu,
+            sed_wrapper_interp,
+            sed_wrapper,
+            f"{n_e.tag} interpolated",
+            f"{n_e.tag}",
+            f"{backend} wrapper",
+            figures_dir / f"{n_e.tag}_interpolation_test_{backend}_wrapper.png",
+            "sed",
+        )
 
-        assert check_deviation(nu, sed_wrapper, sed_wrapper_interp, 0.1)
+        # requires that the SED points deviate less than 5% from the figure
+        assert check_deviation(nu, sed_wrapper, sed_wrapper_interp, 0.05)
