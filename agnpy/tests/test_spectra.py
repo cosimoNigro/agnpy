@@ -72,17 +72,40 @@ def broken_power_law_times_gamma_integral(k_e, p1, p2, gamma_b, gamma_min, gamma
         )
     return k_e * (term_1 + term_2)
 
+
 class TestParticleDistribution:
     """Class grouping all the tests related to the general class
     ParticleDistribution, from which all the other classes inherit."""
 
     @pytest.mark.parametrize(
-        "n_e", [PowerLaw(), BrokenPowerLaw(), LogParabola(), ExpCutoffPowerLaw(), ExpCutoffBrokenPowerLaw()]
+        "n_e",
+        [
+            PowerLaw(),
+            BrokenPowerLaw(),
+            LogParabola(),
+            ExpCutoffPowerLaw(),
+            ExpCutoffBrokenPowerLaw(),
+            InterpolatedDistribution(),
+        ],
     )
     @pytest.mark.parametrize("gamma_power", [0, 1, 2])
     def test_plot(self, n_e, gamma_power):
         n_e.plot(gamma_power=gamma_power)
         assert True
+
+    @pytest.mark.parametrize(
+        "n_e, tag",
+        [
+            (PowerLaw(), "PowerLaw"),
+            (BrokenPowerLaw(), "BrokenPowerLaw"),
+            (LogParabola(), "LogParabola"),
+            (ExpCutoffPowerLaw(), "ExpCutoffPowerLaw"),
+            (ExpCutoffBrokenPowerLaw(), "ExpCutoffBrokenPowerLaw"),
+            (InterpolatedDistribution(), "InterpolatedDistribution"),
+        ],
+    )
+    def test_tags(n_e, tag):
+        assert n_e.tag == tag
 
 
 class TestPowerLaw:
@@ -544,6 +567,7 @@ class TestExpCutoffPowerLaw:
         assert u.isclose(n_gamma_1, epwl_e(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
         assert u.isclose(n_gamma_1, epwl_p(1), atol=0 * u.Unit("cm-3"), rtol=1e-2)
 
+
 class TestExpCutoffBrokenPowerLaw:
     """Class grouping all tests related to the ExpCutoffBrokenPowerLaw spectrum."""
 
@@ -664,7 +688,14 @@ class TestExpCutoffBrokenPowerLaw:
 
 class TestInterpolatedDistribution:
     @pytest.mark.parametrize(
-        "n", [PowerLaw(), BrokenPowerLaw(), LogParabola(), ExpCutoffPowerLaw(), ExpCutoffBrokenPowerLaw()]
+        "n",
+        [
+            PowerLaw(),
+            BrokenPowerLaw(),
+            LogParabola(),
+            ExpCutoffPowerLaw(),
+            ExpCutoffBrokenPowerLaw(),
+        ],
     )
     def test_interpolation_analytical(self, n):
         """Assert that the interpolated distribution does not have large
@@ -700,4 +731,6 @@ class TestInterpolatedDistribution:
         # interpolate its values, change the scale factor
         n_e = InterpolatedDistribution(gamma_init, n_init, norm=2)
 
-        assert u.allclose(n_e(gamma_init), 2 * n_init, atol=0 * u.Unit("cm-3"), rtol=1e-3)
+        assert u.allclose(
+            n_e(gamma_init), 2 * n_init, atol=0 * u.Unit("cm-3"), rtol=1e-3
+        )
