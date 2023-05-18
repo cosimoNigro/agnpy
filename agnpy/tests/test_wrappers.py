@@ -4,9 +4,16 @@ import astropy.units as u
 from astropy.constants import m_e, M_sun
 from astropy.coordinates import Distance
 import pytest
-import shutil
+import matplotlib.pyplot as plt
 from pathlib import Path
-from agnpy.spectra import PowerLaw, BrokenPowerLaw
+from agnpy.spectra import (
+    PowerLaw,
+    BrokenPowerLaw,
+    LogParabola,
+    ExpCutoffPowerLaw,
+    ExpCutoffBrokenPowerLaw,
+    InterpolatedDistribution,
+)
 from agnpy.emission_regions import Blob
 from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
 from agnpy.synchrotron import Synchrotron
@@ -23,7 +30,7 @@ figures_dir = clean_and_make_dir(agnpy_dir.parent, "crosschecks/figures/fit")
 
 # Blobs to be used by SSC and EC models
 R_b = 1e16 * u.cm
-V_b = 4 / 3 * np.pi * R_b ** 3
+V_b = 4 / 3 * np.pi * R_b**3
 W_e_ssc = 1e48 * u.Unit("erg")
 W_e_ec = 6e42 * u.Unit("erg")
 z_ssc = Distance(1e27, unit=u.cm).z
@@ -201,7 +208,7 @@ class TestWrappers:
         if backend == "sherpa":
             sed_wrapper = ssc_model(E.to_value("eV"))
         if backend == "gammapy":
-            sed_wrapper = (E ** 2 * ssc_model(E)).to("erg cm-2 s-1")
+            sed_wrapper = (E**2 * ssc_model(E)).to("erg cm-2 s-1")
 
         sed_agnpy = synch.sed_flux(nu) + ssc.sed_flux(nu)
 
@@ -266,7 +273,7 @@ class TestWrappers:
         if backend == "sherpa":
             sed_wrapper = ec_model(E.to_value("eV"))
         if backend == "gammapy":
-            sed_wrapper = (E ** 2 * ec_model(E)).to("erg cm-2 s-1")
+            sed_wrapper = (E**2 * ec_model(E)).to("erg cm-2 s-1")
 
         make_comparison_plot(
             nu,
@@ -281,3 +288,49 @@ class TestWrappers:
 
         # requires that the SED points deviate less than 1% from the figure
         assert check_deviation(nu, sed_wrapper, sed_agnpy, 0.1)
+
+    @pytest.mark.parametrize(
+        "n_e",
+        [
+            PowerLaw(),
+            BrokenPowerLaw(),
+            LogParabola(),
+            ExpCutoffPowerLaw(),
+            ExpCutoffBrokenPowerLaw(),
+        ],
+    )
+    @pytest.mark.parametrize("backend", ["gammapy", "sherpa"])
+    def test_synchrotron_self_compton_model_interpolated_distribution(
+        self, n_e, backend
+    ):
+        """Test the evaluation of the SSC model when using an InterpolatedDistribuion."""
+        # let us interpolate first the n_e we used for the SSC
+        gamma_init = np.logspace(np.log10(n_e.gamma_min), np.log10(n_e.gamma_max), 100)
+        n_init = n_e(gamma_init)
+        n_e_interp = InterpolatedDistribution(gamma_init, n_init)
+
+        ssc_model = SynchrotronSelfComptonModel(n_e, ssa=True, backend=backend)
+        ssc_model_interp = SynchrotronSelfComptonModel(
+            n_e_interp, ssa=True, backend=backend
+        )
+
+        if backend == "gammapy":
+            sed_wrapper = (E**2 * ssc_model(E)).to("erg cm-2 s-1")
+            sed_wrapper_interp = (E**2 * ssc_model(E)).to("erg cm-2 s-1")
+        if backend == "sherpa":
+            sed_wrapper = ssc_model(E.to_value("eV")).to("erg cm-2 s-1")
+            sed_wrapper_interp = ssc_model_interp(E.to_value("eV")).to("erg cm-2 s-1")
+
+        make_comparison_plot(
+            nu,
+            sed_wrapper_interp,
+            sed_wrapper,
+            f"{n_e.tag} interpolated",
+            f"{n_e.tag}",
+            f"{backend} wrapper",
+            figures_dir / f"{n_e.tag}_interpolation_test_{backend}_wrapper.png",
+            "sed",
+        )
+
+        # requires that the SED points deviate less than 5% from the figure
+        assert check_deviation(nu, sed_wrapper, sed_wrapper_interp, 0.05)
