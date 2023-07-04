@@ -1,7 +1,7 @@
 # module containing the synchrotron radiative process
 import numpy as np
 import astropy.units as u
-from astropy.constants import e, h, c, m_e, sigma_T
+from astropy.constants import e, h, c, m_e, m_p, sigma_T
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e
 
@@ -52,7 +52,11 @@ def epsilon_B(B):
 
 
 def single_particle_synch_power(B_cgs, epsilon, gamma, mass=m_e):
+<<<<<<< HEAD
     """angle-averaged synchrotron power for a single particle of mass m_e,
+=======
+    """angle-averaged synchrotron power for a single electron,
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
     to be folded with the electron distribution
     """
     x = calc_x(B_cgs, epsilon, gamma, mass)
@@ -179,7 +183,11 @@ class Synchrotron:
         N_e = V_b * n_e.evaluate(_gamma, *args)
         # fold the electron distribution with the synchrotron power
         integrand = N_e * single_particle_synch_power(B_cgs, _epsilon, _gamma)
+<<<<<<< HEAD
         emissivity = integrator(integrand, gamma, axis=0).reshape(epsilon.shape)
+=======
+        emissivity = integrator(integrand, gamma, axis=0)
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         prefactor = np.power(delta_D, 4) / (4 * np.pi * np.power(d_L, 2))
         sed = (prefactor * epsilon * emissivity).to("erg cm-2 s-1")
 

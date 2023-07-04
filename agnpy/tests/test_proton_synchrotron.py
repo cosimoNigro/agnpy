@@ -60,7 +60,11 @@ class TestProtonSynchrotron:
                 n_p=n_p
         )
 
+<<<<<<< HEAD
         psynch = ProtonSynchrotron(blob)#, ssa = True)
+=======
+        psynch = ProtonSynchrotron(blob, ssa = True)
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         sed_agnpy = psynch.sed_flux(nu_ref)
 
         # sed comparison plot
@@ -77,13 +81,21 @@ class TestProtonSynchrotron:
             # y_range=[1e-16, 1e-8],
             comparison_range=nu_range.to_value("Hz"),
         )
+<<<<<<< HEAD
+=======
+        
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         # requires that the SED points deviate less than 25% from the figure
         assert check_deviation(nu_ref, sed_agnpy, sed_ref, 0.25, nu_range)
 
 
     def test_sed_integration_methods(self):
+<<<<<<< HEAD
         """
         Test different integration methods against each other:
+=======
+        """Test different integration methods against each other:
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         simple trapezoidal rule vs trapezoidal rule in log-log space.
         """
         n_p = ExpCutoffPowerLaw(k=12e4 / u.Unit('cm3'), #12e3 / u.Unit('cm3'),

@@ -4,6 +4,8 @@ import astropy.units as u
 
 # default arrays to be used for integration
 gamma_e_to_integrate = np.logspace(1, 9, 200)
+gamma_p_to_integrate = np.logspace(1, 13, 200)
+
 nu_to_integrate = np.logspace(5, 30, 200) * u.Hz  # used for SSC
 mu_to_integrate = np.linspace(-1, 1, 100)
 phi_to_integrate = np.linspace(0, 2 * np.pi, 50)

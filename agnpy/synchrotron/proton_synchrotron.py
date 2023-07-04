@@ -1,9 +1,16 @@
 # module containing the synchrotron radiative process
 import numpy as np
 import astropy.units as u
+<<<<<<< HEAD
 from astropy.constants import e, c, m_p
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_p
+=======
+from astropy.constants import e, h, c, m_e, m_p, sigma_T, G
+from ..utils.math import axes_reshaper, gamma_e_to_integrate
+from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_p
+from .synchrotron import Synchrotron
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
 from .synchrotron import single_particle_synch_power, tau_to_attenuation
 
 __all__ = ["ProtonSynchrotron"]
@@ -17,7 +24,11 @@ class ProtonSynchrotron:
     Parameters
     ----------
     blob : :class:`~agnpy.emission_region.Blob`
+<<<<<<< HEAD
         emitting region and proton distribution
+=======
+        emitting region and electron distribution
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
     ssa : bool
         whether or not to consider synchrotron self absorption (SSA).
         The absorption factor will be taken into account in
@@ -28,6 +39,7 @@ class ProtonSynchrotron:
         function to be used for integration (default = `np.trapz`)
 	"""
 
+<<<<<<< HEAD
     #def __init__(self, blob, ssa=False, integrator=np.trapz):
     def __init__(self, blob, integrator=np.trapz):
         self.blob = blob
@@ -63,6 +75,42 @@ class ProtonSynchrotron:
     #     k_epsilon = (prefactor_k_epsilon * integral).to("cm-1")
     
     #     return (2 * k_epsilon * R_b).to_value("")
+=======
+    def __init__(self, blob, ssa=False, integrator=np.trapz):
+        self.blob = blob
+        self.ssa = ssa
+        self.integrator = integrator
+
+    @staticmethod
+    def evaluate_tau_ssa(
+        nu,
+        z,
+        d_L,
+        delta_D,
+        B,
+        R_b,
+        n_p,
+        *args,
+        integrator=np.trapz,
+        gamma=gamma_e_to_integrate,
+    ):
+        """Computes the syncrotron self-absorption opacity for a general set
+        of model parameters, see :func:`~agnpy:sycnhrotron.Synchrotron.evaluate_sed_flux`
+        for parameters defintion. Eq. before 7.122 in [DermerMenon2009]_."""
+        # conversions
+        epsilon = nu_to_epsilon_prime(nu, z, delta_D, m = m_p)
+        B_cgs = B_to_cgs(B)
+        # multidimensional integration
+        _gamma, _epsilon = axes_reshaper(gamma, epsilon)
+        SSA_integrand = n_p.evaluate_SSA_integrand(_gamma, *args)
+        integrand = SSA_integrand * single_particle_synch_power(B_cgs, _epsilon, _gamma, mass = m_p)
+        integral = integrator(integrand, gamma, axis=0)
+        prefactor_k_epsilon = (
+            -1 / (8 * np.pi * m_p * np.power(epsilon, 2)) * np.power(lambda_c_p / c, 3)
+        )
+        k_epsilon = (prefactor_k_epsilon * integral).to("cm-1")
+        return (2 * k_epsilon * R_b).to_value("")
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
 
     @staticmethod
     def evaluate_sed_flux(
@@ -74,14 +122,22 @@ class ProtonSynchrotron:
         R_b,
         n_p,
         *args,
+<<<<<<< HEAD
         # ssa=False,
+=======
+        ssa=False,
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         integrator=np.trapz,
         gamma=gamma_e_to_integrate,
     ):
         r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) due to synchrotron radiation,
+<<<<<<< HEAD
         for a general set of model parameters. As for electrons, we implement Eq. 21 in
         [Finke2008]_ with just a change in the mass value (we are using the proton mass now).
         For a reference on proton synchrotron and other hadronic processes see [Cerruti2015]_.
+=======
+        for a general set of model parameters. Eq. 21 in [Finke2008]_.
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
 
         **Note** parameters after \*args need to be passed with a keyword
 
@@ -100,6 +156,7 @@ class ProtonSynchrotron:
             magnetic field in the blob
         R_b : :class:`~astropy.units.Quantity`
             size of the emitting region (spherical blob assumed)
+<<<<<<< HEAD
         n_p : :class:`~agnpy.spectra.ProtonDistribution`
             proton energy distribution
         \*args
@@ -110,6 +167,18 @@ class ProtonSynchrotron:
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
             array of Lorentz factor over which to integrate the proton
+=======
+        n_e : :class:`~agnpy.spectra.ElectronDistribution`
+            electron energy distribution
+        \*args
+            parameters of the electron energy distribution (k_e, p, ...)
+        ssa : bool
+            whether to consider or not the self-absorption, default false
+        integrator : func
+            which function to use for integration, default `numpy.trapz`
+        gamma : :class:`~numpy.ndarray`
+            array of Lorentz factor over which to integrate the electron
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
             distribution
 
         Returns
@@ -124,12 +193,17 @@ class ProtonSynchrotron:
         _gamma, _epsilon = axes_reshaper(gamma, epsilon)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)
         N_p = V_b * n_p.evaluate(_gamma, *args)
+<<<<<<< HEAD
         # fold the proton distribution with the synchrotron power
+=======
+        # fold the electron distribution with the synchrotron power
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         integrand = N_p * single_particle_synch_power(B_cgs, _epsilon, _gamma, mass=m_p)
         emissivity = integrator(integrand, gamma, axis=0)
         prefactor = np.power(delta_D, 4) / (4 * np.pi * np.power(d_L, 2))
         sed = (prefactor * epsilon * emissivity).to("erg cm-2 s-1")
 
+<<<<<<< HEAD
         # if ssa:
         #     tau = ProtonSynchrotron.evaluate_tau_ssa(
         #         nu,
@@ -145,6 +219,23 @@ class ProtonSynchrotron:
         #     )
         #     attenuation = tau_to_attenuation(tau)
         #     sed *= attenuation
+=======
+        if ssa:
+            tau = ProtonSynchrotron.evaluate_tau_ssa(
+                nu,
+                z,
+                d_L,
+                delta_D,
+                B,
+                R_b,
+                n_p,
+                *args,
+                integrator=integrator,
+                gamma=gamma,
+            )
+            attenuation = tau_to_attenuation(tau)
+            sed *= attenuation
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
 
         return sed
 
@@ -160,7 +251,11 @@ class ProtonSynchrotron:
             self.blob.R_b,
             self.blob.n_p,
             *self.blob.n_p.parameters,
+<<<<<<< HEAD
             # ssa=self.ssa,
+=======
+            ssa=self.ssa,
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
             integrator=self.integrator,
             gamma=self.blob.gamma_p,
         )

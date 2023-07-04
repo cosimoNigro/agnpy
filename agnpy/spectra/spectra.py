@@ -500,7 +500,11 @@ class ExpCutoffPowerLaw(ParticleDistribution):
     When called, the particle density :math:`n_e(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
+<<<<<<< HEAD
         n(\gamma'_c) = k \, \gamma'^{-p} exp(-\gamma'/\gamma_c) \, H(\gamma'; \gamma'{\rm min}, \gamma'{\rm max})
+=======
+        n(\gamma') = k \, \gamma'^{-p} exp(-\gamma'/\gamma_c) \, H(\gamma'; \gamma'{\rm min}, \gamma'{\rm max})
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
 
     Parameters
     ----------
@@ -569,7 +573,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
             gamma, self.k, self.p, self.gamma_c, self.gamma_min, self.gamma_max
         )
 
-    def __str__(self):
+    def _str_(self):
         return (
             f"* {self.particle} energy distribution\n"
             + f" - exponential cut-off power law\n"
@@ -586,7 +590,11 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
     When called, the particle density :math:`n(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
 
     .. math::
+<<<<<<< HEAD
         n(\gamma'_c) = k \left[
+=======
+        n(\gamma') = k \left[
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         \left(\frac{\gamma'}{\gamma'_b}\right)^{-p_1} exp(-\gamma'/\gamma_c) \, H(\gamma'; \gamma'_{\rm min}, \gamma'_b) +
         \left(\frac{\gamma'}{\gamma'_b}\right)^{-p_2} exp(-\gamma'/\gamma_c)\, H(\gamma'; \gamma'_{b}, \gamma'_{\rm max})
         \right]
@@ -618,14 +626,22 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         k=1e-13 * u.Unit("cm-3"),
         p1=2.0,
         p2=3.0,
+<<<<<<< HEAD
         gamma_c=1e5,
+=======
+        gamma_c = 1e5,
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         gamma_b=1e3,
         gamma_min=10,
         gamma_max=1e7,
         mass=m_e,
         integrator=np.trapz,
     ):
+<<<<<<< HEAD
         super().__init__(mass, integrator, "ExpCutoffBrokenPowerLaw")
+=======
+        super().__init__(mass, integrator)
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         self.k = k
         self.p1 = p1
         self.p2 = p2
@@ -647,12 +663,21 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         ]
 
     @staticmethod
+<<<<<<< HEAD
     def evaluate(gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max):
         index = np.where(gamma <= gamma_b, p1, p2)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
             k * (gamma / gamma_b) ** (-index) * np.exp(-gamma / gamma_c),
             0,
+=======
+    def evaluate(gamma, k, p1, p2,  gamma_c, gamma_b, gamma_min, gamma_max):
+        index = np.where(gamma <= gamma_b, p1, p2)
+        return np.where(
+            (gamma_min <= gamma) * (gamma <= gamma_max),
+            k * (gamma/gamma_b) ** (-index) * np.exp(-gamma/gamma_c),
+            0
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         )
 
     def __call__(self, gamma):
@@ -668,20 +693,30 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         )
 
     @staticmethod
+<<<<<<< HEAD
     def evaluate_SSA_integrand(
         gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max
     ):
+=======
+    def evaluate_SSA_integrand(gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max):
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         r"""Analytical integrand for the synchrotron self-absorption:
         :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`."""
         index = np.where(gamma <= gamma_b, p1, p2)
         prefactor = -(index + 2) / gamma + (-1 / gamma_c)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
+<<<<<<< HEAD
             prefactor
             * ExpCutoffBrokenPowerLaw.evaluate(
                 gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max
             ),
             0,
+=======
+            prefactor * ExpCutoffBrokenPowerLaw.evaluate(
+            gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max),
+            0
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         )
 
     def SSA_integrand(self, gamma):
@@ -693,13 +728,21 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
             self.gamma_c,
             self.gamma_b,
             self.gamma_min,
+<<<<<<< HEAD
             self.gamma_max,
+=======
+            self.gamma_max
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
         )
 
     def __str__(self):
         return (
             f"* {self.particle} energy distribution\n"
+<<<<<<< HEAD
             + f" - exponential cut-off broken power law\n"
+=======
+            + f" - broken power law\n"
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
             + f" - k: {self.k:.2e}\n"
             + f" - p1: {self.p1:.2f}\n"
             + f" - p2: {self.p2:.2f}\n"
@@ -789,9 +832,16 @@ class InterpolatedDistribution(ParticleDistribution):
             \gamma^2 \frac{{\rm d}}{{\rm d} \gamma} \left( \frac{n_(\gamma)}{\gamma^2} \right) =
             \left(\frac{{\rm d}n(\gamma)}{{\rm d}\gamma} - \frac{2 n(\gamma)}{\gamma} \right).
 
+<<<<<<< HEAD
         Since, numerically, we interpolate a function to the log values of densities and Lorentz factors,
         we obtain a function of the log of :math:`\gamma`, that is :math:`f(u(\gamma))`, where :math:`u = \log_{10}`.
         Considering the derivative of the particle distribution in :math:`\gamma`:
+=======
+        The derivative is:
+
+        .. math::
+            \frac{dn_e(\gamma)}{d\gamma} = \frac{d 10^{f(u(\gamma))}}{d\gamma} = \frac{d10^{f(u)}}{du} \cdot \frac{du(\gamma)}{d\gamma}
+>>>>>>> 9f67c876189d05e5fc62c1725409bc0e38e378ca
 
         .. math::
             \frac{{\rm d} n(\gamma)}{{\rm d}\gamma} =
