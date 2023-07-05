@@ -1,11 +1,12 @@
 from scipy.interpolate import interp1d
 import numpy as np
+from pathlib import Path
 
 
 def lookup_tab1(eta, particle):
 
     data_dir = Path(__file__).parent.parent
-    interp_file = f"{data_dir}/data/photo_meson/interpolation_tables_kelner_aharonian/{particle}.txt"
+    interp_file = f"{data_dir}/data/interpolation_tables/{particle}.txt"
 
     eta_eta0, s, delta, B = np.genfromtxt(interp_file, dtype = 'float',  comments = '#', usecols = (0,1,2,3), unpack = 'True')
 
@@ -84,7 +85,7 @@ def x_plus_minus_nu_muon(eta):
 def phi_photon(eta, x):
     # photon
 
-    x_p, x_n = x_plus_minus_photon(eta, particle)
+    x_p, x_n = x_plus_minus_photon(eta)
     s, delta, B = lookup_tab1(eta / 0.313, 'photon') # eta_0 = 0.313
     psi = 2.5 + 0.4 * np.log(eta / 0.313)
     y = (x - x_n) / (x_p - x_n)
@@ -92,8 +93,7 @@ def phi_photon(eta, x):
     ln2 = np.log(2. / (1 + y**2))
 
     return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2)) ** psi), 0
-    )
+            np.where(x < x_n, B * (np.log(2) ** psi), 0))
 
 def phi_positron(eta, x):
     # positron
@@ -103,8 +103,7 @@ def phi_positron(eta, x):
     psi = 2.5 + 1.4 * np.log(eta / 0.313)
 
     return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2)) ** psi), 0
-    )
+            np.where(x < x_n, B * (np.log(2) ** psi), 0))
 
 def phi_antinu_muon(eta, x):
     # antinu_muon
@@ -114,8 +113,7 @@ def phi_antinu_muon(eta, x):
     psi = 2.5 + 1.4 * np.log(eta / 0.313)
 
     return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2)) ** psi), 0
-    )
+            np.where(x < x_n, B * (np.log(2) ** psi), 0))
 
 def phi_nu_electron(eta, x):
     # nu_electron
@@ -125,8 +123,7 @@ def phi_nu_electron(eta, x):
     psi = 2.5 + 1.4 * np.log(eta / 0.313)
 
     return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2)) ** psi), 0
-    )
+            np.where(x < x_n, B * (np.log(2) ** psi), 0))
 
 def phi_nu_muon(eta, x):
     # nu_muon
@@ -136,8 +133,7 @@ def phi_nu_muon(eta, x):
     psi = 2.5 + 1.4 * np.log(eta / 0.313)
 
     return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2)) ** psi), 0
-    )
+            np.where(x < x_n, B * (np.log(2) ** psi), 0))
 
 def phi_electron(eta, x):
     # electron
@@ -147,8 +143,7 @@ def phi_electron(eta, x):
     psi = 6 * (1 - np.exp(1.5 * (4 - eta/0.313))) * (np.sign(eta/0.313 - 4) + 1) / 2.
 
     return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2)) ** psi), 0
-    )
+            np.where(x < x_n, B * (np.log(2) ** psi), 0))
 
 def phi_antinu_electron(eta, x):
     # antinu_electron
@@ -158,5 +153,4 @@ def phi_antinu_electron(eta, x):
     psi = 6 * (1 - np.exp(1.5 * (4 - eta/0.313))) * (np.sign(eta/0.313 - 4) + 1) / 2.
 
     return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2)) ** psi), 0
-    )
+            np.where(x < x_n, B * (np.log(2) ** psi), 0))
