@@ -101,90 +101,88 @@ def x_minus_plus_leptons_3(eta):
     return 0.427 * x_minus, x_plus
 
 
-def phi(eta, x, x_minus, x_plus, B, s, delta, b):
-    """General phi function, Eq. (27) of [KelnerAharonian2008]_"""
-    y = (x - x_minus) / (x_plus - x_minus)
-    psi = 2.5 + b * np.log(eta / eta_0)
-    _exp = np.exp(- s * (np.log(x / x_minus))**delta)
-    _log = np.log(2. / (1 + y**2)) 
+def phi(eta, x, x_minus, x_plus, psi, B, s, delta):
+    """General phi function, Eq. (27) of [KelnerAharonian2008]_ """
 
+    y = (x - x_minus) / (x_plus - x_minus)
+    _exp = np.exp(- s * (np.log(x / x_minus))**delta)
+    _log = np.log(2. / (1 + y**2))
     _phi = np.where(
-        (x > x_minus) * (x < x_plus), 
+        (x > x_minus) * (x < x_plus),
         B * _exp * _log ** psi,
         np.where(
             x < x_minus,
-            B * (np.log(2) ** psi), 
+            B * (np.log(2) ** psi),
             0)
         )
     return _phi
 
+
 def phi_gamma(eta, x):
-    """phi function for gamma rays"""
+    """phi function for photons """
 
     x_minus, x_plus = x_minus_plus_photon(eta)
-    B, s, delta = interpolate_phi_parameters(eta, "photon")
-    b = 0.4
+    s, delta, B = interpolate_phi_parameters(eta/eta_0, "photon")
+    psi = 2.5 + 0.4 * np.log(eta / eta_0)
 
-    return phi(eta, x, x_plus, x_minus, B, s, delta, b)
+    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
 
-"""
+
 def phi_positron(eta, x):
-    # positron
+    """phi function for positrons """
 
-    x_p, x_n = x_plus_minus_positron(eta)
-    s, delta, B = lookup_tab1(eta / 0.313, 'positron') # eta_0 = 0.313
-    psi = 2.5 + 1.4 * np.log(eta / 0.313)
+    x_minus, x_plus = x_minus_plus_leptons_1(eta)
+    s, delta, B = interpolate_phi_parameters(eta/eta_0, "positron")
+    psi = 2.5 + 1.4 * np.log(eta / eta_0)
 
-    return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2) ** psi), 0))
+    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
+
 
 def phi_antinu_muon(eta, x):
-    # antinu_muon
+    """phi function for muon antineutrinos """
 
-    x_p, x_n = x_plus_minus_positron(eta)
-    s, delta, B = lookup_tab1(eta / 0.313, 'antinu_muon') # eta_0 = 0.313
-    psi = 2.5 + 1.4 * np.log(eta / 0.313)
+    x_minus, x_plus = x_minus_plus_leptons_1(eta)
+    s, delta, B = interpolate_phi_parameters(eta/eta_0, "antinu_muon")
+    psi = 2.5 + 1.4 * np.log(eta / eta_0)
 
-    return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2) ** psi), 0))
+    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
+
 
 def phi_nu_electron(eta, x):
-    # nu_electron
+    """phi function for electron neutrinos """
 
-    x_p, x_n = x_plus_minus_positron(eta)
-    s, delta, B = lookup_tab1(eta / 0.313, 'nu_electron') # eta_0 = 0.313
-    psi = 2.5 + 1.4 * np.log(eta / 0.313)
+    x_minus, x_plus = x_minus_plus_leptons_1(eta)
+    s, delta, B = interpolate_phi_parameters(eta/eta_0, "nu_electron")
+    psi = 2.5 + 1.4 * np.log(eta / eta_0)
 
-    return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2) ** psi), 0))
+    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
+
 
 def phi_nu_muon(eta, x):
-    # nu_muon
+    """phi function for muon neutrinos """
 
-    x_p, x_n = x_plus_minus_nu_muon(eta)
-    s, delta, B = lookup_tab1(eta / 0.313, 'nu_muon') # eta_0 = 0.313
-    psi = 2.5 + 1.4 * np.log(eta / 0.313)
+    x_minus, x_plus = x_minus_plus_leptons_3(eta)
+    s, delta, B = interpolate_phi_parameters(eta/eta_0, 'nu_muon')
+    psi = 2.5 + 1.4 * np.log(eta / eta_0)
 
-    return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2) ** psi), 0))
+    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
+
 
 def phi_electron(eta, x):
-    # electron
+    """phi function for electrons """
 
-    x_p, x_n = x_plus_minus_electron(eta)
-    s, delta, B = lookup_tab1(eta / 0.313, 'electron') # eta_0 = 0.313
-    psi = 6 * (1 - np.exp(1.5 * (4 - eta/0.313))) * (np.sign(eta/0.313 - 4) + 1) / 2.
+    x_minus, x_plus = x_minus_plus_leptons_2(eta)
+    s, delta, B = interpolate_phi_parameters(eta/eta_0, 'electron')
+    psi = 6 * (1 - np.exp(1.5 * (4 - eta/eta_0))) * (np.sign(eta / eta_0 - 4) + 1) / 2.
 
-    return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2) ** psi), 0))
+    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
+
 
 def phi_antinu_electron(eta, x):
-    # antinu_electron
+    """phi function for electron antineutrinos """
 
-    x_p, x_n = x_plus_minus_electron(eta)
-    s, delta, B = lookup_tab1(eta / 0.313, 'antinu_electron') # eta_0 = 0.313
-    psi = 6 * (1 - np.exp(1.5 * (4 - eta/0.313))) * (np.sign(eta/0.313 - 4) + 1) / 2.
+    x_minus, x_plus = x_minus_plus_leptons_2(eta)
+    s, delta, B = interpolate_phi_parameters(eta/eta_0, 'antinu_electron')
+    psi = 6 * (1 - np.exp(1.5 * (4 - eta / eta_0))) * (np.sign(eta / eta_0 - 4) + 1) / 2.
 
-    return np.where((x > x_n)*(x < x_p), B * ln1 * ln2 ** psi,
-            np.where(x < x_n, B * (np.log(2) ** psi), 0))
-"""
+    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
