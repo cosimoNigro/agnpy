@@ -48,13 +48,15 @@ class Blob:
         size of the array of electrons Lorentz factors
     gamma_p_size : int
         size of the array of protons Lorentz factors
+    cosmology : :class:`~astropy.units.Quantity`
+        (optional) cosmology used to convert the redshift in a distance,
+        see https://docs.astropy.org/en/stable/api/astropy.cosmology.Cosmology.html
     """
 
     def __init__(
         self,
         R_b=1e16 * u.cm,
         z=0.069,
-        d_L=None,
         delta_D=10,
         Gamma=10,
         B=1 * u.G,
@@ -63,11 +65,12 @@ class Blob:
         xi=1.0,
         gamma_e_size=200,
         gamma_p_size=200,
+        cosmology=None
     ):
         self.R_b = R_b.to("cm")
         self.z = z
         # if the luminosity distance is not specified, it will be computed from z
-        self.d_L = Distance(z=self.z).cgs if d_L is None else d_L
+        self.d_L = Distance(z=self.z, cosmology=cosmology).cgs
         self.delta_D = delta_D
         self.Gamma = Gamma
         self.B = B
