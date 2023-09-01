@@ -48,7 +48,7 @@ class Blob:
         size of the array of electrons Lorentz factors
     gamma_p_size : int
         size of the array of protons Lorentz factors
-    cosmology : :class:`~astropy.units.Quantity`
+    cosmology : :class:`~astropy.cosmology.Cosmology`
         (optional) cosmology used to convert the redshift in a distance,
         see https://docs.astropy.org/en/stable/api/astropy.cosmology.Cosmology.html
     """
