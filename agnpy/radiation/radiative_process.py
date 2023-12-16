@@ -1,5 +1,6 @@
 import numpy as np
 import astropy.units as u
+from astropy.constants import h
 
 
 class RadiativeProcess:
@@ -19,7 +20,7 @@ class RadiativeProcess:
         return np.trapz(sed_fnu, nu)   # erg / s / cm2
 
     def integrate_photon_flux(self, nu_min, nu_max, nu_points=50):
-        r""" Evaluates the photon flux integral from SED over the span of provided frequencies
+        r""" Evaluates the photon flux integral (photons/s*cm2) from SED over the span of provided frequencies
 
         Parameters
         ----------
@@ -28,11 +29,19 @@ class RadiativeProcess:
         nu_points: number of points (between nu_min and nu_max) on the log scale
         """
         nu = self._nu_logspace(nu_min, nu_max, nu_points)
-        photon_energy = nu.to("erg", equivalencies=u.spectral())
-        sed_nufnu = self.sed_flux(nu)   # erg / s / cm2 / log(nu)
-        sed_fnu = sed_nufnu / nu        # erg / s / cm2 / Hz
-        n = sed_fnu / photon_energy     # photons / s / cm2 / Hz
-        return np.trapz(n, nu)          # photons / s / cm2
+        flux = self.diff_photon_flux(nu)
+        energy = nu.to("eV", equivalencies=u.spectral())
+        return np.trapz(flux, energy)
+
+    def diff_photon_flux(self, nu):
+        """Similar to sed_flux(), but returns the differential photon flux in energy (photons/s*cm2*eV)."""
+        photon_energy_eV = nu.to("eV", equivalencies=u.spectral())
+        sed_nufnu = self.sed_flux(nu)                    # erg / s / cm2 / log(nu)
+        sed_fnu = sed_nufnu / nu                         # erg / s / cm2 / Hz
+        sed_fnu_eV = sed_fnu.to("eV / (cm2 s Hz)")       # eV / s / cm2 / Hz
+        photons_per_Hz = sed_fnu_eV / photon_energy_eV   # photons / s / cm2 / Hz
+        photons_per_eV = photons_per_Hz / h.to("eV/Hz")  # photons / s / cm2 / eV
+        return photons_per_eV
 
     def _nu_logspace(self, nu_min, nu_max, nu_points=50):
         """A thin wrapper around numpy.logspace() function, capable of spectral-equivalency conversion of input parameters."""

@@ -74,14 +74,10 @@ class TestSedIntegration:
         nu_max = 10 ** nu_max_log * u.Hz
 
         nu = np.logspace(nu_min_log, nu_max_log) * u.Hz
-        Fnu = synch.sed_flux(nu) / nu
-        # convert the energy flux to photon flux in photons / s / cm2 / eV
-        photons_per_Hz = Fnu / nu.to("erg", equivalencies=u.spectral())  # Fnu is in ergs so must use the same unit
-        h_in_eV = h.to("eV/Hz")
-        energies_eV = nu * h_in_eV
-        photons_per_eV = photons_per_Hz / h_in_eV
+        flux = synch.diff_photon_flux(nu)
+        energies_eV = nu.to("eV", equivalencies=u.spectral())
 
-        estimated_integral = _estimate_powerlaw_integral(energies_eV, photons_per_eV)
+        estimated_integral = _estimate_powerlaw_integral(energies_eV, flux)
 
         actual_integral = synch.integrate_photon_flux(nu_min, nu_max).value
 
