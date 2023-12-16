@@ -6,7 +6,7 @@ from astropy.coordinates import Distance
 from agnpy.spectra import PowerLaw
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron
-from ..utils.sedintegrable import SedFluxIntegrable
+from agnpy.radiation.radiative_process import RadiativeProcess
 
 
 def _estimate_powerlaw_integral(x_values, y_values):
@@ -27,7 +27,7 @@ def _sample_synchrotron_model():
     return synch
 
 
-class FlatSedGenerator(SedFluxIntegrable):
+class FlatSedGenerator(RadiativeProcess):
     """A dummy generator returning flat (constant) flux, of the same value across the whole spectrum."""
     def __init__(self, flat_value):
         self.flat_value = flat_value
@@ -37,7 +37,7 @@ class FlatSedGenerator(SedFluxIntegrable):
                     u.erg / (u.cm ** 2 * u.s * u.Hz)) * nu
 
 
-class TestSedIntegrable:
+class TestSedIntegration:
 
     def test_flat_integral(self):
         """Integrate over flat SED (Fnu equal to 1.0 for all frequencies)."""

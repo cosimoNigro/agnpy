@@ -2,7 +2,8 @@ import numpy as np
 import astropy.units as u
 
 
-class SedFluxIntegrable:
+class RadiativeProcess:
+    """Base class for radiative processes. Contains common logic, e.g. calculating SED flux integrals."""
     def integrate_flux(self, nu_min, nu_max, nu_points=50):
         r""" Evaluates the SED flux integral over the span of provided frequencies
 
@@ -34,6 +35,7 @@ class SedFluxIntegrable:
         return np.trapz(n, nu)          # photons / s / cm2
 
     def _nu_logspace(self, nu_min, nu_max, nu_points=50):
+        """A thin wrapper around numpy.logspace() function, capable of spectral-equivalency conversion of input parameters."""
         nu_min_hz = nu_min.to(u.Hz, equivalencies=u.spectral())
         nu_max_hz = nu_max.to(u.Hz, equivalencies=u.spectral())
         nu = np.logspace(start=np.log10(nu_min_hz.value), stop=np.log10(nu_max_hz.value), num=nu_points) * u.Hz

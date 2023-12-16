@@ -9,7 +9,7 @@ from ..utils.math import (
 )
 from ..utils.conversion import nu_to_epsilon_prime, to_R_g_units
 from ..utils.geometry import x_re_shell, mu_star_shell, x_re_ring
-from ..utils.sedintegrable import SedFluxIntegrable
+from agnpy.radiation.radiative_process import RadiativeProcess
 from ..targets import (
     CMB,
     PointSourceBehindJet,
@@ -22,7 +22,7 @@ from .kernels import compton_kernel
 __all__ = ["ExternalCompton"]
 
 
-class ExternalCompton(SedFluxIntegrable):
+class ExternalCompton(RadiativeProcess):
     """class for External Compton radiation computation
 
     Parameters

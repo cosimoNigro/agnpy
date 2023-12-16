@@ -10,12 +10,12 @@ from ..utils.math import (
     nu_to_integrate,
 )
 from ..utils.conversion import nu_to_epsilon_prime
-from ..utils.sedintegrable import SedFluxIntegrable
+from agnpy.radiation.radiative_process import RadiativeProcess
 
 __all__ = ["SynchrotronSelfCompton"]
 
 
-class SynchrotronSelfCompton(SedFluxIntegrable):
+class SynchrotronSelfCompton(RadiativeProcess):
     """class for Synchrotron Self Compton radiation computation
 
     Parameters
