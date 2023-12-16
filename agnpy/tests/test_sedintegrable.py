@@ -18,7 +18,7 @@ def _estimate_powerlaw_integral(x_values, y_values):
 
 
 def _sample_synchrotron_model():
-    # Based on the synchrotron example from agnpy documentation
+    """The model based on the synchrotron example from the agnpy documentation."""
     R_b = 1e16 * u.cm
     n_e = PowerLaw.from_total_energy(1e48 * u.erg, 4 / 3 * np.pi * R_b ** 3, p=2.8, gamma_min=1e2,
                                      gamma_max=1e7, mass=m_e)
@@ -27,22 +27,28 @@ def _sample_synchrotron_model():
     return synch
 
 
+class FlatSedGenerator(SedFluxIntegrable):
+    """A dummy generator returning flat (constant) flux, of the same value across the whole spectrum."""
+    def __init__(self, flat_value):
+        self.flat_value = flat_value
+
+    def sed_flux(self, nu):
+        return np.full(fill_value=self.flat_value, shape=nu.shape, dtype=np.float64) * (
+                    u.erg / (u.cm ** 2 * u.s * u.Hz)) * nu
+
+
 class TestSedIntegrable:
 
     def test_flat_integral(self):
-        """Integrate over flat SED (Fnu equal to 1.0 for all frequencies)"""
-        class FlatSedGenerator(SedFluxIntegrable):
-            def sed_flux(self, nu):
-                return np.full(fill_value=1.0, shape=nu.shape, dtype=np.float64) * (u.erg / (u.cm ** 2 * u.s * u.Hz)) * nu
-
+        """Integrate over flat SED (Fnu equal to 1.0 for all frequencies)."""
         nu_min = 10 * u.Hz
         nu_max = 10 ** 20 * u.Hz
-        flux = FlatSedGenerator().integrate_flux(nu_min, nu_max)
+        flux = FlatSedGenerator(1.0).integrate_flux(nu_min, nu_max)
         assert flux == 1e+20 * u.erg / (u.cm ** 2 * u.s)
 
 
     def test_synchrotron_energy_flux_integral(self):
-        """Integrate over sample synchrotron flux and compare with the value estimated using the power law integral"""
+        """Integrate over sample synchrotron flux and compare with the value estimated using the power law integral."""
         synch = _sample_synchrotron_model()
 
         nu_min_log = 13
@@ -59,7 +65,7 @@ class TestSedIntegrable:
         assert math.isclose(actual_integral, estimated_integral, rel_tol=0.05)
 
     def test_synchrotron_photon_flux_integral(self):
-        """Integrate over sample synchrotron photon flux and compare with the value estimated using the power law integral"""
+        """Integrate over sample synchrotron photon flux and compare with the value estimated using the power law integral."""
         synch = _sample_synchrotron_model()
 
         nu_min_log = 13
