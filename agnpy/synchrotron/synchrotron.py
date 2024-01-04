@@ -4,7 +4,7 @@ import astropy.units as u
 from astropy.constants import e, h, c, m_e, sigma_T
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e
-from agnpy.radiation.radiative_process import RadiativeProcess
+from ..radiative_process import RadiativeProcess
 
 
 __all__ = ["R", "nu_synch_peak", "Synchrotron"]
