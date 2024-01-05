@@ -4,6 +4,7 @@ import astropy.units as u
 from astropy.constants import e, c, m_p
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_p
+from ..radiative_process import RadiativeProcess
 from .synchrotron import single_particle_synch_power, tau_to_attenuation
 
 __all__ = ["ProtonSynchrotron"]
@@ -11,7 +12,8 @@ __all__ = ["ProtonSynchrotron"]
 e = e.gauss
 B_cr = 4.414e13 * u.G  # critical magnetic field
 
-class ProtonSynchrotron:
+
+class ProtonSynchrotron(RadiativeProcess):
     """Class for synchrotron radiation computation
 
     Parameters
