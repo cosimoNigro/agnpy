@@ -2,6 +2,7 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import m_e, m_p
+from astropy.cosmology import Planck18
 import pytest
 from agnpy.spectra import PowerLaw, BrokenPowerLaw
 from agnpy.emission_regions import Blob
@@ -39,9 +40,9 @@ class TestBlob:
         # - automatically set d_L
         blob = Blob(z=2.1)
         assert u.isclose(blob.d_L, 5.21497473e28 * u.cm, atol=0 * u.cm, rtol=1e-3)
-        # - set a different d_L, not computed from z
-        d_L = 1.5e27 * u.cm
-        blob = Blob(z=0.1, d_L=d_L)
+        # - change cosmology
+        blob = Blob(z=0.1, cosmology=Planck18)
+        d_L = 1.4682341e+27 * u.cm
         assert u.isclose(blob.d_L, d_L, atol=0 * u.cm, rtol=1e-5)
 
     def test_particles_spectra(self):
