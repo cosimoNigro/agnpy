@@ -16,7 +16,7 @@ from agnpy.targets import (
 )
 from agnpy.compton import SynchrotronSelfCompton, ExternalCompton
 from agnpy.utils.math import trapz_loglog
-from .utils import (
+from agnpy.utils.validation_utils import (
     make_comparison_plot,
     extract_columns_sample_file,
     check_deviation,
@@ -25,7 +25,7 @@ from .utils import (
 
 agnpy_dir = Path(__file__).parent.parent.parent  # go to the agnpy root
 # where to read sampled files
-data_dir = agnpy_dir / "agnpy/data"
+data_dir = agnpy_dir / "data"
 # where to save figures, clean-up before making the new
 figures_dir_ssc = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/ssc")
 figures_dir_ec_disk = clean_and_make_dir(
@@ -39,7 +39,7 @@ figures_dir_ec_cmb = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/
 # parameters of the Blob and EED used in Figure 7.4 of Dermer 2009
 # and for the EC scenario in Finke 2016
 R_b = 1e16 * u.cm
-V_b = 4 / 3 * np.pi * R_b ** 3
+V_b = 4 / 3 * np.pi * R_b**3
 W_e_ssc = 1e48 * u.Unit("erg")
 W_e_ec = 6e42 * u.Unit("erg")
 z_ssc = Distance(1e27, unit=u.cm).z
