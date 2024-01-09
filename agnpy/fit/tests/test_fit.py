@@ -236,7 +236,12 @@ class TestFit:
         wrappers return the same results."""
         # electron energy distribution
         n_e = LogParabola(
-            k=1 * u.Unit("cm-3"), p=2.0, q=0.2, gamma_0=1e2, gamma_min=1, gamma_max=3e4,
+            k=1 * u.Unit("cm-3"),
+            p=2.0,
+            q=0.2,
+            gamma_0=1e2,
+            gamma_min=1,
+            gamma_max=3e4,
         )
 
         # initialise the wrappers
@@ -258,8 +263,8 @@ class TestFit:
         L_disk = 6.7e45 * u.Unit("erg s-1")  # disk luminosity
         M_BH = 5.71 * 1e7 * M_sun
         eta = 1 / 12
-        m_dot = (L_disk / (eta * c ** 2)).to("g s-1")
-        R_g = ((G * M_BH) / c ** 2).to("cm")
+        m_dot = (L_disk / (eta * c**2)).to("g s-1")
+        R_g = ((G * M_BH) / c**2).to("cm")
         R_in = 6 * R_g
         R_out = 3e4 * R_g
         xi_dt = 0.6

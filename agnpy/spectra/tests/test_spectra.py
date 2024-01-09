@@ -18,7 +18,7 @@ from agnpy.utils.conversion import mec2, mpc2
 
 agnpy_dir = Path(__file__).parent.parent.parent  # go to the agnpy root
 # where to read sampled files
-data_dir = agnpy_dir / "agnpy/data"
+data_dir = agnpy_dir / "data"
 
 gamma_init_interp = np.logspace(2, 5)
 n_e_interp = 1e-3 * u.Unit("cm-3") * gamma_init_interp ** (-2.1)

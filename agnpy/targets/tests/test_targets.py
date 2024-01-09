@@ -112,7 +112,10 @@ class TestSSDisk:
 
     @pytest.mark.parametrize(
         "R_in, R_out, R_g_units",
-        [(R_in_tilde_test, R_out_tilde_test, False), (R_in_test, R_out_test, True),],
+        [
+            (R_in_tilde_test, R_out_tilde_test, False),
+            (R_in_test, R_out_test, True),
+        ],
     )
     def test_R_in_R_out_units(self, R_in, R_out, R_g_units):
         """check if a TypeError is raised when passing R_in and R_out with
