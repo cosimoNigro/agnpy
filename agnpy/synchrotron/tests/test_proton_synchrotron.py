@@ -10,7 +10,7 @@ from agnpy.spectra import ExpCutoffPowerLaw
 from agnpy.synchrotron import Synchrotron, nu_synch_peak
 from agnpy.synchrotron import ProtonSynchrotron
 from agnpy.utils.math import trapz_loglog
-from .utils import (
+from agnpy.utils.validation_utils import (
     make_comparison_plot,
     extract_columns_sample_file,
     check_deviation,
@@ -19,7 +19,7 @@ from .utils import (
 
 agnpy_dir = Path(__file__).parent.parent.parent  # go to the agnpy root
 # where to read sampled files
-data_dir = agnpy_dir / "agnpy/data"
+data_dir = agnpy_dir / "data"
 # where to save figures, clean-up before making the new
 figures_dir = clean_and_make_dir(agnpy_dir, "crosschecks/figures/proton_synchrotron")
 
@@ -27,10 +27,10 @@ figures_dir = clean_and_make_dir(agnpy_dir, "crosschecks/figures/proton_synchrot
 # Define source parameters
 B = 10 * u.G
 redshift = 0.32
-distPKS = Distance(z=redshift) # Already inside blob definition
+distPKS = Distance(z=redshift)  # Already inside blob definition
 doppler_s = 30
 Gamma_bulk = 16
-R = 1e16 * u.cm #radius of the blob
+R = 1e16 * u.cm  # radius of the blob
 
 
 class TestProtonSynchrotron:
@@ -39,28 +39,31 @@ class TestProtonSynchrotron:
     def test_synch_reference_sed(self):
         """Test agnpy proton synchrotron SED against the SED produced by the same particle distribution from Matteo Cerruti's code."""
         # reference SED
-        lognu, lognuFnu = np.genfromtxt(f"{data_dir}/reference_seds/cerruti_psynch/test_pss.dat",  dtype = 'float', comments = '#', usecols = (0,4), unpack = True)
-        nu_ref = 10**lognu * u.Unit('Hz')
-        sed_ref = 10**lognuFnu *u.Unit("erg cm-2 s-1")
+        lognu, lognuFnu = np.genfromtxt(
+            f"{data_dir}/reference_seds/cerruti_psynch/test_pss.dat",
+            dtype="float",
+            comments="#",
+            usecols=(0, 4),
+            unpack=True,
+        )
+        nu_ref = 10**lognu * u.Unit("Hz")
+        sed_ref = 10**lognuFnu * u.Unit("erg cm-2 s-1")
 
         # agnpy
-        n_p = ExpCutoffPowerLaw(k=12e4 / u.Unit('cm3'), #12e3 / u.Unit('cm3'),
-            p = 2.2 ,
-            gamma_c= 2.5e9,
-            gamma_min= 1,
+        n_p = ExpCutoffPowerLaw(
+            k=12e4 / u.Unit("cm3"),  # 12e3 / u.Unit('cm3'),
+            p=2.2,
+            gamma_c=2.5e9,
+            gamma_min=1,
             gamma_max=1e20,
-            mass=m_p
+            mass=m_p,
         )
 
-        blob = Blob(R_b=R,
-                z=redshift,
-                delta_D=doppler_s,
-                Gamma=Gamma_bulk,
-                B=B,
-                n_p=n_p
+        blob = Blob(
+            R_b=R, z=redshift, delta_D=doppler_s, Gamma=Gamma_bulk, B=B, n_p=n_p
         )
 
-        psynch = ProtonSynchrotron(blob)#, ssa = True)
+        psynch = ProtonSynchrotron(blob)  # , ssa = True)
         sed_agnpy = psynch.sed_flux(nu_ref)
 
         # sed comparison plot
@@ -80,26 +83,22 @@ class TestProtonSynchrotron:
         # requires that the SED points deviate less than 25% from the figure
         assert check_deviation(nu_ref, sed_agnpy, sed_ref, 0.25, nu_range)
 
-
     def test_sed_integration_methods(self):
         """
         Test different integration methods against each other:
         simple trapezoidal rule vs trapezoidal rule in log-log space.
         """
-        n_p = ExpCutoffPowerLaw(k=12e4 / u.Unit('cm3'), #12e3 / u.Unit('cm3'),
-            p = 2.2 ,
-            gamma_c= 2.5e9,
-            gamma_min= 1,
+        n_p = ExpCutoffPowerLaw(
+            k=12e4 / u.Unit("cm3"),  # 12e3 / u.Unit('cm3'),
+            p=2.2,
+            gamma_c=2.5e9,
+            gamma_min=1,
             gamma_max=1e20,
-            mass=m_p
+            mass=m_p,
         )
 
-        blob = Blob(R_b=R,
-                z=redshift,
-                delta_D=doppler_s,
-                Gamma=Gamma_bulk,
-                B=B,
-                n_p=n_p
+        blob = Blob(
+            R_b=R, z=redshift, delta_D=doppler_s, Gamma=Gamma_bulk, B=B, n_p=n_p
         )
 
         psynch = ProtonSynchrotron(blob)
@@ -136,5 +135,5 @@ class TestProtonSynchrotron:
     def test_nu_synch_peak(self):
         """Test peak synchrotron frequency for a given magnetic field and Lorentz factor."""
         gamma = 100
-        nu_synch = nu_synch_peak(1 * u.G, gamma, mass = m_p).to_value("Hz")
+        nu_synch = nu_synch_peak(1 * u.G, gamma, mass=m_p).to_value("Hz")
         assert np.isclose(nu_synch, 15245186.451944835, atol=0)

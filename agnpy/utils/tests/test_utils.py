@@ -6,14 +6,13 @@ from pathlib import Path
 import agnpy.utils.math as math
 import agnpy.utils.geometry as geom
 from agnpy.utils.plot import load_mpl_rc, plot_sed
-from .utils import clean_and_make_dir
 
 twopi = 2 * np.pi
 
 
 def line_loglog(x, m, n):
     """a straight line in loglog-space"""
-    return x ** m * np.exp(n)
+    return x**m * np.exp(n)
 
 
 def integral_line_loglog(x_min, x_max, m, n):
@@ -62,7 +61,7 @@ class TestUtilsGeometry:
         mu_s = 0.01
         x1 = geom.x_re_ring_mu_s(R_re, r, phi_re, uu, mu_s)
         x2 = np.sqrt(
-            r ** 2 + (uu - R_re * np.cos(phi_re)) ** 2 + (R_re * np.sin(phi_re)) ** 2
+            r**2 + (uu - R_re * np.cos(phi_re)) ** 2 + (R_re * np.sin(phi_re)) ** 2
         )
         assert np.isclose(x1, x2, atol=0, rtol=0.01)
 
@@ -146,7 +145,7 @@ class TestUtilsGeometry:
         uu = 5e17 * u.cm
         mu_re = 0.999
         mu_s = 0.001
-        x_true = np.sqrt((r - R_re) ** 2 + uu ** 2)
+        x_true = np.sqrt((r - R_re) ** 2 + uu**2)
         x_shell = geom.x_re_shell_mu_s(R_re, r, phi_re, mu_re, uu, mu_s)
         assert np.isclose(x_shell, x_true, atol=0, rtol=0.01)
 
@@ -177,9 +176,9 @@ class TestUtilsGeometry:
         mu_re = 0.99999
         phi_shell, mu_shell = geom.phi_mu_re_shell(R_re, r, phi_re, mu_re, uu, mu_s)
         phi_true = 0  # unless mu_s = 1 in which case phi_true can be whatever
-        dx = uu * np.sqrt(1 - mu_s ** 2)
+        dx = uu * np.sqrt(1 - mu_s**2)
         dz = r - R_re + uu * mu_s
-        mu_true = dz / np.sqrt(dx ** 2 + dz ** 2)
+        mu_true = dz / np.sqrt(dx**2 + dz**2)
         assert np.isclose(mu_shell, mu_true, atol=0.01, rtol=0)
         print(phi_true, phi_shell, R_re, r, phi_re, uu, mu_s)
 

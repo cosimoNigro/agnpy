@@ -19,10 +19,14 @@ from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
 from agnpy.synchrotron import Synchrotron
 from agnpy.compton import SynchrotronSelfCompton, ExternalCompton
 from agnpy.fit import SynchrotronSelfComptonModel, ExternalComptonModel
-from .utils import make_comparison_plot, check_deviation, clean_and_make_dir
+from agnpy.utils.validation_utils import (
+    make_comparison_plot,
+    check_deviation,
+    clean_and_make_dir,
+)
 
 
-agnpy_dir = Path(__file__).parent.parent
+agnpy_dir = Path(__file__).parent.parent.parent
 # where to read sampled files
 data_dir = agnpy_dir / "data"
 # where to save figures, clean-up before making the new

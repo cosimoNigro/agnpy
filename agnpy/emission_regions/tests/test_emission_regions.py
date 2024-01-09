@@ -42,7 +42,7 @@ class TestBlob:
         assert u.isclose(blob.d_L, 5.21497473e28 * u.cm, atol=0 * u.cm, rtol=1e-3)
         # - change cosmology
         blob = Blob(z=0.1, cosmology=Planck18)
-        d_L = 1.4682341e+27 * u.cm
+        d_L = 1.4682341e27 * u.cm
         assert u.isclose(blob.d_L, d_L, atol=0 * u.cm, rtol=1e-5)
 
     def test_particles_spectra(self):
