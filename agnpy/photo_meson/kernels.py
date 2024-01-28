@@ -1,188 +1,217 @@
-from scipy.interpolate import interp1d
+from scipy.interpolate import CubicSpline
 import numpy as np
 from pathlib import Path
 
 data_dir = Path(__file__).parent.parent
-secondaries = ["photon", "electron", "positron", "nu_electron", "nu_muon", "antinu_electron", "antinu_muon"]
+secondaries = [
+    "gamma",
+    "electron",
+    "positron",
+    "electron_neutrino",
+    "electron_antineutrino",
+    "muon_neutrino",
+    "muon_antineutrino",
+]
 
 # ratio between the pion and proton mass, to be used in several calculations
 eta_0 = 0.313
 r = 0.146
 
 
-def interpolate_phi_parameters(eta, particle):
+def interpolate_phi_parameter(particle, parameter):
     """Interpolates the tables providing the parameters fo the phi functions
-    as a function of eta. Table 1 and 2 in [KelnerAharonian2008]_
+    as a function of eta. Table 1 and 2 in [KelnerAharonian2008]_.
 
     Parameters
     ----------
-    eta : float
-        Eq. (10) [KelnerAharonian2008]_
     particle : string
         secondary for which the spectrum has to be calculated.
+    parameter: string
+        the function to be interpolated
     """
-    if particle not in secondaries:
-        raise ValueError(f"{particle} not available among the secondaries")
 
-    interp_file = f"{data_dir}/data/photo_mesons/kelner_aharonian_2008/phi_tables/{particle}.txt"
+    interp_file = (
+        f"{data_dir}/data/photo_meson/kelner_aharonian_2008/phi_tables/{particle}.txt"
+    )
 
-    eta_eta0, s, delta, B = np.genfromtxt(interp_file, dtype = 'float', comments = '#', usecols = (0,1,2,3), unpack = 'True')
+    eta_eta0, s, delta, B = np.genfromtxt(
+        interp_file, dtype="float", comments="#", usecols=(0, 1, 2, 3), unpack="True"
+    )
 
-    s_int = interp1d(eta_eta0, s, kind='linear', bounds_error=False, fill_value="extrapolate")
-    delta_int = interp1d(eta_eta0, delta, kind='linear', bounds_error=False, fill_value="extrapolate")
-    B_int = interp1d(eta_eta0, B, kind='linear', bounds_error=False, fill_value="extrapolate")
+    if parameter == "s":
+        func = CubicSpline(eta_eta0, s)
+    elif parameter == "delta":
+        func = CubicSpline(eta_eta0, delta)
+    elif parameter == "B":
+        func = CubicSpline(eta_eta0, B)
+    else:
+        raise ValueError(
+            f"{parameter} not available among the parameters to be interpolated"
+        )
 
-    return s_int(eta), delta_int(eta), B_int(eta)
+    return func
 
 
-def x_minus_plus_photon(eta):
+def x_minus_gamma(eta):
     """Range of x values in which the phi expression is valid.
-    Photon secondaries."""
-
-    x_1 = eta + r ** 2
-    x_2 = np.sqrt((eta - r ** 2 - 2 * r) * (eta - r ** 2 + 2 * r))
+    Photon secondaries.
+    """
+    x_1 = eta + r**2
+    x_2 = np.sqrt((eta - r**2 - 2 * r) * (eta - r**2 + 2 * r))
     x_3 = 1 / (2 * (1 + eta))
-
-    x_plus = x_3 * (x_1 + x_2)
     x_minus = x_3 * (x_1 - x_2)
 
-    return x_minus, x_plus
+    return x_minus
 
 
-def x_minus_plus_leptons_1(eta):
+def x_plus_gamma(eta):
+    """Range of x values in which the phi expression is valid.
+    Photon secondaries.
+    """
+    x_1 = eta + r**2
+    x_2 = np.sqrt((eta - r**2 - 2 * r) * (eta - r**2 + 2 * r))
+    x_3 = 1 / (2 * (1 + eta))
+    x_plus = x_3 * (x_1 - x_2)
+
+    return x_plus
+
+
+def x_minus_leptons_1(eta):
     """Range of x values in which the phi expression is valid.
     Secondaries for which it is valid:
         * positrons,
         * muon antineutrinos,
         * electron neutrinos.
     """
-    x_minus, x_plus = x_minus_plus_photon(eta)
-
-    return x_minus / 4, x_plus
+    return x_minus_gamma(eta) / 4
 
 
-def x_minus_plus_leptons_2(eta):
+def x_minus_leptons_2(eta):
     """Range of x values in which the phi expression is valid.
     Secondaries for which it is valid:
         * electrons,
         * electron antineutrinos.
     """
-
     x_1 = 2 * (1 + eta)
     x_2 = eta - (2 * r)
     x_3 = np.sqrt(eta * (eta - 4 * r * (1 + r)))
-
-    x_plus = (x_2 + x_3) / x_1
     x_minus = (x_2 - x_3) / x_1
 
-    return x_minus / 2, x_plus
+    return x_minus / 2
 
 
-def x_minus_plus_leptons_3(eta):
+def x_plus_leptons_2(eta):
+    """Range of x values in which the phi expression is valid.
+    Secondaries for which it is valid:
+        * electrons,
+        * electron antineutrinos.
+    """
+    x_1 = 2 * (1 + eta)
+    x_2 = eta - (2 * r)
+    x_3 = np.sqrt(eta * (eta - 4 * r * (1 + r)))
+    x_plus = (x_2 + x_3) / x_1
+
+    return x_plus
+
+
+def x_minus_leptons_3(eta):
     """Range of x values in which the phi expression is valid.
     Secondaries for which it is valid:
         * muon neutrinos.
     """
+    return 0.427 * x_minus_gamma(eta) / 3
 
-    x_minus, x_plus = x_minus_plus_photon(eta)
 
+def x_plus_leptons_3(eta):
+    """Range of x values in which the phi expression is valid.
+    Secondaries for which it is valid:
+        * muon neutrinos.
+    """
     rho = eta / eta_0
+    x_plus = x_plus_gamma(eta)
 
     x_plus = np.where(
         rho < 2.14,
         0.427 * x_plus,
         np.where(
-            (rho > 2.14) * (rho < 10),
-            (0.427 + 0.0729 * (rho - 2.14)) * x_plus,
-            x_plus
-            )
+            (rho > 2.14) * (rho < 10), (0.427 + 0.0729 * (rho - 2.14)) * x_plus, x_plus
+        ),
     )
 
-    return 0.427 * x_minus, x_plus
+    return x_plus
 
 
-def phi(eta, x, x_minus, x_plus, psi, B, s, delta):
-    """General phi function, Eq. (27) of [KelnerAharonian2008]_ """
+def psi_gamma(eta):
+    """Psi function for gamma rays"""
+    return 2.5 + 0.4 * np.log(eta / eta_0)
 
-    y = (x - x_minus) / (x_plus - x_minus)
-    _exp = np.exp(- s * (np.log(x / x_minus))**delta)
-    _log = np.log(2. / (1 + y**2))
-    _phi = np.where(
-        (x > x_minus) * (x < x_plus),
-        B * _exp * _log ** psi,
-        np.where(
-            x < x_minus,
-            B * (np.log(2) ** psi),
-            0)
+
+def psi_1(eta, x):
+    """psi function for electrons and electron antineutrinos"""
+    return (
+        6 * (1 - np.exp(1.5 * (4 - eta / eta_0))) * (np.sign(eta / eta_0 - 4) + 1) / 2.0
+    )
+
+
+def psi_2(eta):
+    """Psi function for positrons, all neutrinos except electron antineutrinos"""
+    return 2.5 + 1.4 * np.log(eta / eta_0)
+
+
+class PhiKernel:
+    """Phi function, Eq. (27) in [KelnerAharonian2008]_."""
+
+    def __init__(self, particle):
+        if particle not in secondaries:
+            raise ValueError(f"{particle} not available among the secondaries")
+        else:
+            self.particle = particle
+            # parameters of the phi function
+            self.s = interpolate_phi_parameter(particle, "s")
+            self.delta = interpolate_phi_parameter(particle, "delta")
+            self.B = interpolate_phi_parameter(particle, "B")
+            # maximum and minimum energies (these are functions of eta as well
+            if self.particle == "gamma":
+                self.x_minus = x_minus_gamma
+                self.x_plus = x_plus_gamma
+            elif self.particle in [
+                "positron",
+                "muon_antineutrino",
+                "electron_neutrino",
+            ]:
+                self.x_minus = x_minus_leptons_1
+                self.x_plus = x_plus_gamma
+            elif self.particle in ["electrons", "electron_antineutrino"]:
+                self.x_minus = x_minus_leptons_2
+                self.x_plus = x_plus_leptons_2
+            elif self.particle == "muon_neutrino":
+                self.x_minus = x_minus_leptons_3
+                self.x_plus = x_plus_leptons_3
+            # values of psi
+            if self.particle == "gamma":
+                self.psi = psi_gamma
+            elif self.particle in ["electron", "electron_antineutrino"]:
+                self.psi = psi_1
+            else:
+                self.psi = psi_2
+
+    def __call__(self, eta, x):
+        """Evaluate the phi function, Eq. (27) of [KelnerAharonian2008]_."""
+        # evaluate the interpolated parameters
+        s = self.s(eta)
+        delta = self.delta(eta)
+        B = self.B(eta)
+
+        x_minus = self.x_minus(eta)
+        x_plus = self.x_plus(eta)
+        psi = self.psi(eta)
+
+        y = (x - x_minus) / (x_plus - x_minus)
+        _exp = np.exp(-s * (np.log(x / x_minus)) ** delta)
+        _log = np.log(2.0 / (1 + y**2))
+        _phi = np.where(
+            (x > x_minus) * (x < x_plus),
+            B * _exp * _log**psi,
+            np.where(x < x_minus, B * (np.log(2) ** psi), 0),
         )
-    return _phi
-
-
-def phi_gamma(eta, x):
-    """phi function for photons """
-
-    x_minus, x_plus = x_minus_plus_photon(eta)
-    s, delta, B = interpolate_phi_parameters(eta/eta_0, "photon")
-    psi = 2.5 + 0.4 * np.log(eta / eta_0)
-
-    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
-
-
-def phi_positron(eta, x):
-    """phi function for positrons """
-
-    x_minus, x_plus = x_minus_plus_leptons_1(eta)
-    s, delta, B = interpolate_phi_parameters(eta/eta_0, "positron")
-    psi = 2.5 + 1.4 * np.log(eta / eta_0)
-
-    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
-
-
-def phi_antinu_muon(eta, x):
-    """phi function for muon antineutrinos """
-
-    x_minus, x_plus = x_minus_plus_leptons_1(eta)
-    s, delta, B = interpolate_phi_parameters(eta/eta_0, "antinu_muon")
-    psi = 2.5 + 1.4 * np.log(eta / eta_0)
-
-    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
-
-
-def phi_nu_electron(eta, x):
-    """phi function for electron neutrinos """
-
-    x_minus, x_plus = x_minus_plus_leptons_1(eta)
-    s, delta, B = interpolate_phi_parameters(eta/eta_0, "nu_electron")
-    psi = 2.5 + 1.4 * np.log(eta / eta_0)
-
-    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
-
-
-def phi_nu_muon(eta, x):
-    """phi function for muon neutrinos """
-
-    x_minus, x_plus = x_minus_plus_leptons_3(eta)
-    s, delta, B = interpolate_phi_parameters(eta/eta_0, 'nu_muon')
-    psi = 2.5 + 1.4 * np.log(eta / eta_0)
-
-    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
-
-
-def phi_electron(eta, x):
-    """phi function for electrons """
-
-    x_minus, x_plus = x_minus_plus_leptons_2(eta)
-    s, delta, B = interpolate_phi_parameters(eta/eta_0, 'electron')
-    psi = 6 * (1 - np.exp(1.5 * (4 - eta/eta_0))) * (np.sign(eta / eta_0 - 4) + 1) / 2.
-
-    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
-
-
-def phi_antinu_electron(eta, x):
-    """phi function for electron antineutrinos """
-
-    x_minus, x_plus = x_minus_plus_leptons_2(eta)
-    s, delta, B = interpolate_phi_parameters(eta/eta_0, 'antinu_electron')
-    psi = 6 * (1 - np.exp(1.5 * (4 - eta / eta_0))) * (np.sign(eta / eta_0 - 4) + 1) / 2.
-
-    return phi(eta, x, x_minus, x_plus, psi, B, s, delta)
+        return _phi
