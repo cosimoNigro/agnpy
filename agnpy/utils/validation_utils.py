@@ -48,10 +48,10 @@ def clean_and_make_dir(main_dir, sub_dir=None):
     return _dir
 
 
-def extract_columns_sample_file(sample_file, x_unit, y_unit=None):
+def extract_columns_sample_file(sample_file, x_unit=None, y_unit=None):
     """Return two arrays of quantities from a sample file."""
     sample_table = np.loadtxt(sample_file, delimiter=",", comments="#")
-    x = sample_table[:, 0] * u.Unit(x_unit)
+    x = sample_table[:, 0] if y_unit is None else sample_table[:, 0] * u.Unit(x_unit)
     y = sample_table[:, 1] if y_unit is None else sample_table[:, 1] * u.Unit(y_unit)
     return x, y
 
@@ -73,14 +73,16 @@ def check_deviation(x, y_comp, y_ref, rtol, x_range=None):
 
 
 def make_comparison_plot(
-    nu,
+    x,
     y_comp,
     y_ref,
     comp_label,
     ref_label,
     fig_title,
     fig_path,
-    plot_type,
+    plot_type="custom",
+    x_label="",
+    y_label="",
     y_range=None,
     comparison_range=None
 ):
@@ -125,11 +127,9 @@ def make_comparison_plot(
         x_label = TAU_X_LABEL
         y_label = TAU_Y_LABEL
         deviation_label = TAU_DEVIATION_LABEL
-    else:
+    elif plot_type == "custom": 
         # set a custom y label, keep the x-axis in frequency
-        x_label = SED_X_LABEL
-        y_label = plot_type
-        deviation_label = f"({plot_type} agnpy / {plot_type} ref.) - 1"
+        deviation_label = f"(agnpy / reference) - 1"
     # make the plot
     fig, ax = plt.subplots(
         2,
@@ -140,9 +140,9 @@ def make_comparison_plot(
 
     # plot the SEDs or TAUs in the upper panel
     # plot the reference sed with a continuous line and agnpy sed with a dashed one
-    ax[0].loglog(nu, y_ref, marker=".", ls="-", color="k", lw=1.5, label=ref_label)
+    ax[0].loglog(x, y_ref, marker=".", ls="-", color="k", lw=1.5, label=ref_label)
     ax[0].loglog(
-        nu, y_comp, marker=".", ls="--", color="crimson", lw=1.5, label=comp_label
+        x, y_comp, marker=".", ls="--", color="crimson", lw=1.5, label=comp_label
     )
     ax[0].set_ylabel(y_label)
     ax[0].set_title(fig_title)
@@ -163,7 +163,7 @@ def make_comparison_plot(
     ax[1].axhline(-0.3, ls=":", color="darkgray")
     ax[1].set_ylim([-0.5, 0.5])
     ax[1].semilogx(
-        nu,
+        x,
         deviation,
         marker=".",
         ls="--",
