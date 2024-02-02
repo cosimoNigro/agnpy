@@ -1,3 +1,4 @@
+# integration kernels to be used for photomeson productions
 from scipy.interpolate import CubicSpline
 import numpy as np
 from pathlib import Path
@@ -71,7 +72,7 @@ def x_plus_gamma(eta):
     x_1 = eta + r**2
     x_2 = np.sqrt((eta - r**2 - 2 * r) * (eta - r**2 + 2 * r))
     x_3 = 1 / (2 * (1 + eta))
-    x_plus = x_3 * (x_1 - x_2)
+    x_plus = x_3 * (x_1 + x_2)
 
     return x_plus
 
@@ -146,7 +147,7 @@ def psi_gamma(eta):
     return 2.5 + 0.4 * np.log(eta / eta_0)
 
 
-def psi_1(eta, x):
+def psi_1(eta):
     """psi function for electrons and electron antineutrinos"""
     return (
         6 * (1 - np.exp(1.5 * (4 - eta / eta_0))) * (np.sign(eta / eta_0 - 4) + 1) / 2.0
@@ -198,20 +199,20 @@ class PhiKernel:
     def __call__(self, eta, x):
         """Evaluate the phi function, Eq. (27) of [KelnerAharonian2008]_."""
         # evaluate the interpolated parameters
-        s = self.s(eta)
-        delta = self.delta(eta)
-        B = self.B(eta)
+        s = self.s(eta / eta_0)
+        delta = self.delta(eta / eta_0)
+        B = self.B(eta / eta_0)
 
         x_minus = self.x_minus(eta)
         x_plus = self.x_plus(eta)
         psi = self.psi(eta)
 
         y = (x - x_minus) / (x_plus - x_minus)
-        _exp = np.exp(-s * (np.log(x / x_minus)) ** delta)
-        _log = np.log(2.0 / (1 + y**2))
+        _exp = np.exp(-s * np.log(x / x_minus) ** delta)
+        _log = np.log(2 / (1 + y**2)) ** psi
         _phi = np.where(
             (x > x_minus) * (x < x_plus),
-            B * _exp * _log**psi,
-            np.where(x < x_minus, B * (np.log(2) ** psi), 0),
+            B * _exp * _log,
+            np.where(x < x_minus, B * np.log(2) ** psi, 0),
         )
         return _phi
