@@ -120,7 +120,7 @@ def x_minus_leptons_3(eta):
     Secondaries for which it is valid:
         * muon neutrinos.
     """
-    return 0.427 * x_minus_gamma(eta) / 3
+    return 0.427 * x_minus_gamma(eta)
 
 
 def x_plus_leptons_3(eta):
@@ -132,10 +132,10 @@ def x_plus_leptons_3(eta):
     x_plus = x_plus_gamma(eta)
 
     x_plus = np.where(
-        rho < 2.14,
+        rho <= 2.14,
         0.427 * x_plus,
         np.where(
-            (rho > 2.14) * (rho < 10), (0.427 + 0.0729 * (rho - 2.14)) * x_plus, x_plus
+            (rho > 2.14) * (rho <= 10), (0.427 + 0.0729 * (rho - 2.14)) * x_plus, x_plus
         ),
     )
 

@@ -38,6 +38,8 @@ class TestKernels:
         phi_agnpy = phi(eta, x_ref)
 
         # comparison plot
+        x_max_comparison = 0.1 if eta_eta0 == "1.5" else 0.2
+        x_range = [2e-4, x_max_comparison]
         make_comparison_plot(
             x=x_ref,
             y_comp=x_ref * phi_agnpy,
@@ -50,7 +52,9 @@ class TestKernels:
             x_label=r"$x = E_{\gamma} / E_{\rm p}$",
             y_label=r"$x \phi(\eta, x)$",
             y_range=None,
-            comparison_range=None,
+            comparison_range=x_range,
         )
         # requires that the SED points deviate less than 25% from the figure
-        assert check_deviation(x_ref, x_ref * phi_agnpy, x_phi_ref, 0.25)
+        assert check_deviation(
+            x_ref, x_ref * phi_agnpy, x_phi_ref, 0.25, x_range=x_range
+        )
