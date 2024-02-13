@@ -23,9 +23,11 @@ from ..utils.geometry import (
     x_re_shell_mu_s,
 )
 from ..utils.conversion import nu_to_epsilon_prime, to_R_g_units
-from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
+from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus, lines_dictionary
 from ..emission_regions import Blob
 from ..synchrotron import nu_synch_peak, Synchrotron
+
+import cubepy as cp
 
 
 __all__ = ["sigma", "Absorption", "ebl_files_dict", "EBL"]
@@ -443,6 +445,96 @@ class Absorption:
         )
         return (prefactor * integral).to_value("")
 
+    @staticmethod
+    def evaluate_tau_blr_cubepy(
+        nu,
+        eps_abs,
+        z,
+        mu_s,
+        L_disk,
+        xi_line,
+        epsilon_line,
+        R_line,
+        r,
+        mu=mu_to_integrate,
+        phi=phi_to_integrate,
+    ):
+        """Evaluates the gamma-gamma absorption produced by a spherical shell
+        BLR for a general set of model parameters using cubepy
+
+        Parameters
+        ----------
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the tau
+            **note** these are observed frequencies (observer frame)
+        z : float
+            redshift of the source
+        mu_s : float
+            cosine of the angle between the blob motion and the jet axis
+        L_disk : :class:`~astropy.units.Quantity`
+            Luminosity of the disk whose radiation is being reprocessed by the BLR
+        xi_line : float
+            fraction of the disk radiation reprocessed by the BLR
+        epsilon_line : string
+            dimensionless energy of the emitted line
+        R_line : :class:`~astropy.units.Quantity`
+            radius of the BLR spherical shell
+        r : :class:`~astropy.units.Quantity`
+            distance between the Broad Line Region and the blob
+        mu, phi : :class:`~numpy.ndarray`
+            arrays of cosine of zenith and azimuth angles to integrate over
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            array of the tau values corresponding to each frequency
+        """
+        # conversions
+        epsilon_1 = nu_to_epsilon_prime(nu, z)
+
+        def f(x):
+            # mu -> x[0], phi -> x[1], log_l -> x[2]
+            mu = x[0]
+            phi = x[1]
+            log_l = x[2]
+            l = np.exp(log_l)
+            mu_star = mu_star_shell(mu, R_line.to_value('cm'), l)
+            _cos_psi = cos_psi(mu_s, mu_star, phi)
+            x = x_re_shell(mu, R_line.to_value('cm'), l)
+            s = epsilon_1 * epsilon_line * (1 - _cos_psi) / 2
+            integrand = (1 - _cos_psi)*l / x ** 2 * sigma(s).to_value("cm**2")
+            return integrand
+
+        # set boundary for integration
+        low = np.array(
+            [
+                [min(mu_to_integrate)],
+                [min(phi_to_integrate)],
+                [np.log(r.to_value('cm'))]
+            ]
+        )
+
+        high = np.array(
+            [
+                [max(mu_to_integrate)],
+                [max(phi_to_integrate)],
+                [np.log(1e5*r.to_value('cm'))]
+            ]
+        )
+
+
+        prefactor = (L_disk * xi_line) / (
+            (4 * np.pi) ** 2 * epsilon_line * m_e * c ** 3
+        )
+
+        prefactor = prefactor.to("cm-1")
+        eps = eps_abs / prefactor.to_value("cm-1")
+        value, error = cp.integrate(f, low, high, abstol=eps)
+        integral = value[0]*u.cm
+        return (prefactor * integral[0]).to_value("")
+
+
+
     def tau_blr(self, nu):
         """Evaluates the gamma-gamma absorption produced by a spherical shell
         BLR for a general set of model parameters
@@ -478,6 +570,62 @@ class Absorption:
             mu=self.mu,
             phi=self.phi,
         )
+
+    def tau_blr_cubepy(self, nu, eps_abs=1e-6):
+        """Evaluates the gamma-gamma absorption produced by a spherical shell
+        BLR for a general set of model parameters with cubepy integration
+        method
+        """
+
+        tau_blr_list = []
+        for freq in nu:
+            tau_blr_list.append(
+            self.evaluate_tau_blr_cubepy(
+                freq,
+                eps_abs,
+                self.z,
+                self.mu_s,
+                self.target.L_disk,
+                self.target.xi_line,
+                self.target.epsilon_line,
+                self.target.R_line,
+                self.r,
+                mu=self.mu,
+                phi=self.phi,
+                            ))
+        return tau_blr_list
+
+    def tau_blr_all_lines_cubepy(self, nu, eps_abs=1e-6):
+        """
+        Calculate the absorption in all available BLR (Broad Line Region) shells.
+        The radius and luminosity are normalized to Hbeta.
+
+        Parameters
+        ----------
+        nu: numpy array
+            Frequency array with unit
+        eps_abs: float, optional
+            Absolute precision for the calculation, default is 1e-6
+        """
+        SUM_RATIO_LINES_BLR = 30.652
+        XI_TARGET_LINE = self.target.xi_line
+        tau_z_all = np.zeros(nu.shape)
+
+        blr_shells = dict()
+        absorption_shells = dict()
+
+        for line_key in lines_dictionary.keys():
+            xi_line_current = lines_dictionary[line_key]['L_Hbeta_ratio']
+            xi_line = (xi_line_current * XI_TARGET_LINE) / SUM_RATIO_LINES_BLR
+            R_line_current = self.target.R_line * lines_dictionary[line_key]['R_Hbeta_ratio']
+
+            blr_shells[line_key] = SphericalShellBLR(self.target.L_disk, xi_line, line_key, R_line_current)
+            absorption_shells[line_key] = Absorption(blr_shells[line_key], r=self.r, z=self.z)
+
+            tau_z_current = absorption_shells[line_key].tau_blr_cubepy(nu, eps_abs=eps_abs)
+            tau_z_all += tau_z_current
+
+        return tau_z_all
 
     @staticmethod
     def evaluate_tau_dt(
