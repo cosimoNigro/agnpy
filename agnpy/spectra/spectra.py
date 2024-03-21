@@ -1,9 +1,11 @@
 # module containing the particle spectra
 import numpy as np
 import astropy.units as u
-from astropy.constants import m_e, m_p
+from astropy.units.quantity import Quantity
+from astropy.constants import m_e, m_p, c
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
+import math
 
 
 __all__ = [
@@ -249,6 +251,90 @@ class PowerLaw(ParticleDistribution):
 
     def __call__(self, gamma):
         return self.evaluate(gamma, self.k, self.p, self.gamma_min, self.gamma_max)
+
+    def gamma_values(self):
+        return np.logspace(np.log10(self.gamma_min), np.log10(self.gamma_max), 200)
+
+    def evaluate_time(self, time, energy_loss_function, intervals=1):
+        class Bin:
+            def __init__(self, n, gamma_start, gamma_end):
+                self.n = n
+                self.gamma_start = gamma_start
+                self.gamma_end = gamma_end
+
+        gamma_values = self.gamma_values()
+        n_values = self.__call__(gamma_values)
+        bin_size_sqrt = math.sqrt(gamma_values[1]/gamma_values[0])
+        original_bins = []
+
+        # fill bins with initial data
+        for index, gamma_value in enumerate(gamma_values):
+            n = n_values[index]
+            if index == 0:
+                gamma_start = gamma_value / bin_size_sqrt
+            else:
+                gamma_start = original_bins[index-1].gamma_end
+            original_bins.append(Bin(n, gamma_start, gamma_value * bin_size_sqrt))
+
+        unit_time_interval = time / intervals
+
+        def gamma_recalculated_after_loss(gamma):
+            old_energy = (gamma * m_e * c ** 2).to("J")
+            energy_loss_per_time = energy_loss_function(gamma).to("J s-1")
+            energy_loss = (energy_loss_per_time * unit_time_interval).to("J")
+            new_energy = old_energy - energy_loss
+            if new_energy < 0:
+                raise ValueError(
+                    "Energy loss formula returned value higher then original energy, for gamma " + "{:e}".format(gamma))
+            new_gamma = (new_energy / (m_e * c ** 2)).value
+            return new_gamma
+
+        # move and narrow down the bins according to energy loss function
+        translated_bins = original_bins.copy()
+        for r in range(intervals):
+            for index, bin in enumerate(translated_bins):
+                bin_integral = bin.n * (bin.gamma_end - bin.gamma_start)
+                if index == 0:
+                    new_bin_start = gamma_recalculated_after_loss(bin.gamma_start)
+                else:
+                    new_bin_start = translated_bins[index-1].gamma_end
+                new_bin_end = gamma_recalculated_after_loss(bin.gamma_end)
+                new_bin_width = new_bin_end - new_bin_start
+                if new_bin_width <= 0:
+                    raise ValueError(
+                        "Energy loss formula returned higher energy loss for bin-end than for bin-start;"
+                        " use shorter time intervals to fix it")
+                new_n = bin_integral / (new_bin_width)
+                translated_bins[index] = (Bin(new_n, new_bin_start, new_bin_end))
+
+        # remap the translated bins onto the original gamma points
+        final_bins = []
+        unit = u.Unit("cm-3")
+        for bin in original_bins:
+            final_bins.append(Bin(Quantity(0) * unit, bin.gamma_start, bin.gamma_end))
+        for index, bin in enumerate(final_bins):
+            for translated_bin in translated_bins:
+                gamma_bin_min = bin.gamma_start
+                gamma_bin_max = bin.gamma_end
+                gamma_new_bin_min = translated_bin.gamma_start
+                gamma_new_bin_max = translated_bin.gamma_end
+                if gamma_new_bin_max > gamma_bin_min and gamma_new_bin_min < gamma_bin_max:
+                    if gamma_new_bin_min < gamma_bin_min < gamma_new_bin_max:
+                        overlap = gamma_new_bin_max - gamma_bin_min
+                    elif gamma_new_bin_min < gamma_bin_max < gamma_new_bin_max:
+                        overlap = gamma_bin_max - gamma_new_bin_min
+                    elif gamma_bin_min <= gamma_new_bin_min and gamma_new_bin_max <= gamma_bin_max:
+                        overlap = gamma_new_bin_max - gamma_new_bin_min
+                    else:
+                        raise AssertionError("Unexpected situation, bin has been widened instead of narrowed down")
+                    n = overlap * translated_bin.n
+                    final_bin = final_bins[index]
+                    final_bin.n = final_bin.n + n
+        for bin in final_bins:
+            bin.n = bin.n / (bin.gamma_end - bin.gamma_start)
+
+
+        return gamma_values, np.array(list(map(lambda bin: bin.n.value, final_bins))) * unit
 
     @staticmethod
     def evaluate_SSA_integrand(gamma, k, p, gamma_min, gamma_max):
