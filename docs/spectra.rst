@@ -36,8 +36,8 @@ A *normalisation* of the distribution is often provided, which can be of differe
 Some authors use an *integral* normalisation. That is, the normalisation value provided might represent:
 
 - the total volume density, :math:`n_{\rm tot} = \int {\rm d \gamma} \, n(\gamma)`, in :math:`{\rm cm}^{-3}`;
-- the total energy density, :math:`u_{\rm tot} = \int {\rm d \gamma} \, \gamma \, n(\gamma)`, in :math:`{\rm erg}\,{\rm cm}^{-3}`;
-- the total energy in particles, :math:`W = m c^2 \, \int {\rm d \gamma} \, \gamma \, n(\gamma)`, in :math:`{\rm erg}`.
+- the total energy density, :math:`u_{\rm tot} = m c^2 \, \int {\rm d \gamma} \, \gamma \, n(\gamma)`, in :math:`{\rm erg}\,{\rm cm}^{-3}`;
+- the total energy in particles, :math:`W = V m c^2 \, \int {\rm d \gamma} \, \gamma \, n(\gamma)`, in :math:`{\rm erg}`.
 
 Others use a *differential* normalisation, that is, the normalisation value provided directly represents the constant,
 :math:`k`, multiplying the analytical function, e.g. for a power law
