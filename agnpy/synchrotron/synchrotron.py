@@ -95,9 +95,12 @@ class Synchrotron(RadiativeProcess):
         # (4/3 * sigma_T * c * magn_energy_dens) * gamma^2
         # The part in brackets is fixed, so as an improvement we could calculate it once and cache,
         # and later we could use the formula (fixed * gamma^2)
-        magn_energy_dens = (self.blob.B.to("T") ** 2) / (2 * mu0)
-        fixed = (4 / 3) * sigma_T * c * magn_energy_dens
+        fixed = self._electron_energy_loss_formula_prefix()
         return (fixed * gamma ** 2).to("erg/s")
+
+    def _electron_energy_loss_formula_prefix(self):
+        magn_energy_dens = (self.blob.B.to("T") ** 2) / (2 * mu0)
+        return (4 / 3) * sigma_T * c * magn_energy_dens
 
     @staticmethod
     def evaluate_tau_ssa(
