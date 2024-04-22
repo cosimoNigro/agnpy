@@ -1,11 +1,10 @@
 # module containing the particle spectra
 import numpy as np
 import astropy.units as u
-from astropy.units.quantity import Quantity
+from agnpy.utils.conversion import mec2
 from astropy.constants import m_e, m_p, c
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
-import math
 
 
 __all__ = [
@@ -201,16 +200,34 @@ class ParticleDistribution:
         return ax
 
     def evaluate_time(self, time, energy_loss_function, subintervals_count=1):
+        """Performs the time evaluation of energy change for this particle distribution.
+
+        Parameters
+        ----------
+        time : `~astropy.units.Quantity`
+            total time for the calculation
+        energy_loss_function : function
+            thr function to be used for calculation of energy loss;
+            the function accepts the gamma value and produces "energy per time" quantity
+        subintervals_count : int
+            optional number defining how many equal-length subintervals the total time will be split into
+
+        Returns
+        -------
+        InterpolatedDistribution
+            a new distribution
+        """
         unit_time_interval = time / subintervals_count
 
         def gamma_recalculated_after_loss(gamma):
-            old_energy = (gamma * m_e * c ** 2).to("J")
-            energy_loss_per_time = energy_loss_function(gamma).to("J s-1")
-            energy_loss = (energy_loss_per_time * unit_time_interval).to("J")
+            old_energy = (gamma * mec2).to("erg")
+            energy_loss_per_time = energy_loss_function(gamma).to("erg s-1")
+            energy_loss = (energy_loss_per_time * unit_time_interval).to("erg")
             new_energy = old_energy - energy_loss
             if np.any(new_energy < 0):
-                raise ValueError("Energy loss formula returned value higher then original energy")
-            new_gamma = (new_energy / (m_e * c ** 2)).value
+                raise ValueError(
+                    "Energy loss formula returned value higher then original energy. Use the shorter time ranges.")
+            new_gamma = (new_energy / mec2).value
             return new_gamma
 
         gammas = self.gamma_values()

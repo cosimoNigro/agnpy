@@ -93,8 +93,8 @@ class Synchrotron(RadiativeProcess):
     def electron_energy_loss_per_time(self, gamma):
         # For synchrotron, energy loss dE/dt formula is:
         # (4/3 * sigma_T * c * magn_energy_dens) * gamma^2
-        # The part in brackets is fixed, so as an improvement we could calculate it once and cache,
-        # and later we could use the formula (fixed * gamma^2)
+        # In case of constant B, the part in brackets is fixed, so as an improvement we could calculate it once
+        # and cache, and later we could use the formula (fixed * gamma^2)
         fixed = self._electron_energy_loss_formula_prefix()
         return (fixed * gamma ** 2).to("erg/s")
 

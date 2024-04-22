@@ -751,7 +751,7 @@ class TestSpectraTimeEvolution:
     @pytest.mark.parametrize("time", [1, 60, 120] * u.s)
     def test_compare_numerical_results_with_analytical_calculation(self, p, time):
         """Test time evolution of spectral electron density for synchrotron energy losses.
-         Use a simple power low spectrum for easy calculation of analytical results."""
+         Use a simple power law spectrum for easy calculation of analytical results."""
         gamma_min = 1e2
         gamma_max = 1e7
         k = 0.1 * u.Unit("cm-3")
@@ -781,7 +781,7 @@ class TestSpectraTimeEvolution:
             rtol=0.05
         )
         assert u.isclose(
-            # only the highest energy range where most losses occur
+            # synchrotron losses are highest at highest energy, so test the highest energy range, as the most affected
             evaluated_n_e.integrate(evaluated_n_e.gamma_max / 10, evaluated_n_e.gamma_max),
             integral_analytical(gamma_before(evaluated_n_e.gamma_max / 10, time), gamma_before(evaluated_n_e.gamma_max, time)),
             rtol=0.05
