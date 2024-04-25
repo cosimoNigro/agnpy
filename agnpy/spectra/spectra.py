@@ -199,7 +199,7 @@ class ParticleDistribution:
 
         return ax
 
-    def evaluate_time(self, time, energy_loss_function, subintervals_count=1):
+    def evaluate_time(self, time, energy_loss_function, subintervals_count=10):
         """Performs the time evaluation of energy change for this particle distribution.
 
         Parameters
@@ -226,11 +226,11 @@ class ParticleDistribution:
             new_energy = old_energy - energy_loss
             if np.any(new_energy < 0):
                 raise ValueError(
-                    "Energy loss formula returned value higher then original energy. Use the shorter time ranges.")
+                    "Energy loss formula returned value higher then original energy. Use shorter time ranges.")
             new_gamma = (new_energy / mec2).value
             return new_gamma
 
-        gammas = self.gamma_values()
+        gammas = np.logspace(np.log10(self.gamma_min), np.log10(self.gamma_max), 200)
         n_array = self.__call__(gammas)
 
         # for each gamma point create a narrow bin, calculate the energy loss for start and end of the bin,
@@ -243,12 +243,8 @@ class ParticleDistribution:
             narrowed_bins = bins_end_recalc - gammas
             if np.any(narrowed_bins <= 0):
                 raise ValueError(
-                    "Energy loss formula returned too big value - use shorter time intervals")
+                    "Energy loss formula returned too big value. Use shorter time ranges.")
             density_increase = bins_width / narrowed_bins
-            if np.any(density_increase < 1):
-                # not possible for simple scenarios because higher gammas should lose more energy,
-                # but maybe for more complex scenarios it could happen? then we should revise this assertion
-                raise AssertionError("Unexpected situation, bin has been widened instead of narrowed down")
             n_array = n_array * density_increase
 
         return InterpolatedDistribution(gammas, n_array)
@@ -304,9 +300,6 @@ class PowerLaw(ParticleDistribution):
 
     def __call__(self, gamma):
         return self.evaluate(gamma, self.k, self.p, self.gamma_min, self.gamma_max)
-
-    def gamma_values(self):
-        return np.logspace(np.log10(self.gamma_min), np.log10(self.gamma_max), 200)
 
     @staticmethod
     def evaluate_SSA_integrand(gamma, k, p, gamma_min, gamma_max):
@@ -787,7 +780,7 @@ class InterpolatedDistribution(ParticleDistribution):
         function to be used for integration, default is :class:`~numpy.trapz`
     """
 
-    def __init__(self, gamma, n, norm=1, mass=m_e, integrator=np.trapz, gamma_min=None, gamma_max=None):
+    def __init__(self, gamma, n, norm=1, mass=m_e, integrator=np.trapz):
         super().__init__(mass, integrator, "InterpolatedDistribution")
         if n.unit != u.Unit("cm-3"):
             raise ValueError(
@@ -799,9 +792,9 @@ class InterpolatedDistribution(ParticleDistribution):
         # scaling parameter
         self.norm = norm
         # perform the interpolation
-        self.log10_interp = self.log10_interpolation(gamma, n, gamma_min, gamma_max)
+        self.log10_interp = self.log10_interpolation(gamma, n)
 
-    def log10_interpolation(self, gamma, n, gamma_min=None, gamma_max=None):
+    def log10_interpolation(self, gamma, n):
         """Returns the function interpolating in log10 the particle spectrum as
         a function of the Lorentz factor.
         TODO: make possible to pass arguments to CubicSpline.
@@ -815,8 +808,8 @@ class InterpolatedDistribution(ParticleDistribution):
 
         # min and max lorentz factor are now the first gamma values for which
         # the input distribution is not null
-        self.gamma_min = gamma_min if gamma_min else np.min(_gamma)
-        self.gamma_max = gamma_max if gamma_max else np.max(_gamma)
+        self.gamma_min = np.min(_gamma)
+        self.gamma_max = np.max(_gamma)
 
         return interpolator
 
