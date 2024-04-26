@@ -455,9 +455,7 @@ class Absorption:
         xi_line,
         epsilon_line,
         R_line,
-        r,
-        mu=mu_to_integrate,
-        phi=phi_to_integrate,
+        r
     ):
         """Evaluates the gamma-gamma absorption produced by a spherical shell
         BLR for a general set of model parameters using cubepy
@@ -589,10 +587,9 @@ class Absorption:
                 self.target.xi_line,
                 self.target.epsilon_line,
                 self.target.R_line,
-                self.r,
-                mu=self.mu,
-                phi=self.phi,
-                            ))
+                self.r
+            )
+            )
         return tau_blr_list
 
     def tau_blr_all_lines_cubepy(self, nu, eps_abs=1e-6):
