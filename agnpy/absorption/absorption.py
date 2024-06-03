@@ -446,6 +446,40 @@ class Absorption:
         return (prefactor * integral).to_value("")
 
     @staticmethod
+    def compute_integrand(cubepy_params_array, R_line, mu_s, epsilon_1, epsilon_line):
+        """
+        Computes the integrand for the gamma-gamma absorption model with
+        a spherical shell Broad Line Region (BLR).
+
+        Parameters
+        ----------
+        cubepy_params_array : array-like
+            Array containing integration parameters [mu, phi, log_l].
+        R_line : :class:`~astropy.units.Quantity`
+            Radius of the BLR spherical shell.
+        mu_s : float
+            Cosine of the angle between the blob motion and the jet axis.
+        epsilon_1 : float
+            Dimensionless energy parameter for the incoming photon.
+        epsilon_line : float
+            Dimensionless energy of the emitted line.
+
+        Returns
+        -------
+        float
+            The value of the integrand for the given parameters.
+        """
+        mu = cubepy_params_array[0]
+        phi = cubepy_params_array[1]
+        log_l = cubepy_params_array[2]
+        l = np.exp(log_l)
+        mu_star = mu_star_shell(mu, R_line.to_value('cm'), l)
+        _cos_psi = cos_psi(mu_s, mu_star, phi)
+        x = x_re_shell(mu, R_line.to_value('cm'), l)
+        s = epsilon_1 * epsilon_line * (1 - _cos_psi) / 2
+        integrand = (1 - _cos_psi) * l / x ** 2 * sigma(s).to_value("cm**2")
+        return integrand
+    @staticmethod
     def evaluate_tau_blr_cubepy(
         nu,
         eps_abs,
@@ -489,20 +523,6 @@ class Absorption:
         """
         # conversions
         epsilon_1 = nu_to_epsilon_prime(nu, z)
-
-        def f(x):
-            # mu -> x[0], phi -> x[1], log_l -> x[2]
-            mu = x[0]
-            phi = x[1]
-            log_l = x[2]
-            l = np.exp(log_l)
-            mu_star = mu_star_shell(mu, R_line.to_value('cm'), l)
-            _cos_psi = cos_psi(mu_s, mu_star, phi)
-            x = x_re_shell(mu, R_line.to_value('cm'), l)
-            s = epsilon_1 * epsilon_line * (1 - _cos_psi) / 2
-            integrand = (1 - _cos_psi)*l / x ** 2 * sigma(s).to_value("cm**2")
-            return integrand
-
         # set boundary for integration
         low = np.array(
             [
@@ -511,7 +531,6 @@ class Absorption:
                 [np.log(r.to_value('cm'))]
             ]
         )
-
         high = np.array(
             [
                 [max(mu_to_integrate)],
@@ -519,19 +538,19 @@ class Absorption:
                 [np.log(1e5*r.to_value('cm'))]
             ]
         )
-
-
         prefactor = (L_disk * xi_line) / (
             (4 * np.pi) ** 2 * epsilon_line * m_e * c ** 3
         )
 
         prefactor = prefactor.to("cm-1")
         eps = eps_abs / prefactor.to_value("cm-1")
-        value, error = cp.integrate(f, low, high, abstol=eps)
+        value, error = cp.integrate(Absorption.compute_integrand,
+                                    low,
+                                    high,
+                                    abstol=eps,
+                                    args=(R_line, mu_s, epsilon_1, epsilon_line))
         integral = value[0]*u.cm
         return (prefactor * integral[0]).to_value("")
-
-
 
     def tau_blr(self, nu):
         """Evaluates the gamma-gamma absorption produced by a spherical shell
