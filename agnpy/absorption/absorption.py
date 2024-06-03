@@ -632,6 +632,10 @@ class Absorption:
         blr_shells = dict()
         absorption_shells = dict()
 
+        # TODO write test
+        if self.target.line != "Hbeta":
+            raise KeyError("Please use Hbeta as reference")
+
         for line_key in lines_dictionary.keys():
             xi_line_current = lines_dictionary[line_key]['L_Hbeta_ratio']
             xi_line = (xi_line_current * XI_TARGET_LINE) / SUM_RATIO_LINES_BLR
