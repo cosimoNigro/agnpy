@@ -13,7 +13,7 @@ dependencies:
   - pyyaml # needed to read astropy ecsv file
   - matplotlib>=3.4
   - sherpa
-  - cubepy=1.0.2
+  - cubepy==1.0.2
   - pre-commit
   - pip:
     - agnpy
