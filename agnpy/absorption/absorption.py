@@ -595,7 +595,9 @@ class Absorption:
     def tau_blr_all_lines_cubepy(self, nu, eps_abs=1e-6):
         """
         Calculate the absorption in all available BLR (Broad Line Region) shells.
-        The radius and luminosity are normalized to Hbeta.
+        This function scales the radius and luminosity to the Hbeta line
+        and applies the computation to all the available BLR lines (shells) using
+        their respective ratios.
 
         Parameters
         ----------
