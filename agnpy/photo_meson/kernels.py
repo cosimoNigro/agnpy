@@ -2,6 +2,7 @@
 from scipy.interpolate import CubicSpline
 import numpy as np
 from pathlib import Path
+import astropy.units as u
 
 data_dir = Path(__file__).parent.parent
 secondaries = [
@@ -40,11 +41,14 @@ def interpolate_phi_parameter(particle, parameter):
     )
 
     if parameter == "s":
-        func = CubicSpline(eta_eta0, s)
+        #func = CubicSpline(eta_eta0, s)
+        func = lambda x: np.interp(x, eta_eta0, s)
     elif parameter == "delta":
-        func = CubicSpline(eta_eta0, delta)
+        #func = CubicSpline(eta_eta0, delta)
+        func = lambda x: np.interp(x, eta_eta0, delta)
     elif parameter == "B":
-        func = CubicSpline(eta_eta0, B)
+        #func = CubicSpline(eta_eta0, B)
+        func = lambda x: np.interp(x, eta_eta0, B)
     else:
         raise ValueError(
             f"{parameter} not available among the parameters to be interpolated"
@@ -182,7 +186,7 @@ class PhiKernel:
             ]:
                 self.x_minus = x_minus_leptons_1
                 self.x_plus = x_plus_gamma
-            elif self.particle in ["electrons", "electron_antineutrino"]:
+            elif self.particle in ["electron", "electron_antineutrino"]:
                 self.x_minus = x_minus_leptons_2
                 self.x_plus = x_plus_leptons_2
             elif self.particle == "muon_neutrino":
@@ -201,7 +205,7 @@ class PhiKernel:
         # evaluate the interpolated parameters
         s = self.s(eta / eta_0)
         delta = self.delta(eta / eta_0)
-        B = self.B(eta / eta_0)
+        B = self.B(eta / eta_0) * u.Unit("cm3 s-1")
 
         x_minus = self.x_minus(eta)
         x_plus = self.x_plus(eta)
