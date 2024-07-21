@@ -1,10 +1,6 @@
 import numpy as np
-import math
 import astropy.units as u
-import astropy.constants as const
-from astropy.coordinates import Distance
 import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d
 import sys
 
 sys.path.append("/home/jsitarek/zdalne/agnpy/agnpy/")

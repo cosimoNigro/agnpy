@@ -1,5 +1,4 @@
 # plotting utilities for agnpy
-import numpy as np
 import importlib.resources
 import matplotlib.pyplot as plt
 

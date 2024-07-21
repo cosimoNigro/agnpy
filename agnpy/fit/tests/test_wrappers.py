@@ -4,7 +4,6 @@ import astropy.units as u
 from astropy.constants import m_e, M_sun
 from astropy.coordinates import Distance
 import pytest
-import matplotlib.pyplot as plt
 from pathlib import Path
 from agnpy.spectra import (
     PowerLaw,

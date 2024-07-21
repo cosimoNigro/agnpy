@@ -1,7 +1,7 @@
 # conversion utilities for agnpy
 from astropy.constants import m_e, m_p, h, c, G
 import astropy.units as u
-from astropy.constants import e, h, c, m_e, m_p, sigma_T, G
+from astropy.constants import e, h, c, m_e, m_p, G
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 mpc2 = m_p.to("erg", equivalencies=u.mass_energy())

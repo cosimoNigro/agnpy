@@ -1,7 +1,6 @@
 import sys
 
 sys.path.append("../../")
-import warnings
 import numpy as np
 import astropy.units as u
 from astropy.constants import h, e, m_e, c, sigma_T, M_sun, G

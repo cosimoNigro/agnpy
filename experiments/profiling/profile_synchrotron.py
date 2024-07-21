@@ -4,9 +4,7 @@ import sys
 sys.path.append("../")
 import numpy as np
 import astropy.units as u
-import astropy.constants as const
 from astropy.coordinates import Distance
-import matplotlib.pyplot as plt
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron
 from agnpy.compton import SynchrotronSelfCompton
