@@ -8,7 +8,7 @@ dependencies:
   - python>=3.9, <3.12
   - astropy>=5.0, <6.0
   - numpy>=1.21
-  - scipy>=1.11
+  - scipy>=1.5,<1.10
   - pyyaml # needed to read astropy ecsv file
   - matplotlib>=3.4
   - sherpa
