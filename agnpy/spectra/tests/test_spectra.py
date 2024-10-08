@@ -2,8 +2,11 @@
 from pathlib import Path
 import numpy as np
 import astropy.units as u
-from astropy.constants import m_e, m_p
+from astropy.constants import m_e, m_p, c
 import pytest
+from astropy.coordinates import Distance
+
+from agnpy import Blob, Synchrotron
 from agnpy.spectra import (
     PowerLaw,
     BrokenPowerLaw,
@@ -740,3 +743,78 @@ class TestInterpolatedDistribution:
         assert u.allclose(
             n_e(gamma_init), 2 * n_init, atol=0 * u.Unit("cm-3"), rtol=1e-3
         )
+
+
+class TestSpectraTimeEvolution:
+
+    @pytest.mark.parametrize("p", [0.5, 1.2, 2.4])
+    @pytest.mark.parametrize("time_and_steps", [(1, 10), (60, 60), (200, 100)])
+    def test_compare_numerical_results_with_analytical_calculation(self, p, time_and_steps):
+        """Test time evolution of spectral electron density for synchrotron energy losses.
+         Use a simple power law spectrum for easy calculation of analytical results."""
+        time = time_and_steps[0] * u.s
+        steps = time_and_steps[1]
+        gamma_min = 1e2
+        gamma_max = 1e7
+        k = 0.1 * u.Unit("cm-3")
+        initial_n_e = PowerLaw(k, p, gamma_min=gamma_min, gamma_max=gamma_max, mass=m_e)
+        blob = Blob(1e16 * u.cm, Distance(1e27, unit=u.cm).z, 0, 10, 1 * u.G, n_e=initial_n_e)
+        synch = Synchrotron(blob)
+        evaluated_n_e = initial_n_e.evaluate_time(time, synch.electron_energy_loss_per_time, subintervals_count=steps)
+
+        def gamma_before(gamma_after_time, time):
+            """Reverse-time calculation of the gamma value before the synchrotron energy loss,
+             using formula -dE/dt ~ (E ** 2)"""
+            coef = synch._electron_energy_loss_formula_prefix() / (m_e * c ** 2)
+            return 1 / ((1 / gamma_after_time) - time * coef)
+
+        def integral_analytical(gamma_min, gamma_max):
+            """Integral for the power-law distribution"""
+            return k * (gamma_max ** (1 - p) - gamma_min ** (1 - p)) / (1 - p)
+
+        assert u.isclose(
+            gamma_before(evaluated_n_e.gamma_max, time),
+            gamma_max,
+            rtol=0.05
+        )
+        assert u.isclose(
+            evaluated_n_e.integrate(evaluated_n_e.gamma_min, evaluated_n_e.gamma_max),
+            integral_analytical(gamma_before(evaluated_n_e.gamma_min, time), gamma_before(evaluated_n_e.gamma_max, time)),
+            rtol=0.05
+        )
+        assert u.isclose(
+            # synchrotron losses are highest at highest energy, so test the highest energy range, as the most affected
+            evaluated_n_e.integrate(evaluated_n_e.gamma_max / 10, evaluated_n_e.gamma_max),
+            integral_analytical(gamma_before(evaluated_n_e.gamma_max / 10, time), gamma_before(evaluated_n_e.gamma_max, time)),
+            rtol=0.05
+        )
+
+    def test_compare_calculation_with_calculation_split_into_two(self):
+        initial_n_e = BrokenPowerLaw(
+            k=1e-8 * u.Unit("cm-3"),
+            p1=1.9,
+            p2=2.6,
+            gamma_b=1e4,
+            gamma_min=10,
+            gamma_max=1e6,
+            mass=m_e,
+        )
+        blob = Blob(1e16 * u.cm, Distance(1e27, unit=u.cm).z, 0, 10, 1 * u.G, n_e=initial_n_e)
+        synch = Synchrotron(blob)
+
+        # iterate over 60 s in 20 steps
+        eval_1 = initial_n_e.evaluate_time(60*u.s, synch.electron_energy_loss_per_time, subintervals_count=20)
+        # iterate first over 30 s, and then, starting with interpolated distribution, over the remaining 30 s,
+        # with slightly different number of subintervals
+        eval_2 = initial_n_e.evaluate_time(30 * u.s, synch.electron_energy_loss_per_time, subintervals_count=10)\
+            .evaluate_time(30 * u.s, synch.electron_energy_loss_per_time, subintervals_count=8)
+
+        gamma_min = eval_1.gamma_min
+        gamma_max = eval_1.gamma_max
+        gammas = np.logspace(np.log10(gamma_min), np.log10(gamma_max))
+        assert u.allclose(
+            eval_1.evaluate(gammas, 1, gamma_min, gamma_max),
+            eval_2.evaluate(gammas, 1, gamma_min, gamma_max),
+            0.001)
+
+
