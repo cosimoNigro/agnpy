@@ -81,7 +81,10 @@ class TestFit:
             ("agnpy/data/mwl_seds/PKS1510-089_2015b.ecsv", systematics_dict_pks1510),
         ],
     )
-    def test_sed_loading(self, sed_path, systematics_dict):
+    @pytest.mark.parametrize(
+        "include_systematics", [True, False]
+    )
+    def test_sed_loading(self, sed_path, systematics_dict, include_systematics):
         """Test that the same values are loaded by gammapy and sherpa from the
         MWL SED files."""
 
@@ -90,12 +93,16 @@ class TestFit:
         E_max = 100 * u.TeV
 
         # load the flux points
-        datasets_gammapy = load_gammapy_flux_points(
-            sed_path, E_min, E_max, systematics_dict
-        )
-        data_1d_sherpa = load_sherpa_flux_points(
-            sed_path, E_min, E_max, systematics_dict
-        )
+        if include_systematics:
+            datasets_gammapy = load_gammapy_flux_points(
+                sed_path, E_min, E_max, systematics_dict
+            )
+            data_1d_sherpa = load_sherpa_flux_points(
+                sed_path, E_min, E_max, systematics_dict
+            )
+        else:
+            datasets_gammapy = load_gammapy_flux_points(sed_path, E_min, E_max)
+            data_1d_sherpa = load_sherpa_flux_points(sed_path, E_min, E_max)
 
         # assert that the SED points are the same
         # gammapy data are divided in dataset, let us group them together again
