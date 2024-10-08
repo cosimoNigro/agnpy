@@ -2,7 +2,6 @@
 import pytest
 import numpy as np
 import astropy.units as u
-from pathlib import Path
 import agnpy.utils.math as math
 import agnpy.utils.geometry as geom
 from agnpy.utils.plot import load_mpl_rc, plot_sed
