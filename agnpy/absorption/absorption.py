@@ -446,7 +446,7 @@ class Absorption:
         return (prefactor * integral).to_value("")
 
     @staticmethod
-    def compute_integrand(cubepy_params_array, R_line, mu_s, epsilon_1, epsilon_line):
+    def compute_integrand_for_blr(cubepy_params_array, R_line, mu_s, epsilon_1, epsilon_line):
         """
         Computes the integrand for the gamma-gamma absorption model with
         a spherical shell Broad Line Region (BLR).
@@ -469,9 +469,7 @@ class Absorption:
         float
             The value of the integrand for the given parameters.
         """
-        mu = cubepy_params_array[0]
-        phi = cubepy_params_array[1]
-        log_l = cubepy_params_array[2]
+        (mu, phi, log_l) = cubepy_params_array
         l = np.exp(log_l)
         mu_star = mu_star_shell(mu, R_line.to_value('cm'), l)
         _cos_psi = cos_psi(mu_s, mu_star, phi)
@@ -518,7 +516,7 @@ class Absorption:
 
         Returns
         -------
-        :class:`~astropy.units.Quantity`
+        :class:float
             array of the tau values corresponding to each frequency
         """
         # conversions
@@ -544,7 +542,7 @@ class Absorption:
 
         prefactor = prefactor.to("cm-1")
         eps = eps_abs / prefactor.to_value("cm-1")
-        value, error = cp.integrate(Absorption.compute_integrand,
+        value, error = cp.integrate(Absorption.compute_integrand_for_blr,
                                     low,
                                     high,
                                     abstol=eps,
