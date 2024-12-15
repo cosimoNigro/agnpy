@@ -377,7 +377,7 @@ class Blob:
         of radiation. We need to integrate over the electron spectrum  (and multiply back by V_b)
 
         .. math::
-            0.75\,\int n_e(\gamma) (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} R_b \mathrm{d}\gamma
+            0.75\,(R_b/c)\,\int n_e(\gamma) (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} \mathrm{d}\gamma
 
         so
 
