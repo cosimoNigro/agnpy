@@ -10,7 +10,7 @@ dependencies:
   - numpy>=1.21
   - scipy>=1.5,<1.10
   - pyyaml # needed to read astropy ecsv file
-  - matplotlib>=3.4
+  - matplotlib>=3.4,<=3.9
   - sherpa
   - pre-commit
   - gammapy<1.2
