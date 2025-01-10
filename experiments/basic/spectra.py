@@ -2,7 +2,6 @@
 import astropy.units as u
 from astropy.coordinates import Distance
 from agnpy.emission_regions import Blob
-import matplotlib.pyplot as plt
 
 spectrum_norm = 1e-13 * u.Unit("cm-3")
 
