@@ -1,7 +1,8 @@
 # module containing the particle spectra
 import numpy as np
 import astropy.units as u
-from astropy.constants import m_e, m_p
+from agnpy.utils.conversion import mec2
+from astropy.constants import m_e, m_p, c
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 
@@ -197,6 +198,56 @@ class ParticleDistribution:
             )
 
         return ax
+
+    def evaluate_time(self, time, energy_loss_function, subintervals_count=10):
+        """Performs the time evaluation of energy change for this particle distribution.
+
+        Parameters
+        ----------
+        time : `~astropy.units.Quantity`
+            total time for the calculation
+        energy_loss_function : function
+            thr function to be used for calculation of energy loss;
+            the function accepts the gamma value and produces "energy per time" quantity
+        subintervals_count : int
+            optional number defining how many equal-length subintervals the total time will be split into
+
+        Returns
+        -------
+        InterpolatedDistribution
+            a new distribution
+        """
+        unit_time_interval = time / subintervals_count
+
+        def gamma_recalculated_after_loss(gamma):
+            old_energy = (gamma * mec2).to("erg")
+            energy_loss_per_time = energy_loss_function(gamma).to("erg s-1")
+            energy_loss = (energy_loss_per_time * unit_time_interval).to("erg")
+            new_energy = old_energy - energy_loss
+            if np.any(new_energy < 0):
+                raise ValueError(
+                    "Energy loss formula returned value higher then original energy. Use shorter time ranges.")
+            new_gamma = (new_energy / mec2).value
+            return new_gamma
+
+        gammas = np.logspace(np.log10(self.gamma_min), np.log10(self.gamma_max), 200)
+        n_array = self.__call__(gammas)
+
+        # for each gamma point create a narrow bin, calculate the energy loss for start and end of the bin,
+        # and scale up density by the bin narrowing factor
+        for r in range(subintervals_count):
+            bin_size_factor = 0.0001
+            bins_width = gammas * bin_size_factor
+            bins_end_recalc = gamma_recalculated_after_loss(gammas + bins_width)
+            gammas = gamma_recalculated_after_loss(gammas)
+            narrowed_bins = bins_end_recalc - gammas
+            if np.any(narrowed_bins <= 0):
+                raise ValueError(
+                    "Energy loss formula returned too big value. Use shorter time ranges.")
+            density_increase = bins_width / narrowed_bins
+            n_array = n_array * density_increase
+
+        return InterpolatedDistribution(gammas, n_array)
 
 
 class PowerLaw(ParticleDistribution):

@@ -14,8 +14,8 @@ Run this repository in binder
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cosimoNigro/agnpy/HEAD)
 
 ## acknowledging and citing agnpy
-As a general acknowledgement of `agnpy` usage, we recommend citing the agnpy release paper.
-Additionaly, to specify which version of `agnpy` is being used, that version's zenodo record can be cited.
+As a general acknowledgment of `agnpy` usage, we recommend citing the agnpy release paper.
+Additionally, to specify which version of `agnpy` is being used, that version's zenodo record can be cited.
 We recommend citing both.
 
 At the following links you can find:
@@ -53,8 +53,8 @@ conda install -c conda-forge agnpy
 ```
 
 ## tests
-A test suite is available in [`agnpy/tests`](https://github.com/cosimoNigro/agnpy/tree/master/agnpy/tests), to run it just type
-`pytest` in the main directory.
+A test suite is available within each agnpy module directory. To run the tests just type
+`pytest` in the main directory of the cloned repository.
 
 ## shields
 [![CI test](https://github.com/cosimoNigro/agnpy/actions/workflows/test.yml/badge.svg)](https://github.com/cosimoNigro/agnpy/actions/workflows/test.yml)
