@@ -270,7 +270,7 @@ class TestAbsorption:
         E = np.logspace(2, 6) * u.GeV
         nu = E.to("Hz", equivalencies=u.spectral())
         tau_blr = abs_blr.tau(nu)
-        print(tau_blr)
+        # print(tau_blr)
 
 
 
