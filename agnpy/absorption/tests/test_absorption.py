@@ -252,6 +252,27 @@ class TestAbsorption:
             tau_z_all += tau_z_this
         assert True
 
+    def test_abs_compare_tau_blr_cubepy_with_tau_bls(self):
+        """
+        Test standard tau blr with tau blr with cubepy
+        """
+        L_disk = 2e46 * u.Unit("erg s-1")
+        xi_line = 0.024
+        R_line = 1e17 * u.cm
+        blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
+        r = 1e20 * u.cm
+
+        # absorption, consider a small viewing angle for this case
+        z = 0.859
+        theta_s = np.deg2rad(10)
+        abs_blr = Absorption(blr, r, z, mu_s=np.cos(theta_s))
+        # taus
+        E = np.logspace(2, 6) * u.GeV
+        nu = E.to("Hz", equivalencies=u.spectral())
+        tau_blr = abs_blr.tau(nu)
+        print(tau_blr)
+
+
 
 
 def sigma_pp(b):
