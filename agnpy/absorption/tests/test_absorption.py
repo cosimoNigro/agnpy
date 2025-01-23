@@ -252,27 +252,24 @@ class TestAbsorption:
             tau_z_all += tau_z_this
         assert True
 
-    def test_abs_compare_tau_blr_cubepy_with_tau_bls(self):
+    def test_tau_accuracy_standard_vs_cubepy(self):
         """
-        Test standard tau blr with tau blr with cubepy
+        This test aims to compare the calculation of tau using a standard method against
+        the implementation provided by the `cubepy` library.
+        The goal is to ensure that both methods yield consistent results within an acceptable tolerance.
         """
-        L_disk = 2e46 * u.Unit("erg s-1")
+        L_disk = 2e45 * u.Unit("erg s-1")
         xi_line = 0.024
         R_line = 1e17 * u.cm
         blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
-        r = 1e20 * u.cm
-
-        # absorption, consider a small viewing angle for this case
+        r = 2e17 * u.cm
         z = 0.859
-        theta_s = np.deg2rad(10)
-        abs_blr = Absorption(blr, r, z, mu_s=np.cos(theta_s))
-        # taus
+        abs_blr = Absorption(blr, r, z)
         E = np.logspace(2, 6) * u.GeV
         nu = E.to("Hz", equivalencies=u.spectral())
         tau_blr = abs_blr.tau(nu)
-        # print(tau_blr)
-
-
+        tau_blr_cubepy = abs_blr.tau_blr_cubepy(nu, eps_abs=1e-3)
+        assert np.allclose(tau_blr, tau_blr_cubepy, rtol=1e-1, atol=1e-1)
 
 
 def sigma_pp(b):
