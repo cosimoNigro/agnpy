@@ -477,6 +477,7 @@ class Absorption:
         s = epsilon_1 * epsilon_line * (1 - _cos_psi) / 2
         integrand = (1 - _cos_psi) * l / x ** 2 * sigma(s).to_value("cm**2")
         return integrand
+
     @staticmethod
     def evaluate_tau_blr_cubepy(
         nu,
@@ -609,44 +610,6 @@ class Absorption:
             )
         return tau_blr_list
 
-    def tau_blr_all_lines_cubepy(self, nu, eps_abs=1e-6):
-        """
-        Calculate absorption in multi-available BLR shells.
-        This function scales the radius and luminosity to the Hbeta line
-        and applies the computation to all the available BLR lines (shells) using
-        their respective ratios.
-
-        Parameters
-        ----------
-        nu: numpy array
-            Frequency array with unit
-        eps_abs: float, optional
-            Absolute precision for the calculation, default is 1e-6
-        """
-        SUM_RATIO_LINES_BLR = 30.652
-        XI_TARGET_LINE = self.target.xi_line
-        tau_z_all = np.zeros(nu.shape)
-
-        blr_shells = dict()
-        absorption_shells = dict()
-
-        # TODO write test
-        if self.target.line != "Hbeta":
-            raise KeyError("Please use Hbeta as reference")
-
-        for line_key in lines_dictionary.keys():
-            xi_line_current = lines_dictionary[line_key]['L_Hbeta_ratio']
-            xi_line = (xi_line_current * XI_TARGET_LINE) / SUM_RATIO_LINES_BLR
-            R_line_current = self.target.R_line * lines_dictionary[line_key]['R_Hbeta_ratio']
-
-            blr_shells[line_key] = SphericalShellBLR(self.target.L_disk, xi_line, line_key, R_line_current)
-            absorption_shells[line_key] = Absorption(blr_shells[line_key], r=self.r, z=self.z)
-
-            tau_z_current = absorption_shells[line_key].tau_blr_cubepy(nu, eps_abs=eps_abs)
-            tau_z_all += tau_z_current
-
-        return tau_z_all
-
     def tau_blr_lines_cubepy(self, nu, lines_list, eps_abs=1e-6):
         """
         Calculate the absorption in all available BLR (Broad Line Region) shells.
@@ -676,9 +639,6 @@ class Absorption:
         XI_TARGET_LINE = self.target.xi_line
         tau_z_lines = np.zeros(nu.shape)
 
-        blr_shells = dict()
-        absorption_shells = dict()
-
         # TODO write test
         if self.target.line != "Hbeta":
             raise KeyError("Please use Hbeta as reference")
@@ -688,10 +648,10 @@ class Absorption:
             xi_line = (xi_line_current * XI_TARGET_LINE) / sum_ratio_lines
             R_line_current = self.target.R_line * lines_dictionary[line_key]['R_Hbeta_ratio']
 
-            blr_shells[line_key] = SphericalShellBLR(self.target.L_disk, xi_line, line_key, R_line_current)
-            absorption_shells[line_key] = Absorption(blr_shells[line_key], r=self.r, z=self.z)
+            blr_shells = SphericalShellBLR(self.target.L_disk, xi_line, line_key, R_line_current)
+            absorption_shells = Absorption(blr_shells, r=self.r, z=self.z)
 
-            tau_z_current = absorption_shells[line_key].tau_blr_cubepy(nu, eps_abs=eps_abs)
+            tau_z_current = absorption_shells.tau_blr_cubepy(nu, eps_abs=eps_abs)
             tau_z_lines += tau_z_current
 
         return tau_z_lines
