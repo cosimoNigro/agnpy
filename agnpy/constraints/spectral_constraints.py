@@ -34,7 +34,7 @@ class SpectralConstraints:
 
         .. math::
 
-            R_L < R_b \Rightarrow \gamma_{\mathrm{max}} < \frac{R_b e B}{m_e c^2}
+            R_L \u2264 R_b \Rightarrow \gamma_{\mathrm{max}} \u2264 \frac{R_b e B}{m_e c^2}
         """
         return (self.blob.R_b * e * self.blob.B_cgs / mec2).to_value("")
 
@@ -42,15 +42,15 @@ class SpectralConstraints:
     def gamma_max_ballistic(self):
         r"""Naive estimation of maximum Lorentz factor of electrons comparing
         acceleration time scale with ballistic time scale.
-        For the latter we assume that the particles crosses the blob radius.
+        For the latter we assume that the particles cross the blob radius.
 
         .. math::
 
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= \xi c E / R_L \\
             T_{\mathrm{acc}} &= E \,/\,(\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} = R_L / (\xi c) \\
             T_{\mathrm{bal}} &= R_b / c \\
-            T_{\mathrm{acc}} &< T_{\mathrm{bal}}
-            \Rightarrow \gamma_{\mathrm{max}} < \frac{\xi  R_b e B}{m_e c^2}
+            T_{\mathrm{acc}} \u2264 T_{\mathrm{bal}}
+            \Rightarrow \gamma_{\mathrm{max}} \u2264 \frac{\xi  R_b e B}{m_e c^2}
         """
         return self.blob.xi * self.gamma_max_larmor
 
@@ -63,7 +63,7 @@ class SpectralConstraints:
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= \xi c E / R_L \\
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} &= 4 / 3 \sigma_T c U_B \gamma^2 \\
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}}
-            \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{6 \pi \xi e}{\sigma_T B}}
+            \Rightarrow \gamma_{\mathrm{max}} = \sqrt{\frac{6 \pi \xi e}{\sigma_T B}}
         """
         return np.sqrt(
             6 * np.pi * self.blob.xi * e / (sigma_T * self.blob.B_cgs)
@@ -77,9 +77,9 @@ class SpectralConstraints:
 
         .. math::
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= \xi c E / R_L \\
-            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{SSC}} &= 4 / 3 \sigma_T c U_{\mathrm{synch}} \gamma^2 \\
+            (\mathrm{d}E/\mathrm{d}t)_{\mathrm{SSC}} &= 4 / 3 \sigma_T c U_{\mathrm{SSC}} \gamma^2 \\
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{acc}} &= (\mathrm{d}E/\mathrm{d}t)_{\mathrm{SSC}}
-            \Rightarrow \gamma_{\mathrm{max}} < \sqrt{\frac{3 \xi e B }{\sigma_T U_SSC}}
+            \Rightarrow \gamma_{\mathrm{max}} = \sqrt{\frac{3 \xi e B }{4 \sigma_T U_\mathrm{SSC}}}
         """
         return np.sqrt(
             3
@@ -95,7 +95,7 @@ class SpectralConstraints:
         WARNING: assumes Thomson regime
 
         .. math::
-            \gamma_{\mathrm{max}} = \sqrt{\frac{3 \xi e B }{ \sigma_T U'_\mathrm{ext}}}
+            \gamma_{\mathrm{max}} = \sqrt{\frac{3 \xi e B }{4 \sigma_T U'_\mathrm{ext}}}
         """
         return np.sqrt(
             3 * self.blob.xi * e * self.blob.B_cgs / (4 * sigma_T * dt.u(r, self.blob))

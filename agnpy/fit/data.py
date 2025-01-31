@@ -51,6 +51,8 @@ def load_sherpa_flux_points(sed_path, E_min, E_max, systematics_dict=None):
                 if name == instrument:
                     syst_rel_error = systematics_dict[instrument]
                     e2dnde_err_syst = syst_rel_error * e2dnde
+        else: 
+            e2dnde_err_syst = np.zeros_like(e2dnde)
 
         x = np.append(x, energy)
         y = np.append(y, e2dnde)

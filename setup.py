@@ -20,6 +20,6 @@ setuptools.setup(
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
     ],
-    install_requires=["astropy>=5.0, <6.0", "numpy>=1.21", "scipy>=1.5,!=1.10", "matplotlib>=3.4"],
-    python_requires=">=3.8",
+    install_requires=["astropy>=5.0,<6.0", "numpy>=1.21", "scipy>=1.5,<1.10", "pyyaml", "matplotlib>=3.4,<=3.9", "sherpa", "pre-commit", "gammapy<1.2"],
+    python_requires=">=3.9,<3.12",
 )

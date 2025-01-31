@@ -1,7 +1,7 @@
 # module containing the synchrotron radiative process
 import numpy as np
 import astropy.units as u
-from astropy.constants import e, h, c, m_e, sigma_T
+from astropy.constants import e, h, c, m_e, sigma_T, mu0
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e
 from ..radiative_process import RadiativeProcess
@@ -89,6 +89,19 @@ class Synchrotron(RadiativeProcess):
         self.blob = blob
         self.ssa = ssa
         self.integrator = integrator
+
+    def electron_energy_loss_per_time(self, gamma):
+        # For synchrotron, energy loss dE/dt formula is:
+        # (4/3 * sigma_T * c * magn_energy_dens) * gamma^2
+        # In case of constant B, the part in brackets is fixed, so as an improvement we could calculate it once
+        # and cache, and later we could use the formula (fixed * gamma^2)
+        fixed = self._electron_energy_loss_formula_prefix()
+        return fixed * gamma ** 2
+
+    def _electron_energy_loss_formula_prefix(self):
+        # using SI units here because of the ambiguity of the different CGS systems in terms of mu0 definition
+        magn_energy_dens = (self.blob.B.to("T") ** 2) / (2 * mu0)
+        return ((4 / 3) * sigma_T * c * magn_energy_dens).to("erg/s")
 
     @staticmethod
     def evaluate_tau_ssa(
