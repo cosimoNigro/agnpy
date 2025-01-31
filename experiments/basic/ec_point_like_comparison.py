@@ -4,8 +4,6 @@
 # import numpy, astropy and matplotlib for basic functionalities
 import numpy as np
 import astropy.units as u
-import astropy.constants as const
-from astropy.coordinates import Distance
 import matplotlib.pyplot as plt
 
 # import agnpy classes

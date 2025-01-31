@@ -1,10 +1,8 @@
 # macro for testing various limits on the gamma factors of electrons
 
 import numpy as np
-import math
 import astropy.units as u
 import astropy.constants as const
-from astropy.coordinates import Distance
 import matplotlib.pyplot as plt
 
 # plt.ion()
@@ -13,8 +11,7 @@ import sys
 sys.path.append("../../")
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron
-from agnpy.compton import ExternalCompton, SynchrotronSelfCompton
-from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
+from agnpy.compton import SynchrotronSelfCompton
 from agnpy.spectral_constraints import SpectralConstraints
 
 # parameters of the blob

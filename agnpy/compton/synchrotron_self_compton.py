@@ -1,7 +1,6 @@
 # module containing the synchrotron self Compton radiative process
 import numpy as np
 from astropy.constants import c, sigma_T
-import astropy.units as u
 from .kernels import isotropic_kernel
 from ..synchrotron import Synchrotron
 from ..utils.math import (

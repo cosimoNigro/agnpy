@@ -5,11 +5,9 @@ sys.path.append("../../")
 import numpy as np
 import astropy.units as u
 import astropy.constants as const
-from astropy.coordinates import Distance
 from agnpy.emission_regions import Blob
 from agnpy.targets import SSDisk, SphericalShellBLR, RingDustTorus
 from agnpy.compton import ExternalCompton
-import matplotlib.pyplot as plt
 
 # to profile
 import cProfile, pstats

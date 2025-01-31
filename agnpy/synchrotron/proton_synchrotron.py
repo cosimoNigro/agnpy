@@ -1,11 +1,11 @@
 # module containing the synchrotron radiative process
 import numpy as np
 import astropy.units as u
-from astropy.constants import e, c, m_p
+from astropy.constants import e, m_p
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
-from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_p
+from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs
 from ..radiative_process import RadiativeProcess
-from .synchrotron import single_particle_synch_power, tau_to_attenuation
+from .synchrotron import single_particle_synch_power
 
 __all__ = ["ProtonSynchrotron"]
 

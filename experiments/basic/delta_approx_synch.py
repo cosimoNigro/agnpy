@@ -6,7 +6,7 @@ import astropy.units as u
 import numpy as np
 from astropy.coordinates import Distance
 from agnpy.emission_regions import Blob
-from agnpy.synchrotron import Synchrotron, nu_synch_peak, synch_sed_param_bpl
+from agnpy.synchrotron import Synchrotron, synch_sed_param_bpl
 import matplotlib.pyplot as plt
 
 # set the spectrum normalisation (total energy in electrons in this case)

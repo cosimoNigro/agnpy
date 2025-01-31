@@ -1,18 +1,17 @@
 # test the synchrotron module
 import numpy as np
 import astropy.units as u
-from astropy.constants import m_e, m_p
+from astropy.constants import m_p
 from astropy.coordinates import Distance
 import pytest
 from pathlib import Path
 from agnpy.emission_regions import Blob
 from agnpy.spectra import ExpCutoffPowerLaw
-from agnpy.synchrotron import Synchrotron, nu_synch_peak
+from agnpy.synchrotron import nu_synch_peak
 from agnpy.synchrotron import ProtonSynchrotron
 from agnpy.utils.math import trapz_loglog
 from agnpy.utils.validation_utils import (
     make_comparison_plot,
-    extract_columns_sample_file,
     check_deviation,
     clean_and_make_dir,
 )
