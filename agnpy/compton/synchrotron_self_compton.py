@@ -1,13 +1,14 @@
 # module containing the synchrotron self Compton radiative process
 import numpy as np
-from astropy.constants import c, sigma_T
-import astropy.units as u
+from astropy.constants import c, sigma_T, m_e
+
 from .kernels import isotropic_kernel
+from .. import Blob
 from ..synchrotron import Synchrotron
 from ..utils.math import (
     axes_reshaper,
     gamma_e_to_integrate,
-    nu_to_integrate,
+    nu_to_integrate, log
 )
 from ..utils.conversion import nu_to_epsilon_prime
 from ..radiative_process import RadiativeProcess
@@ -32,6 +33,42 @@ class SynchrotronSelfCompton(RadiativeProcess):
         self.blob = blob
         self.ssa = ssa
         self.integrator = integrator
+
+    def electron_energy_loss_rate_thomson(self, gamma):
+        return self._electron_energy_loss_thomson_formula_prefactor() * gamma ** 2
+
+    def _electron_energy_loss_thomson_formula_prefactor(self):
+        return ((4 / 3) * sigma_T * c * self.blob.u_ph_synch).to("erg/s")
+
+    def electron_energy_loss_rate(self, gamma):
+        epsilon = nu_to_epsilon_prime(nu_to_integrate, self.blob.z, self.blob.delta_D)
+        sed_flux_synch = Synchrotron.evaluate_sed_flux(
+            nu_to_integrate,
+            self.blob.z,
+            self.blob.d_L,
+            self.blob.delta_D,
+            self.blob.B,
+            self.blob.R_b,
+            self.blob.n_e,
+            *self.blob.n_e.parameters,
+            gamma=gamma_e_to_integrate
+        )
+
+        # differential energy density of photons
+        u_epsilon = self.blob.u_ph_synch_diff(epsilon, sed_flux_synch)
+
+        # reshape for multidimensional integration
+        _gamma, _epsilon = axes_reshaper(gamma, epsilon)
+
+        # formulas from paragraph 2.1, [Moderski2005]
+        b = 4 * _gamma * _epsilon # matrix [gamma x epsilon] - b < 1 means Thomson regime, b > 1 means K-N regime
+        # convert b value to the K-N correction parameter:
+        f_KN = np.where(b < 1e4, 1 / (1 + b) ** 1.5, (9 / (2 * b**2)) * (log(b) - 11/6))
+        # fold K-N correction parameters with the corresponding photon energy densities:
+        F_KN = np.trapz(f_KN * u_epsilon, epsilon)
+        # F_KN is basically total energy density corrected to KN regime for each gamma value
+        energyLossRate = (4 / 3) * sigma_T * c * F_KN * gamma ** 2
+        return energyLossRate.to("erg/s")
 
     @staticmethod
     def evaluate_sed_flux(
@@ -102,13 +139,7 @@ class SynchrotronSelfCompton(RadiativeProcess):
             integrator=integrator,
             gamma=gamma,
         )
-        # Eq. 8 [Finke2008]_
-        u_synch = (3 * np.power(d_L, 2) * sed_synch) / (
-            c * np.power(R_b, 2) * np.power(delta_D, 4) * epsilon
-        )
-        # factor 3 / 4 accounts for averaging in a sphere
-        # not included in Dermer and Finke's papers
-        u_synch *= 3 / 4
+        u_synch = Blob.evaluate_u_ph_synch_diff(R_b, d_L, delta_D, epsilon, sed_synch)
         # multidimensional integration
         _gamma, _epsilon, _epsilon_s = axes_reshaper(gamma, epsilon, epsilon_s)
         V_b = 4 / 3 * np.pi * np.power(R_b, 3)

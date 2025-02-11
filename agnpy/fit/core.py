@@ -84,6 +84,11 @@ def get_spectral_parameters_from_n_e(n_e, backend, modelname=None):
         pars.pop("n_input")
         pars.pop("log10_interp")
 
+    # make sure params are returned in the correct order,
+    # because the order must match the argument list for the evaluate() method of each ParticleDistribution
+    key_order = ['k', 'norm', 'p', 'p1', 'p2', 'q', 'gamma_c', 'gamma_b', 'gamma_0', 'gamma_min', 'gamma_max']
+    pars = {key: pars[key] for key in key_order if key in pars}
+
     for name, value in zip(pars.keys(), pars.values()):
         if name == "k":
             par = Parameter(
