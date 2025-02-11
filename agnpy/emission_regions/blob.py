@@ -1,10 +1,14 @@
 """This module describes the emission regions responsible for the
 acceleration of particles to relativistic energies. Beside physical quantities
 related to the emission itself it contains the electrons energy distributions"""
+import numbers
+
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import Distance
 from astropy.constants import c, sigma_T, m_e
+
+from .. import InterpolatedDistribution, ParticleDistribution
 from ..spectra import PowerLaw
 from ..utils.conversion import mec2, mpc2, B_to_cgs
 
@@ -60,13 +64,16 @@ class Blob:
         delta_D=10,
         Gamma=10,
         B=1 * u.G,
-        n_e=PowerLaw(mass=m_e),
-        n_p=None,
+        n_e : ParticleDistribution = PowerLaw(mass=m_e),
+        n_p : ParticleDistribution = None,
         xi=1.0,
         gamma_e_size=200,
         gamma_p_size=200,
         cosmology=None
     ):
+        if not isinstance(delta_D, numbers.Number) or delta_D <= 0:
+            raise ValueError("delta_D must be a positive number")
+
         self.R_b = R_b.to("cm")
         self.z = z
         # if the luminosity distance is not specified, it will be computed from z
@@ -74,14 +81,12 @@ class Blob:
         self.delta_D = delta_D
         self.Gamma = Gamma
         self.B = B
-        self._n_e = n_e
-        self._n_p = n_p
+        self._n_e : ParticleDistribution = n_e
+        self._n_p : ParticleDistribution = n_p
         self.xi = xi
 
-        # we might want to have different array of Lorentz factors for e and p
-        self.set_gamma_e(gamma_e_size, self._n_e.gamma_min, self._n_e.gamma_max)
-        if self._n_p is not None:
-            self.set_gamma_p(gamma_p_size, self._n_p.gamma_min, self._n_p.gamma_max)
+        self.gamma_e_size = gamma_e_size
+        self.gamma_p_size = gamma_p_size
 
     @property
     def V_b(self):
@@ -130,24 +135,12 @@ class Blob:
         mu_s = np.cos(theta_s.to("rad").value)
         self.delta_D = 1 / (self.Gamma * (1 - self.Beta * mu_s))
 
-    def set_gamma_e(self, gamma_size, gamma_min=1, gamma_max=1e8):
-        """Set the array of Lorentz factors for the electrons."""
-        self.gamma_e_size = gamma_size
-        self.gamma_e_min = gamma_min
-        self.gamma_e_max = gamma_max
-
-    def set_gamma_p(self, gamma_size, gamma_min=1, gamma_max=1e8):
-        """Set the array of Lorentz factors for the protons."""
-        self.gamma_p_size = gamma_size
-        self.gamma_p_min = gamma_min
-        self.gamma_p_max = gamma_max
-
     @property
     def gamma_e(self):
         """Array of electrons Lorentz factors, to be used for integration in the
         reference frame comoving with the emission region."""
         return np.logspace(
-            np.log10(self.gamma_e_min), np.log10(self.gamma_e_max), self.gamma_e_size
+            np.log10(self._n_e.gamma_min), np.log10(self._n_e.gamma_max), self.gamma_e_size
         )
 
     @property
@@ -162,8 +155,8 @@ class Blob:
         reference frame comoving with the emission region."""
         if self._n_p is not None:
             return np.logspace(
-                np.log10(self.gamma_p_min),
-                np.log10(self.gamma_p_max),
+                np.log10(self._n_p.gamma_min),
+                np.log10(self._n_p.gamma_max),
                 self.gamma_p_size,
             )
         else:
@@ -191,8 +184,6 @@ class Blob:
     def n_p(self, spectrum):
         """Setter of the proton distribution."""
         self._n_p = spectrum
-        # set also the array of Lorentz factor of the protons
-        self.set_gamma_p(200, self._n_p.gamma_min, self._n_p.gamma_max)
 
     def __str__(self):
         """Printable summary of the blob."""
@@ -362,7 +353,9 @@ class Blob:
 
     @property
     def u_ph_synch(self):
-        r"""Energy density of the synchrotron photons energy losses are:
+        r"""Total energy density of the synchrotron photons (i.e. sum of energy of synchrotron photons, divided by the blob volume).
+
+         Energy density of the synchrotron photons energy losses are:
 
         .. math::
             (\mathrm{d}E/\mathrm{d}t)_{\mathrm{synch}} = 4 / 3 \sigma_T c U_B \gamma^2
@@ -393,3 +386,67 @@ class Blob:
             * np.trapz(np.power(self.gamma_e, 2) * self.n_e(self.gamma_e), self.gamma_e)
         )
         return u_ph.to("erg cm-3")
+
+    def u_ph_synch_diff(self, epsilon_prime, sed_synch_lab_frame):
+        r"""Differential energy density of the synchrotron photons"""
+        return Blob.evaluate_u_ph_synch_diff(self.R_b, self.d_L, self.delta_D, epsilon_prime, sed_synch_lab_frame)
+
+    @staticmethod
+    def evaluate_u_ph_synch_diff(R_b, d_L, delta_D, epsilon_prime, sed_synch_lab_frame):
+        # Eq. 8 [Finke2008]
+        u_synch = (3 * np.power(d_L, 2) * sed_synch_lab_frame) / (
+                c * np.power(R_b, 2) * np.power(delta_D, 4) * epsilon_prime
+        )
+        # factor 3 / 4 accounts for averaging in a sphere
+        # not included in Dermer and Finke's papers
+        u_synch *= 3 / 4
+        return u_synch.to("erg/cm3")
+
+    def n_e_time_evolution(self, energy_loss_function, time, subintervals_count=10):
+        """Performs the time evolution of the electron distribution inside the blob.
+
+        Parameters
+        ----------
+        energy_loss_function : function
+            the function to be used for calculation of energy loss rate per gamma values
+        time : `~astropy.units.Quantity`
+            total time for the calculation
+        subintervals_count : int
+            optional number defining how many equal-length subintervals the total time will be split into
+        """
+        if (subintervals_count <= 0):
+            raise ValueError("subintervals_count must be > 0")
+
+        unit_time_interval = time / subintervals_count
+
+        def gamma_recalculated_after_loss(gamma):
+            old_energy = (gamma * mec2).to("erg")
+            energy_loss_rate = energy_loss_function(gamma).to("erg s-1")
+            energy_loss = (energy_loss_rate * unit_time_interval).to("erg")
+            new_energy = old_energy - energy_loss
+            if np.any(new_energy < 0):
+                raise ValueError(
+                    "Energy loss formula returned value higher then original energy. Use shorter time ranges.")
+            new_gamma = (new_energy / mec2).value
+            return new_gamma
+
+        gamma_bins_from = self.gamma_e
+        n_array = self.n_e(gamma_bins_from)
+
+        # for each gamma point create a narrow bin, calculate the energy loss for start and end of the bin,
+        # and scale up density by the bin narrowing factor
+        for _ in range(subintervals_count):
+            bin_size_factor = 0.0001
+            bins_width = gamma_bins_from * bin_size_factor
+            gamma_bins_to = gamma_bins_from + bins_width
+            combined = np.column_stack((gamma_bins_from, gamma_bins_to)).ravel()
+            recalc = gamma_recalculated_after_loss(combined)
+            gamma_bins_from = recalc[0::2]
+            gamma_bins_to = recalc[1::2]
+            changed_bins_width = gamma_bins_to - gamma_bins_from
+            if np.any(changed_bins_width <= 0):
+                raise ValueError(
+                    "Energy loss formula returned too big value. Use shorter time ranges.")
+            density_increase = bins_width / changed_bins_width
+            n_array = n_array * density_increase
+            self.n_e = InterpolatedDistribution(gamma_bins_from, n_array)

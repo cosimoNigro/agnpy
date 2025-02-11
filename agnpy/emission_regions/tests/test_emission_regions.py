@@ -2,11 +2,15 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import m_e, m_p
+from astropy.coordinates import Distance
 from astropy.cosmology import Planck18
 import pytest
+
+from agnpy import Synchrotron
 from agnpy.spectra import PowerLaw, BrokenPowerLaw
 from agnpy.emission_regions import Blob
-from agnpy.utils.conversion import Gauss_cgs_unit
+from agnpy.utils.conversion import Gauss_cgs_unit, nu_to_epsilon_prime
+from agnpy.utils.math import nu_to_integrate
 
 
 class TestBlob:
@@ -47,8 +51,10 @@ class TestBlob:
 
     def test_particles_spectra(self):
         """Test for the blob properties related to the particle spectra."""
-        n_e = BrokenPowerLaw()
-        n_p = PowerLaw(mass=m_p)
+        gamma_exp_min = 2
+        gamma_exp_max = 6
+        n_e = BrokenPowerLaw(gamma_min=10**gamma_exp_min, gamma_max=10**gamma_exp_max)
+        n_p = PowerLaw(mass=m_p, gamma_min=10**gamma_exp_min, gamma_max=10**gamma_exp_max)
         # first we initialise the blob without the protons distribution
         blob = Blob(n_e=n_e)
         # assert that the proton distribution is not set
@@ -59,10 +65,10 @@ class TestBlob:
         blob.n_p = n_p
         assert blob.gamma_p is not None
         # change the grid of Lorentz factors
-        gamma = np.logspace(2, 6, 50)
-        blob.set_gamma_e(len(gamma), gamma[0], gamma[-1])
+        gamma = np.logspace(gamma_exp_min, gamma_exp_max, 50)
+        blob.gamma_e_size = len(gamma)
         assert np.array_equal(blob.gamma_e, gamma)
-        blob.set_gamma_p(len(gamma), gamma[0], gamma[-1])
+        blob.gamma_p_size = len(gamma)
         assert np.array_equal(blob.gamma_p, gamma)
 
     def test_particles_densities(self):
@@ -163,4 +169,26 @@ class TestBlob:
         # and so the equipartition
         assert np.isclose(
             blob.k_eq, (2 * u_tot / U_B_expected).to_value(""), atol=0, rtol=0.02
+        )
+
+    def test_compare_photon_energy_density_calculations(self):
+        """Compare the total synchrotron photons energy calculation with integral of differential energy"""
+        r_b = 1e16 * u.cm
+        n_e = PowerLaw.from_total_energy(
+            1e20 * u.erg,
+            4 / 3 * np.pi * r_b ** 3,
+            p=2.8,
+            gamma_min=1e1,
+            gamma_max=1e7,
+            mass=m_e,
+        )
+        blob = Blob(r_b, Distance(1e27, unit=u.cm).z, n_e=n_e)
+        sed_flux_sync = Synchrotron(blob).sed_flux(nu_to_integrate)
+        epsilon_prime = nu_to_epsilon_prime(nu_to_integrate, blob.z, blob.delta_D, m_e)
+        u_sync_differential = blob.u_ph_synch_diff(epsilon_prime, sed_flux_sync)
+        u_sync_total = np.trapz(u_sync_differential, epsilon_prime)
+        assert u.isclose(
+            u_sync_total,
+            blob.u_ph_synch,
+            rtol=0.05
         )

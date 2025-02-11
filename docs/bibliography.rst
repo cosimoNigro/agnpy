@@ -82,3 +82,9 @@ Bibliography
    Monthly Notices of the Royal Astronomical Society, Volume 448, Issue 1, pp. 910-927 (2015).
    <https://ui.adsabs.harvard.edu/abs/2015MNRAS.448..910C/abstract>`_
 
+..  [Moderski2005]
+   `Moderski R.; Sikora M.; Coppi P.S.; Aharonian F.A.
+   "Klein-Nishina Effects in the Spectra of Non-Thermal Sources Immersed in External Radiation Fields".
+   Monthly Notices of the Royal Astronomical Society, Volume 363, Issue 3, pp. 954-966. (2005)
+   <https://ui.adsabs.harvard.edu/abs/2005MNRAS.363..954M/abstract>`_
+

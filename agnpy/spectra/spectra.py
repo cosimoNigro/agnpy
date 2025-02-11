@@ -1,7 +1,8 @@
 # module containing the particle spectra
+from abc import abstractmethod, ABC
+
 import numpy as np
 import astropy.units as u
-from agnpy.utils.conversion import mec2
 from astropy.constants import m_e, m_p, c
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
@@ -18,7 +19,7 @@ __all__ = [
 ]
 
 
-class ParticleDistribution:
+class ParticleDistribution(ABC):
     """Base class grouping common functionalities to be used by all particles
     distributions.
 
@@ -30,7 +31,9 @@ class ParticleDistribution:
         function to be used to integrate the particle distribution
     """
 
-    def __init__(self, mass=m_e, integrator=np.trapz, tag="ParticleDistribution"):
+    def __init__(self, gamma_min, gamma_max, mass=m_e, integrator=np.trapz, tag="ParticleDistribution"):
+        self.gamma_min = gamma_min
+        self.gamma_max = gamma_max
         if mass is m_e:
             self.mass = m_e
             self.particle = "electrons"
@@ -70,19 +73,22 @@ class ParticleDistribution:
         values *= np.power(gamma, gamma_power)
         return integrator(values, gamma, axis=0)
 
-    def integrate(self, gamma_low, gamma_up, gamma_power=0):
+    def integrate(self, gamma_low:float=None, gamma_up:float=None, gamma_power=0):
         """Integral of **this particular** particle distribution over the range
         gamma_low, gamma_up.
 
         Parameters
         ----------
-        gamma_low : float
-            lower integration limit
-        gamma_up : float
-            higher integration limit
+        gamma_low
+            lower integration limit; if None, self.gamma_min will be used
+        gamma_up
+            higher integration limit; if None, self.gamma_max will be used
         """
-        gamma = np.logspace(np.log10(gamma_low), np.log10(gamma_up), 200)
-        values = self.__call__(gamma)
+        start = np.log10(self.gamma_min if gamma_low is None else gamma_low)
+        end = np.log10(self.gamma_max if gamma_up is None else gamma_up)
+
+        gamma = np.logspace(start, end, 200)
+        values = self(gamma)
         values *= np.power(gamma, gamma_power)
         return self.integrator(values, gamma, axis=0)
 
@@ -199,56 +205,10 @@ class ParticleDistribution:
 
         return ax
 
-    def evaluate_time(self, time, energy_loss_function, subintervals_count=10):
-        """Performs the time evaluation of energy change for this particle distribution.
-
-        Parameters
-        ----------
-        time : `~astropy.units.Quantity`
-            total time for the calculation
-        energy_loss_function : function
-            thr function to be used for calculation of energy loss;
-            the function accepts the gamma value and produces "energy per time" quantity
-        subintervals_count : int
-            optional number defining how many equal-length subintervals the total time will be split into
-
-        Returns
-        -------
-        InterpolatedDistribution
-            a new distribution
-        """
-        unit_time_interval = time / subintervals_count
-
-        def gamma_recalculated_after_loss(gamma):
-            old_energy = (gamma * mec2).to("erg")
-            energy_loss_per_time = energy_loss_function(gamma).to("erg s-1")
-            energy_loss = (energy_loss_per_time * unit_time_interval).to("erg")
-            new_energy = old_energy - energy_loss
-            if np.any(new_energy < 0):
-                raise ValueError(
-                    "Energy loss formula returned value higher then original energy. Use shorter time ranges.")
-            new_gamma = (new_energy / mec2).value
-            return new_gamma
-
-        gammas = np.logspace(np.log10(self.gamma_min), np.log10(self.gamma_max), 200)
-        n_array = self.__call__(gammas)
-
-        # for each gamma point create a narrow bin, calculate the energy loss for start and end of the bin,
-        # and scale up density by the bin narrowing factor
-        for r in range(subintervals_count):
-            bin_size_factor = 0.0001
-            bins_width = gammas * bin_size_factor
-            bins_end_recalc = gamma_recalculated_after_loss(gammas + bins_width)
-            gammas = gamma_recalculated_after_loss(gammas)
-            narrowed_bins = bins_end_recalc - gammas
-            if np.any(narrowed_bins <= 0):
-                raise ValueError(
-                    "Energy loss formula returned too big value. Use shorter time ranges.")
-            density_increase = bins_width / narrowed_bins
-            n_array = n_array * density_increase
-
-        return InterpolatedDistribution(gammas, n_array)
-
+    @abstractmethod
+    def __call__(self, gammas):
+        """ Mark ParticleDistribution as callable"""
+        pass
 
 class PowerLaw(ParticleDistribution):
     r"""Class describing a power-law particle distribution.
@@ -282,11 +242,9 @@ class PowerLaw(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(mass, integrator, "PowerLaw")
+        super().__init__(gamma_min, gamma_max, mass, integrator, "PowerLaw")
         self.k = k
         self.p = p
-        self.gamma_min = gamma_min
-        self.gamma_max = gamma_max
 
     @property
     def parameters(self):
@@ -368,13 +326,11 @@ class BrokenPowerLaw(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(mass, integrator, "BrokenPowerLaw")
+        super().__init__(gamma_min, gamma_max, mass, integrator, "BrokenPowerLaw")
         self.k = k
         self.p1 = p1
         self.p2 = p2
         self.gamma_b = gamma_b
-        self.gamma_min = gamma_min
-        self.gamma_max = gamma_max
 
     @property
     def parameters(self):
@@ -480,13 +436,11 @@ class LogParabola(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(mass, integrator, "LogParabola")
+        super().__init__(gamma_min, gamma_max, mass, integrator, "LogParabola")
         self.k = k
         self.p = p
         self.q = q
         self.gamma_0 = gamma_0
-        self.gamma_min = gamma_min
-        self.gamma_max = gamma_max
 
     @property
     def parameters(self):
@@ -581,12 +535,10 @@ class ExpCutoffPowerLaw(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(mass, integrator, "ExpCutoffPowerLaw")
+        super().__init__(gamma_min, gamma_max, mass, integrator, "ExpCutoffPowerLaw")
         self.k = k
         self.p = p
         self.gamma_c = gamma_c
-        self.gamma_min = gamma_min
-        self.gamma_max = gamma_max
 
     @property
     def parameters(self):
@@ -676,14 +628,12 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(mass, integrator, "ExpCutoffBrokenPowerLaw")
+        super().__init__(gamma_min, gamma_max, mass, integrator, "ExpCutoffBrokenPowerLaw")
         self.k = k
         self.p1 = p1
         self.p2 = p2
         self.gamma_c = gamma_c
         self.gamma_b = gamma_b
-        self.gamma_min = gamma_min
-        self.gamma_max = gamma_max
 
     @property
     def parameters(self):
@@ -781,7 +731,7 @@ class InterpolatedDistribution(ParticleDistribution):
     """
 
     def __init__(self, gamma, n, norm=1, mass=m_e, integrator=np.trapz):
-        super().__init__(mass, integrator, "InterpolatedDistribution")
+        super().__init__(gamma[0], gamma[-1], mass, integrator, "InterpolatedDistribution")
         if n.unit != u.Unit("cm-3"):
             raise ValueError(
                 f"Provide a particle distribution in cm-3, instead of {n.unit}"
@@ -791,7 +741,7 @@ class InterpolatedDistribution(ParticleDistribution):
         self.n_input = n
         # scaling parameter
         self.norm = norm
-        # perform the interpolation
+        # perform the interpolation (will also correct the gamma_min and gamma_max)
         self.log10_interp = self.log10_interpolation(gamma, n)
 
     def log10_interpolation(self, gamma, n):
@@ -823,6 +773,18 @@ class InterpolatedDistribution(ParticleDistribution):
 
     def evaluate(self, gamma, norm, gamma_min, gamma_max):
         log10_gamma = np.log10(gamma)
+
+        # Correction for tiny differences on the boundaries of the gamma array: because of numerical errors, sometimes
+        # the first and last gamma values are falling outside the range of the allowed min/max values,
+        # and then incorrectly evaluate to zero. The correct for such cases, check the relative error,
+        # and if it is less than 1e-10, correct the gamma array accordingly, to fit into the allowed range.
+        if gamma_min > gamma[0]:
+            if (gamma_min - gamma[0]) / gamma[0] < 1e-10:
+                gamma[0] = gamma_min
+        if  gamma[-1] > gamma_max:
+            if (gamma[-1] - gamma_max) / gamma_max < 1e-10:
+                gamma[-1] = gamma_max
+
         values = np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
             np.power(10, self.log10_interp(log10_gamma)),

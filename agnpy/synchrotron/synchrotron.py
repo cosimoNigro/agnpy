@@ -90,18 +90,13 @@ class Synchrotron(RadiativeProcess):
         self.ssa = ssa
         self.integrator = integrator
 
-    def electron_energy_loss_per_time(self, gamma):
-        # For synchrotron, energy loss dE/dt formula is:
-        # (4/3 * sigma_T * c * magn_energy_dens) * gamma^2
-        # In case of constant B, the part in brackets is fixed, so as an improvement we could calculate it once
-        # and cache, and later we could use the formula (fixed * gamma^2)
-        fixed = self._electron_energy_loss_formula_prefix()
+    def electron_energy_loss_rate(self, gamma):
+        fixed = self._electron_energy_loss_formula_prefactor()
         return fixed * gamma ** 2
 
-    def _electron_energy_loss_formula_prefix(self):
-        # using SI units here because of the ambiguity of the different CGS systems in terms of mu0 definition
-        magn_energy_dens = (self.blob.B.to("T") ** 2) / (2 * mu0)
-        return ((4 / 3) * sigma_T * c * magn_energy_dens).to("erg/s")
+    def _electron_energy_loss_formula_prefactor(self):
+        U_B = np.power(self.blob.B_cgs, 2) / (8 * np.pi)
+        return ((4 / 3) * sigma_T * c * U_B).to("erg/s")
 
     @staticmethod
     def evaluate_tau_ssa(
@@ -116,9 +111,9 @@ class Synchrotron(RadiativeProcess):
         integrator=np.trapz,
         gamma=gamma_e_to_integrate,
     ):
-        """Computes the syncrotron self-absorption opacity for a general set
-        of model parameters, see :func:`~agnpy:sycnhrotron.Synchrotron.evaluate_sed_flux`
-        for parameters defintion. Eq. before 7.122 in [DermerMenon2009]_."""
+        """Computes the synchrotron self-absorption opacity for a general set
+        of model parameters, see :func:`~agnpy:synchrotron.Synchrotron.evaluate_sed_flux`
+        for parameters definition. Eq. before 7.122 in [DermerMenon2009]_."""
         # conversions
         epsilon = nu_to_epsilon_prime(nu, z, delta_D, m = m_e)
         B_cgs = B_to_cgs(B)

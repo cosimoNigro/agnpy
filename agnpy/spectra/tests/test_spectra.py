@@ -1,12 +1,12 @@
 # tests on agnpy.spectra module
+from copy import deepcopy
 from pathlib import Path
 import numpy as np
 import astropy.units as u
 from astropy.constants import m_e, m_p, c
 import pytest
-from astropy.coordinates import Distance
 
-from agnpy import Blob, Synchrotron
+from agnpy import Blob, Synchrotron, SynchrotronSelfCompton
 from agnpy.spectra import (
     PowerLaw,
     BrokenPowerLaw,
@@ -15,9 +15,8 @@ from agnpy.spectra import (
     ExpCutoffBrokenPowerLaw,
     InterpolatedDistribution,
 )
-from agnpy.utils.math import trapz_loglog
-from agnpy.utils.conversion import mec2, mpc2
-
+from agnpy.utils.math import trapz_loglog, nu_to_integrate
+from agnpy.utils.conversion import mec2, mpc2, nu_to_epsilon_prime
 
 agnpy_dir = Path(__file__).parent.parent.parent  # go to the agnpy root
 # where to read sampled files
@@ -26,6 +25,10 @@ data_dir = agnpy_dir / "data"
 gamma_init_interp = np.logspace(2, 5)
 n_e_interp = 1e-3 * u.Unit("cm-3") * gamma_init_interp ** (-2.1)
 
+def gamma_before_time(prefactor, gamma_after_time, time):
+    """Reverse-time calculation of the gamma value before the energy loss from formula -dE/dt ~ (E ** 2)
+       Applicable to synchrotron and Thomson losses"""
+    return 1 / ((1 / gamma_after_time) - time * prefactor() / (m_e * c ** 2))
 
 def power_law_integral(k_e, p, gamma_min, gamma_max):
     """Analytical integral of the power law."""
@@ -77,7 +80,6 @@ def broken_power_law_times_gamma_integral(k_e, p1, p2, gamma_b, gamma_min, gamma
             / (2 - p2)
         )
     return k_e * (term_1 + term_2)
-
 
 class TestParticleDistribution:
     """Class grouping all the tests related to the general class
@@ -158,7 +160,7 @@ class TestPowerLaw:
     @pytest.mark.parametrize("gamma_min", np.logspace(0, 2, 3))
     @pytest.mark.parametrize("gamma_max", np.logspace(4, 6, 3))
     def test_init(self, p, gamma_min, gamma_max):
-        """Test the intialisation of the power law with the different methods."""
+        """Test the initialisation of the power law with the different methods."""
         # initialisation from total density
         n_tot = 1e-5 * u.Unit("cm-3")
 
@@ -744,12 +746,22 @@ class TestInterpolatedDistribution:
             n_e(gamma_init), 2 * n_init, atol=0 * u.Unit("cm-3"), rtol=1e-3
         )
 
+    def test_integration_is_consistent(self):
+        blob = Blob(n_e=PowerLaw(1 * u.cm ** -3, 2.3, gamma_min=1e2, gamma_max=1e7))
+        synch = Synchrotron(blob)
+        initial_integrate = blob.n_e.integrate(blob.n_e.gamma_min, blob.n_e.gamma_max)
+        # make sure the evaluation and integral are consistent no matter how the distribution changes
+        for i in range(100):
+            blob.n_e_time_evolution(synch.electron_energy_loss_rate, 1 * u.s)
+            integrate = blob.n_e.integrate(blob.n_e.gamma_min, blob.n_e.gamma_max)
+            assert u.isclose(initial_integrate, integrate, rtol=0.001)
+
 
 class TestSpectraTimeEvolution:
 
     @pytest.mark.parametrize("p", [0.5, 1.2, 2.4])
     @pytest.mark.parametrize("time_and_steps", [(1, 10), (60, 60), (200, 100)])
-    def test_compare_numerical_results_with_analytical_calculation(self, p, time_and_steps):
+    def test_compare_numerical_results_with_analytical_calculation_synch(self, p, time_and_steps):
         """Test time evolution of spectral electron density for synchrotron energy losses.
          Use a simple power law spectrum for easy calculation of analytical results."""
         time = time_and_steps[0] * u.s
@@ -758,34 +770,33 @@ class TestSpectraTimeEvolution:
         gamma_max = 1e7
         k = 0.1 * u.Unit("cm-3")
         initial_n_e = PowerLaw(k, p, gamma_min=gamma_min, gamma_max=gamma_max, mass=m_e)
-        blob = Blob(1e16 * u.cm, Distance(1e27, unit=u.cm).z, 0, 10, 1 * u.G, n_e=initial_n_e)
+        blob = Blob(n_e=initial_n_e, delta_D=1)
         synch = Synchrotron(blob)
-        evaluated_n_e = initial_n_e.evaluate_time(time, synch.electron_energy_loss_per_time, subintervals_count=steps)
+        blob.n_e_time_evolution(synch.electron_energy_loss_rate, time, subintervals_count=steps)
+        evaluated_n_e = blob.n_e
 
-        def gamma_before(gamma_after_time, time):
-            """Reverse-time calculation of the gamma value before the synchrotron energy loss,
-             using formula -dE/dt ~ (E ** 2)"""
-            coef = synch._electron_energy_loss_formula_prefix() / (m_e * c ** 2)
-            return 1 / ((1 / gamma_after_time) - time * coef)
-
-        def integral_analytical(gamma_min, gamma_max):
-            """Integral for the power-law distribution"""
-            return k * (gamma_max ** (1 - p) - gamma_min ** (1 - p)) / (1 - p)
+        def gamma_before_synch(gamma_after_time, time):
+            return gamma_before_time(synch._electron_energy_loss_formula_prefactor, gamma_after_time, time)
 
         assert u.isclose(
-            gamma_before(evaluated_n_e.gamma_max, time),
+            gamma_before_synch(evaluated_n_e.gamma_min, time),
+            gamma_min,
+            rtol=0.05
+        )
+        assert u.isclose(
+            gamma_before_synch(evaluated_n_e.gamma_max, time),
             gamma_max,
             rtol=0.05
         )
         assert u.isclose(
             evaluated_n_e.integrate(evaluated_n_e.gamma_min, evaluated_n_e.gamma_max),
-            integral_analytical(gamma_before(evaluated_n_e.gamma_min, time), gamma_before(evaluated_n_e.gamma_max, time)),
+            power_law_integral(k, p, gamma_min, gamma_max),
             rtol=0.05
         )
         assert u.isclose(
-            # synchrotron losses are highest at highest energy, so test the highest energy range, as the most affected
-            evaluated_n_e.integrate(evaluated_n_e.gamma_max / 10, evaluated_n_e.gamma_max),
-            integral_analytical(gamma_before(evaluated_n_e.gamma_max / 10, time), gamma_before(evaluated_n_e.gamma_max, time)),
+            # synchrotron losses are highest at the highest energy, so test the highest energy range, as the most affected
+            evaluated_n_e.integrate(evaluated_n_e.gamma_max/10, evaluated_n_e.gamma_max),
+            power_law_integral(k, p, gamma_before_synch(evaluated_n_e.gamma_max/10, time), gamma_max),
             rtol=0.05
         )
 
@@ -799,15 +810,18 @@ class TestSpectraTimeEvolution:
             gamma_max=1e6,
             mass=m_e,
         )
-        blob = Blob(1e16 * u.cm, Distance(1e27, unit=u.cm).z, 0, 10, 1 * u.G, n_e=initial_n_e)
+        blob = Blob(n_e=initial_n_e)
         synch = Synchrotron(blob)
 
         # iterate over 60 s in 20 steps
-        eval_1 = initial_n_e.evaluate_time(60*u.s, synch.electron_energy_loss_per_time, subintervals_count=20)
+        blob.n_e_time_evolution(synch.electron_energy_loss_rate, 60 * u.s, subintervals_count=20)
+        eval_1 = deepcopy(blob.n_e)
         # iterate first over 30 s, and then, starting with interpolated distribution, over the remaining 30 s,
         # with slightly different number of subintervals
-        eval_2 = initial_n_e.evaluate_time(30 * u.s, synch.electron_energy_loss_per_time, subintervals_count=10)\
-            .evaluate_time(30 * u.s, synch.electron_energy_loss_per_time, subintervals_count=8)
+        blob.n_e = initial_n_e
+        blob.n_e_time_evolution(synch.electron_energy_loss_rate, 30 * u.s, subintervals_count=10)
+        blob.n_e_time_evolution(synch.electron_energy_loss_rate, 30 * u.s, subintervals_count=8)
+        eval_2 = blob.n_e
 
         gamma_min = eval_1.gamma_min
         gamma_max = eval_1.gamma_max
@@ -817,4 +831,106 @@ class TestSpectraTimeEvolution:
             eval_2.evaluate(gammas, 1, gamma_min, gamma_max),
             0.001)
 
+    def test_total_number_of_electrons_should_stay_after_time_evolution(self):
+        r_b = 1e16 * u.cm
+        n_e = PowerLaw.from_total_energy(
+            1e48 * u.erg,
+            4 / 3 * np.pi * r_b ** 3,
+            p=2.0,
+            gamma_min=1e2,
+            gamma_max=1e7,
+            mass=m_e,
+        )
 
+        blob = Blob(r_b, n_e=n_e)
+        synch = Synchrotron(blob)
+        ssc = SynchrotronSelfCompton(blob)
+
+        time = 6 * u.s
+        intervals = 300
+
+        electrons_before = n_e.integrate()
+
+        blob.n_e_time_evolution(synch.electron_energy_loss_rate, time, subintervals_count=intervals)
+        electrons_after_sync = blob.n_e.integrate()
+
+        blob.n_e = n_e
+        blob.n_e_time_evolution(ssc.electron_energy_loss_rate_thomson, time, subintervals_count=intervals)
+        electrons_after_ssc_th = blob.n_e.integrate()
+
+        blob.n_e = n_e
+        blob.n_e_time_evolution(ssc.electron_energy_loss_rate, time, subintervals_count=intervals)
+        electrons_after_ssc = blob.n_e.integrate()
+
+        assert u.isclose(electrons_before, electrons_after_sync, rtol=0.005)
+        assert u.isclose(electrons_before, electrons_after_ssc_th, rtol=0.005)
+        assert u.isclose(electrons_before, electrons_after_ssc, rtol=0.005)
+
+    def test_ssc_losses_in_thompson_limit(self):
+        r_b = 1e16 * u.cm
+        n_e = PowerLaw.from_total_energy(
+            1e30 * u.erg,
+            4 / 3 * np.pi * r_b ** 3,
+            p=2.8,
+            gamma_min=1e1,
+            gamma_max=1e3,
+            mass=m_e,
+        )
+
+        blob = Blob(r_b, n_e=n_e)
+        ssc = SynchrotronSelfCompton(blob)
+
+        thomson = ssc.electron_energy_loss_rate_thomson(np.logspace(1, 3, 200)).to("erg/s")
+        ssc = ssc.electron_energy_loss_rate(np.logspace(1, 3, 200)).to("erg/s")
+
+        assert u.allclose(thomson, ssc, 0.01)
+
+    def test_compare_numerical_results_with_analytical_calculation_ssc_thomson(self):
+        """Test time evolution of spectral electron density for SSC energy losses in Thomson range.
+         Similar to the corresponding test for Synchrotron losses."""
+        time = 1e26 * u.s # energy losses are very low, of the order of 1e-33 erg/s,
+                          # so we need to multiply them by a long time to observe any change in the electron distribution
+        steps = 1
+        p = 0.5
+        r_b = 1e16 * u.cm
+        gamma_min = 1e3
+        gamma_max = 1e4
+        n_e = PowerLaw.from_total_energy(
+            1e20 * u.erg,
+            4 / 3 * np.pi * r_b ** 3,
+            p=p,
+            gamma_min=gamma_min,
+            gamma_max=gamma_max,
+            mass=m_e,
+        )
+        k = n_e.k
+        blob = Blob(r_b, n_e=n_e, B=10*u.G)
+        initial_gammas = blob.gamma_e
+
+        ssc = SynchrotronSelfCompton(blob)
+        blob.n_e_time_evolution(ssc.electron_energy_loss_rate, time, subintervals_count=steps)
+        evaluated_n_e: InterpolatedDistribution = blob.n_e
+
+        def gamma_before(prefactor, gamma_after_time, before_time):
+            return 1 / ((1 / gamma_after_time) - before_time * prefactor() / (m_e * c ** 2))
+
+        def gamma_before_ssc_th(gamma_after_time, before_time):
+            return gamma_before(ssc._electron_energy_loss_thomson_formula_prefactor, gamma_after_time, before_time)
+
+        # map result gammas to original gammas and assert they are equal
+        for evaluated_gamma, initial_gamma in zip(evaluated_n_e.gamma_input, initial_gammas):
+            assert u.isclose(
+                gamma_before_ssc_th(evaluated_gamma, time),
+                initial_gamma,
+                rtol=0.001
+            )
+
+        # split result into log-equal intervals, integrate them, and compare with the analytical result
+        logspace = np.logspace(np.log10(n_e.gamma_min), np.log10(evaluated_n_e.gamma_max), 20)
+        for gamma_min, gamma_max in zip(logspace, logspace[1:]):
+            integral = evaluated_n_e.integrate(gamma_min, gamma_max)
+            assert u.isclose(
+                integral,
+                power_law_integral(k, p, gamma_before_ssc_th(gamma_min, time), gamma_before_ssc_th(gamma_max, time)),
+                rtol=0.001
+            )
