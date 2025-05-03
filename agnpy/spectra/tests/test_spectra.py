@@ -925,7 +925,7 @@ class TestSpectraTimeEvolution:
                 rtol=0.001
             )
 
-        # split result into log-equal intervals, integrate them, and compare with the analytical result
+        # split the result into log-equal intervals, integrate them, and compare with the analytical result
         logspace = np.logspace(np.log10(n_e.gamma_min), np.log10(evaluated_n_e.gamma_max), 20)
         for gamma_min, gamma_max in zip(logspace, logspace[1:]):
             integral = evaluated_n_e.integrate(gamma_min, gamma_max)
@@ -934,3 +934,15 @@ class TestSpectraTimeEvolution:
                 power_law_integral(k, p, gamma_before_ssc_th(gamma_min, time), gamma_before_ssc_th(gamma_max, time)),
                 rtol=0.001
             )
+
+    def test_combined_energy_loss_from_two_processes(self):
+        """Test time evolution of combined two fake processes - one decreases energy by 20%, another increases by 5%.
+           Hence, the combined result should be 15% loss in each step"""
+        blob = Blob(n_e= PowerLaw())
+        initial_gammas = blob.gamma_e
+        decrease_by_20_perc = lambda g: (g * mec2).to("erg") * 0.2 / u.s
+        increase_by_5_perc = lambda g: (g * mec2) * -0.05 / u.s
+        number_of_steps = 10
+        blob.n_e_time_evolution([decrease_by_20_perc, increase_by_5_perc],
+                                number_of_steps * u.s, subintervals_count=number_of_steps)
+        assert u.allclose(blob.gamma_e, initial_gammas*(0.85**number_of_steps))
