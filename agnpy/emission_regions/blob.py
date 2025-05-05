@@ -2,6 +2,7 @@
 acceleration of particles to relativistic energies. Beside physical quantities
 related to the emission itself it contains the electrons energy distributions"""
 import numbers
+from typing import Iterable
 
 import numpy as np
 import astropy.units as u
@@ -407,8 +408,9 @@ class Blob:
 
         Parameters
         ----------
-        energy_loss_function : function
-            the function to be used for calculation of energy loss rate per gamma values
+        energy_loss_function : function or array of functions
+            the function(s) to be used for calculation of energy loss rate per gamma values
+            (for energy gain processes, function should return negative values)
         time : `~astropy.units.Quantity`
             total time for the calculation
         subintervals_count : int
@@ -420,10 +422,12 @@ class Blob:
         unit_time_interval = time / subintervals_count
 
         def gamma_recalculated_after_loss(gamma):
+            total_energy_loss = np.zeros_like(gamma) * u.Unit("erg")
+            for en_loss_fn in energy_loss_function if isinstance(energy_loss_function, Iterable) else [energy_loss_function]:
+                energy_loss_rate = en_loss_fn(gamma).to("erg s-1")
+                total_energy_loss += (energy_loss_rate * unit_time_interval).to("erg")
             old_energy = (gamma * mec2).to("erg")
-            energy_loss_rate = energy_loss_function(gamma).to("erg s-1")
-            energy_loss = (energy_loss_rate * unit_time_interval).to("erg")
-            new_energy = old_energy - energy_loss
+            new_energy = old_energy - total_energy_loss
             if np.any(new_energy < 0):
                 raise ValueError(
                     "Energy loss formula returned value higher then original energy. Use shorter time ranges.")
