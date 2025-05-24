@@ -937,12 +937,36 @@ class TestSpectraTimeEvolution:
 
     def test_combined_energy_loss_from_two_processes(self):
         """Test time evolution of combined two fake processes - one decreases energy by 20%, another increases by 5%.
-           Hence, the combined result should be 15% loss in each step"""
+           Hence, the combined process in case of the Euler method should lose exactly 15% in each step"""
         blob = Blob(n_e= PowerLaw())
         initial_gammas = blob.gamma_e
         decrease_by_20_perc = lambda g: (g * mec2).to("erg") * 0.2 / u.s
         increase_by_5_perc = lambda g: (g * mec2) * -0.05 / u.s
         number_of_steps = 10
         blob.n_e_time_evolution([decrease_by_20_perc, increase_by_5_perc],
-                                number_of_steps * u.s, subintervals_count=number_of_steps)
-        assert u.allclose(blob.gamma_e, initial_gammas*(0.85**number_of_steps))
+                                number_of_steps * u.s, subintervals_count=number_of_steps, method="Euler")
+        euler_expected = initial_gammas * (0.85 ** number_of_steps)
+        assert u.allclose(blob.gamma_e, euler_expected)
+
+    def test_heun_method_compared_to_euler(self):
+        """ Heun method should give better results than Euler method (note: Heun method makes calculations twice,
+            so it only makes sense to compare them with 2x more Euler steps)
+        """
+        time = 60 * u.s
+        steps_euler = 600
+        steps_heun = steps_euler // 2
+
+        blob1 = Blob(n_e=PowerLaw())
+        initial_gamma = blob1.gamma_e
+        synch1 = Synchrotron(blob1)
+        blob1.n_e_time_evolution(synch1.electron_energy_loss_rate, time, subintervals_count=steps_euler, method="Euler")
+        euler_reversed_analytically = gamma_before_time(synch1._electron_energy_loss_formula_prefactor, blob1.gamma_e, time)
+
+        blob2 = Blob(n_e=PowerLaw())
+        synch2 = Synchrotron(blob2)
+        blob2.n_e_time_evolution(synch2.electron_energy_loss_rate, time, subintervals_count=steps_heun, method="Heun")
+        heun_reversed_analytically = gamma_before_time(synch2._electron_energy_loss_formula_prefactor, blob2.gamma_e, time)
+
+        errors_heun = np.abs((heun_reversed_analytically - initial_gamma) / initial_gamma)
+        errors_euler = np.abs((euler_reversed_analytically - initial_gamma) / initial_gamma)
+        assert np.alltrue(errors_heun <= errors_euler)
