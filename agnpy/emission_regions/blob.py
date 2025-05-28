@@ -403,7 +403,7 @@ class Blob:
         u_synch *= 3 / 4
         return u_synch.to("erg/cm3")
 
-    def n_e_time_evolution(self, energy_loss_function, time, subintervals_count=10):
+    def n_e_time_evolution(self, energy_loss_function, time, subintervals_count=10, method="heun"):
         """Performs the time evolution of the electron distribution inside the blob.
 
         Parameters
@@ -415,11 +415,26 @@ class Blob:
             total time for the calculation
         subintervals_count : int
             optional number defining how many equal-length subintervals the total time will be split into
+        method
+            "heun" (default, more precise) or "euler" (faster but less precise)
         """
         if (subintervals_count <= 0):
             raise ValueError("subintervals_count must be > 0")
 
         unit_time_interval = time / subintervals_count
+
+        def interlace(gamma_bins_start, gamma_bins_end):
+            """ combine two gamma arrays into one array, to make the calculations on them in one steps instead of two;
+                first array goes into odd indices, second into even indices """
+            return np.column_stack((gamma_bins_start, gamma_bins_end)).ravel()
+
+        def deinterlace(interlaced):
+            gamma_bins_start = interlaced[0::2]
+            gamma_bins_end = interlaced[1::2]
+            if np.any(gamma_bins_end <= gamma_bins_start):
+                raise ValueError(
+                    "Energy loss formula returned too big value. Use shorter time ranges.")
+            return gamma_bins_start, gamma_bins_end
 
         def gamma_recalculated_after_loss(gamma):
             total_energy_loss = np.zeros_like(gamma) * u.Unit("erg")
@@ -443,14 +458,25 @@ class Blob:
             bin_size_factor = 0.0001
             bins_width = gamma_bins_from * bin_size_factor
             gamma_bins_to = gamma_bins_from + bins_width
-            combined = np.column_stack((gamma_bins_from, gamma_bins_to)).ravel()
-            recalc = gamma_recalculated_after_loss(combined)
-            gamma_bins_from = recalc[0::2]
-            gamma_bins_to = recalc[1::2]
-            changed_bins_width = gamma_bins_to - gamma_bins_from
-            if np.any(changed_bins_width <= 0):
-                raise ValueError(
-                    "Energy loss formula returned too big value. Use shorter time ranges.")
+            gamma = interlace(gamma_bins_from, gamma_bins_to)
+            gamma_recalculated = gamma_recalculated_after_loss(gamma)
+            gamma_bins_from_recalc, gamma_bins_to_recalc = deinterlace(gamma_recalculated)
+            changed_bins_width = gamma_bins_to_recalc - gamma_bins_from_recalc
             density_increase = bins_width / changed_bins_width
-            n_array = n_array * density_increase
-            self.n_e = InterpolatedDistribution(gamma_bins_from, n_array)
+            n_array_recalc = n_array * density_increase
+            self.n_e = InterpolatedDistribution(gamma_bins_from_recalc, n_array_recalc)
+            if method.lower() == "euler":
+                gamma_bins_from = gamma_bins_from_recalc
+                n_array = n_array_recalc
+            elif method.lower() == "heun":
+                gamma_averaged = (gamma + gamma_recalculated_after_loss(gamma_recalculated)) / 2
+                gamma_bins_from_recalc, gamma_bins_to_recalc = deinterlace(gamma_averaged)
+                changed_bins_width = gamma_bins_to_recalc - gamma_bins_from_recalc
+                density_increase = bins_width / changed_bins_width
+                n_array = n_array * density_increase
+                gamma_bins_from = gamma_bins_from_recalc
+                self.n_e = InterpolatedDistribution(gamma_bins_from, n_array)
+            else:
+                raise ValueError("Invalid method name")
+
+
