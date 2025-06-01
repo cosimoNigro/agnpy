@@ -772,7 +772,7 @@ class TestSpectraTimeEvolution:
         initial_n_e = PowerLaw(k, p, gamma_min=gamma_min, gamma_max=gamma_max, mass=m_e)
         blob = Blob(n_e=initial_n_e, delta_D=1)
         synch = Synchrotron(blob)
-        blob.n_e_time_evolution(synch.electron_energy_loss_rate, time, subintervals_count=steps)
+        blob.n_e_time_evolution(synch.electron_energy_loss_rate, time, fixed_subintervals=steps)
         evaluated_n_e = blob.n_e
 
         def gamma_before_synch(gamma_after_time, time):
@@ -814,13 +814,13 @@ class TestSpectraTimeEvolution:
         synch = Synchrotron(blob)
 
         # iterate over 60 s in 20 steps
-        blob.n_e_time_evolution(synch.electron_energy_loss_rate, 60 * u.s, subintervals_count=20)
+        blob.n_e_time_evolution(synch.electron_energy_loss_rate, 60 * u.s, fixed_subintervals=20)
         eval_1 = deepcopy(blob.n_e)
         # iterate first over 30 s, and then, starting with interpolated distribution, over the remaining 30 s,
         # with slightly different number of subintervals
         blob.n_e = initial_n_e
-        blob.n_e_time_evolution(synch.electron_energy_loss_rate, 30 * u.s, subintervals_count=10)
-        blob.n_e_time_evolution(synch.electron_energy_loss_rate, 30 * u.s, subintervals_count=8)
+        blob.n_e_time_evolution(synch.electron_energy_loss_rate, 30 * u.s, fixed_subintervals=10)
+        blob.n_e_time_evolution(synch.electron_energy_loss_rate, 30 * u.s, fixed_subintervals=8)
         eval_2 = blob.n_e
 
         gamma_min = eval_1.gamma_min
@@ -851,15 +851,15 @@ class TestSpectraTimeEvolution:
 
         electrons_before = n_e.integrate()
 
-        blob.n_e_time_evolution(synch.electron_energy_loss_rate, time, subintervals_count=intervals)
+        blob.n_e_time_evolution(synch.electron_energy_loss_rate, time, fixed_subintervals=intervals)
         electrons_after_sync = blob.n_e.integrate()
 
         blob.n_e = n_e
-        blob.n_e_time_evolution(ssc.electron_energy_loss_rate_thomson, time, subintervals_count=intervals)
+        blob.n_e_time_evolution(ssc.electron_energy_loss_rate_thomson, time, fixed_subintervals=intervals)
         electrons_after_ssc_th = blob.n_e.integrate()
 
         blob.n_e = n_e
-        blob.n_e_time_evolution(ssc.electron_energy_loss_rate, time, subintervals_count=intervals)
+        blob.n_e_time_evolution(ssc.electron_energy_loss_rate, time, fixed_subintervals=intervals)
         electrons_after_ssc = blob.n_e.integrate()
 
         assert u.isclose(electrons_before, electrons_after_sync, rtol=0.005)
@@ -908,7 +908,7 @@ class TestSpectraTimeEvolution:
         initial_gammas = blob.gamma_e
 
         ssc = SynchrotronSelfCompton(blob)
-        blob.n_e_time_evolution(ssc.electron_energy_loss_rate, time, subintervals_count=steps)
+        blob.n_e_time_evolution(ssc.electron_energy_loss_rate, time, fixed_subintervals=steps)
         evaluated_n_e: InterpolatedDistribution = blob.n_e
 
         def gamma_before(prefactor, gamma_after_time, before_time):
@@ -944,7 +944,7 @@ class TestSpectraTimeEvolution:
         increase_by_5_perc = lambda g: (g * mec2) * -0.05 / u.s
         number_of_steps = 10
         blob.n_e_time_evolution([decrease_by_20_perc, increase_by_5_perc],
-                                number_of_steps * u.s, subintervals_count=number_of_steps, method="Euler")
+                                number_of_steps * u.s, fixed_subintervals=number_of_steps, method="Euler")
         euler_expected = initial_gammas * (0.85 ** number_of_steps)
         assert u.allclose(blob.gamma_e, euler_expected)
 
@@ -959,12 +959,12 @@ class TestSpectraTimeEvolution:
         blob1 = Blob(n_e=PowerLaw())
         initial_gamma = blob1.gamma_e
         synch1 = Synchrotron(blob1)
-        blob1.n_e_time_evolution(synch1.electron_energy_loss_rate, time, subintervals_count=steps_euler, method="Euler")
+        blob1.n_e_time_evolution(synch1.electron_energy_loss_rate, time, fixed_subintervals=steps_euler, method="Euler")
         euler_reversed_analytically = gamma_before_time(synch1._electron_energy_loss_formula_prefactor, blob1.gamma_e, time)
 
         blob2 = Blob(n_e=PowerLaw())
         synch2 = Synchrotron(blob2)
-        blob2.n_e_time_evolution(synch2.electron_energy_loss_rate, time, subintervals_count=steps_heun, method="Heun")
+        blob2.n_e_time_evolution(synch2.electron_energy_loss_rate, time, fixed_subintervals=steps_heun, method="Heun")
         heun_reversed_analytically = gamma_before_time(synch2._electron_energy_loss_formula_prefactor, blob2.gamma_e, time)
 
         errors_heun = np.abs((heun_reversed_analytically - initial_gamma) / initial_gamma)
