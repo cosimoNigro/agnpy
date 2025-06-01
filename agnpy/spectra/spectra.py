@@ -772,11 +772,9 @@ class InterpolatedDistribution(ParticleDistribution):
         ]
 
     def evaluate(self, gamma, norm, gamma_min, gamma_max):
-        log10_gamma = np.log10(gamma)
-
         # Correction for tiny differences on the boundaries of the gamma array: because of numerical errors, sometimes
         # the first and last gamma values are falling outside the range of the allowed min/max values,
-        # and then incorrectly evaluate to zero. The correct for such cases, check the relative error,
+        # and then incorrectly evaluate to zero. To correct for such cases, check the relative error,
         # and if it is less than 1e-10, correct the gamma array accordingly, to fit into the allowed range.
         if gamma_min > gamma[0]:
             if (gamma_min - gamma[0]) / gamma[0] < 1e-10:
@@ -785,11 +783,9 @@ class InterpolatedDistribution(ParticleDistribution):
             if (gamma[-1] - gamma_max) / gamma_max < 1e-10:
                 gamma[-1] = gamma_max
 
-        values = np.where(
-            (gamma_min <= gamma) * (gamma <= gamma_max),
-            np.power(10, self.log10_interp(log10_gamma)),
-            0,
-        )
+        valid_indices = (gamma_min <= gamma) & (gamma <= gamma_max)
+        values = np.zeros_like(gamma)
+        values[valid_indices] = np.power(10, self.log10_interp(np.log10(gamma[valid_indices])))
         return norm * values * u.Unit("cm-3")
 
     def __call__(self, gamma):
