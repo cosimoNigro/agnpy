@@ -403,7 +403,8 @@ class Blob:
         u_synch *= 3 / 4
         return u_synch.to("erg/cm3")
 
-    def n_e_time_evolution(self, energy_loss_function, time, subintervals_count=10, method="heun"):
+    #TODO move to separate class; remove duplicated code; add test for automatic method; add better logging; add support for Heun method for automatic method
+    def n_e_time_evolution(self, energy_loss_function, time, fixed_subintervals=0, method="heun", max_change_per_interval=0.01):
         """Performs the time evolution of the electron distribution inside the blob.
 
         Parameters
@@ -413,11 +414,24 @@ class Blob:
             (for energy gain processes, function should return negative values)
         time : `~astropy.units.Quantity`
             total time for the calculation
-        subintervals_count : int
-            optional number defining how many equal-length subintervals the total time will be split into
+        fixed_subintervals : int
+            if set to value N > 0, then calculation will be performed in the N steps of equal duration (time/N),
+            calculating energy change for every gamma value in each step;
+            if set to 0 (default), then calculation will use the automatic time splitting, and recalculating energy loss rate
+            only for gamma values for which the relative energy loss during that time exceeds max_change_per_interval
         method
             "heun" (default, more precise) or "euler" (faster but less precise)
+        max_change_per_interval
+            maximum relative change of the electron energy allowed in one subinterval
+            (if exceeded, will automatically split the time in two, or raise an error, depending on fixed_subintervals value)
         """
+        if fixed_subintervals <= 0:
+            return self.n_e_time_evolution_auto(energy_loss_function, time, max_change_per_interval)
+        else:
+            return self.n_e_time_evolution_fixed(energy_loss_function, time, fixed_subintervals, method, max_change_per_interval)
+
+    def n_e_time_evolution_fixed(self, energy_loss_function, time, subintervals_count=10, method="heun",
+                               max_change_per_interval=0.01):
         if (subintervals_count <= 0):
             raise ValueError("subintervals_count must be > 0")
 
@@ -443,9 +457,9 @@ class Blob:
                 total_energy_loss += (energy_loss_rate * unit_time_interval).to("erg")
             old_energy = (gamma * mec2).to("erg")
             new_energy = old_energy - total_energy_loss
-            if np.any(new_energy < 0):
+            if np.any(new_energy / old_energy < (1 - max_change_per_interval)) or np.any(new_energy / old_energy > (1 + max_change_per_interval)):
                 raise ValueError(
-                    "Energy loss formula returned value higher then original energy. Use shorter time ranges.")
+                    "Energy loss or gain exceeded the max_change_per_interval threshold. Use shorter time ranges.")
             new_gamma = (new_energy / mec2).value
             return new_gamma
 
@@ -479,4 +493,83 @@ class Blob:
             else:
                 raise ValueError("Invalid method name")
 
+    def n_e_time_evolution_auto(self, energy_loss_function, time, max_change_per_interval=0.01):
 
+        def interlace(gamma_bins_start, gamma_bins_end):
+            """ combine two gamma arrays into one array, to make the calculations on them in one steps instead of two;
+                first array goes into odd indices, second into even indices """
+            return np.column_stack((gamma_bins_start, gamma_bins_end)).ravel()
+
+        def deinterlace(interlaced):
+            gamma_bins_start = interlaced[0::2]
+            gamma_bins_end = interlaced[1::2]
+            if np.any(gamma_bins_end <= gamma_bins_start):
+                raise ValueError(
+                    "Energy loss formula returned too big value. Use shorter time ranges.")
+            return gamma_bins_start, gamma_bins_end
+
+        def gamma_recalculated_after_loss(gamma, energy_loss):  #change to accept multiple losses?
+            old_energy = (gamma * mec2).to("erg")
+            new_energy = old_energy - energy_loss
+            if np.any(new_energy < 0):
+                raise ValueError(
+                    "Energy loss formula returned value higher then original energy. Use shorter time ranges.")
+            new_gamma = (new_energy / mec2).value
+            return new_gamma
+
+        def calc_mask(gamma, losses):
+            initial = (gamma * mec2).to("erg")
+            relative_losses = np.abs(losses / initial).value
+            return relative_losses < max_change_per_interval
+
+        bin_size_factor = 0.0001
+
+        gamma_bins_from = self.gamma_e
+        n_array = self.n_e(gamma_bins_from)
+        energy_loss_rates = np.repeat(0 * u.Unit("erg s-1"), 2*len(gamma_bins_from)) #loss rates for interlaced gamma bin start and end
+
+        def recalc_high_loss_rates(low_loss_rates_mask):
+            # recalculates the energy_loss_rates array, but only for unmasked elements
+            gamma = interlace(gamma_bins_from, gamma_bins_from * (1 + bin_size_factor))
+            mask = ~ np.repeat(low_loss_rates_mask, 2)
+
+            energy_loss_rates[mask] = np.zeros_like(gamma[mask]) * u.Unit("erg s-1")
+            for en_loss_fn in energy_loss_function if isinstance(energy_loss_function, Iterable) else [energy_loss_function]:
+                energy_loss_rates[mask] += en_loss_fn(gamma[mask]).to("erg s-1")
+
+        def do_recursive(time, depth): # depth value is only for debugging
+            losses = energy_loss_rates * time
+            low_loss_rates_mask = calc_mask(gamma_bins_from, deinterlace(losses)[0])
+            print(format_mask_info(low_loss_rates_mask), depth * "-")
+            if np.all(low_loss_rates_mask):
+                bins_width = gamma_bins_from * bin_size_factor
+                gamma_bins_to = gamma_bins_from + bins_width
+                gamma = interlace(gamma_bins_from, gamma_bins_to)
+                gamma_recalculated = gamma_recalculated_after_loss(gamma, losses)
+                gamma_bins_from_recalc, gamma_bins_to_recalc = deinterlace(gamma_recalculated)
+                changed_bins_width = gamma_bins_to_recalc - gamma_bins_from_recalc
+                density_increase = bins_width / changed_bins_width
+                n_array_recalc = n_array * density_increase
+
+                if not np.all(np.diff(gamma_bins_from_recalc) > 0):
+                    raise ValueError(
+                        "Inconsistent results. Use smaller max-loss-rate-per-cycle")
+                self.n_e = InterpolatedDistribution(gamma_bins_from_recalc, n_array_recalc)
+
+                gamma_bins_from[:] = gamma_bins_from_recalc
+                n_array[:] = n_array_recalc
+            else:
+                do_recursive(time / 2, depth + 1)
+                recalc_high_loss_rates(low_loss_rates_mask)
+                do_recursive(time / 2, depth + 1)
+
+        empty_mask = np.repeat(False, len(self.gamma_e))
+        recalc_high_loss_rates(empty_mask)
+        do_recursive(time, 1)
+
+#for debugging only
+def format_mask_info(arr):
+    count = sum(arr)
+    total = len(arr)
+    width = len(str(total))
+    return f"{str(count).rjust(width)} / {str(total).rjust(width)}"
