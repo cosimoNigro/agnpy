@@ -8,7 +8,7 @@ from astropy.coordinates import Distance
 from agnpy.spectra import PowerLaw, BrokenPowerLaw
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron
-from agnpy.targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
+from agnpy.targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus, lines_dictionary
 from agnpy.absorption import Absorption, EBL
 from agnpy.utils.math import axes_reshaper
 from agnpy.utils.validation_utils import (
@@ -227,6 +227,49 @@ class TestAbsorption:
         )
         # requires a 10% deviation from the two SED points
         assert check_deviation(nu, tau_dt, tau_ps_dt, 0.1)
+
+    def test_abs_blr_cubepy(self):
+        """Checks for any errors that may occur during the execution of the function that
+        calculates absorption in BLR with cubepy."""
+        SUM_RATIO_LINES_BLR = 30.652
+        E = np.logspace(-1, 1, 20) * u.TeV
+        nu = E.to("Hz", equivalencies=u.spectral())
+        L_disk = 6e45 * u.Unit("erg s-1")
+        R_line = 2.45 * 1e17 * u.cm
+        r_blob_bh = 1e18 * u.cm
+        z = 1
+        XI_LINE = 0.1
+        blr_dict = dict()
+        ec_blr_dict = dict()
+        tau_z_all = np.zeros(nu.shape)
+        for line in list(lines_dictionary.keys()):
+            xi_line_this = lines_dictionary[line]['L_Hbeta_ratio']
+            xi_line = (xi_line_this * XI_LINE) / SUM_RATIO_LINES_BLR
+            R_line_this = R_line * lines_dictionary[line]['R_Hbeta_ratio']
+            blr_dict[line] = SphericalShellBLR(L_disk, xi_line, line, R_line_this)
+            ec_blr_dict[line] = Absorption(blr_dict[line], r=r_blob_bh, z=z)
+            tau_z_this = ec_blr_dict[line].tau_blr_cubepy(nu, eps_abs=1e-3)
+            tau_z_all += tau_z_this
+        assert True
+
+    def test_tau_accuracy_standard_vs_cubepy(self):
+        """
+        This test aims to compare the calculation of tau using a standard method against
+        the implementation provided by the `cubepy` library.
+        The goal is to ensure that both methods yield consistent results within an acceptable tolerance.
+        """
+        L_disk = 2e45 * u.Unit("erg s-1")
+        xi_line = 0.024
+        R_line = 1e17 * u.cm
+        blr = SphericalShellBLR(L_disk, xi_line, "Lyalpha", R_line)
+        r = 2e17 * u.cm
+        z = 0.859
+        abs_blr = Absorption(blr, r, z)
+        E = np.logspace(2, 6) * u.GeV
+        nu = E.to("Hz", equivalencies=u.spectral())
+        tau_blr = abs_blr.tau(nu)
+        tau_blr_cubepy = abs_blr.tau_blr_cubepy(nu, eps_abs=1e-3)
+        assert np.allclose(tau_blr, tau_blr_cubepy, rtol=1e-1, atol=1e-1)
 
 
 def sigma_pp(b):
