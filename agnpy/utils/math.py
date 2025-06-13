@@ -52,6 +52,12 @@ def log(x):
     return np.log(values)
 
 
+def log10(x):
+    """clipped log to avoid RuntimeWarning: divide by zero encountered in log"""
+    values = np.clip(x, ftiny, fmax)
+    return np.log10(values)
+
+
 def trapz_loglog(y, x, axis=0):
     """
     Integrate a function approximating its discrete intervals as power-laws
