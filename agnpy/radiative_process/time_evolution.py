@@ -4,6 +4,7 @@ from typing import Iterable, Callable, Union, Sequence
 import numpy as np
 import astropy.units as u
 from astropy.units import Quantity
+from astropy.constants import c, e
 from numpy._typing import NDArray
 
 from agnpy import Blob, InterpolatedDistribution, Synchrotron, SynchrotronSelfCompton
@@ -23,6 +24,9 @@ def ssc_loss(sync: SynchrotronSelfCompton) -> EnergyChangeFnType:
 
 def ssc_thomson_limit_loss(sync: SynchrotronSelfCompton) -> EnergyChangeFnType:
     return lambda gamma: sync.electron_energy_loss_rate_thomson(gamma) * -1
+
+def fermi_acceleration(blob) -> EnergyChangeFnType:
+    return lambda gamma: blob.xi * blob.B_cgs * c * e.gauss
 
 class TimeEvolution:
     """
