@@ -785,9 +785,10 @@ class InterpolatedDistribution(ParticleDistribution):
             if (gamma[-1] - gamma_max) / gamma_max < 1e-10:
                 gamma[-1] = gamma_max
 
+        mask = (gamma_min <= gamma) * (gamma <= gamma_max)
         values = np.where(
-            (gamma_min <= gamma) * (gamma <= gamma_max),
-            np.power(10, self.log10_interp(log10_gamma)),
+            mask,
+            np.power(10, np.where(mask, self.log10_interp(log10_gamma), 0)),
             0,
         )
         return norm * values * u.Unit("cm-3")
