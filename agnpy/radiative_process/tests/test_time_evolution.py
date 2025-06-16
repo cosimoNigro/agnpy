@@ -21,7 +21,7 @@ def gamma_before_time(prefactor, gamma_after_time, time):
     Reverse-time calculation of the gamma value before the energy loss from formula -dE/dt ~ (E ** 2)
     Applicable to synchrotron and Thomson losses
     """
-    return 1 / ((1 / gamma_after_time) - time * prefactor() / (m_e * c ** 2))
+    return 1 / (1 / gamma_after_time - time * prefactor() / mec2)
 
 class TestSpectraTimeEvolution:
 
@@ -79,7 +79,7 @@ class TestSpectraTimeEvolution:
             gamma_max=1e6,
             mass=m_e,
         )
-        blob = Blob(n_e=initial_n_e)
+        blob = Blob(n_e=initial_n_e, B=1 * u.G)
         synch = Synchrotron(blob)
 
         # iterate over 60 s in 20 steps
@@ -183,11 +183,8 @@ class TestSpectraTimeEvolution:
         TimeEvolution(blob, time, ssc_loss(ssc)).eval_with_fixed_intervals(intervals_count=steps)
         evaluated_n_e: InterpolatedDistribution = blob.n_e
 
-        def gamma_before(prefactor, gamma_after_time, before_time):
-            return 1 / ((1 / gamma_after_time) - before_time * prefactor() / (m_e * c ** 2))
-
         def gamma_before_ssc_th(gamma_after_time, before_time):
-            return gamma_before(ssc._electron_energy_loss_thomson_formula_prefactor, gamma_after_time, before_time)
+            return gamma_before_time(ssc._electron_energy_loss_thomson_formula_prefactor, gamma_after_time, before_time)
 
         # map result gammas to original gammas and assert they are equal
         for evaluated_gamma, initial_gamma in zip(evaluated_n_e.gamma_input, initial_gammas):
@@ -250,8 +247,9 @@ class TestSpectraTimeEvolution:
 
     def test_heun_method_compared_to_euler_for_automatic_intervals_method(self):
         """ Heun method should give better results than Euler method.
-            Interestingly, using Heun instead of Euler method, gives lower errors of the final result
-            even when the step threshold is 2 orders of magnitude less restrictive
+            Interestingly, in this example, using Heun instead of Euler method, gives lower errors of the final result
+            even when the step threshold is 2 orders of magnitude less restrictive,
+            and, as a result, needs 2 orders of magnitude less iterations (~20 vs ~2000) - so is faster than Euler!
         """
         time = 60 * u.s
         precision_euler = 0.00001
@@ -282,7 +280,7 @@ class TestSpectraTimeEvolution:
         assert np.alltrue(errors_heun <= errors_euler)
 
     def test_automatic_and_fixed_intervals_approach_with_single_loop(self):
-        """ Automatic intervals approach with threshold low enough should use just one run of calculations, so should give the same result
+        """ Automatic intervals approach with an "undemanding" threshold should use just one run of calculations, so should give the same result
             as fixed intervals method with one subinterval
         """
         time = 60 * u.s
@@ -294,7 +292,7 @@ class TestSpectraTimeEvolution:
 
         blob2 = Blob(n_e=PowerLaw())
         synch2 = Synchrotron(blob2)
-        TimeEvolution(blob2, time, synchrotron_loss(synch2)).eval_with_automatic_intervals(max_change_per_interval=0.01,
+        TimeEvolution(blob2, time, synchrotron_loss(synch2)).eval_with_automatic_intervals(max_change_per_interval=0.5,
                                                            method="Euler")
 
         assert np.all(np.isclose(blob1.n_e.gamma_input, blob2.n_e.gamma_input, rtol=0.000001))

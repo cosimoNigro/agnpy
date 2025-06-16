@@ -42,8 +42,9 @@ class TimeEvolution:
 
     def __init__(self, blob: Blob, time: Quantity, energy_change_functions: Union[EnergyChangeFnType, Sequence[EnergyChangeFnType]]):
         self._blob = blob
-        self._time = time
-        self._energy_change_functions = energy_change_functions
+        self._total_time_sec = time.to("s")
+        self._energy_change_functions = energy_change_functions if isinstance(energy_change_functions, Iterable) else [
+            energy_change_functions]
 
     def eval_with_fixed_intervals(self, intervals_count=1, method="heun", max_change_per_interval=0.01):
         """
@@ -55,8 +56,6 @@ class TimeEvolution:
         intervals_count : int
             the calculation will be performed in the N steps of equal duration (time/N),
             calculating energy change for every gamma value in each step
-            if set to 0 (default), then calculation will use the automatic time splitting, and recalculating energy change rate
-            only for gamma values for which the relative energy change during that time exceeds max_change_per_interval
         method
             numerical method for calculating energy evolution; accepted values (case-insensitive):
              "heun" (default, more precise) or "euler" (2x faster, but more than 2x less precise)
@@ -66,30 +65,30 @@ class TimeEvolution:
 
         if intervals_count <= 0:
             raise ValueError("intervals_count must be > 0")
-        if method.lower() not in ("heun", "euler"):
-            raise ValueError("Invalid method, expected HEUN or EULER")
+        self._validate_method(method)
 
-        unit_time_interval_sec = (self._time / intervals_count).to("s")
+        unit_time_interval_sec = (self._total_time_sec / intervals_count).to("s")
         # for logging only:
         fmt_width = len(str(intervals_count))
 
-        def do_iterative(gamma_bins_from, n_array, iteration):
+        def do_iterative(gamma_bins_from, n_array, iteration_count):
             """
-            Iterative algorithm for evaluating the electron energy and density. For each gamma point create a narrow bin,
-            calculate the energy change for start and end of the bin, and scale up density by the bin narrowing factor.
-            gamma_bins_from - size N
-            n_array - size N
-            iteration - only for debugging
+            Iterative algorithm for evaluating the electron energy and density. For each gamma point it creates a narrow bin,
+            calculates the energy change for a start and an end of the bin, and scales up density by the bin narrowing factor.
+            Parameters:
+            gamma_bins_from - 1D array of gamma values (will be used as a lower bound for each bin)
+            n_array - 1D array of differential electron densities corresponding to gamma values
+            iteration_count - only for logging
             """
             bin_size_factor = 0.0001
             gamma_bins = self._interlace(gamma_bins_from, gamma_bins_from * (1 + bin_size_factor))
             energy_bins = (gamma_bins * mec2).to("erg")
             energy_bins_from, energy_bins_to = self._deinterlace(energy_bins)
-            new_energy_change_rates = self.recalc_change_rates(gamma_bins)
+            new_energy_change_rates = self._recalc_change_rates(gamma_bins)
             abs_changes = new_energy_change_rates * unit_time_interval_sec
             relative_changes = self._deinterlace(abs_changes)[0] / energy_bins_from
             new_low_change_rates_mask = abs(relative_changes) < max_change_per_interval
-            log.info("%*d / %d", fmt_width, iteration, intervals_count)
+            log.info("%*d / %d", fmt_width, iteration_count, intervals_count)
             if np.all(new_low_change_rates_mask):
                 new_gamma_bins, new_n_array = self._recalc_gamma_bins_and_density(energy_bins, abs_changes, n_array)
                 new_gamma_bins_from = self._deinterlace(new_gamma_bins)[0]
@@ -98,7 +97,7 @@ class TimeEvolution:
                 raise ValueError(
                     "Energy change formula returned too big value. Use shorter time ranges.")
             if method.lower() == "heun":
-                energy_change_rates_recalc = self.recalc_change_rates(new_gamma_bins)
+                energy_change_rates_recalc = self._recalc_change_rates(new_gamma_bins)
                 averaged_energy_change_rates = (new_energy_change_rates + energy_change_rates_recalc) / 2
                 abs_changes_recalc = averaged_energy_change_rates * unit_time_interval_sec
                 new_gamma_bins_recalc, new_n_array_recalc = self._recalc_gamma_bins_and_density(energy_bins,
@@ -120,7 +119,7 @@ class TimeEvolution:
         Performs the time evolution of the electron distribution inside the blob, repeating the calculation by the
         automatically selected time intervals such that the energy change in each interval does not exceed the
         max_change_per_interval rate. The automatically selected time interval duration may differ per energy bins
-        - shorter intvervals will be used for bins where energy change is faster.
+        - shorter intervals will be used for bins where energy change is faster.
 
         Parameters
         ----------
@@ -130,19 +129,20 @@ class TimeEvolution:
         max_change_per_interval
             maximum relative change of the electron energy allowed in one time interval
         """
-        if method.lower() not in ("heun", "euler"):
-            raise ValueError("Invalid method, expected HEUN or EULER")
+        self._validate_method(method)
 
         def do_recursive(gamma_bins, energy_change_rates, n_array, low_change_rates_mask, recalculate_high_changes, time_sec,
-                         depth):
+                         depth, elapsed_time_sec):
             """
-            Recursive algorithm for evaluating the electron energy and density
-            gamma_bins - size 2N
-            energy_change_rates - size 2N
-            n_array - size N
-            low_change_rates_mask - size N
-            recalculate_high_changes - boolean
-            depth - only for debugging
+            Recursive algorithm for evaluating the electron energy and density.
+            Parameters:
+            gamma_bins - array of shape (2N,) consisting of inlined pairs of gamma values (lower and upper bounds of gamma bins)
+            energy_change_rates - array of shape (2N,) consisting of most recently calculated energy change rates corresponding to gamma_bins values
+            n_array - array of shape (N,), contains differential electron densities corresponding to lower ends of gamma bins
+            low_change_rates_mask - array of shape (N,), a mask of bins that do not need recalculation
+            recalculate_high_changes - boolean; if false, recalculation of energy_change_rate array is skipped, irrespective of the mask
+            depth - recursion depth, only for logging
+            elapsed_time_sec - total elapsed time in seconds, only for logging
             """
 
             if recalculate_high_changes:
@@ -153,13 +153,13 @@ class TimeEvolution:
 
             energy_bins = (gamma_bins * mec2).to("erg")
             energy_bins_from = self._deinterlace(energy_bins)[0]
-            new_energy_change_rates = self.recalc_change_rates(
+            new_energy_change_rates = self._recalc_change_rates(
                 gamma_bins, energy_change_rates, low_change_rates_mask) if recalculate_high_changes else np.copy(
                 energy_change_rates)
             abs_changes = new_energy_change_rates * time_sec
             relative_changes = self._deinterlace(abs_changes)[0] / energy_bins_from
             new_low_change_rates_mask = abs(relative_changes) < max_change_per_interval
-            self._log_mask_info(new_low_change_rates_mask, depth)
+            self._log_mask_info(new_low_change_rates_mask, depth, elapsed_time_sec)
             if np.all(new_low_change_rates_mask):
                 new_gamma_bins, new_n_array = self._recalc_gamma_bins_and_density(energy_bins, abs_changes, n_array)
                 if any(new_n_array < 0):
@@ -169,15 +169,17 @@ class TimeEvolution:
             else:
                 half_time = time_sec / 2
                 new_gamma_bins, new_n_array = do_recursive(gamma_bins, new_energy_change_rates, n_array,
-                                                           new_low_change_rates_mask, False, half_time, depth + 1)
+                                                           new_low_change_rates_mask, False, half_time,
+                                                           depth + 1, elapsed_time_sec)
                 new_gamma_bins, new_n_array = do_recursive(new_gamma_bins, new_energy_change_rates, new_n_array,
-                                                           new_low_change_rates_mask, True, half_time, depth + 1)
+                                                           new_low_change_rates_mask, True, half_time,
+                                                           depth + 1, elapsed_time_sec + half_time)
             if method.lower() == "heun":
                 # only recalculate the bins unmasked by low_change_rates_mask but masked by new_low_change_rates_mask
                 heun_recalc_mask = new_low_change_rates_mask & ~low_change_rates_mask
                 heun_recalc_mask_2 = np.repeat(heun_recalc_mask, 2)
                 energy_change_rates_recalc = \
-                    self.recalc_change_rates(new_gamma_bins, new_energy_change_rates, ~heun_recalc_mask)[heun_recalc_mask_2]
+                    self._recalc_change_rates(new_gamma_bins, new_energy_change_rates, ~heun_recalc_mask)[heun_recalc_mask_2]
                 averaged_energy_change_rates = (new_energy_change_rates[heun_recalc_mask_2] + energy_change_rates_recalc) / 2
                 abs_changes_recalc = averaged_energy_change_rates * time_sec
                 new_gamma_bins_recalc, new_n_array_recalc = self._recalc_gamma_bins_and_density(
@@ -199,22 +201,21 @@ class TimeEvolution:
         dummy_change_rates = np.zeros_like(initial_gamma_bins) * u.Unit("erg s-1")
         initial_n_array = self._blob.n_e(initial_gamma_bins_from)
         empty_mask = np.repeat(False, len(initial_n_array))
-        do_recursive(initial_gamma_bins, dummy_change_rates, initial_n_array, empty_mask, True, self._time.to("s"), 1)
+        do_recursive(initial_gamma_bins, dummy_change_rates, initial_n_array, empty_mask, True, self._total_time_sec, 1, 0*u.s)
 
-    def recalc_change_rates(self, gamma_bins, previous_energy_change_rates=None, low_change_rates_mask=None):
+    def _recalc_change_rates(self, gamma_bins, previous_energy_change_rates=None, low_change_rates_mask=None):
         """
         Calculates (or recalculates) the energy changes array.
         If the mask is provided, only unmasked elements will be recalculated, and previous_energy_change_rates will be used for masked elements.
-        gamma_bins - size 2N
-        previous_energy_change_rates - size 2N
-        low_change_rates_mask - size N
+        gamma_bins - array of shape (2N,), consisting of inlined pairs of gamma values (lower and upper bounds of gamma bins)
+        previous_energy_change_rates - optional array of shape (2N,), consisting of most recently calculated energy change rates corresponding to gamma_bins values
+        low_change_rates_mask - optional array of shape (N,) a mask of bins that do not need recalculation
         """
         mask = np.ones_like(gamma_bins, dtype=bool) if low_change_rates_mask is None else np.repeat(~low_change_rates_mask, 2)
         new_energy_change_rates = np.zeros_like(gamma_bins) * u.Unit(
             "erg s-1") if previous_energy_change_rates is None else previous_energy_change_rates.copy()
         new_energy_change_rates[mask] = np.zeros_like(gamma_bins[mask]) * u.Unit("erg s-1")
-        for en_change_fn in self._energy_change_functions if isinstance(self._energy_change_functions, Iterable) else [
-            self._energy_change_functions]:
+        for en_change_fn in self._energy_change_functions:
             new_energy_change_rates[mask] += en_change_fn(gamma_bins[mask]).to("erg s-1")
         return new_energy_change_rates
 
@@ -232,6 +233,12 @@ class TimeEvolution:
         return gamma_bins_start, gamma_bins_end
 
     @staticmethod
+    def _validate_method(method):
+        valid_methods = {"heun", "euler"}
+        if method.lower() not in valid_methods:
+            raise ValueError(f"Invalid method '{method}'. Expected one of: {', '.join(valid_methods)}")
+
+    @staticmethod
     def _recalc_gamma_bins_and_density(energy_bins, abs_energy_changes, n_array):
         energy_bins_from, energy_bins_to = TimeEvolution._deinterlace(energy_bins)
         energy_bins_width = energy_bins_to - energy_bins_from
@@ -243,15 +250,15 @@ class TimeEvolution:
         if div_by_zero.size > 0:
             raise ValueError("Illegal value obtained: the bin widths changed to 0 for bins " + str(div_by_zero))
         new_n_array = n_array * density_increase
-        new_gamma_bins = (new_energy_bins / mec2).value
+        new_gamma_bins = (new_energy_bins / mec2).to_value('')
         return new_gamma_bins, new_n_array
 
-    @staticmethod
-    def _log_mask_info(low_change_rates_mask: NDArray[np.bool_], depth: int):
+    def _log_mask_info(self, low_change_rates_mask: NDArray[np.bool_], depth: int, elapsed_time_sec):
         if log.isEnabledFor(logging.INFO):
             count = sum(low_change_rates_mask)
             total = len(low_change_rates_mask)
             width = len(str(total))
-            msg = f"{str(count).rjust(width)} / {str(total).rjust(width)} " + depth * "-"
+            progress_percent = int(100 * elapsed_time_sec / self._total_time_sec)
+            msg = f"{str(progress_percent).rjust(3)}% {str(count).rjust(width)}/{str(total).rjust(width)} " + depth * "-"
             log.info(msg)
 
