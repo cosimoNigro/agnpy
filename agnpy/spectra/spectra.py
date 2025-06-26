@@ -1,5 +1,6 @@
 # module containing the particle spectra
 from abc import abstractmethod, ABC
+from typing import Iterable
 
 import numpy as np
 import astropy.units as u
@@ -205,6 +206,23 @@ class ParticleDistribution(ABC):
 
         return ax
 
+    @staticmethod
+    def _correct_array_boundary_values(gamma, gamma_min, gamma_max):
+        """
+        Correction for tiny differences on the boundaries of the gamma array: because of numerical errors, sometimes
+        the first and last gamma values are falling outside the range of the allowed min/max values,
+        and then incorrectly evaluate to zero. To correct for such cases, check the relative error,
+        and if it is less than some very small value (let's say 1e-10), correct the gamma array accordingly, to fit into the allowed range.
+        """
+        if not isinstance(gamma, Iterable):
+            return
+        if gamma_min > gamma[0]:
+            if (gamma_min - gamma[0]) / gamma[0] < 1e-10:
+                gamma[0] = gamma_min
+        if gamma[-1] > gamma_max:
+            if (gamma[-1] - gamma_max) / gamma_max < 1e-10:
+                gamma[-1] = gamma_max
+
     @abstractmethod
     def __call__(self, gammas):
         """ Mark ParticleDistribution as callable"""
@@ -252,6 +270,7 @@ class PowerLaw(ParticleDistribution):
 
     @staticmethod
     def evaluate(gamma, k, p, gamma_min, gamma_max):
+        ParticleDistribution._correct_array_boundary_values(gamma, gamma_min, gamma_max)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max), k * gamma ** (-p), 0
         )
@@ -345,6 +364,7 @@ class BrokenPowerLaw(ParticleDistribution):
 
     @staticmethod
     def evaluate(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max):
+        ParticleDistribution._correct_array_boundary_values(gamma, gamma_min, gamma_max)
         index = np.where(gamma <= gamma_b, p1, p2)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
@@ -448,6 +468,7 @@ class LogParabola(ParticleDistribution):
 
     @staticmethod
     def evaluate(gamma, k, p, q, gamma_0, gamma_min, gamma_max):
+        ParticleDistribution._correct_array_boundary_values(gamma, gamma_min, gamma_max)
         gamma_ratio = gamma / gamma_0
         index = -p - q * np.log10(gamma_ratio)
         return np.where(
@@ -546,6 +567,7 @@ class ExpCutoffPowerLaw(ParticleDistribution):
 
     @staticmethod
     def evaluate(gamma, k, p, gamma_c, gamma_min, gamma_max):
+        ParticleDistribution._correct_array_boundary_values(gamma, gamma_min, gamma_max)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
             k * gamma ** (-p) * np.exp(-gamma / gamma_c),
@@ -649,6 +671,7 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
 
     @staticmethod
     def evaluate(gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max):
+        ParticleDistribution._correct_array_boundary_values(gamma, gamma_min, gamma_max)
         index = np.where(gamma <= gamma_b, p1, p2)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
@@ -728,9 +751,11 @@ class InterpolatedDistribution(ParticleDistribution):
         particle mass, default is the electron mass
     integrator : func
         function to be used for integration, default is :class:`~numpy.trapz`
+    interpolator : class
+        class to be used for interpolation, default is :class:`~scipy.interpolate.CubicSpline`
     """
 
-    def __init__(self, gamma, n, norm=1, mass=m_e, integrator=np.trapz):
+    def __init__(self, gamma, n, norm=1, mass=m_e, integrator=np.trapz, interpolator=CubicSpline):
         super().__init__(gamma[0], gamma[-1], mass, integrator, "InterpolatedDistribution")
         if n.unit != u.Unit("cm-3"):
             raise ValueError(
@@ -742,9 +767,9 @@ class InterpolatedDistribution(ParticleDistribution):
         # scaling parameter
         self.norm = norm
         # perform the interpolation (will also correct the gamma_min and gamma_max)
-        self.log10_interp = self.log10_interpolation(gamma, n)
+        self.log10_interp = self.log10_interpolation(gamma, n, interpolator)
 
-    def log10_interpolation(self, gamma, n):
+    def log10_interpolation(self, gamma, n, interpolator):
         """Returns the function interpolating in log10 the particle spectrum as
         a function of the Lorentz factor.
         TODO: make possible to pass arguments to CubicSpline.
@@ -754,7 +779,7 @@ class InterpolatedDistribution(ParticleDistribution):
         valid = ~(n.to_value("cm-3") == 0)
         _gamma = gamma[valid]
         _n = n.to_value("cm-3")[valid]
-        interpolator = CubicSpline(np.log10(_gamma), np.log10(_n))
+        interpolator = interpolator(np.log10(_gamma), np.log10(_n))
 
         # min and max lorentz factor are now the first gamma values for which
         # the input distribution is not null
@@ -772,16 +797,7 @@ class InterpolatedDistribution(ParticleDistribution):
         ]
 
     def evaluate(self, gamma, norm, gamma_min, gamma_max):
-        # Correction for tiny differences on the boundaries of the gamma array: because of numerical errors, sometimes
-        # the first and last gamma values are falling outside the range of the allowed min/max values,
-        # and then incorrectly evaluate to zero. To correct for such cases, check the relative error,
-        # and if it is less than 1e-10, correct the gamma array accordingly, to fit into the allowed range.
-        if gamma_min > gamma[0]:
-            if (gamma_min - gamma[0]) / gamma[0] < 1e-10:
-                gamma[0] = gamma_min
-        if  gamma[-1] > gamma_max:
-            if (gamma[-1] - gamma_max) / gamma_max < 1e-10:
-                gamma[-1] = gamma_max
+        self._correct_array_boundary_values(gamma, gamma_min, gamma_max)
 
         valid_indices = (gamma_min <= gamma) & (gamma <= gamma_max)
         values = np.zeros_like(gamma)
