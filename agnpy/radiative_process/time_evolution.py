@@ -50,7 +50,7 @@ class TimeEvolution:
         self._energy_change_functions = energy_change_functions if isinstance(energy_change_functions, Iterable) else [
             energy_change_functions]
 
-    def eval_with_fixed_intervals(self, intervals_count=1, method="heun", max_change_per_interval=0.01):
+    def eval_with_fixed_intervals(self, intervals_count=1, method="heun", max_energy_change_per_interval=0.01, max_density_change_per_interval=0.5):
         """
         Performs the time evolution of the electron distribution inside the blob, repeating the calculation in the
         equal-length time intervals.
@@ -63,8 +63,10 @@ class TimeEvolution:
         method
             numerical method for calculating energy evolution; accepted values (case-insensitive):
              "heun" (default, more precise) or "euler" (2x faster, but more than 2x less precise)
-        max_change_per_interval
+        max_energy_change_per_interval
             maximum relative change of the electron energy allowed in one subinterval (if exceeded, will raise an error)
+        max_density_change_per_interval
+            maximum relative change of the electron density allowed in one time interval (if exceeded, will raise an error)
         """
 
         if intervals_count <= 0:
@@ -87,11 +89,10 @@ class TimeEvolution:
             bin_size_factor = 0.0001
             gamma_bins = self._interlace(gamma_bins_from, gamma_bins_from * (1 + bin_size_factor))
             energy_bins = (gamma_bins * mec2).to("erg")
-            energy_bins_from, energy_bins_to = self._deinterlace(energy_bins)
             new_energy_change_rates = self._recalc_change_rates(gamma_bins)
             abs_changes = new_energy_change_rates * unit_time_interval_sec
-            relative_changes = self._deinterlace(abs_changes)[0] / energy_bins_from
-            new_low_change_rates_mask = abs(relative_changes) < max_change_per_interval
+            new_low_change_rates_mask = self._calc_new_low_change_rates_mask(
+                abs_changes, energy_bins, max_energy_change_per_interval, max_density_change_per_interval)
             log.info("%*d / %d", fmt_width, iteration_count, intervals_count)
             if np.all(new_low_change_rates_mask):
                 new_gamma_bins, new_n_array = self._recalc_gamma_bins_and_density(energy_bins, abs_changes, n_array)
@@ -118,7 +119,7 @@ class TimeEvolution:
         for i in range(intervals_count):
             last_gamma_bins_from, last_n_array = do_iterative(last_gamma_bins_from, last_n_array, i + 1)
 
-    def eval_with_automatic_intervals(self, method="heun", max_change_per_interval=0.01):
+    def eval_with_automatic_intervals(self, method="heun", max_energy_change_per_interval=0.01, max_density_change_per_interval=0.1):
         """
         Performs the time evolution of the electron distribution inside the blob, repeating the calculation by the
         automatically selected time intervals such that the energy change in each interval does not exceed the
@@ -130,8 +131,10 @@ class TimeEvolution:
         method
             numerical method for calculating energy evolution; accepted values (case-insensitive):
             "heun" (default, more precise) or "euler" (2x-3x faster, but less precise)
-        max_change_per_interval
+        max_energy_change_per_interval
             maximum relative change of the electron energy allowed in one time interval
+        max_density_change_per_interval
+            maximum relative change of the electron density allowed in one time interval
         """
         self._validate_method(method)
 
@@ -160,9 +163,8 @@ class TimeEvolution:
                 gamma_bins, energy_change_rates, low_change_rates_mask) if recalculate_high_changes else np.copy(
                 energy_change_rates)
             abs_changes = new_energy_change_rates * time_sec
-            relative_changes_bin_start, relative_changes_bin_end = self._deinterlace(abs_changes / energy_bins)
-            new_low_change_rates_mask = np.logical_and(abs(relative_changes_bin_start) < max_change_per_interval,
-                                                       abs(relative_changes_bin_end) < max_change_per_interval)
+            new_low_change_rates_mask = self._calc_new_low_change_rates_mask(
+                abs_changes, energy_bins, max_energy_change_per_interval, max_density_change_per_interval)
             if np.all(new_low_change_rates_mask):
                 new_gamma_bins, new_n_array = self._recalc_gamma_bins_and_density(energy_bins, abs_changes, n_array)
                 invalid_density = np.isnan(new_n_array)
@@ -279,6 +281,13 @@ class TimeEvolution:
 
     @staticmethod
     def _recalc_gamma_bins_and_density(energy_bins, abs_energy_changes, n_array):
+        new_energy_bins, density_increase = TimeEvolution._recalc_energy_bins_and_density_increase(abs_energy_changes, energy_bins)
+        new_n_array = n_array * density_increase
+        new_gamma_bins = (new_energy_bins / mec2).to_value('')
+        return new_gamma_bins, new_n_array
+
+    @staticmethod
+    def _recalc_energy_bins_and_density_increase(abs_energy_changes, energy_bins):
         energy_bins_from, energy_bins_to = TimeEvolution._deinterlace(energy_bins)
         energy_bins_width = energy_bins_to - energy_bins_from
         new_energy_bins = energy_bins + abs_energy_changes
@@ -286,13 +295,8 @@ class TimeEvolution:
         new_energy_bins_width = new_energy_bins_to - new_energy_bins_from
         invalid_width = new_energy_bins_to - new_energy_bins_from < 0
         density_increase = energy_bins_width / new_energy_bins_width
-        div_by_zero = np.flatnonzero(np.isnan(density_increase))
-        if div_by_zero.size > 0:
-            raise ValueError("Illegal value obtained: the bin widths changed to 0 for bins " + str(div_by_zero))
-        new_n_array = n_array * density_increase
-        new_n_array[invalid_width] = np.nan
-        new_gamma_bins = (new_energy_bins / mec2).to_value('')
-        return new_gamma_bins, new_n_array
+        density_increase[invalid_width] = np.nan
+        return new_energy_bins, density_increase
 
     def _log_mask_info(self, low_change_rates_mask: NDArray[np.bool_], depth: int, elapsed_time_sec):
         if log.isEnabledFor(logging.INFO):
@@ -302,6 +306,16 @@ class TimeEvolution:
             progress_percent = int(100 * elapsed_time_sec / self._total_time_sec)
             msg = f"{str(progress_percent).rjust(3)}% {str(count).rjust(width)}/{str(total).rjust(width)} " + depth * "-"
             log.info(msg)
+
+    @staticmethod
+    def _calc_new_low_change_rates_mask(abs_changes, energy_bins, max_energy_change_per_interval, max_density_change_per_interval):
+        relative_changes_bin_start, relative_changes_bin_end = TimeEvolution._deinterlace(abs_changes / energy_bins)
+        density_increase = TimeEvolution._recalc_energy_bins_and_density_increase(abs_changes, energy_bins)[1]
+        new_low_change_rates_mask = ((abs(relative_changes_bin_start) < max_energy_change_per_interval) &
+                                     (abs(relative_changes_bin_end) < max_energy_change_per_interval) &
+                                     (density_increase < 1 + max_density_change_per_interval) &
+                                     (1 / (1 + max_density_change_per_interval) < density_increase))
+        return new_low_change_rates_mask
 
     @staticmethod
     def _merge_removed_mask_indices(removed_indices_step1, removed_indices_step2):
