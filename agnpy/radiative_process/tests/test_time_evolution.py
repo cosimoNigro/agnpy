@@ -5,8 +5,9 @@ import astropy.units as u
 from astropy.constants import m_e, m_p, c
 import pytest
 
-from agnpy import Blob, Synchrotron, SynchrotronSelfCompton
-from agnpy.radiative_process.time_evolution import TimeEvolution, synchrotron_loss, ssc_loss, ssc_thomson_limit_loss
+from agnpy import Blob, Synchrotron, SynchrotronSelfCompton, SpectralConstraints
+from agnpy.radiative_process.time_evolution import TimeEvolution, synchrotron_loss, ssc_loss, ssc_thomson_limit_loss, \
+    fermi_acceleration
 from agnpy.spectra import (
     PowerLaw,
     BrokenPowerLaw,
@@ -299,4 +300,21 @@ class TestSpectraTimeEvolution:
             method="Euler")
 
         assert np.all(np.isclose(blob1.n_e.gamma_input, blob2.n_e.gamma_input, rtol=0.000001))
+
+    def test_simulation_trending_to_delta_function(self):
+        """ Simulate the process with acceleration dominating at lower energies, and losses dominating at higher energies,
+            causing the distribution converging to the delta function
+        """
+        time = 280 * u.s
+
+        blob = Blob(n_e=PowerLaw(), xi=0.1)
+        delta_function_energy = SpectralConstraints(blob).gamma_max_synch
+        blob.n_e.gamma_min = delta_function_energy / 2
+        blob.n_e.gamma_max = delta_function_energy * 2
+
+        synch = Synchrotron(blob)
+        (TimeEvolution(blob, time, [synchrotron_loss(synch), fermi_acceleration(blob)])
+         .eval_with_automatic_intervals(method="heun", max_energy_change_per_interval=0.1, max_density_change_per_interval=1.0))
+
+        assert np.all(np.isclose(blob.n_e.gamma_input, delta_function_energy, rtol=0.1))
 
