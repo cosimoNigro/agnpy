@@ -187,15 +187,11 @@ class TimeEvolution:
             abs_changes = new_energy_change_rates * time_sec
             new_low_change_rates_mask = self._calc_new_low_change_rates_mask(
                 abs_changes, energy_bins, max_energy_change_per_interval, max_density_change_per_interval)
-            if np.all(new_low_change_rates_mask):
-                new_gamma_bins, new_n_array = self._recalc_gamma_bins_and_density(energy_bins, abs_changes, n_array)
-                invalid_density = np.isnan(new_n_array)
-                if any(invalid_density):
-                    new_low_change_rates_mask[invalid_density] = False
 
             self._log_mask_info(new_low_change_rates_mask, depth, elapsed_time_sec)
             removed_mask_indices = np.empty((0,), dtype=int)
             if np.all(new_low_change_rates_mask):
+                new_gamma_bins, new_n_array = self._recalc_gamma_bins_and_density(energy_bins, abs_changes, n_array)
                 new_gamma_bins_from, new_gamma_bins_to = self._deinterlace(new_gamma_bins)
                 if not np.all(new_gamma_bins_from[:-1] <= new_gamma_bins_from[1:]):
                     sort_indices = np.argsort(new_gamma_bins_from)
@@ -315,9 +311,9 @@ class TimeEvolution:
         new_energy_bins = energy_bins + abs_energy_changes
         new_energy_bins_from, new_energy_bins_to = TimeEvolution._deinterlace(new_energy_bins)
         new_energy_bins_width = new_energy_bins_to - new_energy_bins_from
-        invalid_width = new_energy_bins_to - new_energy_bins_from < 0
         density_increase = energy_bins_width / new_energy_bins_width
-        density_increase[invalid_width] = np.nan
+        invalid_width = new_energy_bins_to - new_energy_bins_from < 0
+        density_increase[invalid_width] = np.nan # mark with nan the bins where bin's start and end get swapped
         return new_energy_bins, density_increase
 
     def _log_mask_info(self, low_change_rates_mask: NDArray[np.bool_], depth: int, elapsed_time_sec):
@@ -335,6 +331,7 @@ class TimeEvolution:
         density_increase = TimeEvolution._recalc_energy_bins_and_density_increase(abs_changes, energy_bins)[1]
         new_low_change_rates_mask = ((abs(relative_changes_bin_start) < max_energy_change_per_interval) &
                                      (abs(relative_changes_bin_end) < max_energy_change_per_interval) &
+                                     (~np.isnan(density_increase)) &
                                      (density_increase < 1 + max_density_change_per_interval) &
                                      (1 / (1 + max_density_change_per_interval) < density_increase))
         return new_low_change_rates_mask
