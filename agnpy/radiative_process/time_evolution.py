@@ -1,20 +1,20 @@
-import logging
-from typing import Iterable, Callable, Union, Sequence
-
-import numpy as np
 import astropy.units as u
-from astropy.units import Quantity
-from astropy.constants import c, e
-from numpy._typing import NDArray
-
+import logging
+import numpy as np
 from agnpy import Blob, InterpolatedDistribution, Synchrotron, SynchrotronSelfCompton
 from agnpy.utils.conversion import mec2
+from astropy.constants import c, e
+from astropy.units import Quantity
+from numpy._typing import NDArray
+from typing import Iterable, Callable, Union, Sequence, Literal
 
 log = logging.getLogger(__name__)
 
 # A function type that takes a Quantity-array (unitless Lorentz gamma factors)
 # and returns a new Quantity-array (with units of energy/time, same length).
 EnergyChangeFnType = Callable[[Quantity], Quantity]
+NumericalMethod = Literal["euler", "heun"]
+EnergyChangeFns = Union[EnergyChangeFnType, Sequence[EnergyChangeFnType]]
 
 def synchrotron_loss(sync: Synchrotron) -> EnergyChangeFnType:
     return lambda gamma: sync.electron_energy_loss_rate(gamma) * -1
@@ -44,13 +44,16 @@ class TimeEvolution:
          (for energy gain processes, function should return positive values; for loss, negative values)
     """
 
-    def __init__(self, blob: Blob, time: Quantity, energy_change_functions: Union[EnergyChangeFnType, Sequence[EnergyChangeFnType]]):
+    def __init__(self, blob: Blob, time: Quantity, energy_change_functions: EnergyChangeFns):
         self._blob = blob
         self._total_time_sec = time.to("s")
         self._energy_change_functions = energy_change_functions if isinstance(energy_change_functions, Iterable) else [
             energy_change_functions]
 
-    def eval_with_fixed_intervals(self, intervals_count=1, method="heun", max_energy_change_per_interval=0.01, max_density_change_per_interval=0.5):
+    def eval_with_fixed_intervals(self, intervals_count: int,
+                                  method: NumericalMethod = "heun",
+                                  max_energy_change_per_interval: float = 0.01,
+                                  max_density_change_per_interval: float = 0.5) -> None:
         """
         Performs the time evolution of the electron distribution inside the blob, repeating the calculation in the
         equal-length time intervals.
@@ -61,12 +64,16 @@ class TimeEvolution:
             the calculation will be performed in the N steps of equal duration (time/N),
             calculating energy change for every gamma value in each step
         method
-            numerical method for calculating energy evolution; accepted values (case-insensitive):
+            numerical method for calculating energy evolution; accepted values:
              "heun" (default, more precise) or "euler" (2x faster, but more than 2x less precise)
         max_energy_change_per_interval
             maximum relative change of the electron energy allowed in one subinterval (if exceeded, will raise an error)
         max_density_change_per_interval
             maximum relative change of the electron density allowed in one time interval (if exceeded, will raise an error)
+
+        Side Effects
+        ------------
+        Replaces the blob.n_e with the new InterpolatedDistribution
         """
 
         if intervals_count <= 0:
@@ -82,9 +89,13 @@ class TimeEvolution:
             Iterative algorithm for evaluating the electron energy and density. For each gamma point it creates a narrow bin,
             calculates the energy change for a start and an end of the bin, and scales up density by the bin narrowing factor.
             Parameters:
-            gamma_bins_from - 1D array of gamma values (will be used as a lower bound for each bin)
-            n_array - 1D array of differential electron densities corresponding to gamma values
-            iteration_count - only for logging
+                gamma_bins_from - 1D array of gamma values (will be used as a lower bound for each bin)
+                n_array - 1D array of differential electron densities corresponding to gamma values
+                iteration_count - only for logging
+            Side Effects:
+                Replaces the blob.n_e with the new InterpolatedDistribution
+            Returns:
+                new_gamma_bins_from, new_n_array
             """
             bin_size_factor = 0.0001
             gamma_bins = self._interlace(gamma_bins_from, gamma_bins_from * (1 + bin_size_factor))
@@ -119,7 +130,10 @@ class TimeEvolution:
         for i in range(intervals_count):
             last_gamma_bins_from, last_n_array = do_iterative(last_gamma_bins_from, last_n_array, i + 1)
 
-    def eval_with_automatic_intervals(self, method="heun", max_energy_change_per_interval=0.01, max_density_change_per_interval=0.1):
+    def eval_with_automatic_intervals(self,
+                                      method: NumericalMethod = "heun",
+                                      max_energy_change_per_interval: float = 0.01,
+                                      max_density_change_per_interval: float = 0.1) -> None:
         """
         Performs the time evolution of the electron distribution inside the blob, repeating the calculation by the
         automatically selected time intervals such that the energy change in each interval does not exceed the
@@ -129,12 +143,16 @@ class TimeEvolution:
         Parameters
         ----------
         method
-            numerical method for calculating energy evolution; accepted values (case-insensitive):
-            "heun" (default, more precise) or "euler" (2x-3x faster, but less precise)
+            numerical method for calculating energy evolution; accepted values:
+            "heun" (default, more precise) or "euler" (usually 2x-3x faster, but less precise - but in some scenarios might be actually slower)
         max_energy_change_per_interval
             maximum relative change of the electron energy allowed in one time interval
         max_density_change_per_interval
             maximum relative change of the electron density allowed in one time interval
+
+        Side Effects
+        ------------
+        Replaces the blob.n_e with the new InterpolatedDistribution
         """
         self._validate_method(method)
 
@@ -143,13 +161,17 @@ class TimeEvolution:
             """
             Recursive algorithm for evaluating the electron energy and density.
             Parameters:
-            gamma_bins - array of shape (2N,) consisting of inlined pairs of gamma values (lower and upper bounds of gamma bins)
-            energy_change_rates - array of shape (2N,) consisting of most recently calculated energy change rates corresponding to gamma_bins values
-            n_array - array of shape (N,), contains differential electron densities corresponding to lower ends of gamma bins
-            low_change_rates_mask - array of shape (N,), a mask of bins that do not need recalculation
-            recalculate_high_changes - boolean; if false, recalculation of energy_change_rate array is skipped, irrespective of the mask
-            depth - recursion depth, only for logging
-            elapsed_time_sec - total elapsed time in seconds, only for logging
+                gamma_bins - array of shape (2N,) consisting of inlined pairs of gamma values (lower and upper bounds of gamma bins)
+                energy_change_rates - array of shape (2N,) consisting of most recently calculated energy change rates corresponding to gamma_bins values
+                n_array - array of shape (N,), contains differential electron densities corresponding to lower ends of gamma bins
+                low_change_rates_mask - array of shape (N,), a mask of bins that do not need recalculation
+                recalculate_high_changes - boolean; if false, recalculation of energy_change_rate array is skipped, irrespective of the mask
+                depth - recursion depth, only for logging
+                elapsed_time_sec - total elapsed time in seconds, only for logging
+            Side Effects:
+                Replaces the blob.n_e with the new InterpolatedDistribution
+            Returns:
+                new_gamma_bins, new_n_array, removed_mask_indices
             """
 
             if recalculate_high_changes:
