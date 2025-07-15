@@ -214,7 +214,7 @@ class TestSpectraTimeEvolution:
         increase_by_5_perc = lambda g: -1 * (g * mec2) * -0.05 / u.s
         number_of_steps = 10
         TimeEvolution(blob, number_of_steps * u.s, [decrease_by_20_perc, increase_by_5_perc]).eval_with_fixed_intervals(
-                                                      intervals_count=number_of_steps, method="Euler", max_energy_change_per_interval=0.2)
+                                                      intervals_count=number_of_steps, method="euler", max_energy_change_per_interval=0.2)
         euler_expected = initial_gammas * (0.85 ** number_of_steps)
         assert u.allclose(blob.gamma_e, euler_expected)
 
@@ -229,12 +229,12 @@ class TestSpectraTimeEvolution:
         blob1 = Blob(n_e=PowerLaw())
         initial_gamma = blob1.gamma_e
         synch1 = Synchrotron(blob1)
-        TimeEvolution(blob1, time, synchrotron_loss(synch1)).eval_with_fixed_intervals(intervals_count=steps_euler, method="Euler")
+        TimeEvolution(blob1, time, synchrotron_loss(synch1)).eval_with_fixed_intervals(intervals_count=steps_euler, method="euler")
         euler_reversed_analytically = gamma_before_time(synch1._electron_energy_loss_formula_prefactor, blob1.gamma_e, time)
 
         blob2 = Blob(n_e=PowerLaw())
         synch2 = Synchrotron(blob2)
-        TimeEvolution(blob2, time, synchrotron_loss(synch2)).eval_with_fixed_intervals(intervals_count=steps_heun, method="Heun")
+        TimeEvolution(blob2, time, synchrotron_loss(synch2)).eval_with_fixed_intervals(intervals_count=steps_heun, method="heun")
         heun_reversed_analytically = gamma_before_time(synch2._electron_energy_loss_formula_prefactor, blob2.gamma_e, time)
 
         errors_heun = np.abs((heun_reversed_analytically - initial_gamma) / initial_gamma)
@@ -261,7 +261,7 @@ class TestSpectraTimeEvolution:
         synch1 = Synchrotron(blob1)
         TimeEvolution(blob1, time, synchrotron_loss(synch1)).eval_with_automatic_intervals(
             max_energy_change_per_interval=precision_euler,
-            method="Euler")
+            method="euler")
         euler_reversed_analytically = gamma_before_time(synch1._electron_energy_loss_formula_prefactor,
                                                         blob1.gamma_e, time)
 
@@ -269,7 +269,7 @@ class TestSpectraTimeEvolution:
         synch2 = Synchrotron(blob2)
         TimeEvolution(blob2, time, synchrotron_loss(synch2)).eval_with_automatic_intervals(
             max_energy_change_per_interval=precision_heun,
-            method="Heun")
+            method="heun")
         heun_reversed_analytically = gamma_before_time(synch2._electron_energy_loss_formula_prefactor,
                                                        blob2.gamma_e, time)
 
@@ -291,13 +291,13 @@ class TestSpectraTimeEvolution:
         blob1 = Blob(n_e=PowerLaw())
         synch1 = Synchrotron(blob1)
         TimeEvolution(blob1, time, synchrotron_loss(synch1)).eval_with_fixed_intervals(intervals_count=1,
-                                                       method="Euler")
+                                                       method="euler")
 
         blob2 = Blob(n_e=PowerLaw())
         synch2 = Synchrotron(blob2)
         TimeEvolution(blob2, time, synchrotron_loss(synch2)).eval_with_automatic_intervals(
             max_energy_change_per_interval=0.5,
-            method="Euler")
+            method="euler")
 
         assert np.all(np.isclose(blob1.n_e.gamma_input, blob2.n_e.gamma_input, rtol=0.000001))
 

@@ -50,7 +50,8 @@ class TimeEvolution:
         self._energy_change_functions = energy_change_functions if isinstance(energy_change_functions, Iterable) else [
             energy_change_functions]
 
-    def eval_with_fixed_intervals(self, intervals_count: int,
+    def eval_with_fixed_intervals(self,
+                                  intervals_count: int,
                                   method: NumericalMethod = "heun",
                                   max_energy_change_per_interval: float = 0.01,
                                   max_density_change_per_interval: float = 0.5) -> None:
@@ -84,18 +85,17 @@ class TimeEvolution:
         # for logging only:
         fmt_width = len(str(intervals_count))
 
-        def do_iterative(gamma_bins_from, n_array, iteration_count):
+        def do_iterative(gamma_bins_from, iteration_count):
             """
             Iterative algorithm for evaluating the electron energy and density. For each gamma point it creates a narrow bin,
             calculates the energy change for a start and an end of the bin, and scales up density by the bin narrowing factor.
             Parameters:
-                gamma_bins_from - 1D array of gamma values (will be used as a lower bound for each bin)
-                n_array - 1D array of differential electron densities corresponding to gamma values
+                gamma_bins_from - array of gamma values (will be used as a lower bound for each bin)
                 iteration_count - only for logging
             Side Effects:
                 Replaces the blob.n_e with the new InterpolatedDistribution
             Returns:
-                new_gamma_bins_from, new_n_array
+                new_gamma_bins_from
             """
             bin_size_factor = 0.0001
             gamma_bins = self._interlace(gamma_bins_from, gamma_bins_from * (1 + bin_size_factor))
@@ -105,10 +105,11 @@ class TimeEvolution:
             new_low_change_rates_mask = self._calc_new_low_change_rates_mask(
                 abs_changes, energy_bins, max_energy_change_per_interval, max_density_change_per_interval)
             log.info("%*d / %d", fmt_width, iteration_count, intervals_count)
+            n_e = self._blob.n_e
             if np.all(new_low_change_rates_mask):
-                new_gamma_bins, new_n_array = self._recalc_gamma_bins_and_density(energy_bins, abs_changes, n_array)
+                new_gamma_bins, new_n_array = self._recalc_gamma_bins_and_density(energy_bins, abs_changes, n_e)
                 new_gamma_bins_from = self._deinterlace(new_gamma_bins)[0]
-                self._blob.n_e = InterpolatedDistribution(new_gamma_bins_from, new_n_array)
+                self._blob.n_e = self._make_interpolated_distribution(new_gamma_bins_from, new_n_array)
             else:
                 raise ValueError(
                     "Energy change formula returned too big value. Use shorter time ranges.")
@@ -116,19 +117,19 @@ class TimeEvolution:
                 energy_change_rates_recalc = self._recalc_change_rates(new_gamma_bins)
                 averaged_energy_change_rates = (new_energy_change_rates + energy_change_rates_recalc) / 2
                 abs_changes_recalc = averaged_energy_change_rates * unit_time_interval_sec
-                new_gamma_bins_recalc, new_n_array_recalc = self._recalc_gamma_bins_and_density(energy_bins,
-                                                                                                abs_changes_recalc,
-                                                                                                n_array)
-                new_gamma_bins = new_gamma_bins_recalc
-                new_n_array = new_n_array_recalc
-                self._blob.n_e = InterpolatedDistribution(self._deinterlace(new_gamma_bins)[0], new_n_array)
+                new_gamma_bins, new_n_array =\
+                    self._recalc_gamma_bins_and_density(energy_bins, abs_changes_recalc, n_e)
+                new_gamma_bins_from = self._deinterlace(new_gamma_bins)[0]
+                self._blob.n_e = self._make_interpolated_distribution(new_gamma_bins_from, new_n_array)
 
-            return self._deinterlace(new_gamma_bins)[0], new_n_array
+            new_gamma_bins_from = np.sort(new_gamma_bins_from)
+            duplicates = TimeEvolution._get_duplicates(new_gamma_bins_from)
+            new_gamma_bins_from = np.delete(new_gamma_bins_from, duplicates)
+            return new_gamma_bins_from
 
         last_gamma_bins_from = self._blob.gamma_e
-        last_n_array = self._blob.n_e(last_gamma_bins_from)
         for i in range(intervals_count):
-            last_gamma_bins_from, last_n_array = do_iterative(last_gamma_bins_from, last_n_array, i + 1)
+            last_gamma_bins_from = do_iterative(last_gamma_bins_from, i + 1)
 
     def eval_with_automatic_intervals(self,
                                       method: NumericalMethod = "heun",
@@ -156,14 +157,13 @@ class TimeEvolution:
         """
         self._validate_method(method)
 
-        def do_recursive(gamma_bins, energy_change_rates, n_array, low_change_rates_mask, recalculate_high_changes, time_sec,
+        def do_recursive(gamma_bins, energy_change_rates, low_change_rates_mask, recalculate_high_changes, time_sec,
                          depth, elapsed_time_sec):
             """
             Recursive algorithm for evaluating the electron energy and density.
             Parameters:
                 gamma_bins - array of shape (2N,) consisting of inlined pairs of gamma values (lower and upper bounds of gamma bins)
                 energy_change_rates - array of shape (2N,) consisting of most recently calculated energy change rates corresponding to gamma_bins values
-                n_array - array of shape (N,), contains differential electron densities corresponding to lower ends of gamma bins
                 low_change_rates_mask - array of shape (N,), a mask of bins that do not need recalculation
                 recalculate_high_changes - boolean; if false, recalculation of energy_change_rate array is skipped, irrespective of the mask
                 depth - recursion depth, only for logging
@@ -171,7 +171,7 @@ class TimeEvolution:
             Side Effects:
                 Replaces the blob.n_e with the new InterpolatedDistribution
             Returns:
-                new_gamma_bins, new_n_array, removed_mask_indices
+                new_gamma_bins, mapping
             """
 
             if recalculate_high_changes:
@@ -179,88 +179,84 @@ class TimeEvolution:
                 start_bin_indices = np.arange(0, gamma_bins.size, 2)
                 end_bin_indices = np.arange(1, gamma_bins.size, 2)
                 gamma_bins[end_bin_indices[~low_change_rates_mask]] = gamma_bins[start_bin_indices[~low_change_rates_mask]] * (1 + bin_size_factor)
-
+                new_energy_change_rates = self._recalc_change_rates(gamma_bins, energy_change_rates, low_change_rates_mask)
+            else:
+                new_energy_change_rates = np.copy(energy_change_rates)
+            abs_changes = (new_energy_change_rates * time_sec).to("erg")
             energy_bins = (gamma_bins * mec2).to("erg")
-            new_energy_change_rates = self._recalc_change_rates(
-                gamma_bins, energy_change_rates, low_change_rates_mask) if recalculate_high_changes else np.copy(
-                energy_change_rates)
-            abs_changes = new_energy_change_rates * time_sec
             new_low_change_rates_mask = self._calc_new_low_change_rates_mask(
                 abs_changes, energy_bins, max_energy_change_per_interval, max_density_change_per_interval)
 
-            self._log_mask_info(new_low_change_rates_mask, depth, elapsed_time_sec)
-            removed_mask_indices = np.empty((0,), dtype=int)
+            log_mask_info(new_low_change_rates_mask, depth, elapsed_time_sec)
+            n_e = self._blob.n_e
             if np.all(new_low_change_rates_mask):
-                new_gamma_bins, new_n_array = self._recalc_gamma_bins_and_density(energy_bins, abs_changes, n_array)
+                new_gamma_bins, new_n_array = self._recalc_gamma_bins_and_density(energy_bins, abs_changes, n_e)
                 new_gamma_bins_from, new_gamma_bins_to = self._deinterlace(new_gamma_bins)
-                if not np.all(new_gamma_bins_from[:-1] <= new_gamma_bins_from[1:]):
-                    sort_indices = np.argsort(new_gamma_bins_from)
-                    new_gamma_bins_from = new_gamma_bins_from[sort_indices]
-                    new_gamma_bins_to = new_gamma_bins_to[sort_indices]
-                    new_gamma_bins = self._interlace(new_gamma_bins_from, new_gamma_bins_to)
-                    new_n_array = new_n_array[sort_indices]
-
-                # if any two different gamma points map into the same point, we will not be able to make the interpolated distribution
-                # So we need to merge them into a single point
-                # (other option is to mark them as invalid in the mask and try recalculating in half-time, but in practice it tends to end in endless loops)
-                duplicates = (np.log10(new_gamma_bins_from)[:-1] == np.log10(new_gamma_bins_from)[1:])
-                if np.any(duplicates):
-                    removed_mask_indices = np.where(duplicates)[0] + 1
-                    for index in removed_mask_indices[::-1]:
-                        new_n_array[index-1] = new_n_array[index-1] + new_n_array[index]
-                        new_n_array = np.delete(new_n_array, index)
-                        new_gamma_bins_from = np.delete(new_gamma_bins_from, index)
-                        new_gamma_bins_to = np.delete(new_gamma_bins_to, index)
-                        new_gamma_bins = self._interlace(new_gamma_bins_from, new_gamma_bins_to)
-
-                self._blob.n_e = InterpolatedDistribution(new_gamma_bins_from, new_n_array)
+                self._blob.n_e = self._make_interpolated_distribution(new_gamma_bins_from, new_n_array)
+                bin_idx_mapping = np.arange(len(new_gamma_bins_from))
             else:
                 half_time = time_sec / 2
-                new_gamma_bins, new_n_array, removed_mask_indices = do_recursive(gamma_bins, new_energy_change_rates, n_array,
-                                                           new_low_change_rates_mask, False, half_time,
-                                                           depth + 1, elapsed_time_sec)
-                new_low_change_rates_mask = np.delete(new_low_change_rates_mask, removed_mask_indices)
-                removed_mask_indices_doubled = [x * 2 for x in removed_mask_indices] + [x * 2 + 1 for x in removed_mask_indices]
-                new_energy_change_rates = np.delete(new_energy_change_rates, removed_mask_indices_doubled)
-                new_gamma_bins, new_n_array, new_removed_mask_indices = do_recursive(new_gamma_bins, new_energy_change_rates, new_n_array,
-                                                           new_low_change_rates_mask, True, half_time,
-                                                           depth + 1, elapsed_time_sec + half_time)
-                removed_mask_indices = self._merge_removed_mask_indices(removed_mask_indices, new_removed_mask_indices)
-            if method.lower() == "heun":
-                # only recalculate the bins unmasked by low_change_rates_mask but masked by new_low_change_rates_mask
-                heun_recalc_mask = new_low_change_rates_mask & ~low_change_rates_mask
-                heun_recalc_mask_2 = np.repeat(heun_recalc_mask, 2)
-                energy_change_rates_recalc = \
-                    self._recalc_change_rates(new_gamma_bins, new_energy_change_rates, ~heun_recalc_mask)[heun_recalc_mask_2]
-                averaged_energy_change_rates = (new_energy_change_rates[heun_recalc_mask_2] + energy_change_rates_recalc) / 2
+                new_gamma_bins, first_mapping = do_recursive(gamma_bins,
+                                                             new_energy_change_rates,
+                                                             new_low_change_rates_mask,
+                                                             False,
+                                                             half_time, depth + 1, elapsed_time_sec)
+                new_energy_change_rates = remap_energy_change_rates(first_mapping, new_energy_change_rates)
+                new_gamma_bins, second_mapping = do_recursive(new_gamma_bins,
+                                                              new_energy_change_rates,
+                                                              new_low_change_rates_mask[first_mapping],
+                                                              True,
+                                                              half_time, depth + 1, elapsed_time_sec + half_time)
+                new_energy_change_rates = remap_energy_change_rates(second_mapping, new_energy_change_rates)
+                bin_idx_mapping = first_mapping[second_mapping] # combined first and second mapping
+                new_gamma_bins_from, new_gamma_bins_to = self._deinterlace(new_gamma_bins)
+            # only recalculate the bins not masked by low_change_rates_mask but masked by new_low_change_rates_mask
+            recalc_mask = (new_low_change_rates_mask & ~low_change_rates_mask)[bin_idx_mapping]
+            if method.lower() == "heun" and np.any(recalc_mask):
+                recalc_mask_dbl = np.repeat(recalc_mask, 2)
+                energy_change_rates_recalc = self._recalc_change_rates(new_gamma_bins, new_energy_change_rates, ~recalc_mask)
+                averaged_energy_change_rates = (new_energy_change_rates[recalc_mask_dbl] + energy_change_rates_recalc[recalc_mask_dbl]) / 2
                 abs_changes_recalc = averaged_energy_change_rates * time_sec
                 new_gamma_bins_recalc, new_n_array_recalc = self._recalc_gamma_bins_and_density(
-                    energy_bins[heun_recalc_mask_2],
+                    energy_bins[recalc_mask_dbl],
                     abs_changes_recalc,
-                    n_array[heun_recalc_mask])
+                    n_e)
                 if any(np.isnan(new_n_array_recalc)):
-                    raise ValueError("Illegal negative density obtained") #TODO how to handle it correctly?
-                new_gamma_bins[heun_recalc_mask_2] = new_gamma_bins_recalc
-                new_n_array[heun_recalc_mask] = new_n_array_recalc
+                    # in this case, we should roll back the sub-calculation progress and retry with the new mask from the beginning of the current method
+                    raise ValueError("Illegal negative density obtained - the resolution algorithm not yet implemented, please report it to the agnpy maintainers")
+                new_gamma_bins[recalc_mask_dbl] = new_gamma_bins_recalc
                 new_gamma_bins_from, new_gamma_bins_to = self._deinterlace(new_gamma_bins)
-                if not np.all(new_gamma_bins_from[:-1] <= new_gamma_bins_from[1:]):
-                    sort_indices = np.argsort(new_gamma_bins_from)
-                    new_gamma_bins_from = new_gamma_bins_from[sort_indices]
-                    new_gamma_bins_to = new_gamma_bins_to[sort_indices]
-                    new_gamma_bins = self._interlace(new_gamma_bins_from, new_gamma_bins_to)
-                    new_n_array = new_n_array[sort_indices]
-                self._blob.n_e = InterpolatedDistribution(new_gamma_bins_from, new_n_array)
+                new_n_e = self._blob.n_e
+                new_n_array = np.zeros_like(new_gamma_bins_from) * u.Unit("cm-3")
+                new_n_array[~recalc_mask] = new_n_e(new_gamma_bins_from[~recalc_mask])
+                new_n_array[recalc_mask] = new_n_array_recalc
+                self._blob.n_e = self._make_interpolated_distribution(new_gamma_bins_from, new_n_array)
 
-            return new_gamma_bins, new_n_array, removed_mask_indices
+            second_bin_idx_mapping = TimeEvolution._sort_and_deduplicate(new_gamma_bins_from, recalc_mask)
+            new_gamma_bins_from = new_gamma_bins_from[second_bin_idx_mapping]
+            new_gamma_bins_to = new_gamma_bins_to[second_bin_idx_mapping]
+            return self._interlace(new_gamma_bins_from, new_gamma_bins_to), bin_idx_mapping[second_bin_idx_mapping]
+
+        def remap_energy_change_rates(first_mapping, new_energy_change_rates):
+            new_energy_change_rates_from, new_energy_change_rates_to = self._deinterlace(new_energy_change_rates)
+            return self._interlace(new_energy_change_rates_from[first_mapping], new_energy_change_rates_to[first_mapping])
+
+        def log_mask_info(low_change_rates_mask: NDArray[np.bool_], depth: int, elapsed_time_sec):
+            if log.isEnabledFor(logging.INFO):
+                count = sum(low_change_rates_mask)
+                total = len(low_change_rates_mask)
+                width = min(3, len(str(total)))
+                progress_percent = int(100 * elapsed_time_sec / self._total_time_sec)
+                msg = f"{str(progress_percent).rjust(3)}% {str(count).rjust(width)}/{str(total).rjust(width)} " + depth * "-"
+                log.info(msg)
 
         bin_size_factor = 0.0001
         initial_gamma_bins_from = self._blob.gamma_e
         dummy_bins_ends = np.zeros_like(initial_gamma_bins_from)
         initial_gamma_bins = self._interlace(initial_gamma_bins_from, dummy_bins_ends)
         dummy_change_rates = np.zeros_like(initial_gamma_bins) * u.Unit("erg s-1")
-        initial_n_array = self._blob.n_e(initial_gamma_bins_from)
-        empty_mask = np.repeat(False, len(initial_n_array))
-        do_recursive(initial_gamma_bins, dummy_change_rates, initial_n_array, empty_mask, True, self._total_time_sec, 1, 0*u.s)
+        empty_mask = np.repeat(False, len(initial_gamma_bins_from))
+        do_recursive(initial_gamma_bins, dummy_change_rates, empty_mask, True, self._total_time_sec, 1, 0*u.s)
 
     def _recalc_change_rates(self, gamma_bins, previous_energy_change_rates=None, low_change_rates_mask=None):
         """
@@ -298,7 +294,9 @@ class TimeEvolution:
             raise ValueError(f"Invalid method '{method}'. Expected one of: {', '.join(valid_methods)}")
 
     @staticmethod
-    def _recalc_gamma_bins_and_density(energy_bins, abs_energy_changes, n_array):
+    def _recalc_gamma_bins_and_density(energy_bins, abs_energy_changes, n_e):
+        gamma_bins_start = (TimeEvolution._deinterlace(energy_bins)[0] / mec2).to_value('')
+        n_array = n_e(gamma_bins_start)
         new_energy_bins, density_increase = TimeEvolution._recalc_energy_bins_and_density_increase(abs_energy_changes, energy_bins)
         new_n_array = n_array * density_increase
         new_gamma_bins = (new_energy_bins / mec2).to_value('')
@@ -306,6 +304,11 @@ class TimeEvolution:
 
     @staticmethod
     def _recalc_energy_bins_and_density_increase(abs_energy_changes, energy_bins):
+        """
+        abs_energy_changes - array of shape (2N,)
+        energy_bins - array of shape (2N,)
+        return ((2N,), (N,)) - note: some of the elements of density_increase may be nan
+        """
         energy_bins_from, energy_bins_to = TimeEvolution._deinterlace(energy_bins)
         energy_bins_width = energy_bins_to - energy_bins_from
         new_energy_bins = energy_bins + abs_energy_changes
@@ -315,15 +318,6 @@ class TimeEvolution:
         invalid_width = new_energy_bins_to - new_energy_bins_from < 0
         density_increase[invalid_width] = np.nan # mark with nan the bins where bin's start and end get swapped
         return new_energy_bins, density_increase
-
-    def _log_mask_info(self, low_change_rates_mask: NDArray[np.bool_], depth: int, elapsed_time_sec):
-        if log.isEnabledFor(logging.INFO):
-            count = sum(low_change_rates_mask)
-            total = len(low_change_rates_mask)
-            width = min(3, len(str(total)))
-            progress_percent = int(100 * elapsed_time_sec / self._total_time_sec)
-            msg = f"{str(progress_percent).rjust(3)}% {str(count).rjust(width)}/{str(total).rjust(width)} " + depth * "-"
-            log.info(msg)
 
     @staticmethod
     def _calc_new_low_change_rates_mask(abs_changes, energy_bins, max_energy_change_per_interval, max_density_change_per_interval):
@@ -337,35 +331,40 @@ class TimeEvolution:
         return new_low_change_rates_mask
 
     @staticmethod
-    def _merge_removed_mask_indices(removed_indices_step1, removed_indices_step2):
-        """
-        Merge two sets of removed indices from two consecutive removal steps.
+    def _make_interpolated_distribution(gamma_array, n_array):
+        sort_indices = np.argsort(gamma_array)
+        gamma_array_sorted = gamma_array[sort_indices]
+        n_array_sorted = n_array[sort_indices]
+        # If any two different gamma points map into the same point, we will not be able to make the interpolated distribution,
+        # hence we need to merge them into a single point. Also consider the fact the InterpolatedDistribution
+        # uses the log10 values of the gamma points, so two close-enough gamma points can collapse into a single point after log10.
+        duplicated_indices = TimeEvolution._get_duplicates(gamma_array_sorted)
+        gamma_array_sorted = np.delete(gamma_array_sorted, duplicated_indices)
+        for index in duplicated_indices[::-1]:
+            n_array_sorted[index - 1] = n_array_sorted[index - 1] + n_array_sorted[index]
+            n_array_sorted = np.delete(n_array_sorted, index)
+        if len(gamma_array_sorted) == 1:
+            raise ValueError("Unsupported state, cannot create InterpolatedDistribution - distribution collapsed to a single gamma point " + str(gamma_array_sorted[0]))
+        return InterpolatedDistribution(gamma_array_sorted, n_array_sorted)
 
-        Parameters
-        ----------
-        removed_indices_step1 : numpy array
-            Indices removed in step 1 (relative to the original array)
-        removed_indices_step2 : numpy array
-            Indices removed in step 2 (relative to the array after step 1)
+    @staticmethod
+    def _sort_and_deduplicate(array, mask=None, element_transform = np.log10):
+        sort_idx = np.argsort(array)
+        sorted_array = array[sort_idx]
+        sorted_mask = mask[sort_idx]
+        duplicate_idx = TimeEvolution._get_duplicates(sorted_array, mask=sorted_mask, element_transform=element_transform)
+        keep_idx = np.setdiff1d(np.arange(len(sort_idx)), duplicate_idx, assume_unique=True)
+        return sort_idx[keep_idx]
 
-        Returns
-        -------
-        result: np.ndarray
-            Sorted array of all removed indices relative to the original array
-        """
-        removed_indices_step1 = np.sort(removed_indices_step1)
-
-        remapped_indices_step2 = np.empty((0,), dtype=int)
-        for val2 in removed_indices_step2:
-            found = False
-            for val1_idx in range(len(removed_indices_step1) - 1, -1, -1):
-                if val2 >= removed_indices_step1[val1_idx] - val1_idx:
-                    remapped_indices_step2 = np.append(remapped_indices_step2, val2 + val1_idx + 1)
-                    found = True
-                    break
-            if not found:
-                remapped_indices_step2 = np.append(remapped_indices_step2, val2)
-
-        combined = np.concatenate((removed_indices_step1, remapped_indices_step2))
-        combined = np.sort(combined)
-        return combined
+    @staticmethod
+    def _get_duplicates(sorted_array, mask=None, element_transform = np.log10):
+        if mask is None:
+            mask = np.repeat(True, len(sorted_array))
+        duplicates = element_transform(sorted_array)[:-1] == element_transform(sorted_array)[1:]
+        both_masked = mask[:-1] & mask[1:]
+        match = duplicates & both_masked
+        if np.any(match):
+            removed_mask_indices = np.where(match)[0] + 1
+            return removed_mask_indices
+        else:
+            return []

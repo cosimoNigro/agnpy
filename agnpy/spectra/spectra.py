@@ -214,7 +214,7 @@ class ParticleDistribution(ABC):
         and then incorrectly evaluate to zero. To correct for such cases, check the relative error,
         and if it is less than some very small value (let's say 1e-10), correct the gamma array accordingly, to fit into the allowed range.
         """
-        if not isinstance(gamma, Iterable):
+        if not isinstance(gamma, Iterable) or len(gamma) == 0:
             return
         if gamma_min > gamma[0]:
             if (gamma_min - gamma[0]) / gamma[0] < 1e-10:
