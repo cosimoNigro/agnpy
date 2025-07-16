@@ -14,7 +14,9 @@ E = nu.to("TeV", equivalencies=u.spectral())
 
 for model in ["franceschini", "dominguez", "finke", "saldana-lopez"]:
     ebl = EBL(model)
-    absorption = ebl.absorption(nu, z)
+    absorption = ebl.absorption(
+        nu, z
+    )  # warning: in agnpy <= v0.4.0 the arguments order is reversed!
     plt.loglog(E, absorption, label=model)
 
 plt.xlabel(r"$E\,/\,{\rm TeV}$")
