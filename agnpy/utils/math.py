@@ -117,3 +117,13 @@ def trapz_loglog(y, x, axis=0):
     vals[tozero] = 0.0
 
     return np.add.reduce(vals, axis) * x_unit * y_unit
+
+def power_law_integral(k_e, p, gamma_min, gamma_max):
+    """
+    Analytical integral of the power law k_e * gamma^{-p}
+    """
+    if np.isclose(p, 1.0):
+        integral = np.log(gamma_max / gamma_min)
+    else:
+        integral = (np.power(gamma_max, 1 - p) - np.power(gamma_min, 1 - p)) / (1 - p)
+    return k_e * integral
