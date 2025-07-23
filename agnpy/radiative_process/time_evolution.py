@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 EnergyChangeFnType = Callable[[Quantity], Quantity]
 NumericalMethod = Literal["euler", "heun"]
 EnergyChangeFns = Union[EnergyChangeFnType, Sequence[EnergyChangeFnType]]
+CallbackFnType = Callable[[], None]
 
 def synchrotron_loss(sync: Synchrotron) -> EnergyChangeFnType:
     return lambda gamma: sync.electron_energy_loss_rate(gamma) * -1
@@ -37,18 +38,22 @@ class TimeEvolution:
     blob : ~agnpy.Blob
         The blob for which the time evolution will be performed. As a result of the time evolution,
         the blob.n_e will be replaced with the InterpolatedDistribution.
-    time : ~astropy.units.Quantity
+    total_time : ~astropy.units.Quantity
          Total time for the calculation
     energy_change_functions : a function, or an array of functions, of EnergyChangeFnType type
          The function(s) to be used for calculation of energy change rate per gamma values
          (for energy gain processes, function should return positive values; for loss, negative values)
+    distribution_change_callback : an optional no-arg function
+        This function will be called each time the blob's electron distribution has been updated.
+        You can use it, for example, for updating the distribution plot in real time.
     """
 
-    def __init__(self, blob: Blob, time: Quantity, energy_change_functions: EnergyChangeFns):
+    def __init__(self, blob: Blob, total_time: Quantity, energy_change_functions: EnergyChangeFns, distribution_change_callback: CallbackFnType = lambda: None):
         self._blob = blob
-        self._total_time_sec = time.to("s")
+        self._total_time_sec = total_time.to("s")
         self._energy_change_functions = energy_change_functions if isinstance(energy_change_functions, Iterable) else [
             energy_change_functions]
+        self._distribution_change_callback = distribution_change_callback
 
     def eval_with_fixed_intervals(self,
                                   intervals_count: int,
@@ -109,7 +114,7 @@ class TimeEvolution:
             if np.all(new_low_change_rates_mask):
                 new_gamma_bins, new_n_array = self._recalc_gamma_bins_and_density(energy_bins, abs_changes, n_e)
                 new_gamma_bins_from = self._deinterlace(new_gamma_bins)[0]
-                self._blob.n_e = self._make_interpolated_distribution(new_gamma_bins_from, new_n_array)
+                self._update_distribution(new_gamma_bins_from, new_n_array)
             else:
                 raise ValueError(
                     "Energy change formula returned too big value. Use shorter time ranges.")
@@ -120,7 +125,7 @@ class TimeEvolution:
                 new_gamma_bins, new_n_array =\
                     self._recalc_gamma_bins_and_density(energy_bins, abs_changes_recalc, n_e)
                 new_gamma_bins_from = self._deinterlace(new_gamma_bins)[0]
-                self._blob.n_e = self._make_interpolated_distribution(new_gamma_bins_from, new_n_array)
+                self._update_distribution(new_gamma_bins_from, new_n_array)
 
             new_gamma_bins_from = np.sort(new_gamma_bins_from)
             duplicates = TimeEvolution._get_duplicates(new_gamma_bins_from)
@@ -192,7 +197,7 @@ class TimeEvolution:
             if np.all(new_low_change_rates_mask):
                 new_gamma_bins, new_n_array = self._recalc_gamma_bins_and_density(energy_bins, abs_changes, n_e)
                 new_gamma_bins_from, new_gamma_bins_to = self._deinterlace(new_gamma_bins)
-                self._blob.n_e = self._make_interpolated_distribution(new_gamma_bins_from, new_n_array)
+                self._update_distribution(new_gamma_bins_from, new_n_array)
                 bin_idx_mapping = np.arange(len(new_gamma_bins_from))
             else:
                 half_time = time_sec / 2
@@ -230,8 +235,7 @@ class TimeEvolution:
                 new_n_array = np.zeros_like(new_gamma_bins_from) * u.Unit("cm-3")
                 new_n_array[~recalc_mask] = new_n_e(new_gamma_bins_from[~recalc_mask])
                 new_n_array[recalc_mask] = new_n_array_recalc
-                self._blob.n_e = self._make_interpolated_distribution(new_gamma_bins_from, new_n_array)
-
+                self._update_distribution(new_gamma_bins_from, new_n_array)
             second_bin_idx_mapping = TimeEvolution._sort_and_deduplicate(new_gamma_bins_from, recalc_mask)
             new_gamma_bins_from = new_gamma_bins_from[second_bin_idx_mapping]
             new_gamma_bins_to = new_gamma_bins_to[second_bin_idx_mapping]
@@ -330,8 +334,7 @@ class TimeEvolution:
                                      (1 / (1 + max_density_change_per_interval) < density_increase))
         return new_low_change_rates_mask
 
-    @staticmethod
-    def _make_interpolated_distribution(gamma_array, n_array):
+    def _update_distribution(self, gamma_array, n_array):
         sort_indices = np.argsort(gamma_array)
         gamma_array_sorted = gamma_array[sort_indices]
         n_array_sorted = n_array[sort_indices]
@@ -345,7 +348,8 @@ class TimeEvolution:
             n_array_sorted = np.delete(n_array_sorted, index)
         if len(gamma_array_sorted) == 1:
             raise ValueError("Unsupported state, cannot create InterpolatedDistribution - distribution collapsed to a single gamma point " + str(gamma_array_sorted[0]))
-        return InterpolatedDistribution(gamma_array_sorted, n_array_sorted)
+        self._blob.n_e = InterpolatedDistribution(gamma_array_sorted, n_array_sorted)
+        self._distribution_change_callback()
 
     @staticmethod
     def _sort_and_deduplicate(array, mask=None, element_transform = np.log10):
