@@ -32,10 +32,11 @@ __all__ = ["sigma", "Absorption", "ebl_files_dict", "EBL"]
 
 agnpy_dir = Path(__file__).parent.parent
 ebl_files_dict = {
-    "franceschini": f"{agnpy_dir}/data/ebl_models/ebl_franceschini08.fits.gz",
-    "dominguez": f"{agnpy_dir}/data/ebl_models/ebl_dominguez11.fits.gz",
-    "finke": f"{agnpy_dir}/data/ebl_models/ebl_finke10.fits.gz",
-    "saldana-lopez": f"{agnpy_dir}/data/ebl_models/ebl_saldana-lopez21.fits.gz",
+    "franceschini_2008": f"{agnpy_dir}/data/ebl_models/ebl_franceschini.fits.gz",
+    "franceschini_2017": f"{agnpy_dir}/data/ebl_models/ebl_franceschini_2017.fits.gz",
+    "dominguez_2011": f"{agnpy_dir}/data/ebl_models/ebl_dominguez11.fits.gz",
+    "finke_2010": f"{agnpy_dir}/data/ebl_models/frd_abs.fits.gz",
+    "saldana_lopez_2021": f"{agnpy_dir}/data/ebl_models/ebl_saldana-lopez_2021.fits.gz",
 }
 
 
@@ -769,40 +770,38 @@ class EBL:
         choose the reference for the EBL model
     """
 
-    def __init__(self, model="franceschini"):
-        if model not in ["franceschini", "dominguez", "finke", "saldana-lopez"]:
+    def __init__(self, model="dominguez_2011", interp_kwargs={}):
+        if model not in ebl_files_dict.keys():
             raise ValueError("No EBL model for the reference you specified")
-        self.model_file = ebl_files_dict[model]
+        self.model_name = model
+        self.model_file = ebl_files_dict[self.model_name]
         # load the absorption table
         self.load_absorption_table()
-        self.interpolate_absorption_table()
+        self.interpolate_absorption_table(interp_kwargs)
 
     def load_absorption_table(self):
         """load the reference values from the table file to be interpolated later"""
         f = fits.open(self.model_file)
-        self.energy_ref = (
-            np.sqrt(f["ENERGIES"].data["ENERG_LO"] * f["ENERGIES"].data["ENERG_HI"])
-            * u.keV
-        )
-        # Franceschini file has two columns repeated, eliminate them
-        self.z_ref = np.unique(f["SPECTRA"].data["PARAMVAL"])
-        self.values_ref = np.unique(f["SPECTRA"].data["INTPSPEC"], axis=0)
+        # energies are in KeV, redshift is dimensionless
+        self.energy_ref = np.sqrt(f["ENERGIES"].data["ENERG_LO"] * f["ENERGIES"].data["ENERG_HI"])
+        self.z_ref = f["SPECTRA"].data["PARAMVAL"]
+        self.values_ref = f["SPECTRA"].data["INTPSPEC"]
+        # Franceschini 2008 file has two PARAMVAL rows repeated
+        # at indexes 1001 and 1002, values of redshift = 1.001, eliminate them!
+        if self.model_name == "franceschini_2008":
+            self.z_ref = np.delete(self.z_ref, 1001)
+            self.values_ref = np.delete(self.values_ref, 1001, axis=0)
 
-    def interpolate_absorption_table(self, method="linear"):
+    def interpolate_absorption_table(self, interp_kwargs):
         """interpolate the reference values, choose the kind of interpolation"""
-        log10_energy_ref = np.log10(self.energy_ref.to_value("keV"))
         self.interpolated_model = RegularGridInterpolator(
-            (log10_energy_ref, self.z_ref),
-            self.values_ref.T,
-            method=method,
-            bounds_error=False,
-            fill_value=1,
+            points=(self.energy_ref, self.z_ref),
+            values=self.values_ref.T,
+            **interp_kwargs
         )
 
     def absorption(self, nu, z):
         "This function returns the attenuation of the emission by EBL"
         energy = nu.to_value("keV", equivalencies=u.spectral())
-        log10_energy = np.log10(energy)
-        z = z * np.ones_like(log10_energy)
-        xx = np.column_stack((log10_energy, z))
-        return self.interpolated_model(xx)
+        absorption = self.interpolated_model(np.meshgrid(energy, z))[0]
+        return absorption
