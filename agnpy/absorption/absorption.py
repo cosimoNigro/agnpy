@@ -770,14 +770,14 @@ class EBL:
         choose the reference for the EBL model
     """
 
-    def __init__(self, model="dominguez_2011", interp_kwargs={}):
+    def __init__(self, model="dominguez_2011"):
         if model not in ebl_files_dict.keys():
             raise ValueError("No EBL model for the reference you specified")
         self.model_name = model
         self.model_file = ebl_files_dict[self.model_name]
         # load the absorption table
         self.load_absorption_table()
-        self.interpolate_absorption_table(interp_kwargs)
+        self.interpolate_absorption_table()
 
     def load_absorption_table(self):
         """load the reference values from the table file to be interpolated later"""
@@ -792,12 +792,13 @@ class EBL:
             self.z_ref = np.delete(self.z_ref, 1001)
             self.values_ref = np.delete(self.values_ref, 1001, axis=0)
 
-    def interpolate_absorption_table(self, interp_kwargs):
+    def interpolate_absorption_table(self):
         """interpolate the reference values, choose the kind of interpolation"""
         self.interpolated_model = RegularGridInterpolator(
             points=(self.energy_ref, self.z_ref),
             values=self.values_ref.T,
-            **interp_kwargs
+            method="linear",
+            bounds_error=False
         )
 
     def absorption(self, nu, z):
