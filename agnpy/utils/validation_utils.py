@@ -82,7 +82,9 @@ def make_comparison_plot(
     fig_path,
     plot_type,
     y_range=None,
-    comparison_range=None
+    comparison_range=None,
+    x_label=None,
+    y_label=None,
 ):
     """Make a comparison plot, for SED or gamma-gamma absorption
     between two different sources: a reference (literature or another code)
@@ -127,8 +129,8 @@ def make_comparison_plot(
         deviation_label = TAU_DEVIATION_LABEL
     else:
         # set a custom y label, keep the x-axis in frequency
-        x_label = SED_X_LABEL
-        y_label = plot_type
+        x_label = x_label
+        y_label = y_label
         deviation_label = f"({plot_type} agnpy / {plot_type} ref.) - 1"
     # make the plot
     fig, ax = plt.subplots(
