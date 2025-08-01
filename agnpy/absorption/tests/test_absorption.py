@@ -575,7 +575,7 @@ class TestEBL:
             f"{figures_dir}/ebl/ebl_abs_interp_comparison_{model}_z_{z}.png",
             plot_type="absorption",
             comparison_range=comparison_range.to_value("Hz"),
-            y_range=[1e-30, 1e2],
+            #y_range=[1e-30, 1e2],
         )
         # requires a 10% deviation from reference absorptions
         assert check_deviation(nu_ref, absorption, absorption_ref, 0.1, comparison_range)
@@ -608,28 +608,24 @@ class TestEBL:
         absorption_agnpy = ebl_agnpy.absorption(nu_ref, z)
         absorption_gammapy = ebl_gammapy.evaluate(energy=energy_ref, redshift=z, alpha_norm=1)
 
-        # no need to compare numbers smallers that 1e-30
-        comparison_mask = absorption_gammapy > 1e-30
-
         make_comparison_plot(
-            energy_ref[comparison_mask],
-            absorption_gammapy[comparison_mask],
-            absorption_agnpy[comparison_mask],
+            energy_ref,
+            absorption_gammapy,
+            absorption_agnpy,
             "agnpy interpolation",
             "Gammapy interpolation",
             f"EBL absorption, {model.replace('_', ' ').title()} model, z = {z}",
             f"{figures_dir}/ebl/ebl_abs_agnpy_gammapy_comparison_{model}_z_{z}.png",
             plot_type="absorption",
             comparison_range=comparison_range.to_value("GeV"),
-            y_range=[1e-30, 1e2],
             x_label=r"$E\,/\,{\rm GeV}$",
             y_label="EBL Absorption",
         )
         # requires a 25% deviation from the two tau points
         assert check_deviation(
-            energy_ref[comparison_mask],
-            absorption_gammapy[comparison_mask],
-            absorption_agnpy[comparison_mask],
+            energy_ref,
+            absorption_gammapy,
+            absorption_agnpy,
             0.25,
             x_range=comparison_range
         )
