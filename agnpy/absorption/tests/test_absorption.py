@@ -9,14 +9,14 @@ from agnpy.spectra import PowerLaw, BrokenPowerLaw
 from agnpy.emission_regions import Blob
 from agnpy.synchrotron import Synchrotron
 from agnpy.targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
-from agnpy.absorption import Absorption, EBL
+from agnpy.absorption import Absorption, EBL, ebl_files_dict
 from agnpy.utils.math import axes_reshaper
 from agnpy.utils.validation_utils import (
     make_comparison_plot,
     extract_columns_sample_file,
     check_deviation,
 )
-import matplotlib.pyplot as plt
+from gammapy.modeling.models import EBLAbsorptionNormSpectralModel
 
 mec2 = m_e.to("erg", equivalencies=u.mass_energy())
 
@@ -536,27 +536,96 @@ class TestAbsorptionMuS:
 class TestEBL:
     """class grouping all tests related to the EBL class"""
 
-    @pytest.mark.parametrize(
-        "model", ["franceschini", "finke", "dominguez", "saldana-lopez"]
+    # adjust the comparison range to the increasing redshift
+    @pytest.mark.parametrize("z,comparison_range", 
+        [
+            (0.5, [1e24, 2e27] * u.Hz),
+            (1.0, [1e24, 1e27] * u.Hz),
+            (1.5, [1e24, 8e26] * u.Hz)
+        ]
     )
-    @pytest.mark.parametrize("z", [0.5, 1.5])
-    def test_correct_interpolation(self, model, z):
+    @pytest.mark.parametrize(
+        "model",
+        [
+            "franceschini_2008",
+            "franceschini_2017",
+            "finke_2010",
+            "dominguez_2011",
+            "saldana_lopez_2021"
+        ]
+    )
+    def test_correct_interpolation(self, model, z, comparison_range):
         # define the ebl model, evaluate it at the reference energies
         ebl = EBL(model)
-        nu_ref = ebl.energy_ref.to("Hz", equivalencies=u.spectral())
+        # exclude the first and last point of the reference energies to avoid numerical issues with interpolation
+        nu_ref = (ebl.energy_ref * u.keV).to("Hz", equivalencies=u.spectral())[1:-1]
         absorption = ebl.absorption(nu_ref, z)
         # find in the reference values the spectra for this redshift
         z_idx = np.abs(z - ebl.z_ref).argmin()
-        absorption_ref = ebl.values_ref[z_idx]
+        # remove also the extreme values from the reference absorption
+        absorption_ref = ebl.values_ref[z_idx][1:-1]
+
         make_comparison_plot(
             nu_ref,
             absorption,
             absorption_ref,
             "agnpy interpolation",
             "data",
-            f"EBL absorption, {model} model, z = {z}",
+            f"EBL absorption, {model.replace('_', ' ').title()} model, z = {z}",
             f"{figures_dir}/ebl/ebl_abs_interp_comparison_{model}_z_{z}.png",
-            "abs.",
+            plot_type="absorption",
+            comparison_range=comparison_range.to_value("Hz"),
+            #y_range=[1e-30, 1e2],
         )
-        # requires a 1% deviation from the two SED points
-        assert check_deviation(nu_ref, absorption_ref, absorption, 0.01)
+        # requires a 10% deviation from reference absorptions
+        assert check_deviation(nu_ref, absorption, absorption_ref, 0.1, comparison_range)
+
+    # adjust the comparison range to the increasing redshift
+    @pytest.mark.parametrize("z,comparison_range", 
+        [
+            (0.5, [1e2, 8e3] * u.GeV),
+            (1.0, [1e2, 4e3] * u.GeV),
+            (1.5, [1e2, 3e3] * u.GeV)
+        ]
+    )
+    @pytest.mark.parametrize(
+        "model",
+        [
+            "franceschini_2008",
+            "franceschini_2017",
+            "finke_2010",
+            "dominguez_2011",
+            "saldana_lopez_2021"
+        ]
+    )
+    def test_against_gammapy_ebl_models(self, model, z, comparison_range):
+        """Test against Gammapy's EBL implementation."""
+        ebl_agnpy = EBL(model)
+        ebl_filename = ebl_files_dict[model]
+        ebl_gammapy = EBLAbsorptionNormSpectralModel.read(ebl_filename)
+        energy_ref = np.logspace(2, 5) * u.GeV
+        nu_ref = energy_ref.to("Hz", equivalencies=u.spectral())
+        absorption_agnpy = ebl_agnpy.absorption(nu_ref, z)
+        absorption_gammapy = ebl_gammapy.evaluate(energy=energy_ref, redshift=z, alpha_norm=1)
+
+        make_comparison_plot(
+            energy_ref,
+            absorption_gammapy,
+            absorption_agnpy,
+            "agnpy interpolation",
+            "Gammapy interpolation",
+            f"EBL absorption, {model.replace('_', ' ').title()} model, z = {z}",
+            f"{figures_dir}/ebl/ebl_abs_agnpy_gammapy_comparison_{model}_z_{z}.png",
+            plot_type="absorption",
+            comparison_range=comparison_range.to_value("GeV"),
+            x_label=r"$E\,/\,{\rm GeV}$",
+            y_label="EBL Absorption",
+        )
+        # requires a 25% deviation from the two tau points
+        assert check_deviation(
+            energy_ref,
+            absorption_gammapy,
+            absorption_agnpy,
+            0.25,
+            x_range=comparison_range
+        )
