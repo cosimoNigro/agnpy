@@ -2,12 +2,11 @@
 from copy import deepcopy
 import numpy as np
 import astropy.units as u
-from astropy.constants import m_e, m_p, c
+from astropy.constants import m_e, m_p, c, e
 import pytest
 
 from agnpy import Blob, Synchrotron, SynchrotronSelfCompton, SpectralConstraints
-from agnpy.radiative_process.time_evolution import TimeEvolution, synchrotron_loss, ssc_loss, ssc_thomson_limit_loss, \
-    fermi_acceleration
+from agnpy.time_evolution.time_evolution import TimeEvolution, synchrotron_loss, ssc_loss, ssc_thomson_limit_loss
 from agnpy.spectra import (
     PowerLaw,
     BrokenPowerLaw,
@@ -41,8 +40,7 @@ class TestSpectraTimeEvolution:
         initial_n_e = PowerLaw(k, p, gamma_min=gamma_min, gamma_max=gamma_max, mass=m_e)
         blob = Blob(n_e=initial_n_e, delta_D=1)
         synch = Synchrotron(blob)
-        TimeEvolution(blob, time, synchrotron_loss(synch)).eval_with_fixed_intervals(
-                                                      intervals_count=steps, max_energy_change_per_interval=0.1)
+        TimeEvolution(blob, time, synchrotron_loss(synch), max_energy_change_per_interval=0.1).eval_with_fixed_intervals(steps)
         evaluated_n_e = blob.n_e
 
         def gamma_before_synch(gamma_after_time, time):
@@ -84,13 +82,13 @@ class TestSpectraTimeEvolution:
         synch = Synchrotron(blob)
 
         # iterate over 60 s in 20 steps
-        TimeEvolution(blob, 60 * u.s, synchrotron_loss(synch)).eval_with_fixed_intervals(intervals_count=20)
+        TimeEvolution(blob, 60 * u.s, synchrotron_loss(synch)).eval_with_fixed_intervals(20)
         eval_1 = deepcopy(blob.n_e)
         # iterate first over 30 s, and then, starting with interpolated distribution, over the remaining 30 s,
         # with slightly different number of subintervals
         blob.n_e = initial_n_e
-        TimeEvolution(blob, 30 * u.s, synchrotron_loss(synch)).eval_with_fixed_intervals(intervals_count=10)
-        TimeEvolution(blob, 30 * u.s, synchrotron_loss(synch)).eval_with_fixed_intervals(intervals_count=8)
+        TimeEvolution(blob, 30 * u.s, synchrotron_loss(synch)).eval_with_fixed_intervals(10)
+        TimeEvolution(blob, 30 * u.s, synchrotron_loss(synch)).eval_with_fixed_intervals(8)
         eval_2 = blob.n_e
 
         gamma_min = eval_1.gamma_min
@@ -121,18 +119,18 @@ class TestSpectraTimeEvolution:
 
         electrons_before = n_e.integrate()
 
-        TimeEvolution(blob, time, synchrotron_loss(synch)).eval_with_fixed_intervals(
-            intervals_count=intervals, max_energy_change_per_interval=0.5, max_density_change_per_interval=10.0)
+        TimeEvolution(blob, time, synchrotron_loss(synch), max_energy_change_per_interval=0.5,
+                      max_density_change_per_interval=10.0).eval_with_fixed_intervals(intervals)
         electrons_after_sync = blob.n_e.integrate()
 
         blob.n_e = n_e
-        TimeEvolution(blob, time, ssc_thomson_limit_loss(ssc)).eval_with_fixed_intervals(
-            intervals_count=intervals, max_energy_change_per_interval=0.5, max_density_change_per_interval=10.0)
+        TimeEvolution(blob, time, ssc_thomson_limit_loss(ssc), max_energy_change_per_interval=0.5,
+                      max_density_change_per_interval=10.0).eval_with_fixed_intervals(intervals_count=intervals) #TODO
         electrons_after_ssc_th = blob.n_e.integrate()
 
         blob.n_e = n_e
-        TimeEvolution(blob, time, ssc_loss(ssc)).eval_with_fixed_intervals(
-            intervals_count=intervals, max_energy_change_per_interval=0.5, max_density_change_per_interval=10.0)
+        TimeEvolution(blob, time, ssc_loss(ssc), max_energy_change_per_interval=0.5,
+                      max_density_change_per_interval=10.0).eval_with_fixed_intervals(intervals_count=intervals)
         electrons_after_ssc = blob.n_e.integrate()
 
         assert u.isclose(electrons_before, electrons_after_sync, rtol=0.005)
@@ -213,8 +211,8 @@ class TestSpectraTimeEvolution:
         decrease_by_20_perc = lambda g: -1 * (g * mec2).to("erg") * 0.2 / u.s
         increase_by_5_perc = lambda g: -1 * (g * mec2) * -0.05 / u.s
         number_of_steps = 10
-        TimeEvolution(blob, number_of_steps * u.s, [decrease_by_20_perc, increase_by_5_perc]).eval_with_fixed_intervals(
-                                                      intervals_count=number_of_steps, method="euler", max_energy_change_per_interval=0.2)
+        TimeEvolution(blob, number_of_steps * u.s, [decrease_by_20_perc, increase_by_5_perc], method="euler",
+                      max_energy_change_per_interval=0.2, max_density_change_per_interval = 0.5).eval_with_fixed_intervals(number_of_steps)
         euler_expected = initial_gammas * (0.85 ** number_of_steps)
         assert u.allclose(blob.gamma_e, euler_expected)
 
@@ -229,12 +227,12 @@ class TestSpectraTimeEvolution:
         blob1 = Blob(n_e=PowerLaw())
         initial_gamma = blob1.gamma_e
         synch1 = Synchrotron(blob1)
-        TimeEvolution(blob1, time, synchrotron_loss(synch1)).eval_with_fixed_intervals(intervals_count=steps_euler, method="euler")
+        TimeEvolution(blob1, time, synchrotron_loss(synch1), method="euler").eval_with_fixed_intervals(intervals_count=steps_euler)
         euler_reversed_analytically = gamma_before_time(synch1._electron_energy_loss_formula_prefactor, blob1.gamma_e, time)
 
         blob2 = Blob(n_e=PowerLaw())
         synch2 = Synchrotron(blob2)
-        TimeEvolution(blob2, time, synchrotron_loss(synch2)).eval_with_fixed_intervals(intervals_count=steps_heun, method="heun")
+        TimeEvolution(blob2, time, synchrotron_loss(synch2), method="heun").eval_with_fixed_intervals(intervals_count=steps_heun)
         heun_reversed_analytically = gamma_before_time(synch2._electron_energy_loss_formula_prefactor, blob2.gamma_e, time)
 
         errors_heun = np.abs((heun_reversed_analytically - initial_gamma) / initial_gamma)
@@ -259,17 +257,15 @@ class TestSpectraTimeEvolution:
         blob1 = Blob(n_e=PowerLaw())
         initial_gamma = blob1.gamma_e
         synch1 = Synchrotron(blob1)
-        TimeEvolution(blob1, time, synchrotron_loss(synch1)).eval_with_automatic_intervals(
-            max_energy_change_per_interval=precision_euler,
-            method="euler")
+        TimeEvolution(blob1, time, synchrotron_loss(synch1), max_energy_change_per_interval=precision_euler,
+            method="euler").eval_with_automatic_intervals()
         euler_reversed_analytically = gamma_before_time(synch1._electron_energy_loss_formula_prefactor,
                                                         blob1.gamma_e, time)
 
         blob2 = Blob(n_e=PowerLaw())
         synch2 = Synchrotron(blob2)
-        TimeEvolution(blob2, time, synchrotron_loss(synch2)).eval_with_automatic_intervals(
-            max_energy_change_per_interval=precision_heun,
-            method="heun")
+        TimeEvolution(blob2, time, synchrotron_loss(synch2), max_energy_change_per_interval=precision_heun,
+            method="heun").eval_with_automatic_intervals()
         heun_reversed_analytically = gamma_before_time(synch2._electron_energy_loss_formula_prefactor,
                                                        blob2.gamma_e, time)
 
@@ -290,14 +286,11 @@ class TestSpectraTimeEvolution:
 
         blob1 = Blob(n_e=PowerLaw())
         synch1 = Synchrotron(blob1)
-        TimeEvolution(blob1, time, synchrotron_loss(synch1)).eval_with_fixed_intervals(intervals_count=1,
-                                                       method="euler")
+        TimeEvolution(blob1, time, synchrotron_loss(synch1)).eval_with_fixed_intervals(intervals_count=1)
 
         blob2 = Blob(n_e=PowerLaw())
         synch2 = Synchrotron(blob2)
-        TimeEvolution(blob2, time, synchrotron_loss(synch2)).eval_with_automatic_intervals(
-            max_energy_change_per_interval=0.5,
-            method="euler")
+        TimeEvolution(blob2, time, synchrotron_loss(synch2), max_energy_change_per_interval=0.5).eval_with_automatic_intervals()
 
         assert np.all(np.isclose(blob1.n_e.gamma_input, blob2.n_e.gamma_input, rtol=0.000001))
 
@@ -312,9 +305,12 @@ class TestSpectraTimeEvolution:
         blob.n_e.gamma_min = delta_function_energy / 2
         blob.n_e.gamma_max = delta_function_energy * 2
 
+        # acceleration formula from SpectralConstraints.gamma_max_synch
+        fermi_acc = lambda gamma: blob.xi * blob.B_cgs * c * e.gauss
+
         synch = Synchrotron(blob)
-        (TimeEvolution(blob, time, [synchrotron_loss(synch), fermi_acceleration(blob)])
-         .eval_with_automatic_intervals(method="heun", max_energy_change_per_interval=0.1, max_density_change_per_interval=1.0))
+        TimeEvolution(blob, time, [synchrotron_loss(synch), fermi_acc], method="heun",
+                       max_energy_change_per_interval=0.1, max_density_change_per_interval=1.0).eval_with_automatic_intervals()
 
         assert np.all(np.isclose(blob.n_e.gamma_input, delta_function_energy, rtol=0.1))
 

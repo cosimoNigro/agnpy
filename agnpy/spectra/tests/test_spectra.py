@@ -6,7 +6,7 @@ from astropy.constants import m_e, m_p, c
 import pytest
 
 from agnpy import Blob, Synchrotron
-from agnpy.radiative_process.time_evolution import TimeEvolution, synchrotron_loss
+from agnpy.time_evolution.time_evolution import TimeEvolution, synchrotron_loss
 from agnpy.spectra import (
     PowerLaw,
     BrokenPowerLaw,

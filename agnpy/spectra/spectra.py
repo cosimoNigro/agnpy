@@ -17,6 +17,7 @@ __all__ = [
     "LogParabola",
     "ExpCutoffBrokenPowerLaw",
     "InterpolatedDistribution",
+    "EmptyDistribution"
 ]
 
 
@@ -845,3 +846,24 @@ class InterpolatedDistribution(ParticleDistribution):
             + f" - gamma_min: {self.gamma_min:.2e}\n"
             + f" - gamma_max: {self.gamma_max:.2e}\n"
         )
+
+class EmptyDistribution(ParticleDistribution):
+    """
+    Class describing a flat, empty distribution.
+    Will return 0 density for any gamma value."""
+
+    def __init__(self, gamma_min=1, gamma_max=1e20):
+        super().__init__(gamma_min, gamma_max)
+
+    def __call__(self, gamma):
+        return self.evaluate(gamma)
+
+    @property
+    def parameters(self):
+        return [self.gamma_min, self.gamma_max]
+
+    def integrate(self, gamma_low: float = None, gamma_up: float = None, gamma_power=0):
+        return 0 * u.Unit("cm-3")
+
+    def evaluate(self, gamma, *args):
+        return np.zeros_like(gamma) * u.Unit("cm-3")
