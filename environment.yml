@@ -13,4 +13,7 @@ dependencies:
   - matplotlib>=3.4,<=3.9
   - sherpa
   - pre-commit
-  - gammapy<1.2
+  - pip:
+    - gammapy<1.2
+    - cubepy<=1.0.2
+
