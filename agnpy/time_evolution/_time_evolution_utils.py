@@ -1,15 +1,13 @@
-import random
-
 import numpy as np
-import astropy.units as u
+from astropy.units import Quantity
+from pygments.styles import vs
+
 from agnpy import InterpolatedDistribution, ParticleDistribution
 from agnpy.utils.conversion import mec2
 from numpy._typing import NDArray
 from scipy.interpolate import PchipInterpolator
 
-bin_size_factor = 0.0001
-zero_density_approximation = 1e-1 * u.Unit("cm-3")
-
+bin_size_factor = 1e-4
 
 def update_bin_ub(gamma_bins_from, gamma_bins_to, low_change_rates_mask = None):
     """ Update bin upper bounds, but only for unmasked bins
@@ -18,67 +16,58 @@ def update_bin_ub(gamma_bins_from, gamma_bins_to, low_change_rates_mask = None):
     gamma_bins_to[~low_change_rates_mask] = gamma_bins_from[~low_change_rates_mask] * (1 + bin_size_factor)
 
 
-def recalc_change_rates(gamma_bins, energy_change_functions, previous_energy_change_rates={},
-                        low_change_rates_mask=None):
+def recalc_new_rates(gm_bins, functions, unit, previous_rates=None, recalc_mask=None):
     """
-    Calculates (or recalculates) the energy changes array.
-    If the mask is provided, only unmasked elements will be recalculated, and previous_energy_change_rates will be used for masked elements.
-    gamma_bins - array of shape (2N,), consisting of inlined pairs of gamma values (lower and upper bounds of gamma bins)
-    previous_energy_change_rates - optional dict of arrays of shape (2N,) each, consisting of most recently calculated energy change rates corresponding to gamma_bins values
+    Calculates (or recalculates) the energy change rates or injection rates.
+    If the mask is provided, only unmasked elements will be recalculated, and previous_rates will be used for masked elements.
+    gamma_bins - array of shape (N,) consisting of gamma values (lower bounds of gamma bins), or (2N,) consisting of inlined pairs of gamma values (lower and upper bounds of gamma bins)
+    previous_rates - optional dict of arrays of shape (N,) or (2N,), consisting of most recently calculated rates corresponding to gamma_bins values
     low_change_rates_mask - optional array of shape (N,) a mask of bins that do not need recalculation
     """
-    mask = np.ones_like(gamma_bins, dtype=bool) if low_change_rates_mask is None else np.repeat(~low_change_rates_mask,
-                                                                                                2)
-    new_energy_change_rates = {}
-    for label, fns in energy_change_functions.items():
-        new_energy_change_rates[label] = np.zeros_like(gamma_bins) * u.Unit("erg s-1") \
-            if previous_energy_change_rates.get(label) is None \
-            else previous_energy_change_rates[label].copy()
-        new_energy_change_rates[label][mask] = np.zeros_like(gamma_bins[mask]) * u.Unit("erg s-1")
-        for en_change_fn in fns:
-            new_energy_change_rates[label][mask] += en_change_fn(gamma_bins[mask]).to("erg s-1")
-    return new_energy_change_rates
+    if previous_rates is None:
+        previous_rates = {}
+    mask = np.ones_like(gm_bins, dtype=bool) if recalc_mask is None else\
+        np.repeat(recalc_mask, 2) if len(recalc_mask) * 2 == len(gm_bins) else recalc_mask
+    new_injection_rates = {}
+    for label, fn in functions.items():
+        new_injection_rates[label] = np.zeros_like(gm_bins) * unit \
+            if previous_rates.get(label) is None \
+            else previous_rates[label].copy()
+        new_injection_rates[label][mask] = fn(gm_bins[mask]).to(unit)
+    return new_injection_rates
 
 
-def recalc_chg_rates_boundary_bins(gm_bins_lb, energy_change_functions):
-    return recalc_change_rates(np.array([gm_bins_lb[0], gm_bins_lb[-1]]), energy_change_functions)
+def sum_change_rates_at_index(change_rates, index):
+    return np.sum([arr[index].value for arr in change_rates.values()])
 
 
-def sum_change_rates(last_energy_change_rates):
-    return sum(last_energy_change_rates.values())
-
-
-def remap_simple(mapping, values):
-    injection_remapped = values[mapping]
-    injection_remapped[mapping == -1] = np.nan
-    return injection_remapped
-
-
-def remap_energy_change_rates(mapping, energy_change_rates):
-    result = {}
-    for key, val in energy_change_rates.items():
-        en_chg_rates_lb, en_ch_rates_ub = deinterlace(val)
-        en_chg_rates_lb = en_chg_rates_lb[mapping]
-        en_ch_rates_ub = en_ch_rates_ub[mapping]
-        en_chg_rates_lb[mapping == -1] = np.nan
-        en_ch_rates_ub[mapping == -1] = np.nan
-        result[key] = interlace(en_chg_rates_lb, en_ch_rates_ub)
+def sum_change_rates(change_rates, shape, unit):
+    result = np.zeros(shape) * unit
+    for ch_rates in change_rates.values():
+        result += ch_rates.to(unit)
     return result
 
 
-def remap_energy_change_rates_lb(mapping, energy_change_rates):
-    result = {}
-    for key, val in energy_change_rates.items():
-        en_chg_rates_lb = val[mapping]
-        en_chg_rates_lb[mapping == -1] = np.nan
-        result[key] = en_chg_rates_lb
-    return result
+def remap(mapping, values, default_value=None):
+    if isinstance(values, dict):
+        return {key: remap(mapping, val, default_value) for key, val in values.items()}
+    else:
+        remapped = values[mapping]
+        new_elements_mask = mapping == -1
+        if np.any(new_elements_mask):
+            if default_value is None:
+                raise ValueError("No default value provided for new elements")
+            else:
+                remapped[new_elements_mask] = default_value
+        return remapped
 
 
-def remap_low_changes_mask(mapping, low_change_rates_mask):
-    low_change_rates_mask_remapped = low_change_rates_mask[mapping]
-    low_change_rates_mask_remapped[mapping == -1] = False
-    return low_change_rates_mask_remapped
+def remap_interlaced(mapping, values, default_value = None):
+    if isinstance(values, dict):
+        return {key: remap_interlaced(mapping, val, default_value) for key, val in values.items()}
+    else:
+        v1, v2 = deinterlace(values)
+        return interlace(remap(mapping, v1, default_value), remap(mapping, v2, default_value))
 
 
 def combine_mapping(first_mapping, second_mapping):
@@ -90,18 +79,15 @@ def combine_mapping(first_mapping, second_mapping):
     return combined
 
 
-def recalc_gamma_bins_and_density(energy_bins, abs_energy_changes, densities_or_distribution):
-    gamma_bins_start = (deinterlace(energy_bins)[0] / mec2).to_value('')
-    n_array = densities_or_distribution(gamma_bins_start) if isinstance(densities_or_distribution,
-                                                                        ParticleDistribution) else densities_or_distribution
-    new_energy_bins, density_increase = recalc_energy_bins_and_density_increase(abs_energy_changes, energy_bins)
-    new_n_array = n_array * density_increase
-    new_gamma_bins = (new_energy_bins / mec2).to_value('')
-    return new_gamma_bins, new_n_array
-
-
 def to_erg(gamma_bins):
     return (gamma_bins * mec2).to("erg")
+
+
+def recalc_gamma_bins_and_density(energy_bins, abs_energy_changes, density):
+    new_energy_bins, density_increase = recalc_energy_bins_and_density_increase(abs_energy_changes, energy_bins)
+    new_density = density * density_increase
+    new_gamma_bins = (new_energy_bins / mec2).to_value('')
+    return new_gamma_bins, new_density
 
 
 def recalc_energy_bins_and_density_increase(abs_energy_changes, energy_bins):
@@ -121,46 +107,42 @@ def recalc_energy_bins_and_density_increase(abs_energy_changes, energy_bins):
     return new_energy_bins, density_increase
 
 
-def calc_new_low_change_rates_mask(energy_bins, density, abs_energy_change, abs_particle_injection,
-                                   max_energy_change_per_interval, max_density_change_per_interval):
+def calc_new_low_change_rates_mask(energy_bins, density, abs_energy_change, abs_particle_scaling, abs_particle_injection,
+                                   max_energy_change_per_interval, max_density_change_per_interval, max_abs_injection_per_interval):
     if np.any((density == 0) & (abs_particle_injection < 0)):
         raise ValueError("Particles cannot escape when density is zero")
-    relative_changes_bin_lb, relative_changes_bin_ub = deinterlace(abs_energy_change / energy_bins)
-    # If we start with a bin of zero density, and inject absolute amount of particles, the injection rate will be infinite,
-    # no matter how short time we take. So instead, we convert zero density to some very small value number, and then
-    # we can always find time short enough to make the relative density change also low enough.
-    # TODO find a better solution
-    density_corrected = np.where(density > 0, density, zero_density_approximation)
-    rel_density_change_from_injection = (density_corrected + abs_particle_injection) / density_corrected
+    # The obvious hard limit for escape is -1.0, which means "all particles escaped"; more negative value would clearly
+    # mean we used too long time. The -0.5 is somewhat arbitrary, perhaps it should be configurable like other limits?
+    # But it is tricky how to configure it, because e.g. -1.1 value makes no physical sense, on the other hand +1.1 is completely fine.
+    max_escape = -0.5
+    relative_changes_bin_lb, relative_en_changes_bin_ub = deinterlace(abs_energy_change / energy_bins)
     rel_density_increase_from_energy_change = recalc_energy_bins_and_density_increase(abs_energy_change, energy_bins)[1]
+    rel_density_change_from_injection = np.divide(density * abs_particle_scaling + abs_particle_injection, density,
+                                                  out=Quantity(np.zeros_like(density.value, dtype=float)),
+                                                  where=density!=0).value
     rel_density_increase_combined = rel_density_change_from_injection * rel_density_increase_from_energy_change
-    new_low_change_rates_mask = ((abs(relative_changes_bin_lb) < max_energy_change_per_interval) &
-                                 (abs(relative_changes_bin_ub) < max_energy_change_per_interval) &
-                                 (rel_density_change_from_injection >= 0) &
+    new_low_change_rates_mask = ((abs(relative_en_changes_bin_ub) <= max_energy_change_per_interval) &
                                  (~np.isnan(rel_density_increase_from_energy_change)) &
-                                 (rel_density_increase_combined < 1 + max_density_change_per_interval) &
-                                 (1 / (1 + max_density_change_per_interval) < rel_density_increase_combined))
+                                 (abs(abs_particle_scaling) <= max_density_change_per_interval) &
+                                 (abs(abs_particle_injection) <= max_abs_injection_per_interval) &
+                                 (abs_particle_scaling >= max_escape) &
+                                 (abs(rel_density_increase_combined) <= max_density_change_per_interval))
     return new_low_change_rates_mask
 
 
-def eval_abs_particle_injection(gamma_bins, densities,
-                                rel_injection_functions, abs_injection_functions, time):
-    scaling = np.repeat(1.0, len(densities))
-    for injection_function in rel_injection_functions:
-        scaling = scaling * injection_function(gamma_bins, densities, time)
-    densities_scaled = densities * scaling
-    for injection_function in abs_injection_functions:
-        densities_scaled += injection_function(gamma_bins) * time
-    return densities_scaled - densities
+def sort_and_merge_duplicates(gma_bins_lb, densities, mask=None, element_transform=np.log10):
+    sort_idx = np.argsort(gma_bins_lb)
+    gm_bins_lb_sorted = gma_bins_lb[sort_idx]
+    mask_sorted = mask[sort_idx] if mask is not None else None
+    densities_sorted = densities[sort_idx]
+    duplicate_idx = get_duplicates(gm_bins_lb_sorted, mask=mask_sorted, element_transform=element_transform)
+    if any(duplicate_idx):
+        keep_idx = np.setdiff1d(np.arange(len(sort_idx)), duplicate_idx, assume_unique=True)
+        gm_bins_merged, densities_merged = merge_points_preserve_integral(gm_bins_lb_sorted, densities_sorted, group_duplicates(duplicate_idx))
+        return gm_bins_merged, densities_merged, sort_idx[keep_idx]
+    else:
+        return gm_bins_lb_sorted, densities_sorted, sort_idx
 
-
-def sorting_and_deduplicating_mapping(array, mask=None, element_transform=np.log10):
-    sort_idx = np.argsort(array)
-    sorted_array = array[sort_idx]
-    sorted_mask = mask[sort_idx] if mask is not None else np.repeat(True, len(sort_idx))
-    duplicate_idx = get_duplicates(sorted_array, mask=sorted_mask, element_transform=element_transform)
-    keep_idx = np.setdiff1d(np.arange(len(sort_idx)), duplicate_idx, assume_unique=True)
-    return sort_idx[keep_idx]
 
 
 def get_duplicates(sorted_array, mask=None, element_transform=np.log10):
@@ -173,49 +155,143 @@ def get_duplicates(sorted_array, mask=None, element_transform=np.log10):
     duplicates = element_transform(sorted_array)[:-1] == element_transform(sorted_array)[1:]
     both_masked = mask[:-1] & mask[1:]
     match = duplicates & both_masked
-    if np.any(match):
-        removed_mask_indices = np.where(match)[0] + 1
-        return removed_mask_indices
-    else:
+    return np.where(match)[0] + 1
+
+
+def group_duplicates(dup_indices):
+    dup_indices = np.array(dup_indices)
+    if len(dup_indices) == 0:
         return []
+    # Include the starting element (one before each duplicate)
+    starts = dup_indices - 1
+    # Combine starts and duplicates
+    combined = np.concatenate([starts[:, None], dup_indices[:, None]], axis=1).flatten()
+    # Find where consecutive numbers break
+    breaks = np.where(np.diff(combined) != 1)[0]
+    # Split at breaks
+    groups = np.split(combined, breaks + 1)
+    # Convert each to list
+    return [list(g) for g in groups]
 
 
-def add_boundary_bins(gm_bins_lb, gm_bins_ub, first_bin_en_chg, last_bin_en_chg, gamma_bounds, max_bin_creep):
+def merge_points_preserve_integral(x, y, merge_groups):
+    """
+    Merge groups of points in (x, y) while preserving trapezoidal integral.
+
+    Parameters:
+    - x: array-like, x-coordinates (must be sorted)
+    - y: array-like, y-coordinates
+    - merge_groups: list of lists, each inner list contains indices of x to merge
+
+    Returns:
+    - x_new, y_new: arrays with merged points
+    """
+
+    remove_mask = np.zeros_like(x, dtype=bool)
+    x_new_points = []
+    y_new_points = []
+    for group in merge_groups:
+        if len(group) < 2:
+            continue  # nothing to merge
+        i_first = group[0]
+        i_last = group[-1]
+        # Determine left and right neighbors outside the group if available
+        n_first = i_first if i_first == 0 else i_first - 1
+        n_last = i_last if i_last == len(x)-1 else i_last + 1
+        integral = np.trapz(y=y[n_first:n_last+1], x=x[n_first:n_last+1])
+        x_left = x[n_first]
+        y_left = y[n_first]
+        x_right = x[n_last]
+        y_right = y[n_last]
+        if i_first == n_first or i_last == n_last:
+            # for boundary groups, use the boundary x value as the replacement x
+            x_new = x_left if i_first == n_first else x_right
+        else:
+            # for other groups, use weighted geometric mean for x
+            weights = y[group]
+            x_new = np.exp(np.sum(weights * np.log(x[group])) / np.sum(weights))
+        interval_width = x_right - x_left
+        y_new = (2 * integral - y_left * (x_new - x_left) - y_right * (x_right - x_new)) / interval_width
+        # Save new point and mark original points in the group (except first) for removal
+        x_new_points.append((i_first, x_new))
+        y_new_points.append((i_first, y_new))
+        remove_mask[group[1:]] = True
+
+    # Remove old points and replace first point of each group with new point
+    x_merged = x[~remove_mask]
+    y_merged = y[~remove_mask]
+    for idx, x_val in x_new_points:
+        y_val = dict(y_new_points)[idx]
+        i_new = np.where(x_merged == x[idx])[0][0]  # find index in merged array
+        x_merged[i_new] = x_val
+        y_merged[i_new] = y_val
+    return x_merged, y_merged
+
+def add_boundary_bins(gm_bins_lb, en_chg_rates, gamma_bounds, max_bin_creep):
     mapping_with_edge_bins = np.arange(len(gm_bins_lb))
-    is_first_bin_far_from_start = is_far_from_start(gamma_bounds, gm_bins_lb[0], max_bin_creep)
-    if is_first_bin_far_from_start and first_bin_en_chg > 0:
-        gm_bins_lb = np.concatenate([np.array([gamma_bounds[0]]), gm_bins_lb])
-        gm_bins_ub = np.concatenate([np.array([gamma_bounds[0] * (1 + bin_size_factor)]), gm_bins_ub])
-        mapping_with_edge_bins = np.concatenate([np.array([-1]), mapping_with_edge_bins])
-    is_last_bin_far_from_end = is_far_from_end(gamma_bounds, gm_bins_lb[-1], max_bin_creep)
-    if is_last_bin_far_from_end and last_bin_en_chg < 0:
-        gm_bins_lb = np.concatenate([gm_bins_lb, np.array([gamma_bounds[1] / (1 + bin_size_factor)])])
-        gm_bins_ub = np.concatenate([gm_bins_ub, np.array([gamma_bounds[1]])])
-        mapping_with_edge_bins = np.concatenate([mapping_with_edge_bins, np.array([-1])])
-    return gm_bins_lb, gm_bins_ub, mapping_with_edge_bins
+    point1 = gm_bins_lb[0]
+    is_first_bin_far_from_start = is_far_from_bounds(gamma_bounds, point1, max_bin_creep, True)
+    if is_first_bin_far_from_start:
+        first_bin_en_chg = sum_change_rates_at_index(en_chg_rates, 0)
+        if first_bin_en_chg > 0:
+            gm_bins_lb = np.concatenate([np.array([gamma_bounds[0]]), gm_bins_lb])
+            mapping_with_edge_bins = np.concatenate([np.array([-1]), mapping_with_edge_bins])
+    point = gm_bins_lb[-1]
+    is_last_bin_far_from_end = is_far_from_bounds(gamma_bounds, point, max_bin_creep, False)
+    if is_last_bin_far_from_end:
+        last_bin_en_chg = sum_change_rates_at_index(en_chg_rates, -2) # -2 is the lower bound of the last bin
+        if last_bin_en_chg < 0:
+            gm_bins_lb = np.concatenate([gm_bins_lb, np.array([gamma_bounds[1] / (1 + bin_size_factor)])])
+            mapping_with_edge_bins = np.concatenate([mapping_with_edge_bins, np.array([-1])])
+    return gm_bins_lb, mapping_with_edge_bins
 
 
-def remove_gamma_beyond_bounds(gm_bins_lb, gm_bins_ub, gamma_bounds):
-    if gamma_bounds is not None:
-        mapping = np.where((gamma_bounds[0] <= gm_bins_lb) & (gm_bins_lb <= gamma_bounds[1] / (1 + bin_size_factor)))[0]
-        if len(mapping) != len(gm_bins_lb):
-            return gm_bins_lb[mapping], None if gm_bins_ub is None else gm_bins_ub[mapping], mapping
-    return gm_bins_lb, gm_bins_ub, np.arange(len(gm_bins_lb))
+def is_far_from_bounds(bounds, point, max_bin_creep, from_start):
+    if bounds is None:
+        return False
+    log_start = np.log10(bounds[0])
+    log_end = np.log10(bounds[1])
+    log_point = np.log10(point)
+    nom = log_point - log_start if from_start else log_end - log_point
+    return nom > max_bin_creep
 
 
-def remove_too_close_bins(gm_bins_lb, gm_bins_ub, min_bin_creep):
+def remove_gamma_beyond_bounds(gm_bins_lb, gamma_bounds):
+    mapping = np.where((gamma_bounds[0] <= gm_bins_lb) & (gm_bins_lb <= gamma_bounds[1] / (1 + bin_size_factor)))[0]
+    if len(mapping) != len(gm_bins_lb):
+        return gm_bins_lb[mapping], mapping
+    return gm_bins_lb, np.arange(len(gm_bins_lb))
+
+
+def remove_too_close_bins(gm_bins_lb, densities, min_bin_creep, mask=None):
     gm_bins_lb_log = np.log10(gm_bins_lb)
     gaps = np.diff(gm_bins_lb_log)
-    too_close_bins = gaps < min_bin_creep
-    if np.any(too_close_bins):
-        indices = np.arange(len(gm_bins_lb))
-        idx = int(np.argmin(np.where(too_close_bins, gaps, np.inf)))
-        # for better uniformity of the bins, randomly remove lower of upper bin, unless they are extreme bins
-        idx_to_remove = 1 if idx == 0 else idx if idx + 1 == len(gaps) else idx if bool(random.randint(0, 1)) else idx + 1
-        mapping = np.delete(indices, idx_to_remove)
-        return gm_bins_lb[mapping], None if gm_bins_ub is None else gm_bins_ub[mapping], mapping
+    too_close_bins_mask = gaps < min_bin_creep
+    if np.any(too_close_bins_mask):
+        groups = find_consecutive_groups(np.arange(len(too_close_bins_mask))[too_close_bins_mask])
+        for group in groups:
+            group.append(max(group) + 1) # add the final bin to each group
+        if len(groups) == 1 and len(groups[0]) == len(gm_bins_lb):
+            # All bins are so close they could be merged into one bin, but we can't let it happen
+            if len(gm_bins_lb):
+                # Only 2 bins left, no merging possible
+                return gm_bins_lb, densities, np.arange(len(gm_bins_lb))
+            else:
+                # Leave 1st bin unmerged, and merge others (in practice, still rather erroneous state...)
+                groups[0].pop(0)
+        removed = []
+        for group in groups:
+            removed.extend(group[1:])
+        gm_bins_merged, densities_merged = merge_points_preserve_integral(gm_bins_lb, densities, groups)
+        remaining = np.setdiff1d(np.arange(len(gm_bins_lb)), removed, assume_unique=True)
+        return gm_bins_merged, densities_merged, remaining
     else:
-        return gm_bins_lb, gm_bins_ub, np.arange(len(gm_bins_lb))
+        return gm_bins_lb, densities, np.arange(len(gm_bins_lb))
+
+def find_consecutive_groups(arr):
+    breaks = np.where(np.diff(arr) != 1)[0] + 1
+    groups = np.split(arr, breaks)
+    return [group.tolist() for group in groups]
 
 
 def update_distribution(gamma_array, n_array, blob):
@@ -237,33 +313,6 @@ def update_distribution(gamma_array, n_array, blob):
     blob.n_e = InterpolatedDistribution(gamma_array_sorted, n_array_sorted, interpolator=PchipInterpolator)
 
 
-def is_far_from_start(bounds, point, max_bin_creep):
-    return _is_far_from_bounds(bounds, point, max_bin_creep, True)
-
-def is_far_from_end(bounds, point, max_bin_creep):
-    return _is_far_from_bounds(bounds, point, max_bin_creep, False)
-
-def _is_far_from_bounds(bounds, point, max_bin_creep, from_start):
-    if bounds is None:
-        return False
-    log_start = np.log10(bounds[0])
-    log_end = np.log10(bounds[1])
-    log_point = np.log10(point)
-    nom = log_point - log_start if from_start else log_end - log_point
-    return nom / (log_end - log_start) > max_bin_creep
-
-
-def is_farther_than_coeff_from_end(start, end, point, coeff):
-    if start >= end:
-        raise ValueError("Start must be lower than end")
-    if not (start <= point <= end):
-        raise ValueError("Point is not between start an end")
-    log_start = np.log10(start)
-    log_end = np.log10(end)
-    log_point = np.log10(point)
-    return (log_end - log_point) / (log_end - log_start) > coeff
-
-
 def interlace(gamma_bins_start: NDArray, gamma_bins_end: NDArray) -> NDArray:
     """ Combines two gamma arrays into one array, to make the calculations on them in one steps instead of two;
         the first array goes into odd indices, the second into even indices """
@@ -277,6 +326,6 @@ def deinterlace(interlaced: NDArray) -> tuple[NDArray, NDArray]:
     return gamma_bins_start, gamma_bins_end
 
 
-def deinterlace_energy_changes_dict(energy_changes_dict) -> dict:
+def energy_changes_lb(energy_changes_dict) -> dict:
     return {key: deinterlace(value)[0] for key, value in energy_changes_dict.items()}
 
