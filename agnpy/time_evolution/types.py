@@ -4,30 +4,39 @@ from astropy.units import Quantity
 from numpy._typing import NDArray
 
 @dataclass(frozen=True)
+class BinsWithDensities:
+    gamma_bins: NDArray
+    densities: Quantity
+
+@dataclass(frozen=True)
+class FnParams:
+    gamma: NDArray
+    densities: Quantity
+    density_subgroups: NDArray
+
+@dataclass(frozen=True)
 class CallbackParams:
     total_time: Quantity
     gamma: NDArray
     density: Quantity
+    density_subgroups: NDArray
     en_chg_rates: dict[str, Quantity]
     abs_inj_rates: dict[str, Quantity]
     rel_inj_rates: dict[str, Quantity]
 
-EnergyChangeFn = Callable[[NDArray], Quantity]
+EnergyChangeFn = Callable[[FnParams], Quantity]
 """ 
-A function type that takes a single parameter, numpy-array (unitless Lorentz gamma factors), 
-and returns a new Quantity-array (with unit of energy per time, same length). It may not change the total density.
+A function that returns energy change rates (unit: erg s-1) for gamma values provided in FnParams. 
 """
 
-InjectionRelFn = Callable[[NDArray], Quantity]
+InjectionRelFn = Callable[[FnParams], Quantity]
 """ 
-A function type that takes three parameters, numpy-array (unitless Lorentz gamma factors), Quantity-array (densities), and time, 
-and returns a new numpy-array (with unit 1 / time, same length). It might change the total density.
+A function that returns relative injections rates (unit: s-1) for gamma values provided in FnParams. 
 """
 
-InjectionAbsFn = Callable[[NDArray], Quantity]
+InjectionAbsFn = Callable[[FnParams], Quantity]
 """
-A function type that takes one parameter, numpy-array (unitless Lorentz gamma factors),
-and returns a new Quantity-array (with unit of density per time, same length). It might change the total density.
+A function that returns absolute injections rates (unit: s-1 cm-3) for gamma values provided in FnParams.
 """
 
 EnergyChangeFns = Union[EnergyChangeFn, Sequence[EnergyChangeFn], dict[str, EnergyChangeFn]]

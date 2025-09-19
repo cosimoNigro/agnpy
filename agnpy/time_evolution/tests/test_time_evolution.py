@@ -208,8 +208,8 @@ class TestSpectraTimeEvolution:
            Hence, the combined process in case of the Euler method should lose exactly 15% in each step"""
         blob = Blob(n_e= PowerLaw())
         initial_gammas = blob.gamma_e
-        decrease_by_20_perc = lambda g: -1 * (g * mec2).to("erg") * 0.2 / u.s
-        increase_by_5_perc = lambda g: -1 * (g * mec2) * -0.05 / u.s
+        decrease_by_20_perc = lambda args: -1 * (args.gamma * mec2).to("erg") * 0.2 / u.s
+        increase_by_5_perc = lambda args: -1 * (args.gamma * mec2) * -0.05 / u.s
         number_of_steps = 10
         TimeEvolution(blob, number_of_steps * u.s, [decrease_by_20_perc, increase_by_5_perc], method="euler",
                       max_energy_change_per_interval=0.2, max_density_change_per_interval = 0.5).eval_with_fixed_intervals(number_of_steps)
@@ -306,7 +306,7 @@ class TestSpectraTimeEvolution:
         blob.n_e.gamma_max = delta_function_energy * 2
 
         # acceleration formula from SpectralConstraints.gamma_max_synch
-        fermi_acc = lambda gamma: (blob.xi * blob.B_cgs * c * e.gauss) * np.ones_like(gamma)
+        fermi_acc = lambda args: (blob.xi * blob.B_cgs * c * e.gauss) * np.ones_like(args.gamma)
 
         synch = Synchrotron(blob)
         TimeEvolution(blob, time, [synchrotron_loss(synch), fermi_acc], method="heun",
