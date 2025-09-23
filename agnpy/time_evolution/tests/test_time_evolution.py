@@ -306,7 +306,7 @@ class TestSpectraTimeEvolution:
         blob.n_e.gamma_max = delta_function_energy * 2
 
         # acceleration formula from SpectralConstraints.gamma_max_synch
-        fermi_acc = lambda gamma: blob.xi * blob.B_cgs * c * e.gauss
+        fermi_acc = lambda gamma: (blob.xi * blob.B_cgs * c * e.gauss) * np.ones_like(gamma)
 
         synch = Synchrotron(blob)
         TimeEvolution(blob, time, [synchrotron_loss(synch), fermi_acc], method="heun",

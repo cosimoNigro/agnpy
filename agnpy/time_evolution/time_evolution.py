@@ -137,8 +137,8 @@ class TimeEvolution:
     def _calculate_initial_values(self):
         gm_bins_lb = self._initial_gamma_array if self._initial_gamma_array is not None else self._blob.gamma_e
         gm_bins_up = np.zeros_like(gm_bins_lb)
-        update_bin_ub(gm_bins_lb, gm_bins_up)
-        gm_bins = interlace(gm_bins_lb, gm_bins_up)
+        gm_bins = np.array([gm_bins_lb, gm_bins_up])
+        update_bin_ub(gm_bins)
         density = self._blob.n_e(gm_bins_lb)
         en_chg_rates = recalc_new_rates(gm_bins, self._energy_change_functions, erg_per_s)
         abs_injection_rates = recalc_new_rates(gm_bins_lb, self._injection_functions_abs, per_s_cm3)
@@ -173,10 +173,9 @@ class TimeEvolution:
             gm_bins, density, en_chg_rates, abs_injection_rates, rel_injection_rates = (
                 self._do_iterative(gm_bins, density, en_chg_rates, abs_injection_rates, rel_injection_rates,
                 unit_time_interval, counter, intervals_count))
-        gm_bins_lb = deinterlace(gm_bins)[0]
         en_chg_rates_lb = energy_changes_lb(en_chg_rates)
         mask = density > 0
-        return gm_bins_lb[mask], density[mask], remap(mask,en_chg_rates_lb), remap(mask,abs_injection_rates), remap(mask,rel_injection_rates)
+        return gm_bins[0][mask], density[mask], remap(mask,en_chg_rates_lb), remap(mask,abs_injection_rates), remap(mask,rel_injection_rates)
 
     def _do_iterative(self, gm_bins, density, en_chg_rates, abs_injection_rates, rel_injection_rates, unit_time_interval_sec, iteration, intervals_count):
         """
@@ -193,9 +192,8 @@ class TimeEvolution:
 
         # ======== stage 2: apply time evaluation ========
         new_gm_bins, new_dens = recalc_gamma_bins_and_density(en_bins, abs_en_changes, density)
-        new_gm_bins_lb, new_gm_bins_ub = deinterlace(new_gm_bins)
         new_dens = new_dens + total_injection
-        update_distribution(new_gm_bins_lb, new_dens, self._blob)
+        update_distribution(new_gm_bins[0], new_dens, self._blob)
 
         # ======== stage 3: for Heun method, recalculate bins ========
         if self._method.lower() == "heun":
@@ -204,41 +202,38 @@ class TimeEvolution:
                  for key in en_chg_rates_recalced}
             abs_en_chg_recalc = sum_change_rates(averaged_en_chg_rates, new_gm_bins.shape, erg_per_s) * unit_time_interval_sec
             new_gm_bins, new_dens = recalc_gamma_bins_and_density(en_bins, abs_en_chg_recalc, density)
-            new_gm_bins_lb, new_gm_bins_ub = deinterlace(new_gm_bins)
             new_dens = new_dens + total_injection
-            update_distribution(new_gm_bins_lb, new_dens, self._blob)
+            update_distribution(new_gm_bins[0], new_dens, self._blob)
             en_chg_rates = averaged_en_chg_rates
 
         # ======== stage 4: sort and merge bins if needed ========
-        new_gm_bins_lb, new_dens, sort_and_merge_mapping = self._sort_and_merge_bins(new_gm_bins_lb, new_dens)
-        en_chg_rates = remap_interlaced(sort_and_merge_mapping, en_chg_rates)
+        new_gm_bins, new_dens, sort_and_merge_mapping = self._sort_and_merge_bins(new_gm_bins, new_dens)
+        en_chg_rates = remap(sort_and_merge_mapping, en_chg_rates)
 
         # ======== stage 5: remove bins falling behind the edges ========
         if self._gamma_bounds is not None:
-            new_gm_bins_lb, mapping_wo_bins_beyond_bounds = remove_gamma_beyond_bounds(new_gm_bins_lb, self._gamma_bounds)
+            new_gm_bins, mapping_wo_bins_beyond_bounds = remove_gamma_beyond_bounds(new_gm_bins, self._gamma_bounds)
             new_dens = remap(mapping_wo_bins_beyond_bounds, new_dens)
-            en_chg_rates = remap_interlaced(mapping_wo_bins_beyond_bounds, en_chg_rates, np.nan)
+            en_chg_rates = remap(mapping_wo_bins_beyond_bounds, en_chg_rates, np.nan)
 
         # ======== stage 6: add bins at edges if they move towards the center ========
         if self._gamma_bounds is not None:
-            new_gm_bins_lb, mapping_with_new_bins = add_boundary_bins(
-                new_gm_bins_lb, en_chg_rates, self._gamma_bounds, self._max_bin_creep_from_bounds)
+            new_gm_bins, mapping_with_new_bins = add_boundary_bins(
+                new_gm_bins, en_chg_rates, self._gamma_bounds, self._max_bin_creep_from_bounds)
             new_dens = remap(mapping_with_new_bins, new_dens, 0 * u.Unit("cm-3"))
 
         # ======== stage 7: recalculate change rates ========
-        new_gm_bins_ub = np.zeros_like(new_gm_bins_lb)
-        update_bin_ub(new_gm_bins_lb, new_gm_bins_ub)
-        new_gm_bins = interlace(new_gm_bins_lb, new_gm_bins_ub)
+        update_bin_ub(new_gm_bins)
         en_chg_rates = recalc_new_rates(new_gm_bins, self._energy_change_functions, erg_per_s)
-        abs_injection_rates = recalc_new_rates(new_gm_bins_lb, self._injection_functions_abs, per_s_cm3)
-        rel_injection_rates = recalc_new_rates(new_gm_bins_lb, self._injection_functions_rel, per_s)
+        abs_injection_rates = recalc_new_rates(new_gm_bins[0], self._injection_functions_abs, per_s_cm3)
+        rel_injection_rates = recalc_new_rates(new_gm_bins[0], self._injection_functions_rel, per_s)
 
         # ======== stage 8: call the callback function =========
         if self._distribution_change_callback is not None:
             total_time = unit_time_interval_sec * iteration
             en_chg_rates_lb = energy_changes_lb(en_chg_rates)
             mask = new_dens > 0
-            self._distribution_change_callback(CallbackParams(total_time, new_gm_bins_lb[mask], new_dens[mask],
+            self._distribution_change_callback(CallbackParams(total_time, new_gm_bins[0][mask], new_dens[mask],
                    remap(mask,en_chg_rates_lb), remap(mask,abs_injection_rates), remap(mask,rel_injection_rates)))
 
         return new_gm_bins, new_dens, en_chg_rates, abs_injection_rates, rel_injection_rates
@@ -267,9 +262,8 @@ class TimeEvolution:
         (gm_bins, density, en_chg_rates, abs_injection_rates, rel_injection_rates, _, _) = self._do_recursive(
             gm_bins, density, en_chg_rates, abs_injection_rates, rel_injection_rates, empty_mask, False, self._total_time_sec, [], 1,)
         en_chg_rates_lb = energy_changes_lb(en_chg_rates)
-        gm_bins_lb, _ = deinterlace(gm_bins)
         mask = density > 0
-        return gm_bins_lb[mask], density[mask], remap(mask, en_chg_rates_lb), remap(mask, abs_injection_rates), remap(mask, rel_injection_rates)
+        return gm_bins[0][mask], density[mask], remap(mask, en_chg_rates_lb), remap(mask, abs_injection_rates), remap(mask, rel_injection_rates)
 
     def _do_recursive(self, gm_bins, density, en_chg_rates, abs_injection_rates, rel_injection_rates, low_chg_rates_mask, recalc_high_chg, time_sec, prev_times, depth):
         """
@@ -299,11 +293,10 @@ class TimeEvolution:
         times = prev_times.copy()
         if np.all(new_low_change_rates_mask):
             new_gm_bins, dens_after_en_eval = recalc_gamma_bins_and_density(en_bins, abs_en_changes, density)
-            new_gm_bins_lb, new_gm_bins_ub = deinterlace(new_gm_bins)
             new_dens = dens_after_en_eval + total_injection
             mapping_timeeval = np.arange(len(new_dens))
             times.append(time_sec)
-            update_distribution(new_gm_bins_lb, new_dens, self._blob)
+            update_distribution(new_gm_bins[0], new_dens, self._blob)
         else:
             half_time = time_sec / 2
             (gm_bins_halftime, density_halftime, en_chg_rates_halftime, abs_injection_rates_halftime, rel_injection_rates_halftime, mapping_halftime, times)\
@@ -325,7 +318,6 @@ class TimeEvolution:
                                      low_chg_rates_mask_halftime,
                                      False,
                                      half_time, times, depth + 1)
-            new_gm_bins_lb, new_gm_bins_ub = deinterlace(new_gm_bins)
             mapping_timeeval = combine_mapping(mapping_halftime, mapping_2nd_halftime)
             low_chg_rates_flip_mask = remap(mapping_timeeval, low_chg_rates_flip_mask, False)
             low_chg_rates_mask = remap(mapping_timeeval, low_chg_rates_mask, False)
@@ -333,80 +325,70 @@ class TimeEvolution:
         # ======== stage 3: for Heun method, recalculate bins covered by the flip mask ========
         if self._method.lower() == "heun" and np.any(low_chg_rates_flip_mask) and not np.all(density == 0):
             en_chg_rates_recalced_twice = recalc_new_rates(new_gm_bins, self._energy_change_functions, erg_per_s, en_chg_rates, low_chg_rates_flip_mask)
-            low_chg_rates_flip_mask_dbl = np.repeat(low_chg_rates_flip_mask, 2)
-            averaged_en_chg_rates = {key: (en_chg_rates[key][low_chg_rates_flip_mask_dbl] +
-                                           en_chg_rates_recalced_twice[key][low_chg_rates_flip_mask_dbl]) / 2
+            averaged_en_chg_rates = {key: (en_chg_rates[key][..., low_chg_rates_flip_mask] +
+                                           en_chg_rates_recalced_twice[key][..., low_chg_rates_flip_mask]) / 2
                                      for key in en_chg_rates_recalced_twice}
             recalc_time_start_idx = -1 * (len(times) - len(prev_times))
             times_to_recalc = times[recalc_time_start_idx:]
-            gm_bins_lb, gm_bins_ub = deinterlace(gm_bins)
-            gm_bins_lb_recalc = remap(mapping_timeeval, gm_bins_lb, np.nan)[low_chg_rates_flip_mask]
-            gm_bins_ub_recalc = remap(mapping_timeeval, gm_bins_ub, np.nan)[low_chg_rates_flip_mask]
-            gm_bins_recalc = interlace(gm_bins_lb_recalc, gm_bins_ub_recalc)
+            gm_bins_recalc = remap(mapping_timeeval, gm_bins, np.nan)[..., low_chg_rates_flip_mask]
             dens_recalc = remap(mapping_timeeval, density)[low_chg_rates_flip_mask]
             for t in times_to_recalc:
-                rel_injection_rates_recalc = recalc_new_rates(gm_bins_lb_recalc, self._injection_functions_rel, per_s)
-                abs_scaling = sum_change_rates(rel_injection_rates_recalc, gm_bins_lb_recalc.shape, per_s) * t
-                abs_injection_rates_recalc = recalc_new_rates(gm_bins_lb_recalc, self._injection_functions_abs, per_s_cm3)
-                abs_injection = sum_change_rates(abs_injection_rates_recalc, gm_bins_lb_recalc.shape, per_s_cm3) * t
+                rel_injection_rates_recalc = recalc_new_rates(gm_bins_recalc[0], self._injection_functions_rel, per_s)
+                abs_scaling = sum_change_rates(rel_injection_rates_recalc, gm_bins_recalc.shape[1], per_s) * t
+                abs_injection_rates_recalc = recalc_new_rates(gm_bins_recalc[0], self._injection_functions_abs, per_s_cm3)
+                abs_injection = sum_change_rates(abs_injection_rates_recalc, gm_bins_recalc.shape[1], per_s_cm3) * t
                 total_injection = dens_recalc * abs_scaling + abs_injection
                 abs_en_changes = sum_change_rates(averaged_en_chg_rates, gm_bins_recalc.shape, erg_per_s) * t
                 gm_bins_recalc, dens_recalc = recalc_gamma_bins_and_density(to_erg(gm_bins_recalc), abs_en_changes, dens_recalc)
-                gm_bins_lb_recalc, gm_bins_ub_recalc = deinterlace(gm_bins_recalc)
                 dens_recalc = dens_recalc + total_injection
                 if any(np.isnan(dens_recalc)):
                     # in this case, we should roll back the sub-calculation progress and retry with the new mask from the beginning of the current method
                     raise ValueError(
                         "Illegal negative density obtained - the resolution algorithm not yet implemented, please report it to the agnpy maintainers")
-            new_gm_bins[low_chg_rates_flip_mask_dbl] = gm_bins_recalc
-            new_gm_bins_lb, new_gm_bins_ub = deinterlace(new_gm_bins)
+            new_gm_bins[..., low_chg_rates_flip_mask] = gm_bins_recalc
             new_dens[low_chg_rates_flip_mask] = dens_recalc
             for k in en_chg_rates.keys():
-                en_chg_rates[k][low_chg_rates_flip_mask_dbl] = averaged_en_chg_rates[k]
-            update_distribution(new_gm_bins_lb, new_dens, self._blob)
+                en_chg_rates[k][..., low_chg_rates_flip_mask] = averaged_en_chg_rates[k]
+            update_distribution(new_gm_bins[0], new_dens, self._blob)
 
         # ======== stage 4: sort and merge bins if needed ========
         if recalc_high_chg:
-            new_gm_bins_lb, new_dens, additional_mapping = self._sort_and_merge_bins(new_gm_bins_lb, new_dens, ~low_chg_rates_mask)
-            en_chg_rates = remap_interlaced(additional_mapping, en_chg_rates)
+            new_gm_bins, new_dens, additional_mapping = self._sort_and_merge_bins(new_gm_bins, new_dens, ~low_chg_rates_mask)
+            en_chg_rates = remap(additional_mapping, en_chg_rates)
         else:
-            additional_mapping = np.arange(len(new_gm_bins_lb))
+            additional_mapping = np.arange(new_gm_bins.shape[1])
 
         # ======== stage 5: remove bins falling behind the edges ========
         if self._gamma_bounds is not None:
-            new_gm_bins_lb, mapping_wo_bins_beyond_bounds = remove_gamma_beyond_bounds(new_gm_bins_lb, self._gamma_bounds)
+            new_gm_bins, mapping_wo_bins_beyond_bounds = remove_gamma_beyond_bounds(new_gm_bins, self._gamma_bounds)
             new_dens = remap(mapping_wo_bins_beyond_bounds, new_dens)
-            en_chg_rates = remap_interlaced(mapping_wo_bins_beyond_bounds, en_chg_rates, np.nan)
+            en_chg_rates = remap(mapping_wo_bins_beyond_bounds, en_chg_rates, np.nan)
             additional_mapping = combine_mapping(additional_mapping, mapping_wo_bins_beyond_bounds)
 
         # ======== stage 6: add bins at edges if they move towards the center ========
         if self._gamma_bounds is not None and recalc_high_chg:
-            new_gm_bins_lb, mapping_with_new_bins = add_boundary_bins(
-                new_gm_bins_lb, en_chg_rates, self._gamma_bounds, self._max_bin_creep_from_bounds)
+            new_gm_bins, mapping_with_new_bins = add_boundary_bins(
+                new_gm_bins, en_chg_rates, self._gamma_bounds, self._max_bin_creep_from_bounds)
             new_dens = remap(mapping_with_new_bins, new_dens, 0 * u.Unit("cm-3"))
-            en_chg_rates = remap_interlaced(mapping_with_new_bins, en_chg_rates, np.nan)
+            en_chg_rates = remap(mapping_with_new_bins, en_chg_rates, np.nan)
             additional_mapping = combine_mapping(additional_mapping, mapping_with_new_bins)
 
         # ======== stage 7: recalculate change rates if needed, but only for unmasked bins ========
-        new_gm_bins_ub = remap(additional_mapping, new_gm_bins_ub, np.nan)
         abs_injection_rates = remap(additional_mapping, abs_injection_rates, np.nan)
         rel_injection_rates = remap(additional_mapping, rel_injection_rates, np.nan)
         if recalc_high_chg:
-            update_bin_ub(new_gm_bins_lb, new_gm_bins_ub)
-            new_gm_bins = interlace(new_gm_bins_lb, new_gm_bins_ub)
+            update_bin_ub(new_gm_bins)
             recalc_mask = ~ remap(additional_mapping, low_chg_rates_mask, False)
             en_chg_rates = recalc_new_rates(new_gm_bins, self._energy_change_functions, erg_per_s, en_chg_rates, recalc_mask)
-            abs_injection_rates = recalc_new_rates(new_gm_bins_lb, self._injection_functions_abs, per_s_cm3, abs_injection_rates, recalc_mask)
-            rel_injection_rates = recalc_new_rates(new_gm_bins_lb, self._injection_functions_rel, per_s, rel_injection_rates, recalc_mask)
-        else:
-            new_gm_bins = interlace(new_gm_bins_lb, new_gm_bins_ub)
+            abs_injection_rates = recalc_new_rates(new_gm_bins[0], self._injection_functions_abs, per_s_cm3, abs_injection_rates, recalc_mask)
+            rel_injection_rates = recalc_new_rates(new_gm_bins[0], self._injection_functions_rel, per_s, rel_injection_rates, recalc_mask)
 
         # ======== stage 8: call the callback function =========
         if recalc_high_chg and self._distribution_change_callback is not None:
             total_time = prev_times_sum + time_sec
             en_chg_rates_lb = energy_changes_lb(en_chg_rates)
             mask = new_dens > 0
-            self._distribution_change_callback(CallbackParams(total_time, new_gm_bins_lb[mask], new_dens[mask],
+            self._distribution_change_callback(CallbackParams(total_time, new_gm_bins[0][mask], new_dens[mask],
                    remap(mask,en_chg_rates_lb), remap(mask,abs_injection_rates), remap(mask,rel_injection_rates)))
 
         final_mapping = combine_mapping(mapping_timeeval, additional_mapping)
@@ -435,11 +417,11 @@ class TimeEvolution:
                                                                    self._max_injection_per_interval)
         return en_bins, abs_en_changes, total_injection, new_low_change_rates_mask
 
-    def _sort_and_merge_bins(self, gm_bins_lb, densities, mask=None):
+    def _sort_and_merge_bins(self, gm_bins, densities, mask=None):
         if mask is None:
-            mask = np.repeat(True, len(gm_bins_lb))
-        gm_bins_lb, densities, mapping_deduplication = sort_and_merge_duplicates(gm_bins_lb, densities, mask)
-        gm_bins_lb, densities, mapping_too_close = remove_too_close_bins(gm_bins_lb, densities, self._min_bin_distance,
+            mask = np.repeat(True, gm_bins.shape[1])
+        gm_bins, densities, mapping_deduplication = sort_and_merge_duplicates(gm_bins, densities, mask)
+        gm_bins, densities, mapping_too_close = remove_too_close_bins(gm_bins, densities, self._min_bin_distance,
                                                               mask[mapping_deduplication])
         additional_mapping = combine_mapping(mapping_deduplication, mapping_too_close)
-        return gm_bins_lb, densities, additional_mapping
+        return gm_bins, densities, additional_mapping
