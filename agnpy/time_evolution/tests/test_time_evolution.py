@@ -1,12 +1,16 @@
 
-from copy import deepcopy
 import numpy as np
 import astropy.units as u
-from astropy.constants import m_e, m_p, c, e
+import pandas as pd
 import pytest
-
-from agnpy import Blob, Synchrotron, SynchrotronSelfCompton, SpectralConstraints
-from agnpy.time_evolution.time_evolution import TimeEvolution, synchrotron_loss, ssc_loss, ssc_thomson_limit_loss
+from astropy.constants import m_e, m_p, c, e
+from astropy.coordinates import Distance
+from copy import deepcopy
+from math import pi
+from agnpy import Blob, Synchrotron, SynchrotronSelfCompton, SpectralConstraints, EmptyDistribution
+from agnpy.time_evolution._time_evolution_utils import to_total_energy_gev_sqr
+from agnpy.time_evolution.time_evolution import TimeEvolution, synchrotron_loss, ssc_loss, ssc_thomson_limit_loss, \
+    fermi_acceleration
 from agnpy.spectra import (
     PowerLaw,
     BrokenPowerLaw,
@@ -15,6 +19,10 @@ from agnpy.spectra import (
 from agnpy.utils.conversion import mec2
 from agnpy.utils.math import power_law_integral
 
+def assert_series_equal_ignore_pos(s1, s2, ignore_pos, **kwargs):
+    s1_cmp = s1.drop(s1.index[ignore_pos])
+    s2_cmp = s2.drop(s2.index[ignore_pos])
+    pd.testing.assert_series_equal(s1_cmp, s2_cmp, **kwargs)
 
 def gamma_before_time(prefactor, gamma_after_time, time):
     """
@@ -313,4 +321,73 @@ class TestSpectraTimeEvolution:
                        max_energy_change_per_interval=0.1, max_density_change_per_interval=1.0).eval_with_automatic_intervals()
 
         assert np.all(np.isclose(blob.n_e.gamma_input, delta_function_energy, rtol=0.1))
+
+    def test_synch_losses_with_continues_injection_and_acceleration(self):
+        """ Simulate the process with Fermi acceleration, synch losses, and contiunous injection, and compare
+        with results obtained using different simulation methods
+        """
+
+        # load reference data
+        ref_data=[]
+        offset=2
+        nrows = 45
+        for t in range(5):
+            ref = pd.read_csv(
+                "agnpy/time_evolution/tests/out_inject_continuous_B=10.10_tacc=5.000000e+00.txt",
+                sep=r"\s+", header=None, skiprows=offset, nrows=nrows, usecols=[1, 2, 3, 4]
+            )
+            ref.columns = ["eed_x", "eed_y", "sed_x", "sed_y"]
+            ref_data.append(ref)
+            offset += (nrows+1)
+
+        # prepare objects
+        R_b = (100 * c * u.s).to(u.cm)
+        V_b = 4 / 3 * np.pi * R_b ** 3
+        distance = Distance(z=0.01)
+        delta_D = 1.001
+        Gamma = 1.001
+        B = 10.1 * u.G
+        tacc = 5 * u.s
+        blob = Blob(R_b, distance.z, delta_D, Gamma, B, n_e=EmptyDistribution(gamma_min=10, gamma_max=1e3))
+        synch = Synchrotron(blob)
+        injection_dist = PowerLaw.from_total_energy(100000 * u.GeV, V_b, gamma_min=10, gamma_max=1000, p=2, mass=m_e)
+        def injection_function(args):
+            return injection_dist(args.gamma) / u.s
+
+        # run simulations for 5 different time scales
+        times = [0, 4, 11, 31, 101, 301]
+        gamma_array = np.logspace(1, 3, 200)
+        for i in range(len(times)-1):
+            single_iteration_time = (times[i + 1] - times[i]) * u.s
+            gamma_array, densities, groups, energy_change_rates, _, _ = (TimeEvolution(
+                blob,
+                single_iteration_time,
+                energy_change_functions={"Synch": synchrotron_loss(synch), "Acc": fermi_acceleration(tacc)},
+                injection_functions_abs={"Injection": injection_function},
+                initial_gamma_array=gamma_array,
+                gamma_bounds=(1e1, 1e7),
+                method="euler",
+                max_density_change_per_interval=1.0,
+                max_energy_change_per_interval=0.1,
+                max_injection_per_interval=50,
+            ).eval_with_automatic_intervals())
+
+            distribution = InterpolatedDistribution(gamma_array, densities)
+            ev_per_gamma = (m_e * c ** 2).to("eV")
+            eed_x = np.logspace(0.1, 8.9, nrows)
+            eed_y = to_total_energy_gev_sqr(eed_x, distribution(eed_x), V_b)
+            sed_x = np.logspace(np.log10(1.15954e-07), np.log10(0.0526537), num=nrows)
+            sed_nu_fnu = synch.sed_flux(sed_x * ev_per_gamma.to("Hz", equivalencies=u.spectral()))
+            sed_y = (sed_nu_fnu * 4 * pi * distance**2).to("GeV/s")
+            df = pd.DataFrame({
+                "eed_y": eed_y.value,
+                "sed_y": sed_y.value
+            })
+            df.columns = ["eed_y", "sed_y"]
+
+            ref = ref_data[i]
+            ignore_pos = [5, 27, 30] # positions where sharp density changes occur
+            assert_series_equal_ignore_pos(ref.eed_y, df.eed_y, ignore_pos, rtol=0.4)
+            assert_series_equal_ignore_pos(ref.sed_y, df.sed_y, [], rtol=0.7, atol=1.0)
+
 
