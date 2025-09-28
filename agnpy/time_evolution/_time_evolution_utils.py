@@ -406,3 +406,10 @@ def apply_time_eval(en_bins, density, subgroups_density, abs_en_changes_grouped,
 def energy_changes_lb(energy_changes_dict) -> dict:
     return {key: value[0] for key, value in energy_changes_dict.items()}
 
+def to_total_energy_gev_sqr(gm_bins, density, total_volume):
+    ev_per_gamma = (m_e * c ** 2).to("eV")
+    gev_per_gamma = ev_per_gamma * 1e-9
+    gamma_as_gev = gm_bins * gev_per_gamma
+    densities_per_gev = density / gev_per_gamma
+    total_energy_per_gev = densities_per_gev * total_volume
+    return total_energy_per_gev * gamma_as_gev ** 2
