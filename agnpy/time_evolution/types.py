@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Union, Sequence, Literal
+from typing import Callable, Union, Sequence, Literal, NamedTuple
 from astropy.units import Quantity
 from numpy._typing import NDArray
 
@@ -14,8 +14,7 @@ class FnParams:
     densities: Quantity
     density_subgroups: NDArray
 
-@dataclass(frozen=True)
-class CallbackParams:
+class TimeEvaluationResult(NamedTuple):
     total_time: Quantity
     gamma: NDArray
     density: Quantity
@@ -43,4 +42,4 @@ EnergyChangeFns = Union[EnergyChangeFn, Sequence[EnergyChangeFn], dict[str, Ener
 InjectionRelFns = Union[InjectionRelFn, Sequence[InjectionRelFn], dict[str, InjectionRelFn]]
 InjectionAbsFns = Union[InjectionAbsFn, Sequence[InjectionAbsFn], dict[str, InjectionAbsFn]]
 NumericalMethod = Literal["euler", "heun"]
-CallbackFnType = Callable[[CallbackParams], None]
+CallbackFnType = Callable[[TimeEvaluationResult], None]

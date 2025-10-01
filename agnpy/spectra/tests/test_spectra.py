@@ -739,6 +739,6 @@ class TestInterpolatedDistribution:
         initial_integrate = blob.n_e.integrate(blob.n_e.gamma_min, blob.n_e.gamma_max)
         # make sure the evaluation and integral are consistent no matter how the distribution changes
         for i in range(100):
-            TimeEvolution(blob, 1 * u.s, synchrotron_loss(synch)).eval_with_automatic_intervals()
+            TimeEvolution(blob, 1 * u.s, synchrotron_loss(synch)).evaluate()
             integrate = blob.n_e.integrate(blob.n_e.gamma_min, blob.n_e.gamma_max)
             assert u.isclose(initial_integrate, integrate, rtol=0.001)

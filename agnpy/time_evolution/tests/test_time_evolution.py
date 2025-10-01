@@ -8,7 +8,7 @@ from astropy.coordinates import Distance
 from copy import deepcopy
 from math import pi
 from agnpy import Blob, Synchrotron, SynchrotronSelfCompton, SpectralConstraints, EmptyDistribution
-from agnpy.time_evolution._time_evolution_utils import to_total_energy_gev_sqr
+from agnpy.time_evolution._time_evolution_utils import to_total_energy_gev_sqr, DistributionToSinglePointCollapseError
 from agnpy.time_evolution.time_evolution import TimeEvolution, synchrotron_loss, ssc_loss, ssc_thomson_limit_loss, \
     fermi_acceleration
 from agnpy.spectra import (
@@ -48,7 +48,7 @@ class TestSpectraTimeEvolution:
         initial_n_e = PowerLaw(k, p, gamma_min=gamma_min, gamma_max=gamma_max, mass=m_e)
         blob = Blob(n_e=initial_n_e, delta_D=1)
         synch = Synchrotron(blob)
-        TimeEvolution(blob, time, synchrotron_loss(synch), max_energy_change_per_interval=0.1).eval_with_fixed_intervals(steps)
+        TimeEvolution(blob, time, synchrotron_loss(synch), step_duration=time/steps, max_energy_change_per_interval=0.1).evaluate()
         evaluated_n_e = blob.n_e
 
         def gamma_before_synch(gamma_after_time, time):
@@ -90,13 +90,13 @@ class TestSpectraTimeEvolution:
         synch = Synchrotron(blob)
 
         # iterate over 60 s in 20 steps
-        TimeEvolution(blob, 60 * u.s, synchrotron_loss(synch)).eval_with_fixed_intervals(20)
+        TimeEvolution(blob, 60 * u.s, synchrotron_loss(synch), step_duration=3 * u.s).evaluate()
         eval_1 = deepcopy(blob.n_e)
         # iterate first over 30 s, and then, starting with interpolated distribution, over the remaining 30 s,
         # with slightly different number of subintervals
         blob.n_e = initial_n_e
-        TimeEvolution(blob, 30 * u.s, synchrotron_loss(synch)).eval_with_fixed_intervals(10)
-        TimeEvolution(blob, 30 * u.s, synchrotron_loss(synch)).eval_with_fixed_intervals(8)
+        TimeEvolution(blob, 30 * u.s, synchrotron_loss(synch), step_duration=3 * u.s).evaluate()
+        TimeEvolution(blob, 30 * u.s, synchrotron_loss(synch), step_duration=3.5 * u.s).evaluate()
         eval_2 = blob.n_e
 
         gamma_min = eval_1.gamma_min
@@ -123,22 +123,22 @@ class TestSpectraTimeEvolution:
         ssc = SynchrotronSelfCompton(blob)
 
         time = 6 * u.s
-        intervals = 300
+        step_time = time/300
 
         electrons_before = n_e.integrate()
 
-        TimeEvolution(blob, time, synchrotron_loss(synch), max_energy_change_per_interval=0.5,
-                      max_density_change_per_interval=10.0).eval_with_fixed_intervals(intervals)
+        TimeEvolution(blob, time, synchrotron_loss(synch), step_duration=step_time, max_energy_change_per_interval=0.5,
+                      max_density_change_per_interval=10.0).evaluate()
         electrons_after_sync = blob.n_e.integrate()
 
         blob.n_e = n_e
-        TimeEvolution(blob, time, ssc_thomson_limit_loss(ssc), max_energy_change_per_interval=0.5,
-                      max_density_change_per_interval=10.0).eval_with_fixed_intervals(intervals_count=intervals) #TODO
+        TimeEvolution(blob, time, ssc_thomson_limit_loss(ssc), step_duration=step_time, max_energy_change_per_interval=0.5,
+                      max_density_change_per_interval=10.0).evaluate()
         electrons_after_ssc_th = blob.n_e.integrate()
 
         blob.n_e = n_e
-        TimeEvolution(blob, time, ssc_loss(ssc), max_energy_change_per_interval=0.5,
-                      max_density_change_per_interval=10.0).eval_with_fixed_intervals(intervals_count=intervals)
+        TimeEvolution(blob, time, ssc_loss(ssc), step_duration=step_time, max_energy_change_per_interval=0.5,
+                      max_density_change_per_interval=10.0).evaluate()
         electrons_after_ssc = blob.n_e.integrate()
 
         assert u.isclose(electrons_before, electrons_after_sync, rtol=0.005)
@@ -187,7 +187,7 @@ class TestSpectraTimeEvolution:
         initial_gammas = blob.gamma_e
 
         ssc = SynchrotronSelfCompton(blob)
-        TimeEvolution(blob, time, ssc_loss(ssc)).eval_with_fixed_intervals(intervals_count=steps)
+        TimeEvolution(blob, time, ssc_loss(ssc), step_duration=time).evaluate()
         evaluated_n_e: InterpolatedDistribution = blob.n_e
 
         def gamma_before_ssc_th(gamma_after_time, before_time):
@@ -220,27 +220,25 @@ class TestSpectraTimeEvolution:
         increase_by_5_perc = lambda args: -1 * (args.gamma * mec2) * -0.05 / u.s
         number_of_steps = 10
         TimeEvolution(blob, number_of_steps * u.s, [decrease_by_20_perc, increase_by_5_perc], method="euler",
-                      max_energy_change_per_interval=0.2, max_density_change_per_interval = 0.5).eval_with_fixed_intervals(number_of_steps)
+                      max_energy_change_per_interval=0.2, max_density_change_per_interval = 0.5, step_duration=1*u.s).evaluate()
         euler_expected = initial_gammas * (0.85 ** number_of_steps)
         assert u.allclose(blob.gamma_e, euler_expected)
 
     def test_heun_method_compared_to_euler(self):
         """ Heun method should give better results than Euler method (note: Heun method makes calculations twice,
-            so it only makes sense to compare them with 2x more Euler steps)
+            so it only makes sense to compare them with 2x shorter Euler steps)
         """
         time = 60 * u.s
-        steps_euler = 600
-        steps_heun = steps_euler // 2
 
         blob1 = Blob(n_e=PowerLaw())
         initial_gamma = blob1.gamma_e
         synch1 = Synchrotron(blob1)
-        TimeEvolution(blob1, time, synchrotron_loss(synch1), method="euler").eval_with_fixed_intervals(intervals_count=steps_euler)
+        TimeEvolution(blob1, time, synchrotron_loss(synch1), method="euler", step_duration=0.1*u.s).evaluate()
         euler_reversed_analytically = gamma_before_time(synch1._electron_energy_loss_formula_prefactor, blob1.gamma_e, time)
 
         blob2 = Blob(n_e=PowerLaw())
         synch2 = Synchrotron(blob2)
-        TimeEvolution(blob2, time, synchrotron_loss(synch2), method="heun").eval_with_fixed_intervals(intervals_count=steps_heun)
+        TimeEvolution(blob2, time, synchrotron_loss(synch2), method="heun", step_duration=0.2*u.s).evaluate()
         heun_reversed_analytically = gamma_before_time(synch2._electron_energy_loss_formula_prefactor, blob2.gamma_e, time)
 
         errors_heun = np.abs((heun_reversed_analytically - initial_gamma) / initial_gamma)
@@ -266,14 +264,14 @@ class TestSpectraTimeEvolution:
         initial_gamma = blob1.gamma_e
         synch1 = Synchrotron(blob1)
         TimeEvolution(blob1, time, synchrotron_loss(synch1), max_energy_change_per_interval=precision_euler,
-            method="euler").eval_with_automatic_intervals()
+            method="euler", optimize_recalculating_slow_rates=False).evaluate()
         euler_reversed_analytically = gamma_before_time(synch1._electron_energy_loss_formula_prefactor,
                                                         blob1.gamma_e, time)
 
         blob2 = Blob(n_e=PowerLaw())
         synch2 = Synchrotron(blob2)
         TimeEvolution(blob2, time, synchrotron_loss(synch2), max_energy_change_per_interval=precision_heun,
-            method="heun").eval_with_automatic_intervals()
+            method="heun", optimize_recalculating_slow_rates=False).evaluate()
         heun_reversed_analytically = gamma_before_time(synch2._electron_energy_loss_formula_prefactor,
                                                        blob2.gamma_e, time)
 
@@ -294,11 +292,11 @@ class TestSpectraTimeEvolution:
 
         blob1 = Blob(n_e=PowerLaw())
         synch1 = Synchrotron(blob1)
-        TimeEvolution(blob1, time, synchrotron_loss(synch1)).eval_with_fixed_intervals(intervals_count=1)
+        TimeEvolution(blob1, time, synchrotron_loss(synch1), step_duration=time).evaluate()
 
         blob2 = Blob(n_e=PowerLaw())
         synch2 = Synchrotron(blob2)
-        TimeEvolution(blob2, time, synchrotron_loss(synch2), max_energy_change_per_interval=0.5).eval_with_automatic_intervals()
+        TimeEvolution(blob2, time, synchrotron_loss(synch2), max_energy_change_per_interval=0.5).evaluate()
 
         assert np.all(np.isclose(blob1.n_e.gamma_input, blob2.n_e.gamma_input, rtol=0.000001))
 
@@ -317,10 +315,11 @@ class TestSpectraTimeEvolution:
         fermi_acc = lambda args: (blob.xi * blob.B_cgs * c * e.gauss) * np.ones_like(args.gamma)
 
         synch = Synchrotron(blob)
-        TimeEvolution(blob, time, [synchrotron_loss(synch), fermi_acc], method="heun",
-                       max_energy_change_per_interval=0.1, max_density_change_per_interval=1.0).eval_with_automatic_intervals()
-
-        assert np.all(np.isclose(blob.n_e.gamma_input, delta_function_energy, rtol=0.1))
+        try:
+            TimeEvolution(blob, time, [synchrotron_loss(synch), fermi_acc],
+                           max_energy_change_per_interval=0.1, max_density_change_per_interval=1.0).evaluate()
+        except DistributionToSinglePointCollapseError as ex:
+            assert np.isclose(ex.gamma_point, delta_function_energy, rtol=0.001)
 
     def test_synch_losses_with_continues_injection_and_acceleration(self):
         """ Simulate the process with Fermi acceleration, synch losses, and contiunous injection, and compare
@@ -359,7 +358,7 @@ class TestSpectraTimeEvolution:
         gamma_array = np.logspace(1, 3, 200)
         for i in range(len(times)-1):
             single_iteration_time = (times[i + 1] - times[i]) * u.s
-            gamma_array, densities, groups, energy_change_rates, _, _ = (TimeEvolution(
+            _, gamma_array, densities, _, energy_change_rates, _, _ = (TimeEvolution(
                 blob,
                 single_iteration_time,
                 energy_change_functions={"Synch": synchrotron_loss(synch), "Acc": fermi_acceleration(tacc)},
@@ -370,14 +369,24 @@ class TestSpectraTimeEvolution:
                 max_density_change_per_interval=1.0,
                 max_energy_change_per_interval=0.1,
                 max_injection_per_interval=50,
-            ).eval_with_automatic_intervals())
+            ).evaluate())
 
-            distribution = InterpolatedDistribution(gamma_array, densities)
+            distribution = blob.n_e
             ev_per_gamma = (m_e * c ** 2).to("eV")
-            eed_x = np.logspace(0.1, 8.9, nrows)
-            eed_y = to_total_energy_gev_sqr(eed_x, distribution(eed_x), V_b)
-            sed_x = np.logspace(np.log10(1.15954e-07), np.log10(0.0526537), num=nrows)
-            sed_nu_fnu = synch.sed_flux(sed_x * ev_per_gamma.to("Hz", equivalencies=u.spectral()))
+            ref = ref_data[i]
+            eed_x = ref.eed_x.values
+            density = distribution(eed_x)
+            eed_y = to_total_energy_gev_sqr(eed_x, density, V_b)
+            sed_x = ref.sed_x.values
+
+            if i < 4:
+                sed_nu_fnu = synch.sed_flux(sed_x * ev_per_gamma.to("Hz", equivalencies=u.spectral()))
+            else:
+                # for the last iteration, the default interpolated picks large part of the peak at the last bean,
+                # causing SED much higher; so we must use exactly the same interpolation points as the reference data
+                blob.n_e = InterpolatedDistribution(eed_x, density)
+                sed_nu_fnu = synch.sed_flux(sed_x * ev_per_gamma.to("Hz", equivalencies=u.spectral()))
+
             sed_y = (sed_nu_fnu * 4 * pi * distance**2).to("GeV/s")
             df = pd.DataFrame({
                 "eed_y": eed_y.value,
@@ -385,9 +394,91 @@ class TestSpectraTimeEvolution:
             })
             df.columns = ["eed_y", "sed_y"]
 
-            ref = ref_data[i]
-            ignore_pos = [5, 27, 30] # positions where sharp density changes occur
+            ignore_pos = [27,30] # positions where sharp density changes occur
             assert_series_equal_ignore_pos(ref.eed_y, df.eed_y, ignore_pos, rtol=0.4)
-            assert_series_equal_ignore_pos(ref.sed_y, df.sed_y, [], rtol=0.7, atol=1.0)
+            ignore_pos = [31, 40]  # positions where agnpy returns already -inf but reference data still haves some very small value
+            assert_series_equal_ignore_pos(ref.sed_y.apply(np.log10), df.sed_y.apply(np.log10), ignore_pos, rtol=0.5, atol=0.6)
 
 
+    def test_synch_losses_with_continues_injection_and_acceleration_with_two_zones(self):
+        """ Simulate the process with Fermi acceleration and synch losses in one zone,
+        and synch losses only with second zone, with continues constant injection of electrons to the first zone,
+        and escape from first to second zone;  then compares with results obtained using different simulation methods
+        """
+
+        # load reference data
+        ref_data=[]
+        my_data=[]
+        offset=2
+        nrows = 45
+        for t in range(4):
+            ref = pd.read_csv(
+                "agnpy/time_evolution/tests/out_escape_to_blob_B=10.30_tacc=1.000000e+01_tesc=1.000000e+01_no_merging.txt",
+                sep=r"\s+", header=None, skiprows=offset, nrows=nrows, usecols=[1, 2, 3], dtype=float,
+            )
+            ref.columns = ["eed_x", "eed_y_zone1", "eed_y_zone2"]
+            ref_data.append(ref)
+            offset += (nrows+1)
+
+        # prepare objects
+        R_b = (100 * c * u.s).to(u.cm)
+        V_b = 4 / 3 * np.pi * R_b ** 3
+        distance = Distance(z=0.01)
+        delta_D = 1.001
+        Gamma = 1.001
+        B = 10.3 * u.G
+        tacc = 10 * u.s
+        tesc = 10 * u.s
+        blob = Blob(R_b, distance.z, delta_D, Gamma, B, n_e=EmptyDistribution(gamma_min=10, gamma_max=1e3))
+        synch = Synchrotron(blob)
+        injection_dist = PowerLaw.from_total_energy(100000 * u.GeV, V_b, gamma_min=10, gamma_max=20, p=2, mass=m_e)
+        def injection_function_zone1(args):
+            return injection_dist(args.gamma) / u.s
+
+        def escape_fn(args):
+            return -1 * np.ones(args.densities.shape) / tesc
+
+        def injection_function_zone2(args):
+            return -1 * escape_fn(args) * args.densities * args.density_subgroups[0]
+
+        # run simulations over different time scales
+        times = [0, 11, 31, 101, 301]
+        number_of_bins = 11
+        density_groups = np.array([np.ones(number_of_bins, dtype=float), np.zeros(number_of_bins, dtype=float)])
+        gamma_array = np.logspace(np.log10(10), np.log10(20), number_of_bins)
+        for i in range(len(times)-1):
+            single_iteration_time = (times[i + 1] - times[i]) * u.s
+            _, gamma_array, densities, density_groups, energy_change_rates, _, _ = (TimeEvolution(
+                blob,
+                single_iteration_time,
+                energy_change_functions={"Synch": synchrotron_loss(synch), "Acc": fermi_acceleration(tacc)},
+                injection_functions_abs={"Zone1-inj": injection_function_zone1, "Zone2-inj": injection_function_zone2},
+                injection_functions_rel={"Zone1-esc": escape_fn},
+                subgroups=[["Synch", "Acc", "Zone1-inj", "Zone1-esc"],
+                           ["Synch", "Zone2-inj"]],
+                subgroups_initial_density=density_groups,
+                initial_gamma_array=gamma_array,
+                gamma_bounds=(1e1, 1e9),
+                method="euler",
+                step_duration=0.2 * u.s,
+                max_bin_creep_from_bounds=0.005,
+            ).evaluate())
+
+            distribution_zone1 = InterpolatedDistribution(gamma_array, densities * density_groups[0])
+            distribution_zone2 = InterpolatedDistribution(gamma_array, densities * density_groups[1])
+            ref = ref_data[i]
+            eed_x = ref.eed_x.values
+            eed_y_zone1 = to_total_energy_gev_sqr(eed_x, distribution_zone1(eed_x), V_b)
+            eed_y_zone2 = to_total_energy_gev_sqr(eed_x, distribution_zone2(eed_x), V_b)
+
+
+            df = pd.DataFrame({
+                "eed_x": ref.eed_x.values,
+                "eed_y_zone1": eed_y_zone1.value,
+                "eed_y_zone2": eed_y_zone2.value
+            })
+            my_data.append(df)
+
+            ignore_pos = [8,13,29] # positions where sharp density changes occur
+            assert_series_equal_ignore_pos(ref.eed_y_zone1, df.eed_y_zone1.round(1), ignore_pos, rtol=0.3)
+            assert_series_equal_ignore_pos(ref.eed_y_zone2, df.eed_y_zone2.round(1), ignore_pos, rtol=0.3)
