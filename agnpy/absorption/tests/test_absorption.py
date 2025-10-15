@@ -617,6 +617,8 @@ class TestEBL:
         # remove also the extreme values from the reference absorption
         e_original_ref = (ebl_agnpy.energy_ref * u.keV).to("GeV")
         absorption_original_ref = ebl_agnpy.values_ref[z_idx]
+        # select those around 1e2 GeV
+        mask_reference_2 = (e_original_ref > 50 * u.GeV)
 
         make_comparison_plot(
             energy_ref,
@@ -630,8 +632,8 @@ class TestEBL:
             x_label=r"$E\,/\,{\rm GeV}$",
             y_label="EBL Absorption",
             comparison_range=comparison_range.to_value("GeV"),
-            second_ref_x=e_original_ref,
-            second_ref_y=absorption_original_ref,
+            second_ref_x=e_original_ref[mask_reference_2],
+            second_ref_y=absorption_original_ref[mask_reference_2],
             second_ref_label="original values",
         )
         # requires a 25% deviation from the two tau points
