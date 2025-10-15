@@ -66,5 +66,8 @@ class EBL:
     def absorption(self, nu, z):
         "This function returns the attenuation of the emission by EBL"
         energy = nu.to_value("keV", equivalencies=u.spectral())
-        absorption = self.interpolated_model((np.meshgrid(energy, z)))[0]
+        # for evaluation, reconstruct the shape of the input table
+        z_array = np.full_like(energy, z)
+        points = np.vstack([energy, z_array]).T
+        absorption = self.interpolated_model(points)
         return absorption
