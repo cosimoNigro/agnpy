@@ -54,8 +54,14 @@ Bibliography
 .. [Franceschini2008]
    `Franceschini, A.; Rodighiero, G.; Vaccari, M.
    "Extragalactic optical-infrared background radiation, its time evolution and the cosmic photon-photon opacity".
-   Astronomy and Astrophysics, Volume 487, Issue 3, 2008, pp. 837-852 (2008).
+   Astronomy and Astrophysics, Volume 487, Issue 3, pp. 837-852 (2008).
    <https://ui.adsabs.harvard.edu/abs/2008A%26A...487..837F/abstract>`_
+
+.. [Franceschini2017]
+   `Franceschini, A.; Rodighiero, G.;
+   "The extragalactic background light revisited and the cosmic photon-photon opacity".
+   Astronomy and Astrophysics, Volume 603, id.A34, 17 pp., (2017).
+   <https://ui.adsabs.harvard.edu/abs/2017A%26A...603A..34F/abstract>`_
 
 .. [Finke2010]
    `Finke, J. D. ; Razzaque, S.; Dermer, C. D.

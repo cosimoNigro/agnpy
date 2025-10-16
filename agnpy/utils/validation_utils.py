@@ -82,7 +82,12 @@ def make_comparison_plot(
     fig_path,
     plot_type,
     y_range=None,
-    comparison_range=None
+    comparison_range=None,
+    x_label=None,
+    y_label=None,
+    second_ref_x=None,
+    second_ref_y=None,
+    second_ref_label=None,
 ):
     """Make a comparison plot, for SED or gamma-gamma absorption
     between two different sources: a reference (literature or another code)
@@ -111,6 +116,12 @@ def make_comparison_plot(
         lower and upper limit of the y axis limt
     comparison_range : list of float
         plot the range over which the residuals were checked
+    second_ref_x : :class:`~astropy.units.Quantity` or :class:`~numpy.ndarray`,
+        second reference x values to be overplotted
+    second_ref_y : :class:`~astropy.units.Quantity` or :class:`~numpy.ndarray`,
+        second reference y values to be overplotted
+    second_ref_label : `string`
+        label of the second reference model
 
     NOTE: the default scale is logarithmic on the x and y axis of the quantities
     and on the x axis of the deviation.
@@ -127,8 +138,8 @@ def make_comparison_plot(
         deviation_label = TAU_DEVIATION_LABEL
     else:
         # set a custom y label, keep the x-axis in frequency
-        x_label = SED_X_LABEL
-        y_label = plot_type
+        x_label = x_label
+        y_label = y_label
         deviation_label = f"({plot_type} agnpy / {plot_type} ref.) - 1"
     # make the plot
     fig, ax = plt.subplots(
@@ -140,19 +151,33 @@ def make_comparison_plot(
 
     # plot the SEDs or TAUs in the upper panel
     # plot the reference sed with a continuous line and agnpy sed with a dashed one
-    ax[0].loglog(nu, y_ref, marker=".", ls="-", color="k", lw=1.5, label=ref_label)
+    ax[0].loglog(nu, y_ref, marker=".", ls="-", color="k", lw=1.5, label=ref_label, zorder=1)
     ax[0].loglog(
-        nu, y_comp, marker=".", ls="--", color="crimson", lw=1.5, label=comp_label
+        nu, y_comp, marker=".", ls="--", color="crimson", lw=1.5, label=comp_label, zorder=2
     )
+
+    # addd another second reference, if provided
+    if second_ref_x is not None and second_ref_y is not None:
+        ax[0].loglog(
+            second_ref_x,
+            second_ref_y,
+            marker="",
+            ls=":",
+            color="goldenrod",
+            lw=1.5,
+            label=second_ref_label,
+            zorder=3
+        )
+
     ax[0].set_ylabel(y_label)
     ax[0].set_title(fig_title)
-    ax[0].legend(loc="best")
     if y_range is not None:
         ax[0].set_ylim(y_range)
     if comparison_range is not None:
         ax[0].axvline(comparison_range[0], ls="--", color="dodgerblue")
         ax[0].axvline(comparison_range[1], ls="--", color="dodgerblue")
     ax[0].grid(ls=":")
+    ax[0].legend(loc="best")
 
     # plot the deviation in the bottom panel
     deviation = y_comp / y_ref - 1

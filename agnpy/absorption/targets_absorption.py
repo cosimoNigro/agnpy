@@ -2,9 +2,7 @@
 from pathlib import Path
 import numpy as np
 import astropy.units as u
-from astropy.io import fits
 from astropy.constants import c, G, m_e, sigma_T
-from scipy.interpolate import RegularGridInterpolator
 from ..utils.math import (
     axes_reshaper,
     log,
@@ -28,15 +26,9 @@ from ..emission_regions import Blob
 from ..synchrotron import nu_synch_peak, Synchrotron
 
 
-__all__ = ["sigma", "Absorption", "ebl_files_dict", "EBL"]
+__all__ = ["sigma", "Absorption"]
 
 agnpy_dir = Path(__file__).parent.parent
-ebl_files_dict = {
-    "franceschini": f"{agnpy_dir}/data/ebl_models/ebl_franceschini08.fits.gz",
-    "dominguez": f"{agnpy_dir}/data/ebl_models/ebl_dominguez11.fits.gz",
-    "finke": f"{agnpy_dir}/data/ebl_models/ebl_finke10.fits.gz",
-    "saldana-lopez": f"{agnpy_dir}/data/ebl_models/ebl_saldana-lopez21.fits.gz",
-}
 
 
 def sigma(s):
@@ -753,56 +745,3 @@ class Absorption:
         """
         t = self.tau(nu)
         return (1 - np.exp(-t)) / t
-
-
-class EBL:
-    """Class representing for the Extragalactic Background Light absorption.
-    Tabulated values of absorption as a function of redshift and energy according
-    to the models of [Franceschini2008]_, [Finke2010]_, [Dominguez2011]_, [Saldana-Lopez2021]_ are available
-    in `data/ebl_models`.
-    They are interpolated by `agnpy` and can be later evaluated for a given redshift
-    and range of frequencies.
-
-    Parameters
-    ----------
-    model : ["franceschini", "dominguez", "finke", "saldana-lopez"]
-        choose the reference for the EBL model
-    """
-
-    def __init__(self, model="franceschini"):
-        if model not in ["franceschini", "dominguez", "finke", "saldana-lopez"]:
-            raise ValueError("No EBL model for the reference you specified")
-        self.model_file = ebl_files_dict[model]
-        # load the absorption table
-        self.load_absorption_table()
-        self.interpolate_absorption_table()
-
-    def load_absorption_table(self):
-        """load the reference values from the table file to be interpolated later"""
-        f = fits.open(self.model_file)
-        self.energy_ref = (
-            np.sqrt(f["ENERGIES"].data["ENERG_LO"] * f["ENERGIES"].data["ENERG_HI"])
-            * u.keV
-        )
-        # Franceschini file has two columns repeated, eliminate them
-        self.z_ref = np.unique(f["SPECTRA"].data["PARAMVAL"])
-        self.values_ref = np.unique(f["SPECTRA"].data["INTPSPEC"], axis=0)
-
-    def interpolate_absorption_table(self, method="linear"):
-        """interpolate the reference values, choose the kind of interpolation"""
-        log10_energy_ref = np.log10(self.energy_ref.to_value("keV"))
-        self.interpolated_model = RegularGridInterpolator(
-            (log10_energy_ref, self.z_ref),
-            self.values_ref.T,
-            method=method,
-            bounds_error=False,
-            fill_value=1,
-        )
-
-    def absorption(self, nu, z):
-        "This function returns the attenuation of the emission by EBL"
-        energy = nu.to_value("keV", equivalencies=u.spectral())
-        log10_energy = np.log10(energy)
-        z = z * np.ones_like(log10_energy)
-        xx = np.column_stack((log10_energy, z))
-        return self.interpolated_model(xx)
