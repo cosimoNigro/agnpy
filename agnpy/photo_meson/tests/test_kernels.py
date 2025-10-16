@@ -20,7 +20,7 @@ figures_dir = clean_and_make_dir(agnpy_dir.parent, "crosschecks/figures/photo_me
 
 
 class TestKernels:
-    """Class to test the phi functions representing the integration kernels"""
+    """Class to test the phi functions representing the integration kernels."""
 
     @pytest.mark.parametrize(
         "particle", ["gamma", "positron", "muon_neutrino", "muon_antineutrino"]
