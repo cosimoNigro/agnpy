@@ -3,11 +3,10 @@ import astropy.units as u
 from agnpy import Blob, Synchrotron, SynchrotronSelfCompton
 from agnpy.time_evolution._time_evolution_utils import *
 from agnpy.time_evolution.types import *
-from agnpy.utils.conversion import mec2
 from astropy.constants import c, e
 from astropy.units import Quantity
 from numpy._typing import NDArray
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, List
 
 log = logging.getLogger(__name__)
 
@@ -26,14 +25,6 @@ def ssc_thomson_limit_loss(sync: SynchrotronSelfCompton) -> EnergyChangeFn:
 
 def fermi_acceleration(t_acc: Quantity) -> EnergyChangeFn:
     return lambda args: to_erg(args.gamma)/t_acc
-
-def bohm_diffusion_losses(blob) -> InjectionRelFn:
-    def bohm_diffusion_loss_formula(args):
-        r_l = (args.gamma * mec2 / e.gauss / blob.B_cgs).to("cm") # Larmor radius
-        d_b = r_l * c / 3
-        t = (blob.R_b**2 / (2*d_b)).to("s")
-        return -1/t
-    return bohm_diffusion_loss_formula
 
 
 class TimeEvolution:
@@ -70,19 +61,28 @@ class TimeEvolution:
         Maximum distance (in log10) the first or last bin can creep away from the gamma bounds towards the center of distribution,
         before the new bin is injected at the boundary. Applicable only if gamma_bounds was set.
     merge_bins_closer_than :
-        Minimum distance between the bins, below which the bins will be merged.
+        Minimum distance( in log10) between the bins, below which the bins will be merged.
     max_energy_change_per_interval :
-        maximum relative change of the electron energy allowed in one time interval for each bin
+        Maximum relative change of the electron energy allowed in one time interval for each bin
     max_density_change_per_interval :
-        maximum relative change of the electron density allowed in one time interval for each bin
+        Maximum relative change of the electron density allowed in one time interval for each bin
     max_injection_per_interval :
-        maximum absolute injection or escape of particles in one time interval for each bin (in cm-3)
-    optimize_recalculating_slow_rates:
+        Maximum absolute injection or escape of particles in one time interval for each bin (in cm-3)
+    optimize_recalculating_slow_rates :
         If True, the automatically selected time interval duration may differ per energy bins - longer intervals
         will be used for bins where energy change is slower, and the rate of change will not be recalculated until the
         end of such interval
     method :
-        numerical method for calculating energy evolution; accepted values: "euler" (faster) or "heun" (more precise)
+        Numerical method for calculating energy evolution; accepted values: "euler" (faster) or "heun" (more precise)
+    subgroups :
+        A list of lists, each sublist contains the names of the functions (keys from energy_change_functions
+        and/or injection_functions_rel and/or injection_functions_abs) which contribute to each subgroup;
+        if empty, the single group (i.e. a list of all keys from energy and injection functions) will be used.
+    subgroups_initial_density :
+        A (M,N) matrix of split ratios of total density per group; M must be equal to number of subgroups, N equal to initial_gamma_array length;
+        and the sum of ratios across all groups must be equal to [1.0, ..., 1.0].
+        If not provided, it is assumed [1.0, ..., 1.0] for the first subgroup, and [0.0, ..., 0.0] for any other subgroups;
+        in other words, all particles are assigned to the first subgroup.
     distribution_change_callback :
         This optional function will be called each time the blob's electron distribution has been updated.
         You can use it, for example, for updating the distribution plot while the simulation is running.
@@ -104,8 +104,8 @@ class TimeEvolution:
                  max_injection_per_interval: float = 1.0,
                  optimize_recalculating_slow_rates: bool = None,
                  method: NumericalMethod = "euler",
-                 subgroups=None,
-                 subgroups_initial_density=None,
+                 subgroups: SubgroupsList = None,
+                 subgroups_initial_density: NDArray[np.floating] =None,
                  distribution_change_callback: CallbackFnType = None):
         self._blob = blob
         self._total_time_sec = total_time.to("s")
@@ -185,6 +185,7 @@ class TimeEvolution:
             if self._subgroups_initial_density is not None:
                 subgroups_density = self._subgroups_initial_density
             else:
+                # first group all-ones, other groups all-zeros
                 subgroups_density = np.zeros((len(self._subgroups), len(self._initial_gamma_array)), dtype=float)
                 subgroups_density[0] = np.ones(len(self._initial_gamma_array), dtype=float)
         else:

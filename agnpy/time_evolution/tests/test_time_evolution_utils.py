@@ -1,9 +1,4 @@
-import numpy as np
-
 from agnpy.time_evolution._time_evolution_utils import group_duplicates
-
-def arr(lst):
-    return np.array(lst, dtype=float)
 
 class TestTimeEvolutionUtils:
 

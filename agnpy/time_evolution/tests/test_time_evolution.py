@@ -315,11 +315,10 @@ class TestSpectraTimeEvolution:
         fermi_acc = lambda args: (blob.xi * blob.B_cgs * c * e.gauss) * np.ones_like(args.gamma)
 
         synch = Synchrotron(blob)
-        try:
+        with pytest.raises(DistributionToSinglePointCollapseError) as ex:
             TimeEvolution(blob, time, [synchrotron_loss(synch), fermi_acc],
                            max_energy_change_per_interval=0.1, max_density_change_per_interval=1.0).evaluate()
-        except DistributionToSinglePointCollapseError as ex:
-            assert np.isclose(ex.gamma_point, delta_function_energy, rtol=0.001)
+        assert np.isclose(ex.value.gamma_point, delta_function_energy, rtol=0.001)
 
     def test_synch_losses_with_continues_injection_and_acceleration(self):
         """ Simulate the process with Fermi acceleration, synch losses, and contiunous injection, and compare
@@ -372,7 +371,7 @@ class TestSpectraTimeEvolution:
             ).evaluate())
 
             distribution = blob.n_e
-            ev_per_gamma = (m_e * c ** 2).to("eV")
+            ev_per_gamma = mec2.to("eV")
             ref = ref_data[i]
             eed_x = ref.eed_x.values
             density = distribution(eed_x)
@@ -382,8 +381,9 @@ class TestSpectraTimeEvolution:
             if i < 4:
                 sed_nu_fnu = synch.sed_flux(sed_x * ev_per_gamma.to("Hz", equivalencies=u.spectral()))
             else:
-                # for the last iteration, the default interpolated picks large part of the peak at the last bean,
-                # causing SED much higher; so we must use exactly the same interpolation points as the reference data
+                # for the last iteration, the default gamma points used in the SED calculation tend to cause significant
+                # interpolation error coming from a density peak gathering at the last bin; to avoid this error, we must use
+                # exactly the same interpolation points as the reference data
                 blob.n_e = InterpolatedDistribution(eed_x, density)
                 sed_nu_fnu = synch.sed_flux(sed_x * ev_per_gamma.to("Hz", equivalencies=u.spectral()))
 
@@ -479,6 +479,6 @@ class TestSpectraTimeEvolution:
             })
             my_data.append(df)
 
-            ignore_pos = [8,13,29] # positions where sharp density changes occur
-            assert_series_equal_ignore_pos(ref.eed_y_zone1, df.eed_y_zone1.round(1), ignore_pos, rtol=0.3)
-            assert_series_equal_ignore_pos(ref.eed_y_zone2, df.eed_y_zone2.round(1), ignore_pos, rtol=0.3)
+            ignore_pos = [8,13,29] # positions where sharp density changes occur at different stages; for simplicity, just filter them all out
+            assert_series_equal_ignore_pos(ref.eed_y_zone1, df.eed_y_zone1, ignore_pos, rtol=0.3)
+            assert_series_equal_ignore_pos(ref.eed_y_zone2, df.eed_y_zone2, ignore_pos, rtol=0.3)

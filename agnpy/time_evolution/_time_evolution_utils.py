@@ -1,11 +1,13 @@
 import numpy as np
-from astropy.units import Quantity
+from astropy.units import Quantity, Unit
+from numpy._typing import NDArray
 from pygments.styles import vs
 from astropy.constants import m_e, c, h, e
 from agnpy import InterpolatedDistribution, EmptyDistribution
-from agnpy.time_evolution.types import BinsWithDensities, FnParams, TimeEvaluationResult
+from agnpy.time_evolution.types import BinsWithDensities, FnParams, TimeEvaluationResult, GammaFn, SubgroupsList
 from agnpy.utils.conversion import mec2
 from scipy.interpolate import PchipInterpolator
+from typing import Tuple
 
 bin_size_factor = 1e-4
 
@@ -22,20 +24,24 @@ def update_bin_ub(gm_bins, mask = None):
     gm_bins[1][mask] = gm_bins[0][mask] * (1 + bin_size_factor)
 
 
-def recalc_new_rates(gm_bins, functions, unit, dens, dens_groups, previous_rates=None, recalc_mask=None):
+def recalc_new_rates(gm_bins:NDArray, functions:dict[str,GammaFn], unit:Unit, dens:Quantity, subgroups_density:NDArray, previous_rates=None, recalc_mask=None) -> dict[str,Quantity]:
     """
     Calculates (or recalculates) the energy change rates or injection rates.
     If the mask is provided, only unmasked elements will be recalculated, and previous_rates will be used for masked elements.
-    gm_bins - array of shape (N,) consisting of gamma values (lower bounds of gamma bins), or (2,N) consisting of lower and upper bounds of gamma bins
+    gm_bins - array of shape (N,) or (2,N) of gamma values (lower bounds of gamma bins, or lower and upper bounds of gamma bins)
+    functions - a dict of functions to use in the calculation of energy change rates or injection rates
+    dens - current total density array
+    subgroups_density - array of density split per subgroup, if subgroups have been used
     previous_rates - optional dict of arrays of shape (N,) or (2,N), consisting of most recently calculated rates corresponding to gm_bins values
     recalc_mask - optional array of shape (N,) a mask of bins that need recalculation
+    Returns a dictionary of recalculated rates, with keys from input functions dict
     """
     if previous_rates is None:
         previous_rates = {}
     mask = np.ones((gm_bins.shape[-1]), dtype=bool) if recalc_mask is None else recalc_mask
     gm_bins_masked = gm_bins[..., mask]
     dens_masked = dens[mask]
-    dens_groups_masked = remap_subgroups_density(mask_to_mapping(mask), dens_groups)
+    dens_groups_masked = remap_subgroups_density(mask_to_mapping(mask), subgroups_density)
     new_rates = {}
     for label, fn in functions.items():
         new_rates[label] = np.zeros_like(gm_bins) * unit \
@@ -43,11 +49,22 @@ def recalc_new_rates(gm_bins, functions, unit, dens, dens_groups, previous_rates
             else previous_rates[label].copy()
         gm_bins_interlaced = gm_bins_masked.reshape(-1)
         params = FnParams(gm_bins_interlaced, dens_masked, dens_groups_masked)
-        new_rates[label][..., mask] = fn(params).reshape(gm_bins_masked.shape).to(unit)
+        new_rates[label][..., mask] = fn(params).to(unit).reshape(gm_bins_masked.shape)
     return new_rates
 
 
-def sum_change_rates(change_rates, shape, unit, subgroups=None):
+def sum_change_rates(change_rates: dict[str,Quantity], shape:Tuple, unit:Unit, subgroups:SubgroupsList=None) -> Quantity:
+    """
+    Returns a Quantity(N,M), the sum of all values from the change_rates dictionary, optionally grouped by subgroups.
+    If subgroups are not provided, a single group is returned (i.e. N=1)
+
+    Parameters
+    ----------
+    change_rates - a dict of Quantities to sum over
+    shape - a (M,) shape of each value in the change_rates dict, and of each group in the result list
+    unit - a unit for each group
+    subgroups - optional subgroups list
+    """
     if subgroups is None:
         result = np.zeros(shape) * unit
         for ch_rates in change_rates.values():
@@ -88,7 +105,7 @@ def mask_to_mapping(mask):
 
 def combine_mapping(first_mapping, second_mapping):
     """ Combines two mappings, but with special treatment of "-1" value in the mapping:
-        -1 does not mean the last element; it means a "new element", at must be retained across the mappings
+        -1 does not mean the last element; it means a "new element", and must be retained across the mappings
     """
     combined = first_mapping[second_mapping]
     combined[second_mapping == -1] = -1
@@ -179,6 +196,7 @@ def merge_points(x, y, merge_groups, interpolated_distribution):
     - x: 1D numpy array, x-coordinates (must be sorted)
     - y: 1D numpy array, y-coordinates
     - merge_groups: list of lists, each inner list contains indices of x to merge
+    - interpolated_distribution: if present, it will be used for finding the y value of merged point; if absent, simple average is used
 
     Returns:
     - x_new, y_new: arrays with merged points
@@ -230,8 +248,7 @@ def energy_changes_lb(energy_changes_dict) -> dict:
 
 
 def to_total_energy_gev_sqr(gm_bins, density, total_volume):
-    ev_per_gamma = (m_e * c ** 2).to("eV")
-    gev_per_gamma = ev_per_gamma * 1e-9
+    gev_per_gamma = mec2.to("GeV")
     gamma_as_gev = gm_bins * gev_per_gamma
     densities_per_gev = density / gev_per_gamma
     total_energy_per_gev = densities_per_gev * total_volume
