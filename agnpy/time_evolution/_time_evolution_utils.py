@@ -24,7 +24,7 @@ def update_bin_ub(gm_bins, mask = None):
     gm_bins[1][mask] = gm_bins[0][mask] * (1 + bin_size_factor)
 
 
-def recalc_new_rates(gm_bins:NDArray, functions:dict[str,GammaFn], unit:Unit, dens:Quantity, subgroups_density:NDArray, previous_rates=None, recalc_mask=None) -> dict[str,Quantity]:
+def recalc_new_rates(gm_bins:NDArray, functions:dict[str,GammaFn], dens:Quantity, subgroups_density:NDArray, previous_rates=None, recalc_mask=None) -> dict[str,Quantity]:
     """
     Calculates (or recalculates) the energy change rates or injection rates.
     If the mask is provided, only unmasked elements will be recalculated, and previous_rates will be used for masked elements.
@@ -40,16 +40,17 @@ def recalc_new_rates(gm_bins:NDArray, functions:dict[str,GammaFn], unit:Unit, de
         previous_rates = {}
     mask = np.ones((gm_bins.shape[-1]), dtype=bool) if recalc_mask is None else recalc_mask
     gm_bins_masked = gm_bins[..., mask]
+    gm_bins_interlaced = gm_bins_masked.reshape(-1)
     dens_masked = dens[mask]
     dens_groups_masked = remap_subgroups_density(mask_to_mapping(mask), subgroups_density)
+    params = FnParams(gm_bins_interlaced, dens_masked, dens_groups_masked)
     new_rates = {}
     for label, fn in functions.items():
-        new_rates[label] = np.zeros_like(gm_bins) * unit \
-            if previous_rates.get(label) is None \
-            else previous_rates[label].copy()
-        gm_bins_interlaced = gm_bins_masked.reshape(-1)
-        params = FnParams(gm_bins_interlaced, dens_masked, dens_groups_masked)
-        new_rates[label][..., mask] = fn(params).to(unit).reshape(gm_bins_masked.shape)
+        if recalc_mask is None:
+            new_rates[label] = fn(params).reshape(gm_bins_masked.shape)
+        else:
+            new_rates[label] = previous_rates[label].copy()
+            new_rates[label][..., mask] = fn(params).reshape(gm_bins_masked.shape)
     return new_rates
 
 
@@ -226,8 +227,8 @@ def remove_empty_densities(result: TimeEvaluationResult) -> TimeEvaluationResult
         result.density[mask],
         remap_subgroups_density(mask_to_mapping(mask), result.density_subgroups),
         remap(mask, result.en_chg_rates),
-        remap(mask, result.abs_inj_rates),
-        remap(mask, result.rel_inj_rates))
+        remap(mask, result.rel_inj_rates),
+        remap(mask, result.abs_inj_rates))
 
 
 def update_distribution(gamma_array, n_array, blob):

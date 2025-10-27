@@ -6,7 +6,7 @@ from agnpy.time_evolution.types import *
 from astropy.constants import c, e
 from astropy.units import Quantity
 from numpy._typing import NDArray
-from typing import Iterable, Tuple, List
+from typing import Iterable, Tuple
 
 log = logging.getLogger(__name__)
 
@@ -41,11 +41,11 @@ class TimeEvolution:
     energy_change_functions :
          A function, or an array of functions, to be used for calculation of energy change rate for gamma values.
          For energy gain processes, function should return positive values; for loss, negative values.
-    injection_functions_rel :
+    rel_injection_functions :
          A function, or an array of functions, to be used for calculation of electron density change caused by
          direct particle injection (or escape). This function is used for relative density change.
          For particle injection, the return coefficient should be >0, and for escape, <0
-    injection_functions_abs :
+    abs_injection_functions :
          A function, or an array of functions, to be used for calculation of electron density change caused by
          direct particle injection (or escape). This function is used for absolute density change.
          For particle injection, the return density change rate should be >0, and for escape, <0
@@ -76,7 +76,7 @@ class TimeEvolution:
         Numerical method for calculating energy evolution; accepted values: "euler" (faster) or "heun" (more precise)
     subgroups :
         A list of lists, each sublist contains the names of the functions (keys from energy_change_functions
-        and/or injection_functions_rel and/or injection_functions_abs) which contribute to each subgroup;
+        and/or rel_injection_functions and/or abs_injection_functions) which contribute to each subgroup;
         if empty, the single group (i.e. a list of all keys from energy and injection functions) will be used.
     subgroups_initial_density :
         A (M,N) matrix of split ratios of total density per group; M must be equal to number of subgroups, N equal to initial_gamma_array length;
@@ -92,8 +92,8 @@ class TimeEvolution:
                  blob: Blob,
                  total_time: Quantity,
                  energy_change_functions: EnergyChangeFns = None,
-                 injection_functions_rel: InjectionRelFns = None,
-                 injection_functions_abs: InjectionAbsFns = None,
+                 rel_injection_functions: InjectionRelFns = None,
+                 abs_injection_functions: InjectionAbsFns = None,
                  step_duration: Union[str, Quantity] = "auto",
                  initial_gamma_array: NDArray[np.floating] = None,
                  gamma_bounds: Tuple[float, float] = None,
@@ -118,17 +118,17 @@ class TimeEvolution:
         self._energy_change_functions = energy_change_functions if isinstance(energy_change_functions, dict) \
             else {str(v): v for v in energy_change_functions} if isinstance(energy_change_functions, Iterable) \
             else {str(energy_change_functions): energy_change_functions}
-        self._injection_functions_rel = injection_functions_rel if isinstance(injection_functions_rel, dict) \
-            else {str(v): v for v in injection_functions_rel} if isinstance(injection_functions_rel, Iterable) \
-            else {str(injection_functions_rel): injection_functions_rel} if injection_functions_rel is not None \
+        self._rel_injection_functions = rel_injection_functions if isinstance(rel_injection_functions, dict) \
+            else {str(v): v for v in rel_injection_functions} if isinstance(rel_injection_functions, Iterable) \
+            else {str(rel_injection_functions): rel_injection_functions} if rel_injection_functions is not None \
             else {}
-        self._injection_functions_abs = injection_functions_abs if isinstance(injection_functions_abs, dict) \
-            else {str(v): v for v in injection_functions_abs} if isinstance(injection_functions_abs, Iterable) \
-            else {str(injection_functions_abs): injection_functions_abs} if injection_functions_abs is not None \
+        self._abs_injection_functions = abs_injection_functions if isinstance(abs_injection_functions, dict) \
+            else {str(v): v for v in abs_injection_functions} if isinstance(abs_injection_functions, Iterable) \
+            else {str(abs_injection_functions): abs_injection_functions} if abs_injection_functions is not None \
             else {}
-        duplicated_keys = (set(self._energy_change_functions) & set(self._injection_functions_rel) |
-                       set(self._energy_change_functions) & set(self._injection_functions_abs) |
-                       set(self._injection_functions_rel) & set(self._injection_functions_abs))
+        duplicated_keys = (set(self._energy_change_functions) & set(self._rel_injection_functions) |
+                           set(self._energy_change_functions) & set(self._abs_injection_functions) |
+                           set(self._rel_injection_functions) & set(self._abs_injection_functions))
         if duplicated_keys:
             raise ValueError("Found duplicate keys of energy change or injection functions: " + str(duplicated_keys))
         self._gamma_bounds = gamma_bounds
@@ -161,7 +161,7 @@ class TimeEvolution:
         self._subgroups = subgroups
         for subgroup in subgroups or []:
             for s in subgroup:
-                if s not in self._energy_change_functions and s not in self._injection_functions_rel and s not in self._injection_functions_abs:
+                if s not in self._energy_change_functions and s not in self._rel_injection_functions and s not in self._abs_injection_functions:
                     raise ValueError(f"Function {s} not defined")
         if subgroups_initial_density is not None:
             if not np.allclose(subgroups_initial_density.sum(axis=0), 1.0, atol=1e-6):
@@ -190,10 +190,10 @@ class TimeEvolution:
                 subgroups_density[0] = np.ones(len(self._initial_gamma_array), dtype=float)
         else:
             subgroups_density = np.ones((1, len(self._initial_gamma_array)), dtype=float)
-        en_chg_rates = recalc_new_rates(gm_bins, self._energy_change_functions, erg_per_s, density, subgroups_density)
-        rel_injection_rates = recalc_new_rates(gm_bins_lb, self._injection_functions_rel, per_s, density, subgroups_density)
-        abs_injection_rates = recalc_new_rates(gm_bins_lb, self._injection_functions_abs, per_s_cm3, density, subgroups_density)
-        return gm_bins, density, subgroups_density, en_chg_rates, abs_injection_rates, rel_injection_rates
+        en_chg_rates = recalc_new_rates(gm_bins, self._energy_change_functions, density, subgroups_density)
+        rel_injection_rates = recalc_new_rates(gm_bins_lb, self._rel_injection_functions, density, subgroups_density)
+        abs_injection_rates = recalc_new_rates(gm_bins_lb, self._abs_injection_functions, density, subgroups_density)
+        return gm_bins, density, subgroups_density, en_chg_rates, rel_injection_rates, abs_injection_rates
 
     def evaluate(self) -> TimeEvaluationResult:
         """
@@ -206,10 +206,10 @@ class TimeEvolution:
 
         Returns
         ------------
-        A tuple consisting of final values of: gamma, densities, density groups, change rates, absolute injection rates, relative injection rates
+        A tuple consisting of final values of: gamma, densities, density groups, change rates, relative injection rates, absolute injection rates
         """
 
-        gm_bins, density, subgroups_density, en_chg_rates, abs_injection_rates, rel_injection_rates = self._calculate_initial_values()
+        gm_bins, density, subgroups_density, en_chg_rates, rel_injection_rates, abs_injection_rates = self._calculate_initial_values()
         total_time_elapsed = 0 * u.s
         log.info("Progress: %3d%% %s (%i bins)", 0, total_time_elapsed, gm_bins.shape[-1])
         time_left_per_bin = np.zeros_like(gm_bins[0]) * u.s
@@ -246,12 +246,12 @@ class TimeEvolution:
             else:
                 recalc_mask = np.ones_like(density, dtype=bool)
             update_bin_ub(gm_bins, recalc_mask)
-            en_chg_rates = recalc_new_rates(gm_bins, self._energy_change_functions, erg_per_s, density, subgroups_density,
-                remap(mapping,en_chg_rates,np.nan), recalc_mask)
-            abs_injection_rates = recalc_new_rates(gm_bins[0], self._injection_functions_abs, per_s_cm3, density, subgroups_density,
-                remap(mapping, abs_injection_rates, np.nan), recalc_mask)
-            rel_injection_rates = recalc_new_rates(gm_bins[0], self._injection_functions_rel, per_s, density, subgroups_density,
-                remap(mapping, rel_injection_rates, np.nan), recalc_mask)
+            en_chg_rates = recalc_new_rates(gm_bins, self._energy_change_functions, density, subgroups_density,
+                                            remap(mapping,en_chg_rates,np.nan), recalc_mask)
+            abs_injection_rates = recalc_new_rates(gm_bins[0], self._abs_injection_functions, density, subgroups_density,
+                                                   remap(mapping, abs_injection_rates, np.nan), recalc_mask)
+            rel_injection_rates = recalc_new_rates(gm_bins[0], self._rel_injection_functions, density, subgroups_density,
+                                                   remap(mapping, rel_injection_rates, np.nan), recalc_mask)
             total_time_elapsed += step_time
             if self._distribution_change_callback is not None:
                 self._distribution_change_callback(TimeEvaluationResult(total_time_elapsed,
@@ -261,9 +261,9 @@ class TimeEvolution:
             log.info("Progress: %3d%% %s (%i bins)", progress_percent, total_time_elapsed, gm_bins.shape[-1])
 
         en_chg_rates_lb = energy_changes_lb(en_chg_rates)
-        return TimeEvaluationResult(total_time_elapsed, gm_bins[0], density, subgroups_density, en_chg_rates_lb, abs_injection_rates, rel_injection_rates)
+        return TimeEvaluationResult(total_time_elapsed, gm_bins[0], density, subgroups_density, en_chg_rates_lb, rel_injection_rates, abs_injection_rates)
 
-    def _calc_max_time_per_bin(self, energy_bins, density, subgroups_density, en_chg_rates_grouped,
+    def _calc_max_time_per_bin(self, en_bins, density, subgroups_density, en_chg_rates_grouped,
                                rel_injection_rates_grouped, abs_injection_rates_grouped):
         density_grouped = to_densities_grouped(density, subgroups_density)
         max_times = np.repeat(np.inf, len(density))
@@ -277,14 +277,14 @@ class TimeEvolution:
             abs_injection_rates = abs_injection_rates_grouped[i]
 
             # 1. relative energy change per bin must be lower than the threshold: (abs(en_changes) * time) / energy_bins <= max_energy_change_per_interval
-            time_1 = np.min(self._max_energy_change_per_interval * energy_bins / abs(en_chg_rates), axis=0)
+            time_1 = np.min(self._max_energy_change_per_interval * en_bins / abs(en_chg_rates), axis=0)
 
             # 2. density increase/increase (from energy changes) = Δx/(Δx+tΔf(x)) where x is bin energy and Δx is bin width;
             # if Δf(x)>0 then density decreases, and it must not decrease more than a factor 1+threshold, so: [density decrease >= 1/(1+thr)] => [t <= (Δx/Δf)*thr]
             # if Δf(x)>0 then density increases, and it must stay below 1+thr factor, hence: [density increase <= 1+thr] => [t <= -(Δx/Δf)(thr/(1+thr))]
             # note: if density increases, the bin width decreases, and condition for not making it negative is: [t < -Δx/Δf(x)]
             time_2 = np.repeat(np.inf, len(density)) * u.Unit("s")
-            x2_x1 = energy_bins[1] - energy_bins[0]  # Δx, always positive
+            x2_x1 = en_bins[1] - en_bins[0]  # Δx, always positive
             f2_f1 = en_chg_rates[1] - en_chg_rates[0]  # Δf(x), can be positive/0/negative
             mask = f2_f1 != 0
             x_f = x2_x1[mask] / f2_f1[mask]  # Δx/Δf
@@ -316,7 +316,7 @@ class TimeEvolution:
 
         # ======== stage 2: for Heun method, recalculate bins ========
         if self._method.lower() == "heun":
-            en_chg_rates_recalced = recalc_new_rates(new_gm_bins, self._energy_change_functions, erg_per_s, new_dens, subgroups_density)
+            en_chg_rates_recalced = recalc_new_rates(new_gm_bins, self._energy_change_functions, new_dens, subgroups_density)
             en_changes_grouped_recalced = sum_change_rates(en_chg_rates_recalced, new_gm_bins.shape, erg_per_s, self._subgroups)
             averaged_en_chg_rates_grouped = (en_changes_grouped + en_changes_grouped_recalced) / 2
             abs_en_chg_recalc = averaged_en_chg_rates_grouped * unit_time_interval_sec
@@ -350,9 +350,10 @@ class TimeEvolution:
             recalc_gamma_bins_and_density(en_bins, abs_en_changes_grouped[i], density * subgroups_density[i])
             for i in range(len(subgroups_density))]
         for i in range(len(new_bins_and_densities)):
-            new_bins_and_densities[i] = BinsWithDensities(new_bins_and_densities[i].gamma_bins,
-                                                          new_bins_and_densities[i].densities + total_injection_grouped[
-                                                              i])
+            new_bin_density = new_bins_and_densities[i].densities + total_injection_grouped[i]
+            if np.any(new_bin_density < 0):
+                raise ValueError("Negative density obtained")
+            new_bins_and_densities[i] = BinsWithDensities(new_bins_and_densities[i].gamma_bins, new_bin_density)
 
         new_gm_bins = new_bins_and_densities[0].gamma_bins
         new_densities = np.zeros_like(subgroups_density) * u.Unit("cm-3")

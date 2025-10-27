@@ -20,8 +20,8 @@ class TimeEvaluationResult(NamedTuple):
     density: Quantity
     density_subgroups: NDArray
     en_chg_rates: dict[str, Quantity]
-    abs_inj_rates: dict[str, Quantity]
     rel_inj_rates: dict[str, Quantity]
+    abs_inj_rates: dict[str, Quantity]
 
 GammaFn = Callable[[FnParams], Quantity]
 """ 
