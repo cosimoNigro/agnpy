@@ -6,7 +6,7 @@ from astropy.constants import m_e, m_p, c
 import pytest
 
 from agnpy import Blob, Synchrotron
-from agnpy.radiative_process.time_evolution import TimeEvolution, synchrotron_loss
+from agnpy.time_evolution.time_evolution import TimeEvolution, synchrotron_loss
 from agnpy.spectra import (
     PowerLaw,
     BrokenPowerLaw,
@@ -739,6 +739,6 @@ class TestInterpolatedDistribution:
         initial_integrate = blob.n_e.integrate(blob.n_e.gamma_min, blob.n_e.gamma_max)
         # make sure the evaluation and integral are consistent no matter how the distribution changes
         for i in range(100):
-            TimeEvolution(blob, 1 * u.s, synchrotron_loss(synch)).eval_with_automatic_intervals()
+            TimeEvolution(blob, 1 * u.s, synchrotron_loss(synch)).evaluate()
             integrate = blob.n_e.integrate(blob.n_e.gamma_min, blob.n_e.gamma_max)
             assert u.isclose(initial_integrate, integrate, rtol=0.001)
