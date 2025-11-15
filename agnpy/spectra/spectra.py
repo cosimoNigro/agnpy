@@ -181,7 +181,7 @@ class ParticleDistribution(ABC):
         Parameters
         ----------
         gamma : :class:`~numpy.ndarray`
-            array of Lorentz factors over which to plot the SED
+            array of Lorentz factors over which to plot the EED
         gamma_power : float
             power of gamma to raise the electron distribution
         ax : :class:`~matplotlib.axes.Axes`, optional
