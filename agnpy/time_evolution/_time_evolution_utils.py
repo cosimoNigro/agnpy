@@ -40,17 +40,17 @@ def recalc_new_rates(gm_bins:NDArray, functions:dict[str,GammaFn], dens:Quantity
         previous_rates = {}
     mask = np.ones((gm_bins.shape[-1]), dtype=bool) if recalc_mask is None else recalc_mask
     gm_bins_masked = gm_bins[..., mask]
-    gm_bins_interlaced = gm_bins_masked.reshape(-1)
+    gm_bins_interlaced = gm_bins_masked.reshape(-1, order="F") # order F gives more natural, increasing order (makes debugging easier)
     dens_masked = dens[mask]
     dens_groups_masked = remap_subgroups_density(mask_to_mapping(mask), subgroups_density)
     params = FnParams(gm_bins_interlaced, dens_masked, dens_groups_masked)
     new_rates = {}
     for label, fn in functions.items():
         if recalc_mask is None:
-            new_rates[label] = fn(params).reshape(gm_bins_masked.shape)
+            new_rates[label] = fn(params).reshape(gm_bins_masked.shape, order="F")
         else:
             new_rates[label] = previous_rates[label].copy()
-            new_rates[label][..., mask] = fn(params).reshape(gm_bins_masked.shape)
+            new_rates[label][..., mask] = fn(params).reshape(gm_bins_masked.shape, order="F")
     return new_rates
 
 
