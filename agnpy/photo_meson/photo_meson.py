@@ -44,7 +44,7 @@ class PhotoMesonProduction:
         phi_kernel,
         integrator = np.trapz
     ):
-        """ Compute the H function in Eq. (70) [KelnerAharonian2008]_.
+        r""" Compute the H function in Eq. (70) [KelnerAharonian2008]_.
 
         Parameters
         ----------
