@@ -2,7 +2,7 @@ import astropy.units as u
 from astropy.constants import m_e, m_p, c, e, h, hbar, k_B
 from astropy.table import Table, Column
 from astropy.coordinates import Distance
-from scipy.integrate import quad, dblquad, nquad, simpson, trapezoid
+from scipy.integrate import quad, dblquad, nquad, simps, trapz
 from scipy.interpolate import interp1d
 import numpy as np
 import matplotlib.pyplot as plt

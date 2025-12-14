@@ -6,19 +6,6 @@ from .kernels import PhiKernel
 from ..utils.math import axes_reshaper
 from ..utils.conversion import mpc2
 
-secondaries = [
-    "gamma",
-    "electron",
-    "positron",
-    "electron_neutrino",
-    "electron_antineutrino",
-    "muon_neutrino",
-    "muon_antineutrino",
-]
-
-# ratio between the pion and proton mass, to be used in several calculations
-eta_0 = 0.313
-# r = 0.146
 
 class PhotoMesonProduction:
     """Class for computation of the energetic spectra of secondaries of photomeson interactions.
@@ -30,14 +17,14 @@ class PhotoMesonProduction:
     target : ...TBD...
         ...TBD...
     integrator : func
-        function to be used for integration (default = `np.trapezoid`)
+        function to be used for integration (default = `np.trapz`)
     """
 
     def __init__(
         self,
         blob,
         target,
-        integrator=np.trapezoid
+        integrator=np.trapz
     ):
         self.blob = blob
         # check that this blob has a proton distribution
@@ -55,7 +42,7 @@ class PhotoMesonProduction:
         eta,
         E,
         phi_kernel,
-        integrator = np.trapezoid
+        integrator = np.trapz
     ):
         """ Compute the H function in Eq. (70) [KelnerAharonian2008]_.
 
@@ -64,17 +51,17 @@ class PhotoMesonProduction:
         E : :class:`~astropy.units.Quantity`
             energy of the secondary particles
         eta : float
-            kinematic variable (:math:`eta = 4 \\epsilon \\gamma_{\rm p}`)
+            kinematic variable (:math:`eta = 4 \epsilon \gamma_{\rm p}`)
         phi_kernel : `~agnpy.photo_meson.PhiKernel`
             kernel to be used for the integration (depends on the particle)
         integrator : func
-            function to be used for integration (default = `np.trapezoid`)
+            function to be used for integration (default = `np.trapz`)
         """
         # Integral on E_p to be made from E to infinity
         _eta, _E = axes_reshaper(eta, E)   # shape (len(eta), 1), (1, len(E))
         _E_p = np.logspace(
-            np.log10(_E.to_value("eV")),
-            np.log10(_E.to_value("eV")) + 8,
+            log10(_E.to_value("eV")),
+            log10(_E.to_value("eV")) + 8,
             200
         ) * u.Unit("eV")                   # shape (200, 1, len(E))
         _gamma_p = _E_p / mpc2
@@ -100,7 +87,7 @@ class PhotoMesonProduction:
         self,
         E,
         particle,
-        integrator = np.trapezoid
+        integrator = np.trapz
     ):
         """ Evaluate the spectrum of secondaries in the emission region reference frame
         as in Eq. (69) [KelnerAharonian2008]_.
@@ -114,7 +101,7 @@ class PhotoMesonProduction:
             "gamma", "electron", "positron", "electron_neutrino",
             "electron_antineutrino", "muon_neutrino", "muon_antineutrino"
         integrator : func
-            function to be used for integration (default = `np.trapezoid`)
+            function to be used for integration (default = `np.trapz`)
         """
         if particle not in secondaries:
             raise AttributeError(
@@ -124,8 +111,8 @@ class PhotoMesonProduction:
         phi_kernel = PhiKernel(particle)
         # Integral on eta to be done from eta_0 to infinity
         eta = np.logspace(
-            np.log10(eta_0),
-            np.log10(eta_0) + 5,
+            log10(eta_0),
+            log10(eta_0) + 5,
             100,
         )
         _H = self.H(

@@ -244,7 +244,7 @@ class Blob:
         .. math::
             n_{\rm e,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' n_{\rm e}(\gamma').
         """
-        return np.trapezoid(self.n_e(self.gamma_e), self.gamma_e)
+        return np.trapz(self.n_e(self.gamma_e), self.gamma_e)
 
     @property
     def n_p_tot(self):
@@ -253,7 +253,7 @@ class Blob:
         .. math::
             n_{\rm p,\,tot} = \int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' n_{\rm p}(\gamma').
         """
-        return np.trapezoid(self.n_p(self.gamma_p), self.gamma_p)
+        return np.trapz(self.n_p(self.gamma_p), self.gamma_p)
 
     @property
     def N_e_tot(self):
@@ -280,7 +280,7 @@ class Blob:
         .. math::
             u_{\rm e} = m_{\rm e} c^2\,\int^{\gamma'_{\rm max}}_{\gamma'_{\rm min}} {\rm d}\gamma' \gamma' n_{\rm e}(\gamma').
         """
-        return mec2 * np.trapezoid(self.gamma_e * self.n_e(self.gamma_e), self.gamma_e)
+        return mec2 * np.trapz(self.gamma_e * self.n_e(self.gamma_e), self.gamma_e)
 
     @property
     def u_p(self):
@@ -294,7 +294,7 @@ class Blob:
                 "The proton density, Blob.n_p, was not initialised for this blob."
             )
         else:
-            return (mpc2**2) * np.trapezoid(self.gamma_p * self.n_p(self.gamma_p), self.gamma_p)
+            return mpc2 * np.trapz(self.gamma_p * self.n_p(self.gamma_p), self.gamma_p)
 
     @property
     def W_e(self):
@@ -390,6 +390,6 @@ class Blob:
             sigma_T.cgs
             * self.U_B
             * self.R_b
-            * np.trapezoid(np.power(self.gamma_e, 2) * self.n_e(self.gamma_e), self.gamma_e)
+            * np.trapz(np.power(self.gamma_e, 2) * self.n_e(self.gamma_e), self.gamma_e)
         )
         return u_ph.to("erg cm-3")
