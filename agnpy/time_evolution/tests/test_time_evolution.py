@@ -248,7 +248,7 @@ class TestSpectraTimeEvolution:
         print("Average error Euler method", average_error_euler)
         print("Average error Heun  method", average_error_heun)
         assert average_error_heun < average_error_euler
-        assert np.alltrue(errors_heun <= errors_euler)
+        assert np.all(errors_heun <= errors_euler)
 
     def test_heun_method_compared_to_euler_for_automatic_intervals_method(self):
         """ Heun method should give better results than Euler method.
@@ -282,7 +282,7 @@ class TestSpectraTimeEvolution:
         print("Average error Euler method", average_error_euler)
         print("Average error Heun  method", average_error_heun)
         assert average_error_heun < average_error_euler
-        assert np.alltrue(errors_heun <= errors_euler)
+        assert np.all(errors_heun <= errors_euler)
 
     def test_automatic_and_fixed_intervals_approach_with_single_loop(self):
         """ Automatic intervals approach with an "undemanding" threshold should use just one run of calculations, so should give the same result

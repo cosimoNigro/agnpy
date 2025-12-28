@@ -130,8 +130,7 @@ def load_gammapy_flux_points(sed_path, E_min, E_max, systematics_dict=None):
         dataset = FluxPointsDataset(data=data, name=name)
 
         # set the minimum energy to be used for the fit
-        mask = (dataset.data.energy_ref >= E_min) * (dataset.data.energy_ref <= E_max)
-        dataset.mask_fit = mask
+        dataset.mask_fit = dataset.data.geom.energy_mask(energy_min=E_min, energy_max=E_max)
 
         datasets.append(dataset)
 

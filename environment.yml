@@ -5,13 +5,13 @@ channels:
   - sherpa
 
 dependencies:
-  - python>=3.9,<3.12
-  - astropy>=5.0,<6.0
-  - numpy>=1.21
+  - python>=3.11,<3.14
+  - astropy>=7.0
+  - numpy>=1.24,<2.3
   - pandas>=1.5
-  - scipy>=1.5,<1.10
-  - pyyaml # needed to read astropy ecsv file
-  - matplotlib>=3.4,<=3.9
+  - scipy>=1.14
+  - pyyaml>=6.0 # needed to read astropy ecsv file
+  - matplotlib>=3.9.1
   - sherpa
   - pre-commit
-  - gammapy<1.2
+  - gammapy>=1.3
