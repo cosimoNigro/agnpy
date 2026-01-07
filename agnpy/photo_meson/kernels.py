@@ -19,6 +19,12 @@ secondaries = [
 eta_0 = 0.313
 r = 0.146
 
+def log_interp(zz, xx, yy):
+    logz = np.log10(zz)
+    logx = np.log10(xx)
+    logy = np.log10(yy)
+    return np.power(10.0, np.interp(logz, logx, logy))
+
 
 def interpolate_phi_parameter(particle, parameter):
     """Interpolates the tables providing the parameters fo the phi functions
@@ -42,13 +48,16 @@ def interpolate_phi_parameter(particle, parameter):
 
     if parameter == "s":
         #func = CubicSpline(eta_eta0, s)
-        func = lambda x: np.interp(x, eta_eta0, s)
+        # func = lambda x: np.interp(x, eta_eta0, s)
+        func = lambda x: log_interp(x, eta_eta0, s)
     elif parameter == "delta":
         #func = CubicSpline(eta_eta0, delta)
-        func = lambda x: np.interp(x, eta_eta0, delta)
+        # func = lambda x: np.interp(x, eta_eta0, delta)
+        func = lambda x: log_interp(x, eta_eta0, delta)
     elif parameter == "B":
         #func = CubicSpline(eta_eta0, B)
-        func = lambda x: np.interp(x, eta_eta0, B)
+        # func = lambda x: np.interp(x, eta_eta0, B)
+        func = lambda x: log_interp(x, eta_eta0, B)
     else:
         raise ValueError(
             f"{parameter} not available among the parameters to be interpolated"
