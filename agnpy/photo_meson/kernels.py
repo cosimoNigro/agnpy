@@ -1,5 +1,5 @@
 # integration kernels to be used for photomeson productions
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, interp1d
 import numpy as np
 from pathlib import Path
 import astropy.units as u
@@ -22,8 +22,13 @@ r = 0.146
 def log_interp(zz, xx, yy):
     logz = np.log10(zz)
     logx = np.log10(xx)
+
+    yy[yy == 0] = 1e-100
     logy = np.log10(yy)
-    return np.power(10.0, np.interp(logz, logx, logy))
+
+    logcs = interp1d(logx, logy, fill_value='extrapolate')
+    # return np.power(10.0, np.interp(logz, logx, logy))
+    return np.power(10.0, logcs(logz) )
 
 
 def interpolate_phi_parameter(particle, parameter):
