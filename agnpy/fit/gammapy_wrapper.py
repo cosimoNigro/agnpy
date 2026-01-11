@@ -168,9 +168,6 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         args = _sort_spectral_parameters(self._spectral_pars_names, self._n_e, **kwargs)
         z, d_L, delta_D, B, R_b = _sort_emission_region_parameters("ssc", **kwargs)
 
-        print("parameters I am using for the evaluation")
-        print(args)
-
         # evaluate the synch. and SSC SEDs
         sed_synch = Synchrotron.evaluate_sed_flux(
             nu, z, d_L, delta_D, B, R_b, self._n_e, *args, ssa=self.ssa
