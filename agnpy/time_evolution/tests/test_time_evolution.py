@@ -403,7 +403,7 @@ class TestSpectraTimeEvolution:
     def test_synch_losses_with_continues_injection_and_acceleration_with_two_zones(self):
         """ Simulate the process with Fermi acceleration and synch losses in one zone,
         and synch losses only with second zone, with continues constant injection of electrons to the first zone,
-        and escape from first to second zone;  then compares with results obtained using different simulation methods
+        and escape from first to second zone;  then compare with results obtained using different simulation methods
         """
 
         # load reference data

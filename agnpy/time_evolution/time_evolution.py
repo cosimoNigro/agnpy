@@ -15,15 +15,27 @@ per_s_cm3 = u.Unit("s-1 cm-3")
 per_s = u.Unit("s-1")
 
 def synchrotron_loss(sync: Synchrotron) -> EnergyChangeFn:
+    """
+    Returns the energy change function for synchrotron losses
+    """
     return lambda args: sync.electron_energy_loss_rate(args.gamma) * -1
 
 def ssc_loss(sync: SynchrotronSelfCompton) -> EnergyChangeFn:
+    """
+    Returns the energy change function for SSC losses
+    """
     return lambda args: sync.electron_energy_loss_rate(args.gamma) * -1
 
 def ssc_thomson_limit_loss(sync: SynchrotronSelfCompton) -> EnergyChangeFn:
+    """
+    Returns the simplified energy change function implementation for SynchrotronSelfCompton (valid only in the Thomson limit)
+    """
     return lambda args: sync.electron_energy_loss_rate_thomson(args.gamma) * -1
 
 def fermi_acceleration(t_acc: Quantity) -> EnergyChangeFn:
+    """
+    Returns the acceleration function, parametrized by the acceleration timescale `t_acc`
+    """
     return lambda args: to_erg(args.gamma)/t_acc
 
 
@@ -91,7 +103,7 @@ class TimeEvolution:
     def __init__(self,
                  blob: Blob,
                  total_time: Quantity,
-                 energy_change_functions: EnergyChangeFns = None,
+                 energy_change_functions: EnergyChangeFns,
                  rel_injection_functions: InjectionRelFns = None,
                  abs_injection_functions: InjectionAbsFns = None,
                  step_duration: Union[str, Quantity] = "auto",
