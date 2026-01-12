@@ -23,12 +23,16 @@ def log_interp(zz, xx, yy):
     logz = np.log10(zz)
     logx = np.log10(xx)
 
-    yy[yy == 0] = 1e-100
-    logy = np.log10(yy)
+    nyy = yy
+    nyy[nyy == 0.0] = 1e-100
+    logy = np.log10(nyy)
 
     logcs = interp1d(logx, logy, fill_value='extrapolate')
     # return np.power(10.0, np.interp(logz, logx, logy))
-    return np.power(10.0, logcs(logz) )
+    cs = np.power(10.0, logcs(logz) )
+    # cs = np.where(zz <= 1.0, 0.0, cs)
+
+    return cs
 
 
 def interpolate_phi_parameter(particle, parameter):
