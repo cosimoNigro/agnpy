@@ -3,6 +3,7 @@ from scipy.interpolate import CubicSpline, interp1d
 import numpy as np
 from pathlib import Path
 import astropy.units as u
+from agnpy.utils.math import ftiny, fmax
 
 data_dir = Path(__file__).parent.parent
 secondaries = [
@@ -23,16 +24,12 @@ def log_interp(zz, xx, yy):
     logz = np.log10(zz)
     logx = np.log10(xx)
 
-    nyy = yy
-    nyy[nyy == 0.0] = 1e-100
+    nyy = np.clip(yy, ftiny, fmax)
     logy = np.log10(nyy)
 
-    logcs = interp1d(logx, logy, fill_value='extrapolate')
-    # return np.power(10.0, np.interp(logz, logx, logy))
-    cs = np.power(10.0, logcs(logz) )
-    # cs = np.where(zz <= 1.0, 0.0, cs)
+    logf = interp1d(logx, logy, fill_value='extrapolate')
 
-    return cs
+    return np.power(10.0, logf(logz) )
 
 
 def interpolate_phi_parameter(particle, parameter):
