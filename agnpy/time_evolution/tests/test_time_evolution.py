@@ -8,6 +8,7 @@ from astropy.coordinates import Distance
 from copy import deepcopy
 from math import pi
 from agnpy import Blob, Synchrotron, SynchrotronSelfCompton, SpectralConstraints, EmptyDistribution
+from agnpy.time_evolution import FnParams
 from agnpy.time_evolution._time_evolution_utils import to_total_energy_gev_sqr, DistributionToSinglePointCollapseError
 from agnpy.time_evolution.time_evolution import TimeEvolution, synchrotron_loss, ssc_loss, ssc_thomson_limit_loss, \
     fermi_acceleration
@@ -403,12 +404,12 @@ class TestSpectraTimeEvolution:
     def test_synch_losses_with_continues_injection_and_acceleration_with_two_zones(self):
         """ Simulate the process with Fermi acceleration and synch losses in one zone,
         and synch losses only with second zone, with continues constant injection of electrons to the first zone,
-        and escape from first to second zone;  then compare with results obtained using different simulation methods
+        and escape from first to second zone;  then compare with results obtained using a different simulation method
         """
 
         # load reference data
         ref_data=[]
-        my_data=[]
+        our_data=[]
         offset=2
         nrows = 45
         for t in range(4):
@@ -477,8 +478,86 @@ class TestSpectraTimeEvolution:
                 "eed_y_zone1": eed_y_zone1.value,
                 "eed_y_zone2": eed_y_zone2.value
             })
-            my_data.append(df)
+            our_data.append(df)
 
             ignore_pos = [8,13,29] # positions where sharp density changes occur at different stages; for simplicity, just filter them all out
             assert_series_equal_ignore_pos(ref.eed_y_zone1, df.eed_y_zone1, ignore_pos, rtol=0.3)
             assert_series_equal_ignore_pos(ref.eed_y_zone2, df.eed_y_zone2, ignore_pos, rtol=0.3)
+
+
+    def test_ssc_losses_compared_with_different_calculation_approach(self):
+        """
+        Simulate the process with high SSC losses, and compare with the results obtained using a different simulation method
+        """
+
+        # load reference data
+        ref_data=[]
+        offset = 1
+        nrows = 20
+        for t in range(4):
+            ref = pd.read_csv(
+                "agnpy/time_evolution/tests/out_0.3e45erg_gamma1e4to1e7_homogenous_eed_evol.txt",
+                sep=r"\s+", header=None, skiprows=offset, nrows=nrows, usecols=[0, 1], dtype=float,
+            )
+            ref.columns = ["eed_x", "eed_y"]
+            ref_data.append(ref)
+            offset += (nrows + 1)
+
+        # prepare objects
+        R_b = 100 * u.s * c
+        B = 0.1 * u.G
+        V_b = (4 / 3) * np.pi * R_b.to("cm") ** 3
+        n_e_pl = PowerLaw.from_total_energy(0.3e45 * u.erg, V_b, p=2, gamma_min=1e4, gamma_max=1e7, mass=m_e)
+        blob = Blob(R_b=R_b, B=B, n_e=n_e_pl)
+        synch = Synchrotron(blob)
+        ssc = SynchrotronSelfCompton(blob)
+
+        # run simulations at 30,60,90s
+        gamma_ref = 10 ** ref_data[0].eed_x.to_numpy()
+        for i in range(1, 4):
+            TimeEvolution(blob, 30 * u.s,
+                          energy_change_functions=[synchrotron_loss(synch), ssc_loss(ssc)]).evaluate()
+            ref = ref_data[i]
+            df = pd.DataFrame({
+                "eed_x": ref.eed_x.values,
+                "eed_y": (blob.n_e(gamma_ref) * np.power(gamma_ref, 2) * mec2.to("GeV") * V_b).value
+            })
+            # in most bins, the error is less than 10%; only in a small number of bins we need higher error tolerance
+            if i == 1:
+                assert_series_equal_ignore_pos(ref.eed_y, df.eed_y, ignore_pos=[4, 15], rtol=0.1)
+                assert_series_equal_ignore_pos(ref.eed_y, df.eed_y, ignore_pos=[], rtol=0.35)
+            elif i == 2:
+                assert_series_equal_ignore_pos(ref.eed_y, df.eed_y, ignore_pos=[12], rtol=0.1)
+                assert_series_equal_ignore_pos(ref.eed_y, df.eed_y, ignore_pos=[], rtol=0.35)
+            else:
+                assert_series_equal_ignore_pos(ref.eed_y, df.eed_y, ignore_pos=[3], rtol=0.1)
+
+
+    def test_total_electron_energy_loss_is_equal_to_total_radiation_energy(self):
+        """
+        Energy lost be electrons should be completely converted to radiation energy, if there are no other energy sinks.
+        Use high gamma values in order to test the scenario with K-N range of SSC, but still dominating over Synchrotron.
+        """
+
+        gamma_min = 1e7
+        gamma_max = 1e8
+        R_b = 100 * u.s * c
+        B = 0.1 * u.G
+        V = (4 / 3) * np.pi * R_b.to("cm") ** 3
+        n_e_pl = PowerLaw.from_total_energy(1e70 * u.erg, V, p=2, gamma_min=gamma_min, gamma_max=gamma_max, mass=m_e)
+        blob = Blob(R_b=R_b, B=B, n_e=n_e_pl, z=0.01, delta_D=1)
+        synchrotron = Synchrotron(blob)
+        ssc = SynchrotronSelfCompton(blob)
+
+        gamma_logspace = np.logspace(np.log10(gamma_min), np.log10(gamma_max), 200)
+        density = n_e_pl(gamma_logspace) * V
+        params = FnParams(gamma_logspace, None, None)
+        synchrotron_losses = np.trapezoid(-1 * synchrotron_loss(synchrotron)(params) * density, gamma_logspace)
+        ssc_losses = np.trapezoid(-1 * ssc_loss(ssc)(params) * density, gamma_logspace)
+
+        sphere_area = Distance(z=blob.z).to("cm") ** 2 * 4 * np.pi
+        synchrotron_radiation_total = synchrotron.energy_flux_integral(1e5 * u.Hz, 1e30 * u.Hz) * sphere_area
+        ssc_radiation_total = ssc.energy_flux_integral(1e5 * u.Hz, 1e30 * u.Hz) * sphere_area
+
+        assert u.isclose(synchrotron_losses, synchrotron_radiation_total, rtol=0.3)
+        assert u.isclose(ssc_losses, ssc_radiation_total, rtol=0.3)
