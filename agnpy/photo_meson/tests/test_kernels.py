@@ -106,7 +106,6 @@ class TestKernels:
             )
 
         blob = Blob(n_p = n_p)
-        # print ("Proton energy density = ", blob.u_p)
 
         cmb = CMB(z = 0.0)
         cmb_target = lambda nu: cmb.du_dnu(nu)
@@ -119,7 +118,7 @@ class TestKernels:
                           unpack="True",
                           converters={0: lambda x: float(x.replace(',', '.')),
                                       1: lambda x: float(x.replace(',', '.'))})
-        # print(E_i,spectrum)
+
         E_i = np.power(10,E_i)*u.Unit("eV")
         spectrum_ref = np.power(10,spectrum_ref)#*u.Unit("cm-3 s-1")
 
@@ -127,19 +126,16 @@ class TestKernels:
 
         # E_i = np.logspace(17, 21, 100) * u.Unit("eV")
         spectrum = ((pmp_cmb.evaluate_spectrum(E_i, particle = particle)*E_i).to_value(f"cm-3 s-1"))
-        # print(spectrum)
 
         E_i = E_i.to_value("eV")
 
         E_range = [E_i.min(), E_i.max()]
 
         # # comparison plot
-        # x_max_comparison = 0.1 if eta_eta0 == "1.5" else 0.2
-        # x_range = [2e-4, x_max_comparison]
         # make_comparison_plot(
-        #     x=x_ref,
-        #     y_comp=x_ref * phi_agnpy,
-        #     y_ref=x_phi_ref,
+        #     x=E_i,
+        #     y_comp=spectrum,
+        #     y_ref=spectrum_ref,
         #     comp_label="agnpy",
         #     ref_label="Kelner and Aharonian (2008)",
         #     fig_title=r"$\phi$" + f" {particle.replace('_', ' ')}",
@@ -148,9 +144,10 @@ class TestKernels:
         #     x_label=r"$x = E_{\gamma} / E_{\rm p}$",
         #     y_label=r"$x \phi(\eta, x)$",
         #     y_range=None,
-        #     comparison_range=x_range,
+        #     comparison_range=E_range,
         # )
-        # requires that the SED points deviate less than 25% from the figure
+        
+        # requires that the SED points deviate less than 50% from the figure
         assert check_deviation(
             E_i, spectrum, spectrum_ref, 0.50, x_range=E_range
         )
