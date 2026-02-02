@@ -124,29 +124,12 @@ class TestKernels:
 
         pmp_cmb = PhotoMesonProduction(blob, cmb_target)
 
-        # E_i = np.logspace(17, 21, 100) * u.Unit("eV")
         spectrum = ((pmp_cmb.evaluate_spectrum(E_i, particle = particle)*E_i).to_value(f"cm-3 s-1"))
 
         E_i = E_i.to_value("eV")
 
         E_range = [E_i.min(), E_i.max()]
 
-        # # comparison plot
-        # make_comparison_plot(
-        #     x=E_i,
-        #     y_comp=spectrum,
-        #     y_ref=spectrum_ref,
-        #     comp_label="agnpy",
-        #     ref_label="Kelner and Aharonian (2008)",
-        #     fig_title=r"$\phi$" + f" {particle.replace('_', ' ')}",
-        #     fig_path=f"{figures_dir}/phi_comparison_particle_{particle}_eta_{eta_eta0}_eta0.png",
-        #     plot_type="custom",
-        #     x_label=r"$x = E_{\gamma} / E_{\rm p}$",
-        #     y_label=r"$x \phi(\eta, x)$",
-        #     y_range=None,
-        #     comparison_range=E_range,
-        # )
-        
         # requires that the SED points deviate less than 50% from the figure
         assert check_deviation(
             E_i, spectrum, spectrum_ref, 0.50, x_range=E_range
