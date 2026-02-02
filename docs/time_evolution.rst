@@ -94,10 +94,12 @@ interval during which the electron density in each energy bin does not change by
 The time evolution logic divides the full energy spectrum (gamma values) into narrow bins and tracks the evolution
 of the energy and particle density in each bin.
 
-You may specify either the initial bins explicitly using `initial_gamma_array`, or only the minimum and maximum
-gamma values using `gamma_bounds`. Two bins are merged when they become sufficiently close over time (controlled
-by `merge_bins_closer_than`). Additional bins are created at the lower or upper bounds if the lowest or highest bin
-drifts too far from the specified bounds (as defined by `gamma_bounds` and `max_bin_creep_from_bounds`).
+Initial bins for the calculation are generated automatically, using the max/min gamma values of the ParticleDistribution
+of the Blob. You may, however, specify the initial bins explicitly using `initial_gamma_array`.
+Additionally, by setting `gamma_bounds`, any bins which have shifted beyond these bounds will remove from further calculations.
+Furthermore, two bins are merged when they become sufficiently close over time (controlled by `merge_bins_closer_than`).
+Additional bins are created at the lower or upper bounds if the lowest or highest bin
+drifts too far from the bounds (as defined by `gamma_bounds` with `max_bin_creep_from_bounds`).
 
 4. Groups:
 

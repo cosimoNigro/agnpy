@@ -68,7 +68,7 @@ class TimeEvolution:
         This is primarily intended for cases when simulation is done in multiple steps, and you want to use
         the final bins from one step as a starting point for the next step
     gamma_bounds :
-        Optional tuple of gamma lower and upper bounds for calculations
+        Optional tuple of gamma lower and upper bounds; bins that shift beyond these bounds will be removed.
     max_bin_creep_from_bounds :
         Maximum distance (in log10) the first or last bin can creep away from the gamma bounds towards the center of distribution,
         before the new bin is injected at the boundary. Applicable only if gamma_bounds was set.
@@ -144,16 +144,19 @@ class TimeEvolution:
         if duplicated_keys:
             raise ValueError("Found duplicate keys of energy change or injection functions: " + str(duplicated_keys))
         self._gamma_bounds = gamma_bounds
-        if gamma_bounds is not None and initial_gamma_array is not None and np.any(initial_gamma_array < gamma_bounds[0]):
-            raise ValueError("initial_gamma_array might not contain elements smaller than gamma_min")
-        if gamma_bounds is not None and initial_gamma_array is not None and np.any(initial_gamma_array > gamma_bounds[1]):
-            raise ValueError("initial_gamma_array might not contain elements greater than gamma_max")
-        if gamma_bounds is not None and initial_gamma_array is None:
-            self._blob.n_e.gamma_min = gamma_bounds[0]
-            self._blob.n_e.gamma_max = gamma_bounds[1]
+        if gamma_bounds is not None and initial_gamma_array is not None:
+            if np.any(initial_gamma_array < gamma_bounds[0]):
+                raise ValueError("initial_gamma_array might not contain elements smaller than gamma_min")
+            if np.any(initial_gamma_array > gamma_bounds[1]):
+                raise ValueError("initial_gamma_array might not contain elements greater than gamma_max")
         if initial_gamma_array is not None and any(initial_gamma_array[1:] <= initial_gamma_array[:-1]):
             raise ValueError("initial_gamma_array must be strictly increasing")
-        self._initial_gamma_array = initial_gamma_array if initial_gamma_array is not None else blob.gamma_e
+        if initial_gamma_array is not None:
+           self._initial_gamma_array = initial_gamma_array
+        else:
+            gamma_min = np.max([self._blob.n_e.gamma_min, gamma_bounds[0] if gamma_bounds is not None else 0])
+            gamma_max = np.min([self._blob.n_e.gamma_max, gamma_bounds[-1] if gamma_bounds is not None else np.inf])
+            self._initial_gamma_array = np.logspace(np.log10(gamma_min), np.log10(gamma_max), self._blob.gamma_e_size)
         self._max_bin_creep_from_bounds = max_bin_creep_from_bounds
         self._merge_bins_closer_than = merge_bins_closer_than
         self._max_energy_change_per_interval = max_energy_change_per_interval
@@ -269,7 +272,7 @@ class TimeEvolution:
                 self._distribution_change_callback(TimeEvaluationResult(total_time_elapsed,
                     gm_bins[0], density, subgroups_density, energy_changes_lb(en_chg_rates), abs_injection_rates,
                     rel_injection_rates))
-            progress_percent = int(100 * total_time_elapsed / self._total_time_sec)
+            progress_percent = int((100 * total_time_elapsed / self._total_time_sec).round(0))
             log.info("Progress: %3d%% %s (%i bins)", progress_percent, total_time_elapsed, gm_bins.shape[-1])
 
         en_chg_rates_lb = energy_changes_lb(en_chg_rates)
@@ -289,7 +292,9 @@ class TimeEvolution:
             abs_injection_rates = abs_injection_rates_grouped[i]
 
             # 1. relative energy change per bin must be lower than the threshold: (abs(en_changes) * time) / energy_bins <= max_energy_change_per_interval
-            time_1 = np.min(self._max_energy_change_per_interval * en_bins / abs(en_chg_rates), axis=0)
+            dummy_denominator = 1 * u.erg / u.s # dummy value, to prevent "division by 0" warnings
+            denominator = np.where(en_chg_rates != 0, abs(en_chg_rates), dummy_denominator)
+            time_1 = np.min(np.where(en_chg_rates != 0, self._max_energy_change_per_interval * en_bins / denominator, np.inf), axis=0)
 
             # 2. density increase/increase (from energy changes) = Δx/(Δx+tΔf(x)) where x is bin energy and Δx is bin width;
             # if Δf(x)>0 then density decreases, and it must not decrease more than a factor 1+threshold, so: [density decrease >= 1/(1+thr)] => [t <= (Δx/Δf)*thr]
