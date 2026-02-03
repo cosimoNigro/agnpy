@@ -41,11 +41,8 @@ The main entry point of the time evolution API is the :class:`~agnpy.time_evolut
 
 After constructing the `TimeEvolution` object, call the `evaluate` method:
 
-.. code-block:: python
-
-    blob = Blob(n_e=initial_n_e)
-    synch = Synchrotron(blob)
-    TimeEvolution(blob, 30 * u.s, synchrotron_loss(synch)).evaluate()
+.. plot:: snippets/time_evolution_1.py
+   :include-source:
 
 As a side effect, the `evaluate` method replaces the internal electron distribution of the `Blob` with the
 newly calculated `InterpolatedDistribution`.
