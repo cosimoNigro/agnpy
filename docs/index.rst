@@ -75,6 +75,7 @@ The documentation includes several tutorial jupyter notebooks providing examples
    absorption
    tutorials/absorption_targets.ipynb
    spectral_constraints
+   time_evolution
    fit
    proton_synchrotron
    acknowledging

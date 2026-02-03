@@ -60,6 +60,14 @@ agnpy.constraints module
    :undoc-members:
    :show-inheritance:
 
+agnpy.time\_evolution module
+----------------------------
+
+.. automodule:: agnpy.time_evolution
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 agnpy.fit module
 ------------------
 .. automodule:: agnpy.fit

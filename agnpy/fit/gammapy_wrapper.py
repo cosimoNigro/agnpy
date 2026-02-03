@@ -134,7 +134,7 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         self._emission_region_pars_names = list(emission_region_pars.keys())
 
         # group the model parameters, add the norm at the bottom of the list
-        norm = Parameter("norm", 1, min=0.1, max=10, is_norm=True, frozen=True)
+        norm = Parameter("norm", 1, min=0.1, max=10, frozen=True)
         self.default_parameters = Parameters(
             [*spectral_pars.values(), *emission_region_pars.values(), norm]
         )
@@ -163,13 +163,10 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         NOTE: All the model parameters will be passed as kwargs by
         SpectralModel.evaluate()."""
 
-        nu = energy.to("Hz", equivalencies=u.spectral())
+        nu = energy.reshape([energy.shape[0]]).to("Hz", equivalencies=u.spectral())
 
         args = _sort_spectral_parameters(self._spectral_pars_names, self._n_e, **kwargs)
         z, d_L, delta_D, B, R_b = _sort_emission_region_parameters("ssc", **kwargs)
-
-        print("parameters I am using for the evaluation")
-        print(args)
 
         # evaluate the synch. and SSC SEDs
         sed_synch = Synchrotron.evaluate_sed_flux(
@@ -180,15 +177,8 @@ class SynchrotronSelfComptonSpectralModel(SpectralModel):
         )
         sed = sed_synch + sed_ssc
 
-        # to avoid the problem pointed out in
-        # https://github.com/cosimoNigro/agnpy/issues/117
-        # we can do here something like
-        # sed = sed.reshape(energy.shape)
-        # this is done in Gammapy's `NaimaSpectralModel`
-        # https://github.com/gammapy/gammapy/blob/master/gammapy/modeling/models/spectral.py#L2119
-
         # gammapy requires a differential flux in input
-        return (sed / energy**2).to("1 / (cm2 eV s)")
+        return (sed.reshape(energy.shape) / energy**2).to("1 / (cm2 eV s)")
 
 
 class ExternalComptonSpectralModel(SpectralModel):
@@ -234,7 +224,7 @@ class ExternalComptonSpectralModel(SpectralModel):
         self._targets_pars_names = list(targets_pars.keys())
 
         # group the model parameters, add the norm at the bottom of the list
-        norm = Parameter("norm", 1, min=0.1, max=10, is_norm=True, frozen=True)
+        norm = Parameter("norm", 1, min=0.1, max=10, frozen=True)
         self.default_parameters = Parameters(
             [
                 *spectral_pars.values(),
@@ -295,8 +285,7 @@ class ExternalComptonSpectralModel(SpectralModel):
         """Evaluate the SED model.
         NOTE: All the model parameters will be passed as kwargs by
         SpectralModel.evaluate()."""
-
-        nu = energy.to("Hz", equivalencies=u.spectral())
+        nu = energy.reshape([energy.shape[0]]).to("Hz", equivalencies=u.spectral())
 
         args = _sort_spectral_parameters(self._spectral_pars_names, self._n_e, **kwargs)
         z, d_L, delta_D, B, R_b, mu_s, r = _sort_emission_region_parameters(
@@ -365,9 +354,4 @@ class ExternalComptonSpectralModel(SpectralModel):
             )
             sed += sed_bb_dt
 
-        # eventual reshaping
-        # we can do here something like
-        # sed = sed.reshape(energy.shape)
-        # see the same comment in the SSC model
-
-        return (sed / energy**2).to("1 / (cm2 eV s)")
+        return (sed.reshape(energy.shape) / energy**2).to("1 / (cm2 eV s)")
