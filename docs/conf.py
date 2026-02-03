@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.abspath("../"))
 # -- Project information -----------------------------------------------------
 
 project = "agnpy"
-copyright = "2022, Cosimo Nigro"
-author = "Cosimo Nigro"
+copyright = "2025, agnpy developers"
+author = "agnpy developers"
 
 # The full version, including alpha/beta/rc tags
 release = "0.5.0"
