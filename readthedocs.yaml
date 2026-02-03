@@ -10,6 +10,10 @@ build:
   os: ubuntu-24.04
   tools:
     python: "3.12"
+  # these packages are needed to be installed to compile sherpa from source
+  apt_packages:
+    - bison
+    - flex
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
