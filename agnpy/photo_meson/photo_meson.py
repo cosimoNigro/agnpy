@@ -28,14 +28,14 @@ class PhotoMesonProduction:
     target : ...TBD...
         ...TBD...
     integrator : func
-        function to be used for integration (default = `np.trapezoid`)
+        function to be used for integration (default = `np.trapz`)
     """
 
     def __init__(
         self,
         blob,
         target,
-        integrator=np.trapezoid
+        integrator = np.trapz
     ):
         self.blob = blob
         # check that this blob has a proton distribution
@@ -53,7 +53,7 @@ class PhotoMesonProduction:
         eta,
         E,
         phi_kernel,
-        integrator = np.trapezoid
+        integrator = np.trapz
     ):
         r""" Compute the H function in Eq. (70) [KelnerAharonian2008]_.
 
@@ -66,7 +66,7 @@ class PhotoMesonProduction:
         phi_kernel : `~agnpy.photo_meson.PhiKernel`
             kernel to be used for the integration (depends on the particle)
         integrator : func
-            function to be used for integration (default = `np.trapezoid`)
+            function to be used for integration (default = `np.trapz`)
         """
         # Integral on E_p to be made from E to infinity
         _eta, _E = axes_reshaper(eta, E)   # shape (len(eta), 1), (1, len(E))
@@ -98,7 +98,7 @@ class PhotoMesonProduction:
         self,
         E,
         particle,
-        integrator = np.trapezoid
+        integrator = np.trapz
     ):
         """ Evaluate the spectrum of secondaries in the emission region reference frame
         as in Eq. (69) [KelnerAharonian2008]_.
@@ -112,7 +112,7 @@ class PhotoMesonProduction:
             "gamma", "electron", "positron", "electron_neutrino",
             "electron_antineutrino", "muon_neutrino", "muon_antineutrino"
         integrator : func
-            function to be used for integration (default = `np.trapezoid`)
+            function to be used for integration (default = `np.trapz`)
         """
         if particle not in secondaries:
             raise AttributeError(
