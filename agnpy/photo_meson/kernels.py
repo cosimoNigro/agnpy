@@ -1,8 +1,9 @@
 # integration kernels to be used for photomeson productions
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import interp1d
 import numpy as np
 from pathlib import Path
 import astropy.units as u
+from agnpy.utils.math import ftiny, fmax
 
 data_dir = Path(__file__).parent.parent
 secondaries = [
@@ -18,6 +19,17 @@ secondaries = [
 # ratio between the pion and proton mass, to be used in several calculations
 eta_0 = 0.313
 r = 0.146
+
+def log_interp(zz, xx, yy):
+    logz = np.log10(zz)
+    logx = np.log10(xx)
+
+    nyy = np.clip(yy, ftiny, fmax)
+    logy = np.log10(nyy)
+
+    logf = interp1d(logx, logy, fill_value='extrapolate')
+
+    return np.power(10.0, logf(logz) )
 
 
 def interpolate_phi_parameter(particle, parameter):
@@ -41,14 +53,11 @@ def interpolate_phi_parameter(particle, parameter):
     )
 
     if parameter == "s":
-        #func = CubicSpline(eta_eta0, s)
-        func = lambda x: np.interp(x, eta_eta0, s)
+        func = lambda x: log_interp(x, eta_eta0, s)
     elif parameter == "delta":
-        #func = CubicSpline(eta_eta0, delta)
-        func = lambda x: np.interp(x, eta_eta0, delta)
+        func = lambda x: log_interp(x, eta_eta0, delta)
     elif parameter == "B":
-        #func = CubicSpline(eta_eta0, B)
-        func = lambda x: np.interp(x, eta_eta0, B)
+        func = lambda x: log_interp(x, eta_eta0, B)
     else:
         raise ValueError(
             f"{parameter} not available among the parameters to be interpolated"
