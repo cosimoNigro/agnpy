@@ -165,7 +165,7 @@ class CMB:
         self.name = "Cosmic Microwave Background Radiation"
         a = 7.5657 * 1e-15 * u.Unit("erg cm-3 K-4")  # radiation constant
         T = 2.72548 * u.K
-        self.bb = BlackBody(T)
+        self.bb = BlackBody(T*(1+z))
         self.u_0 = (a * np.power(T, 4)).to("erg cm-3") * np.power(1 + z, 4)
         self.epsilon_0 = (2.7 * k_B * T / mec2).to_value("") * (1 + z)
 

@@ -1,8 +1,6 @@
 # test the kernels
-# import numpy as np
 from pathlib import Path
 import pytest
-# from agnpy.photo_meson.kernels import PhiKernel
 
 import numpy as np
 import astropy.units as u
@@ -12,8 +10,7 @@ from agnpy.utils.math import axes_reshaper, ftiny, fmax, log10
 from agnpy.utils.conversion import mpc2
 
 # to be used only for the the validation
-from astropy.modeling.models import BlackBody
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from agnpy.emission_regions import Blob
 from agnpy.spectra import PowerLaw, ExpCutoffPowerLaw
 from agnpy.photo_meson.photo_meson import PhotoMesonProduction
@@ -94,7 +91,6 @@ class TestKernels:
         # Blob with proton population
         E_star = 3e20 * u.Unit("eV")
         gamma_star = (E_star / mpc2).to_value("")
-        # p_p, gamma_c, gamma_min, gamma_max = 2, 1e3*gamma_star, (1.0*u.Unit("GeV")/mpc2).to_value(""), 1e6*gamma_star
         
         n_p = ExpCutoffPowerLaw.from_total_energy_density(
             1.0*u.Unit("erg/cm3"),
@@ -102,7 +98,7 @@ class TestKernels:
             p = 2,
             gamma_c = factor*gamma_star, # change fig_number!
             gamma_min = (1.0*u.Unit("GeV")/mpc2).to_value(""),
-            gamma_max = 1e6*gamma_star
+            gamma_max = 30.0*factor*gamma_star
             )
 
         blob = Blob(n_p = n_p)
@@ -112,12 +108,9 @@ class TestKernels:
 
         E_i, spectrum_ref = np.genfromtxt(f"{data_dir}/photo_meson/kelner_aharonian_2008/fig{fig_number}_values/{particle}.txt", 
                           dtype="float", 
-                          delimiter=";",
                           comments="#", 
                           usecols=(0, 1), 
-                          unpack="True",
-                          converters={0: lambda x: float(x.replace(',', '.')),
-                                      1: lambda x: float(x.replace(',', '.'))})
+                          unpack="True")
 
         E_i = np.power(10,E_i)*u.Unit("eV")
         spectrum_ref = np.power(10,spectrum_ref)#*u.Unit("cm-3 s-1")

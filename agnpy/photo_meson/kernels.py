@@ -1,5 +1,5 @@
 # integration kernels to be used for photomeson productions
-from scipy.interpolate import CubicSpline, interp1d
+from scipy.interpolate import interp1d
 import numpy as np
 from pathlib import Path
 import astropy.units as u
@@ -53,16 +53,10 @@ def interpolate_phi_parameter(particle, parameter):
     )
 
     if parameter == "s":
-        #func = CubicSpline(eta_eta0, s)
-        # func = lambda x: np.interp(x, eta_eta0, s)
         func = lambda x: log_interp(x, eta_eta0, s)
     elif parameter == "delta":
-        #func = CubicSpline(eta_eta0, delta)
-        # func = lambda x: np.interp(x, eta_eta0, delta)
         func = lambda x: log_interp(x, eta_eta0, delta)
     elif parameter == "B":
-        #func = CubicSpline(eta_eta0, B)
-        # func = lambda x: np.interp(x, eta_eta0, B)
         func = lambda x: log_interp(x, eta_eta0, B)
     else:
         raise ValueError(

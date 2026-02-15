@@ -2,21 +2,21 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import c, h, m_e
-from .kernels import PhiKernel
+from .kernels import PhiKernel, secondaries, eta_0
 from ..utils.math import axes_reshaper, log10
 from ..utils.conversion import mpc2
 
-secondaries = [
-    "gamma",
-    "electron",
-    "positron",
-    "electron_neutrino",
-    "electron_antineutrino",
-    "muon_neutrino",
-    "muon_antineutrino",
-]
+# secondaries = [
+#     "gamma",
+#     "electron",
+#     "positron",
+#     "electron_neutrino",
+#     "electron_antineutrino",
+#     "muon_neutrino",
+#     "muon_antineutrino",
+# ]
 
-eta_0 = 0.313
+# eta_0 = 0.313
 
 class PhotoMesonProduction:
     """Class for computation of the energetic spectra of secondaries of photomeson interactions.
