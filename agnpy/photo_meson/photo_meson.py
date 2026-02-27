@@ -2,10 +2,21 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import c, h, m_e
-from .kernels import PhiKernel
-from ..utils.math import axes_reshaper
+from .kernels import PhiKernel, secondaries, eta_0
+from ..utils.math import axes_reshaper, log10
 from ..utils.conversion import mpc2
 
+# secondaries = [
+#     "gamma",
+#     "electron",
+#     "positron",
+#     "electron_neutrino",
+#     "electron_antineutrino",
+#     "muon_neutrino",
+#     "muon_antineutrino",
+# ]
+
+# eta_0 = 0.313
 
 class PhotoMesonProduction:
     """Class for computation of the energetic spectra of secondaries of photomeson interactions.
@@ -24,7 +35,7 @@ class PhotoMesonProduction:
         self,
         blob,
         target,
-        integrator=np.trapz
+        integrator = np.trapz
     ):
         self.blob = blob
         # check that this blob has a proton distribution
@@ -44,7 +55,7 @@ class PhotoMesonProduction:
         phi_kernel,
         integrator = np.trapz
     ):
-        """ Compute the H function in Eq. (70) [KelnerAharonian2008]_.
+        r""" Compute the H function in Eq. (70) [KelnerAharonian2008]_.
 
         Parameters
         ----------
@@ -70,7 +81,7 @@ class PhotoMesonProduction:
         _x = _E / _E_p
         _H_integrand = (
             mpc2**2 / 4                           # erg2
-            * (self.blob.n_p(_gamma_p) / _E_p**3) # cm-3 erg-3
+            * ((mpc2**-1)*self.blob.n_p(_gamma_p) / _E_p**2) # cm-3 erg-3
             * self.target(_nu)                    # cm-3 erg-1
             * phi_kernel(_eta, _x)                # cm3 s-1
         ).to("erg-2 cm-3 s-1")

@@ -1,6 +1,6 @@
 # module containing the targets for the external compton radiation
 import numpy as np
-from astropy.constants import c, G, M_sun, k_B, sigma_sb
+from astropy.constants import c, h, G, M_sun, k_B, sigma_sb
 import astropy.units as u
 from astropy.coordinates import Distance
 from astropy.modeling.models import BlackBody
@@ -165,6 +165,7 @@ class CMB:
         self.name = "Cosmic Microwave Background Radiation"
         a = 7.5657 * 1e-15 * u.Unit("erg cm-3 K-4")  # radiation constant
         T = 2.72548 * u.K
+        self.bb = BlackBody(T*(1+z))
         self.u_0 = (a * np.power(T, 4)).to("erg cm-3") * np.power(1 + z, 4)
         self.epsilon_0 = (2.7 * k_B * T / mec2).to_value("") * (1 + z)
 
@@ -181,6 +182,12 @@ class CMB:
             return self.u_0 * np.power(blob.Gamma, 2) * (1 + np.power(blob.Beta, 2) / 3)
         else:
             return self.u_0
+    
+    def du_dnu(self, nu):
+        return (
+            4. * np.pi * u.Unit("sr") * self.bb(nu)
+            / (c * h**2 * nu)
+        ).to("cm-3 erg-1")
 
 
 class PointSourceBehindJet:
