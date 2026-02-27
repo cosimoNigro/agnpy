@@ -71,11 +71,13 @@ def x_minus_gamma(eta):
     Photon secondaries.
     """
     x_1 = eta + r**2
-    x_2 = np.sqrt((eta - r**2 - 2 * r) * (eta - r**2 + 2 * r))
+    x2_arg = (eta - r**2 - 2 * r) * (eta - r**2 + 2 * r)
+    with np.errstate(invalid='ignore'):
+        x_2 = np.where(x2_arg > 0, np.sqrt(x2_arg), 0.0)
     x_3 = 1 / (2 * (1 + eta))
     x_minus = x_3 * (x_1 - x_2)
 
-    return x_minus
+    return np.where(x2_arg > 0, x_minus, 0)
 
 
 def x_plus_gamma(eta):
@@ -83,11 +85,13 @@ def x_plus_gamma(eta):
     Photon secondaries.
     """
     x_1 = eta + r**2
-    x_2 = np.sqrt((eta - r**2 - 2 * r) * (eta - r**2 + 2 * r))
+    x2_arg = (eta - r**2 - 2 * r) * (eta - r**2 + 2 * r)
+    with np.errstate(invalid='ignore'):
+        x_2 = np.where(x2_arg > 0, np.sqrt(x2_arg), 0.0)
     x_3 = 1 / (2 * (1 + eta))
     x_plus = x_3 * (x_1 + x_2)
 
-    return x_plus
+    return np.where(x2_arg > 0, x_plus, 0)
 
 
 def x_minus_leptons_1(eta):
@@ -108,10 +112,12 @@ def x_minus_leptons_2(eta):
     """
     x_1 = 2 * (1 + eta)
     x_2 = eta - (2 * r)
-    x_3 = np.sqrt(eta * (eta - 4 * r * (1 + r)))
+    x3_arg = eta * (eta - 4 * r * (1 + r))
+    with np.errstate(invalid='ignore'):
+        x_3 = np.where(x3_arg > 0, np.sqrt(x3_arg), 0.0)
     x_minus = (x_2 - x_3) / x_1
 
-    return x_minus / 2
+    return np.where(x3_arg > 0, x_minus / 2, 0)
 
 
 def x_plus_leptons_2(eta):
@@ -122,10 +128,12 @@ def x_plus_leptons_2(eta):
     """
     x_1 = 2 * (1 + eta)
     x_2 = eta - (2 * r)
-    x_3 = np.sqrt(eta * (eta - 4 * r * (1 + r)))
+    x3_arg = eta * (eta - 4 * r * (1 + r))
+    with np.errstate(invalid='ignore'):
+        x_3 = np.where(x3_arg > 0, np.sqrt(x3_arg), 0.0)
     x_plus = (x_2 + x_3) / x_1
 
-    return x_plus
+    return np.where(x3_arg > 0, x_plus, 0)
 
 
 def x_minus_leptons_3(eta):
@@ -221,8 +229,17 @@ class PhiKernel:
         psi = self.psi(eta)
 
         y = (x - x_minus) / (x_plus - x_minus)
-        _exp = np.exp(-s * np.log(x / x_minus) ** delta)
-        _log = np.log(2 / (1 + y**2)) ** psi
+        
+        # _exp = np.exp(-s * np.log(x / x_minus) ** delta)
+        x_x_min = x / x_minus
+        with np.errstate(invalid='ignore'):
+            _exp = np.where(x_x_min >= 1, np.exp(-s * np.log(x_x_min)**delta), 0)
+            
+        # _log = np.log(2 / (1 + y**2)) ** psi
+        logy_ = np.log(2 / (1 + y**2)) 
+        with np.errstate(invalid='ignore'):
+            _log = np.where(logy_ >= 0, logy_**psi, 0)
+        
         _phi = np.where(
             (x > x_minus) * (x < x_plus),
             B * _exp * _log,
