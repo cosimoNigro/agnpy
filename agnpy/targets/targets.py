@@ -184,10 +184,11 @@ class CMB:
             return self.u_0
     
     def du_dnu(self, nu):
-        return (
-            4. * np.pi * u.Unit("sr") * self.bb(nu)
-            / (c * h**2 * nu)
-        ).to("cm-3 erg-1")
+        with np.errstate(over='ignore'):
+            return (
+                4. * np.pi * u.Unit("sr") * self.bb(nu)
+                / (c * h**2 * nu)
+            ).to("cm-3 erg-1")
 
 
 class PointSourceBehindJet:

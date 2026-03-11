@@ -29,7 +29,7 @@ def log_interp(zz, xx, yy):
 
     logf = interp1d(logx, logy, fill_value='extrapolate')
 
-    return np.power(10.0, logf(logz) )
+    return np.power(10, logf(logz) )
 
 
 def interpolate_phi_parameter(particle, parameter):
@@ -73,7 +73,7 @@ def x_minus_gamma(eta):
     x_1 = eta + r**2
     x2_arg = (eta - r**2 - 2 * r) * (eta - r**2 + 2 * r)
     with np.errstate(invalid='ignore'):
-        x_2 = np.where(x2_arg > 0, np.sqrt(x2_arg), 0.0)
+        x_2 = np.where(x2_arg > 0, np.sqrt(x2_arg), 0)
     x_3 = 1 / (2 * (1 + eta))
     x_minus = x_3 * (x_1 - x_2)
 
@@ -87,7 +87,7 @@ def x_plus_gamma(eta):
     x_1 = eta + r**2
     x2_arg = (eta - r**2 - 2 * r) * (eta - r**2 + 2 * r)
     with np.errstate(invalid='ignore'):
-        x_2 = np.where(x2_arg > 0, np.sqrt(x2_arg), 0.0)
+        x_2 = np.where(x2_arg > 0, np.sqrt(x2_arg), 0)
     x_3 = 1 / (2 * (1 + eta))
     x_plus = x_3 * (x_1 + x_2)
 
@@ -114,7 +114,7 @@ def x_minus_leptons_2(eta):
     x_2 = eta - (2 * r)
     x3_arg = eta * (eta - 4 * r * (1 + r))
     with np.errstate(invalid='ignore'):
-        x_3 = np.where(x3_arg > 0, np.sqrt(x3_arg), 0.0)
+        x_3 = np.where(x3_arg > 0, np.sqrt(x3_arg), 0)
     x_minus = (x_2 - x_3) / x_1
 
     return np.where(x3_arg > 0, x_minus / 2, 0)
@@ -130,7 +130,7 @@ def x_plus_leptons_2(eta):
     x_2 = eta - (2 * r)
     x3_arg = eta * (eta - 4 * r * (1 + r))
     with np.errstate(invalid='ignore'):
-        x_3 = np.where(x3_arg > 0, np.sqrt(x3_arg), 0.0)
+        x_3 = np.where(x3_arg > 0, np.sqrt(x3_arg), 0)
     x_plus = (x_2 + x_3) / x_1
 
     return np.where(x3_arg > 0, x_plus, 0)
@@ -228,17 +228,19 @@ class PhiKernel:
         x_plus = self.x_plus(eta)
         psi = self.psi(eta)
 
-        y = (x - x_minus) / (x_plus - x_minus)
-        
-        # _exp = np.exp(-s * np.log(x / x_minus) ** delta)
-        x_x_min = x / x_minus
-        with np.errstate(invalid='ignore'):
-            _exp = np.where(x_x_min >= 1, np.exp(-s * np.log(x_x_min)**delta), 0)
+        with np.errstate(all='ignore'):
+            # y = (x - x_minus) / (x_plus - x_minus)
+            y = np.where((x_plus - x_minus) != 0, (x - x_minus) / (x_plus - x_minus), -1)
             
-        # _log = np.log(2 / (1 + y**2)) ** psi
-        logy_ = np.log(2 / (1 + y**2)) 
-        with np.errstate(invalid='ignore'):
-            _log = np.where(logy_ >= 0, logy_**psi, 0)
+            # x_x_min = x / x_minus
+            x_x_min = np.where(x_minus != 0,x/x_minus,0)
+            
+            # _exp = np.exp(-s * np.log(x / x_minus) ** delta)
+            _exp = np.where(x_x_min >= 1, np.exp(-s * np.log(x_x_min)**delta), 0)
+    
+            # _log = np.log(2 / (1 + y**2)) ** psi
+            _logy = np.where(y != -1, np.log(2 / (1 + y**2)), 0)
+            _log = np.where(_logy > 0, _logy**psi, 0)
         
         _phi = np.where(
             (x > x_minus) * (x < x_plus),
