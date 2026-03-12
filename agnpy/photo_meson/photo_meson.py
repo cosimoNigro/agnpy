@@ -70,11 +70,22 @@ class PhotoMesonProduction:
         """
         # Integral on E_p to be made from E to infinity
         _eta, _E = axes_reshaper(eta, E)   # shape (len(eta), 1), (1, len(E))
+
+        _E_min = _E.copy()
+        _E_max = _E.copy() * 1e8 
+
+        Emin = self.blob.n_p.gamma_min * mpc2  
+        Emax = self.blob.n_p.gamma_max * mpc2 
+        
+        _E_min = np.clip(_E_min, Emin, None)  # replace values smaller than Emin
+        _E_max = np.clip(_E_max, None, Emax)  # replace values larger than Emax
+
         _E_p = np.logspace(
-            log10(_E.to_value("eV")),
-            log10(_E.to_value("eV")) + 8,
+            log10(_E_min.to_value("eV")),
+            log10(_E_max.to_value("eV")),
             200
         ) * u.Unit("eV")                   # shape (200, 1, len(E))
+        
         _gamma_p = _E_p / mpc2
         _epsilon = _eta * mpc2**2 / (4*_E_p)
         _nu = _epsilon / h

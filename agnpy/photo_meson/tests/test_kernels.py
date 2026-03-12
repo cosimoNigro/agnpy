@@ -104,7 +104,7 @@ class TestKernels:
         blob = Blob(n_p = n_p)
 
         cmb = CMB(z = 0.0)
-        cmb_target = lambda nu: cmb.du_dnu(nu)
+        cmb_target = lambda nu: cmb.dn_dE(nu)
 
         E_i, spectrum_ref = np.genfromtxt(f"{data_dir}/photo_meson/kelner_aharonian_2008/fig{fig_number}_values/{particle}.txt", 
                           dtype="float", 
