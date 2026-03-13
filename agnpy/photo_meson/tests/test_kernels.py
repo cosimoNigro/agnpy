@@ -4,27 +4,21 @@ import pytest
 
 import numpy as np
 import astropy.units as u
-from astropy.constants import c, h, m_p
-from agnpy.photo_meson.kernels import PhiKernel, secondaries, eta_0
-from agnpy.utils.math import axes_reshaper, ftiny, fmax, log10
+
+from astropy.constants import m_p
 from agnpy.utils.conversion import mpc2
 
-# to be used only for the the validation
-# import matplotlib.pyplot as plt
 from agnpy.emission_regions import Blob
-from agnpy.spectra import PowerLaw, ExpCutoffPowerLaw
+from agnpy.spectra import ExpCutoffPowerLaw
+from agnpy.photo_meson.kernels import PhiKernel, eta_0
 from agnpy.photo_meson.photo_meson import PhotoMesonProduction
 from agnpy.targets.targets import CMB
 
-
 from agnpy.utils.validation_utils import (
-    make_comparison_plot,
     extract_columns_sample_file,
     check_deviation,
     clean_and_make_dir,
 )
-
-eta_0 = 0.313
 
 agnpy_dir = Path(__file__).parent.parent.parent  # go to the agnpy root
 # where to read sampled files
@@ -51,26 +45,11 @@ class TestKernels:
         eta = float(eta_eta0) * eta_0
         phi_agnpy = phi(eta, x_ref).to_value("cm3 s-1")
 
-        # comparison plot
         x_max_comparison = 0.1 if eta_eta0 == "1.5" else 0.2
         x_range = [2e-4, x_max_comparison]
-        make_comparison_plot(
-            x=x_ref,
-            y_comp=x_ref * phi_agnpy,
-            y_ref=x_phi_ref,
-            comp_label="agnpy",
-            ref_label="Kelner and Aharonian (2008)",
-            fig_title=r"$\phi$" + f" {particle.replace('_', ' ')}",
-            fig_path=f"{figures_dir}/phi_comparison_particle_{particle}_eta_{eta_eta0}_eta0.png",
-            plot_type="custom",
-            x_label=r"$x = E_{\gamma} / E_{\rm p}$",
-            y_label=r"$x \phi(\eta, x)$",
-            y_range=None,
-            comparison_range=x_range,
-        )
-        # requires that the SED points deviate less than 25% from the figure
+
         assert check_deviation(
-            x_ref, x_ref * phi_agnpy, x_phi_ref, 0.25, x_range=x_range
+            x_ref, x_ref * phi_agnpy, x_phi_ref, 0.25, x_range = x_range
         )
     @pytest.mark.parametrize(
         "particle", ["gamma", "electron", "positron", "muon_neutrino", "muon_antineutrino", "electron_neutrino", "electron_antineutrino"]
@@ -93,12 +72,12 @@ class TestKernels:
         gamma_star = (E_star / mpc2).to_value("")
         
         n_p = ExpCutoffPowerLaw.from_total_energy_density(
-            1.0*u.Unit("erg/cm3"),
+            1.0 * u.Unit("erg/cm3"),
             mass = m_p,
             p = 2,
-            gamma_c = factor*gamma_star, # change fig_number!
-            gamma_min = (1.0*u.Unit("GeV")/mpc2).to_value(""),
-            gamma_max = 30.0*factor*gamma_star
+            gamma_c = factor * gamma_star,
+            gamma_min = (1.0 * u.Unit("GeV") / mpc2).to_value(""),
+            gamma_max = 30.0 * factor*gamma_star
             )
 
         blob = Blob(n_p = n_p)
@@ -112,12 +91,12 @@ class TestKernels:
                           usecols=(0, 1), 
                           unpack="True")
 
-        E_i = np.power(10,E_i)*u.Unit("eV")
-        spectrum_ref = np.power(10,spectrum_ref)#*u.Unit("cm-3 s-1")
+        E_i = np.power(10, E_i) * u.Unit("eV")
+        spectrum_ref = np.power(10, spectrum_ref) # * u.Unit("cm-3 s-1")
 
         pmp_cmb = PhotoMesonProduction(blob, cmb_target)
 
-        spectrum = ((pmp_cmb.evaluate_spectrum(E_i, particle = particle)*E_i).to_value(f"cm-3 s-1"))
+        spectrum = ((pmp_cmb.evaluate_spectrum(E_i, particle = particle) * E_i).to_value(f"cm-3 s-1"))
 
         E_i = E_i.to_value("eV")
 
@@ -125,5 +104,5 @@ class TestKernels:
 
         # requires that the SED points deviate less than 50% from the figure
         assert check_deviation(
-            E_i, spectrum, spectrum_ref, 0.50, x_range=E_range
+            E_i, spectrum, spectrum_ref, 0.50, x_range = E_range
         )

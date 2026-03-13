@@ -109,6 +109,7 @@ class PhotoMesonProduction:
         self,
         E,
         particle,
+        eta_log_range = 5,
         integrator = np.trapz
     ):
         """ Evaluate the spectrum of secondaries in the emission region reference frame
@@ -134,7 +135,7 @@ class PhotoMesonProduction:
         # Integral on eta to be done from eta_0 to infinity
         eta = np.logspace(
             log10(eta_0),
-            log10(eta_0) + 5,
+            log10(eta_0) + eta_log_range,
             100,
         )
         _H = self.H(
