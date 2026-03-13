@@ -233,14 +233,14 @@ class PhiKernel:
             y = np.where((x_plus - x_minus) != 0, (x - x_minus) / (x_plus - x_minus), -1)
             
             # x_x_min = x / x_minus
-            x_x_min = np.where(x_minus != 0,x/x_minus,0)
+            x_x_min = np.where(x_minus != 0, x / x_minus, 0)
             
             # _exp = np.exp(-s * np.log(x / x_minus) ** delta)
-            _exp = np.where(x_x_min >= 1, np.exp(-s * np.log(x_x_min)**delta), 0)
+            _exp = np.where(x_x_min >= 1, np.exp(-s * np.log(x_x_min) ** delta), 0)
     
             # _log = np.log(2 / (1 + y**2)) ** psi
-            _logy = np.where(y != -1, np.log(2 / (1 + y**2)), 0)
-            _log = np.where(_logy > 0, _logy**psi, 0)
+            _logy = np.where(y != -1, np.log(2 / (1 + y ** 2)), 0)
+            _log = np.where(_logy > 0, _logy ** psi, 0)
         
         _phi = np.where(
             (x > x_minus) * (x < x_plus),

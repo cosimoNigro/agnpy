@@ -91,10 +91,10 @@ class PhotoMesonProduction:
         _nu = _epsilon / h
         _x = _E / _E_p
         _H_integrand = (
-            mpc2**2 / 4                           # erg2
-            * ((mpc2**-1)*self.blob.n_p(_gamma_p) / _E_p**2) # cm-3 erg-3
-            * self.target(_nu)                    # cm-3 erg-1
-            * phi_kernel(_eta, _x)                # cm3 s-1
+            mpc2**2 / 4                                         # erg2
+            * ((mpc2**-1) * self.blob.n_p(_gamma_p) / _E_p**2)  # cm-3 erg-3
+            * self.target(_nu)                                  # cm-3 erg-1
+            * phi_kernel(_eta, _x)                              # cm3 s-1
         ).to("erg-2 cm-3 s-1")
 
         _H = integrator(
