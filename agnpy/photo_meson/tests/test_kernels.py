@@ -1,24 +1,29 @@
 # test the kernels
 from pathlib import Path
-import pytest
 
-import numpy as np
 import astropy.units as u
-
+import numpy as np
+import pytest
 from astropy.constants import m_p
-from agnpy.utils.conversion import mpc2
 
 from agnpy.emission_regions import Blob
-from agnpy.spectra import ExpCutoffPowerLaw
 from agnpy.photo_meson.kernels import PhiKernel, eta_0
 from agnpy.photo_meson.photo_meson import PhotoMesonProduction
+from agnpy.spectra import ExpCutoffPowerLaw
 from agnpy.targets.targets import CMB
-
+from agnpy.utils.conversion import mpc2
 from agnpy.utils.validation_utils import (
-    extract_columns_sample_file,
     check_deviation,
     clean_and_make_dir,
+    extract_columns_sample_file,
 )
+
+cmb = CMB(z=0.0)
+
+
+def cmb_target(nu):
+    return cmb.dn_dE(nu)
+
 
 agnpy_dir = Path(__file__).parent.parent.parent  # go to the agnpy root
 # where to read sampled files
@@ -35,10 +40,12 @@ class TestKernels:
     )
     @pytest.mark.parametrize("eta_eta0", ["1.5", "30"])
     def test_phi_interpolation(self, particle, eta_eta0):
-        """Test the interpolations against the plots presented in the [KelnerAharonian2008]_ paper."""
+        """Test the interpolations against the plots presented
+        in the [KelnerAharonian2008]_ paper."""
         # read the reference from file, note the y axis is already phi multiplied by x
         x_ref, x_phi_ref = extract_columns_sample_file(
-            f"{data_dir}/photo_meson/kelner_aharonian_2008/phi_values/phi_{particle}_eta_{eta_eta0}_eta0.csv"
+            f"{data_dir}/photo_meson/kelner_aharonian_2008/phi_values/"
+            f"phi_{particle}_eta_{eta_eta0}_eta0.csv"
         )
 
         phi = PhiKernel(particle)
@@ -49,60 +56,73 @@ class TestKernels:
         x_range = [2e-4, x_max_comparison]
 
         assert check_deviation(
-            x_ref, x_ref * phi_agnpy, x_phi_ref, 0.25, x_range = x_range
+            x_ref, x_ref * phi_agnpy, x_phi_ref, 0.25, x_range=x_range
         )
+
     @pytest.mark.parametrize(
-        "particle", ["gamma", "electron", "positron", "muon_neutrino", "muon_antineutrino", "electron_neutrino", "electron_antineutrino"]
+        "particle",
+        [
+            "gamma",
+            "electron",
+            "positron",
+            "muon_neutrino",
+            "muon_antineutrino",
+            "electron_neutrino",
+            "electron_antineutrino",
+        ],
     )
     @pytest.mark.parametrize("fig_number", ["14", "15", "16", "17"])
     def test_spectrum(self, particle, fig_number):
-        """Test the interpolations against the plots presented in the [KelnerAharonian2008]_ paper."""
-        
-        factor = 1.0e3
+        """Test the interpolations against the plots presented
+        in the [KelnerAharonian2008]_ paper."""
 
-        if fig_number == "14":
-            factor = 1e-1
-        if fig_number == "15":
-            factor = 1e0
-        if fig_number == "16":
-            factor = 1e1
+        factor = {"14": 0.1, "15": 1.0, "16": 10.0, "17": 1.0e3}
 
         # Blob with proton population
         E_star = 3e20 * u.Unit("eV")
         gamma_star = (E_star / mpc2).to_value("")
-        
+
+        gamma_c = factor[fig_number] * gamma_star
+
         n_p = ExpCutoffPowerLaw.from_total_energy_density(
             1.0 * u.Unit("erg/cm3"),
-            mass = m_p,
-            p = 2,
-            gamma_c = factor * gamma_star,
-            gamma_min = (1.0 * u.Unit("GeV") / mpc2).to_value(""),
-            gamma_max = 30.0 * factor*gamma_star
-            )
+            mass=m_p,
+            p=2,
+            gamma_c=gamma_c,
+            gamma_min=(1.0 * u.Unit("GeV") / mpc2).to_value(""),
+            gamma_max=30.0 * gamma_c,
+        )
 
-        blob = Blob(n_p = n_p)
+        blob = Blob(n_p=n_p)
 
-        cmb = CMB(z = 0.0)
-        cmb_target = lambda nu: cmb.dn_dE(nu)
-
-        E_i, spectrum_ref = np.genfromtxt(f"{data_dir}/photo_meson/kelner_aharonian_2008/fig{fig_number}_values/{particle}.txt", 
-                          dtype="float", 
-                          comments="#", 
-                          usecols=(0, 1), 
-                          unpack="True")
+        E_i, spectrum_ref = np.genfromtxt(
+            f"{data_dir}/photo_meson/kelner_aharonian_2008/fig{fig_number}_values/{particle}.txt",
+            dtype="float",
+            comments="#",
+            usecols=(0, 1),
+            unpack="True",
+        )
 
         E_i = np.power(10, E_i) * u.Unit("eV")
-        spectrum_ref = np.power(10, spectrum_ref) # * u.Unit("cm-3 s-1")
+        spectrum_ref = np.power(10, spectrum_ref)  # * u.Unit("cm-3 s-1")
 
         pmp_cmb = PhotoMesonProduction(blob, cmb_target)
 
-        spectrum = ((pmp_cmb.evaluate_spectrum(E_i, particle = particle) * E_i).to_value(f"cm-3 s-1"))
+        spectrum = (pmp_cmb.evaluate_spectrum(E_i, particle=particle) * E_i).to_value(
+            "cm-3 s-1"
+        )
 
         E_i = E_i.to_value("eV")
 
         E_range = [E_i.min(), E_i.max()]
 
-        # requires that the SED points deviate less than 50% from the figure
-        assert check_deviation(
-            E_i, spectrum, spectrum_ref, 0.50, x_range = E_range
-        )
+        # requires that the SED points deviate less than 25%
+        # (or 50% for specific cases) from the figure
+        if (
+            particle == "electron"
+            or particle == "electron_neutrino"
+            or particle == "electron_antineutrino"
+        ):
+            assert check_deviation(E_i, spectrum, spectrum_ref, 0.50, x_range=E_range)
+        else:
+            assert check_deviation(E_i, spectrum, spectrum_ref, 0.25, x_range=E_range)
