@@ -5,7 +5,7 @@ from ..utils.math import axes_reshaper, gamma_e_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e, mec2
 from ..radiative_process import RadiativeProcess
 
-class Synchrotron(RadiativeProcess):
+class SynchrotronCone(RadiativeProcess):
     """Class for synchrotron radiation computation
 
     Parameters
