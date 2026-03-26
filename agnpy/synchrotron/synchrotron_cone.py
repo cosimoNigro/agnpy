@@ -5,7 +5,17 @@ from ..utils.math import axes_reshaper, gamma_e_to_integrate
 from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e, mec2
 from ..radiative_process import RadiativeProcess
 
-class SynchrotronCone(RadiativeProcess):
+def Z(eta):
+    """Eq. 7.45 in [Dermer2009]_, angle-averaged integrand of the radiated power, the
+    approximation of this function, given in Eq. D7 of [Aharonian2010]_, is used.
+    """
+    term_1_num = 1.808 * np.power(eta, 1 / 3)
+    term_1_denom = np.sqrt(1 + 3.4 * np.power(eta, 2 / 3))
+    term_2_num = 1 + 2.21 * np.power(eta, 2 / 3) + 0.347 * np.power(eta, 4 / 3)
+    term_2_denom = 1 + 1.353 * np.power(eta, 2 / 3) + 0.217 * np.power(eta, 4 / 3)
+    return term_1_num / term_1_denom * term_2_num / term_2_denom * np.exp(-eta)
+
+class SynchrotronCone(Synchrotron):
     """Class for synchrotron radiation computation
 
     Parameters
@@ -22,14 +32,14 @@ class SynchrotronCone(RadiativeProcess):
         function to be used for integration (default = `np.trapz`)
 	"""
 
-    def __init__(self, emitter, nu_obs, ssa=False, integrator=np.trapz):
+    def __init__(self, emitter, ssa=False, integrator=np.trapz):
         self.emitter = emitter
-        self.nu_obs = nu_obs
         self.ssa = ssa
         self.integrator = integrator
 
-    def nu_obs_to_nu_fluid(self):
-        self.nu_fluid = self.nu_obs * (1+ self.emitter.z) / self.emitter.delta_D
+    # Can be shifted to utility function?
+    def nu_obs_to_nu_fluid(self, nu_obs):
+        self.nu_fluid = nu_obs * (1+ self.emitter.z) / self.emitter.delta_D
         return self.nu_fluid 
     
     def flux_obs(self, nu_obs):
@@ -110,7 +120,6 @@ class SynchrotronCone(RadiativeProcess):
         x,           # spatial coordinate array (Quantity)
         gamma_e,       # Electron Lorentz factor array (ndarray)
         N_e_xg,         # electron distribution array shape (N_x, N_gamma)
-        mass=m_e,
         integrator=np.trapz,
     ):
         """
@@ -130,7 +139,7 @@ class SynchrotronCone(RadiativeProcess):
             axis=1
             )                                        # (N_x, N_nu)
     # --- prefactor √3 e³ B / (m c²) ---
-        prefactor = (np.sqrt(3) * (e.gauss)**3 * B_x[:, None] / (mass.cgs * c.cgs**2)).cgs
+        prefactor = (np.sqrt(3) * (e.gauss)**3 * B_x[:, None] / (mec2.cgs)).cgs
         emission = prefactor * gamma_integral  # (N_x, N_nu) 
         P_synch = integrator(emission, x, axis=0)
         return P_synch.to("erg Hz-1 s-1")

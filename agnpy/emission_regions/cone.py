@@ -49,7 +49,8 @@ class Cone:
 ## Keeping the default parameters same as defined in Blob (CΟNFIRM FOR NEW PARAMETERS!!!!)
     def __init__(
         self,
-        R_o =1e16 * u.cm,
+        W_j =(1e34 * u.W).to('erg s-1'),
+        A_equi = 1.0,
         L = 1e18 * u.cm,
         theta = 5 * u.deg, 
         z=0.033,
@@ -65,7 +66,8 @@ class Cone:
         if not isinstance(delta_D, numbers.Number) or delta_D <= 0:
             raise ValueError("delta_D must be a positive number")
 
-        self.R_o = R_o.to("cm")
+        self.W_j = W_j.to('erg s-1')
+        self.A_equi = A_equi
         self.L = L.to("cm")
         self.theta = theta.to("rad")
         self.z = z
@@ -87,11 +89,15 @@ class Cone:
         return 1/3 * (np.pi * self.L) * (self.R_o**2 + self.R_o*R_L + R_L**2)
     
     @property
+    def R_o(self):
+        """Radius at base derived from lab frame jet power and equipartition"""
+        u_B = ((self.B_o**2)/(8*np.pi)).to('erg cm-3')
+        R_o_squared = (self.W_j)/(2*u_B*np.pi*(self.Gamma**2)*c.cgs)
+        return np.sqrt(R_o_squared).to('cm')
+
+    @property
     def R_x(self):
-        return self.R_o + self.x * np.tan(self.theta.value)
-    
-    #For a jet with a constant bulk Lorentz factor which conserves magnetic energy in each segment the magnetic field 
-    # will change as a function of the radius of the jet so that the total magnetic energy is conserved in a segment.
+        return self.R_o + self.x * np.tan(self.theta)
     
     @property
     def B_x(self):
@@ -99,10 +105,7 @@ class Cone:
 
     @property
     def x(self):
-        x = np.logspace(
-        np.log10(1e-3),  # small value to avoid exactly 0, in cm
-        np.log10(self.L.to_value("cm")),
-        self.x_size) * u.cm
+        x = np.logspace(np.log10(1), np.log10(self.L.to_value("cm")), self.x_size) * u.cm
         return x
     
     @property
@@ -113,7 +116,7 @@ class Cone:
             np.log10(self._n_e.gamma_min), np.log10(self._n_e.gamma_max), self.gamma_e_size
         #gamma_max is computed through x_i ; based on Fermi 1st order acceleration coefficient
         )
-
+    
     @property
     def gamma_e_external_frame(self):
         """Array of electrons Lorentz factors, to be used for integration in the
@@ -123,41 +126,45 @@ class Cone:
 ## 3. Electron Properties: Number Density, Total Number, Energy Density, Total Energy
     @property
     def n_e_base(self):
-        """Electron distribution."""
-        return self._n_e(self.gamma_e) 
+        """Electron distribution as obtained by agnpy.spectra
+        units: cm-3
+        """
+        return self._n_e(self.gamma_e)
     
     @property
     def N_e_base(self):
-        """Number of electrons at the base in a width of 1 cm"""
-        return self.n_e_base * np.pi * self.R_o**2 * (1 * u.cm)
+        """Number of electrons at the base in a slice of width 1 cm"""
+        return self.n_e_base * np.pi * (self.R_o**2) 
 
     @property
     def norm_equi(self):
+        """Modified normalization to convolve with input electron distribution
+        to impose equipartition. Obtained by equating Magnetic Energy at the base to 
+        Electron Energy. 
+        units: cm-3"""
         e_energy_initial = np.trapz(self.gamma_e * self.N_e_base, self.gamma_e)
-        K_dash = ( np.pi * self.R_o**2 * self.B_o ** 2 ) / (8 * np.pi * mec2 * e_energy_initial )
-        return K_dash
-    
-    """
-    def norm_equi(self):
-        e_energy_initial = np.trapz(self.gamma_e * self.N_e_xg, self.gamma_e)
-        K_dash = ( np.pi * self.R_x**2 * self.B_x ** 2 ) / (8 * np.pi * mec2 * e_energy_initial )
-        return K_dash
-    """
+        K_dash = ( np.pi * self.R_o**2 * (self.B_o ** 2) ) / (8 * np.pi * mec2 * e_energy_initial )
+        return K_dash.cgs
+
     @property
     def N_e_xg(self):
+        """Solution to the Electron Evolution Equation as described in Eq 11 in Cotter[2018]
+        Returns: the number of electrons per cm at position x along the jet axis"""
         n0 = self.norm_equi * self.N_e_base[None,:] # (1, N_gamma)
-        int_B = cumulative_trapezoid((self.B_x)**2, self.x, initial=0)  # (N_x, 1)
-        cooling = ( sigma_T.cgs * self.gamma_e[None,:] *int_B[:,None] ) / ( 6 * np.pi * mec2.cgs )
-        N_e_xg = n0 * np.exp(-cooling.value)
+        int_B = cumulative_trapezoid((self.B_x)**2, self.x, initial=0) # (N_x, 1)
+        cooling = ( sigma_T.cgs * self.gamma_e[None,:] *(int_B[:,None])) / ( 6 * np.pi * mec2.cgs )
+        N_e_xg = n0 * np.exp(-cooling.value) 
         return (N_e_xg).cgs
 
     @property
     def N_e_gamma(self):
-        N_e_gamma = np.trapz( self.N_e_xg, self.x, axis=0)
+        """Number of electrons as a function of gamma across the Jet"""
+        N_e_gamma = np.trapz(self.N_e_xg, self.x, axis=0)
         return N_e_gamma
     
     @property
     def N_e_x(self): 
+        """Number of electrons per cm at position x along the jet axis"""
         N_e_x = np.trapz( self.N_e_xg, self.gamma_e, axis=1)
         return N_e_x 
     
@@ -192,41 +199,6 @@ class Cone:
         """
         N_e = np.trapz(self.N_e_x, self.x)
         return N_e
-
-    @property
-    def P_jet_ke(self):
-        r"""Total jet power in kinetic energy of the particles 
-
-        .. math::
-            P_{{\rm jet},\,{\rm ke}} = 2 \pi R_{\rm b}^2 \beta \Gamma^2 c (u_{\rm e} + u_{\rm p}).
-        """
-        P_jet_ke = (1/self.L) * c.cgs * self.Beta * self.Gamma**2 * (np.trapz(self.U_e_x, self.x))
-        return P_jet_ke.to("erg s-1")
-
-    @property
-    def P_jet_B(self):
-        r"""Jet power in magnetic field as a function of distance
-
-        .. math::
-            P_{\mathrm{jet},\,B} = 2 \pi R_{\rm b}^2 \beta \Gamma^2 c \frac{B^2}{8\pi}.
-        """
-        P_jet_B = (1/self.L) * c.cgs * self.Gamma**2 * (np.trapz(self.U_b_x, self.x))
-        return P_jet_B.to("erg s-1")
-    
-    @property
-    def P_total_jet(self):
-        P_total_jet = self.P_jet_B + self.P_jet_ke
-        return P_total_jet
-    
-    @property
-    def A_eq_base(self):
-        return (self.U_e_x[0] / self.U_b_x[0]).to_value("")
-
-    @property 
-    def k_eq(self):
-        """Equipartition parameter: ratio between totoal particle energy density
-        and magnetic field energy density, Eq. 7.75 of [DermerMenon2009]_"""
-        return (self.P_jet_ke / self.P_jet_B).to_value("")
         
     @property
     def Beta(self):

@@ -1,3 +1,4 @@
-from .synchrotron import *
+from .BaseSynchrotron import *
 from .proton_synchrotron import *
-from .synchrotron_cone import *
+
+

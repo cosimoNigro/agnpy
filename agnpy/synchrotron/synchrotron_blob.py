@@ -68,7 +68,7 @@ def tau_to_attenuation(tau):
     return np.where(tau < 1e-3, 1, 3 * u / tau)
 
 
-class Synchrotron(RadiativeProcess):
+class SynchrotronBlob(RadiativeProcess):
     """Class for synchrotron radiation computation
 
     Parameters
@@ -85,8 +85,8 @@ class Synchrotron(RadiativeProcess):
         function to be used for integration (default = `np.trapz`)
 	"""
 
-    def __init__(self, blob, ssa=False, integrator=np.trapz):
-        self.blob = blob
+    def __init__(self, emitter, ssa=False, integrator=np.trapz):
+        self.blob = emitter
         self.ssa = ssa
         self.integrator = integrator
 
@@ -275,3 +275,5 @@ class Synchrotron(RadiativeProcess):
         """
         idx_max = self.sed_flux(nu).argmax()
         return nu[idx_max]
+
+
