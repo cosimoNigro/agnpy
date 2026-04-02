@@ -49,14 +49,13 @@ class Cone:
 ## Keeping the default parameters same as defined in Blob (CΟNFIRM FOR NEW PARAMETERS!!!!)
     def __init__(
         self,
-        W_j =(1e34 * u.W).to('erg s-1'),
-        A_equi = 1.0,
         L = 1e18 * u.cm,
+        R_o = 1e14 * u.cm, 
+        B_o = 1 * u.G,
         theta = 5 * u.deg, 
         z=0.033,
         delta_D=10,
         Gamma=10,
-        B_o=1 * u.G,
         n_e : ParticleDistribution = PowerLaw(mass=m_e),
         xi=1.0,
         gamma_e_size=200,
@@ -66,21 +65,36 @@ class Cone:
         if not isinstance(delta_D, numbers.Number) or delta_D <= 0:
             raise ValueError("delta_D must be a positive number")
 
-        self.W_j = W_j.to('erg s-1')
-        self.A_equi = A_equi
         self.L = L.to("cm")
+        self.R_o = R_o
+        self.B_o = B_o
         self.theta = theta.to("rad")
         self.z = z
         # if the luminosity distance is not specified, it will be computed from z
         self.d_L = Distance(z=self.z, cosmology=cosmology).cgs
         self.delta_D = delta_D
         self.Gamma = Gamma
-        self.B_o = B_to_cgs(B_o)
         self._n_e : ParticleDistribution = n_e          
         self.xi = xi
         self.gamma_e_size = gamma_e_size
         self.x_size = x_size
     
+    @classmethod
+    def from_jet_power(cls, W_j, **kwargs ):
+        B = kwargs.get("B_o")
+        gamma = kwargs.get("Gamma")
+        u_B = ((B_to_cgs(B)**2)/(8*np.pi)).to('erg cm-3')
+        R_o_squared = (W_j)/(2*u_B*np.pi*(gamma**2)*c.cgs)
+        R_o = np.sqrt(R_o_squared).to('cm')
+        return cls( R_o=R_o , **kwargs)
+
+    #@property
+    #def R_o(self):
+    #    """Radius at base derived from lab frame jet power and equipartition"""
+    #    u_B = ((self.B_o**2)/(8*np.pi)).to('erg cm-3')
+    #    R_o_squared = (self.W_j)/(2*u_B*np.pi*(self.Gamma**2)*c.cgs)
+    #    return np.sqrt(R_o_squared).to('cm')
+        
 ## 1. Jet Structure
     @property
     def V_c(self):
@@ -88,12 +102,6 @@ class Cone:
         R_L = self.R_o + self.L * np.tan(self.theta)
         return 1/3 * (np.pi * self.L) * (self.R_o**2 + self.R_o*R_L + R_L**2)
     
-    @property
-    def R_o(self):
-        """Radius at base derived from lab frame jet power and equipartition"""
-        u_B = ((self.B_o**2)/(8*np.pi)).to('erg cm-3')
-        R_o_squared = (self.W_j)/(2*u_B*np.pi*(self.Gamma**2)*c.cgs)
-        return np.sqrt(R_o_squared).to('cm')
 
     @property
     def R_x(self):
