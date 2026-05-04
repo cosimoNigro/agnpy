@@ -1,4 +1,4 @@
-import numpy as np
+ import numpy as np
 import astropy.units as u
 from astropy.constants import e, h, c, m_e, sigma_T, mu0
 from ..utils.math import axes_reshaper, gamma_e_to_integrate

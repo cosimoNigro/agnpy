@@ -6,6 +6,11 @@ it contains the electron energy distributions"""
 import numbers
 from typing import Iterable
 
+import matplotlib.pyplot as plt
+from astropy.constants import c, sigma_T, m_e, e, mu0
+from scipy.sparse import diags
+from matplotlib import cycler, rcParams
+from agnpy.utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e, mec2
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import Distance
@@ -13,8 +18,11 @@ from scipy.integrate import cumulative_trapezoid
 from astropy.constants import c, sigma_T, m_e
 
 from .. import InterpolatedDistribution, ParticleDistribution
+from agnpy.spectra.spectra import ExpCutoffPowerLaw
 from ..spectra import PowerLaw
 from ..utils.conversion import mec2, mpc2, B_to_cgs
+from ..utils.numerical_methods import *
+
 
 
 class Cone:
@@ -30,7 +38,7 @@ class Cone:
         Initial radius at the base of the cone 
     L : :class:`~astropy.units.Quantity`
         Length of the Jet
-    theta_OPEN : class:`~astropy.units.Quantity`
+    theta : class:`~astropy.units.Quantity`
         Opening angle of the cone
     z : float
         redshift of the source
@@ -67,7 +75,7 @@ class Cone:
 
         self.L = L.to("cm")
         self.R_o = R_o
-        self.B_o = B_o
+        self.B_o = B_to_cgs(B_o)
         self.theta = theta.to("rad")
         self.z = z
         # if the luminosity distance is not specified, it will be computed from z
@@ -87,43 +95,53 @@ class Cone:
         R_o_squared = (W_j)/(2*u_B*np.pi*(gamma**2)*c.cgs)
         R_o = np.sqrt(R_o_squared).to('cm')
         return cls( R_o=R_o , **kwargs)
-
-    #@property
-    #def R_o(self):
-    #    """Radius at base derived from lab frame jet power and equipartition"""
-    #    u_B = ((self.B_o**2)/(8*np.pi)).to('erg cm-3')
-    #    R_o_squared = (self.W_j)/(2*u_B*np.pi*(self.Gamma**2)*c.cgs)
-    #    return np.sqrt(R_o_squared).to('cm')
         
 ## 1. Jet Structure
     @property
     def V_c(self):
-        """Volume of the cone."""
+        """Volume of the truncated cone."""
         R_L = self.R_o + self.L * np.tan(self.theta)
         return 1/3 * (np.pi * self.L) * (self.R_o**2 + self.R_o*R_L + R_L**2)
-    
 
     @property
     def R_x(self):
+        """Radius of the cone as a function of distance from the base"""
         return self.R_o + self.x * np.tan(self.theta)
     
     @property
     def B_x(self):
+        """Magnetic field of the cone as a function of distance from the base"""
         return self.B_o * (self.R_o / self.R_x)
 
     @property
-    def x(self):
-        x = np.logspace(np.log10(1), np.log10(self.L.to_value("cm")), self.x_size) * u.cm
-        return x
+    def x_cc(self, x_min=0.01 * u.pc):
+        """Spatial grid"""
+        x_cc = np.logspace(
+            np.log10(x_min.to_value("pc")),
+            np.log10(self.L.to_value("pc")),
+            self.x_size
+        ) * u.pc
+        return x_cc.to('cm')
     
     @property
-    def gamma_e(self):
+    def x(self):
+        """Spatial grid modified for Chang and Cooper numerical scheme"""
+        return self.x_cc[1:]
+    
+    @property
+    def gamma_e_cc(self):
         """Array of electrons Lorentz factors, to be used for integration in the
         reference frame comoving with the emission region."""
         return np.logspace(
             np.log10(self._n_e.gamma_min), np.log10(self._n_e.gamma_max), self.gamma_e_size
         #gamma_max is computed through x_i ; based on Fermi 1st order acceleration coefficient
         )
+    
+    @property
+    def gamma_e(self):
+        """Array of electrons Lorentz factors modified for Chang and Cooper numerical method, 
+        to be used for integration in the reference frame comoving with the emission region."""
+        return self.gamma_e_cc[1:-1:2]
     
     @property
     def gamma_e_external_frame(self):
@@ -134,35 +152,35 @@ class Cone:
 ## 3. Electron Properties: Number Density, Total Number, Energy Density, Total Energy
     @property
     def n_e_base(self):
-        """Electron distribution as obtained by agnpy.spectra
+        """Electron distribution as obtained by agnpy.spectra, with modified normalization 
+        imposed due to equipartition condition (check norm_equi)
         units: cm-3
         """
-        return self._n_e(self.gamma_e)
-    
-    @property
-    def N_e_base(self):
-        """Number of electrons at the base in a slice of width 1 cm"""
-        return self.n_e_base * np.pi * (self.R_o**2) 
+        return self._n_e(self.gamma_e)*self.norm_equi*u.cm**-3
 
     @property
     def norm_equi(self):
         """Modified normalization to convolve with input electron distribution
-        to impose equipartition. Obtained by equating Magnetic Energy at the base to 
-        Electron Energy. 
+        to impose equipartition. Obtained by equating magnetic energy density at the base to 
+        electron energy density. 
         units: cm-3"""
-        e_energy_initial = np.trapz(self.gamma_e * self.N_e_base, self.gamma_e)
-        K_dash = ( np.pi * self.R_o**2 * (self.B_o ** 2) ) / (8 * np.pi * mec2 * e_energy_initial )
+        e_energy_initial = mec2.to('eV') * np.trapz(self.gamma_e_cc * self._n_e(self.gamma_e_cc), self.gamma_e_cc)
+        e_energy_initial *= u.Unit('cm-3')
+        K_dash = ( (self.B_o ** 2) ) / (8 * np.pi * e_energy_initial )
         return K_dash.cgs
-
+    
     @property
     def N_e_xg(self):
-        """Solution to the Electron Evolution Equation as described in Eq 11 in Cotter[2018]
-        Returns: the number of electrons per cm at position x along the jet axis"""
-        n0 = self.norm_equi * self.N_e_base[None,:] # (1, N_gamma)
-        int_B = cumulative_trapezoid((self.B_x)**2, self.x, initial=0) # (N_x, 1)
-        cooling = ( sigma_T.cgs * self.gamma_e[None,:] *(int_B[:,None])) / ( 6 * np.pi * mec2.cgs )
-        N_e_xg = n0 * np.exp(-cooling.value) 
-        return (N_e_xg).cgs
+        """Solution to the Electron Evolution Equation using Chang and Cooper scheme. 
+        Returns the number of electrons per cm """
+        cc_solver = ChangCooperSolver(
+        gamma_e = self.gamma_e_cc,
+        x = self.x_cc,
+        R_o =self.R_o,
+        theta_open = self.theta,
+        n_e = self._n_e)
+        N_e_xg = cc_solver.run()
+        return N_e_xg*self.norm_equi
 
     @property
     def N_e_gamma(self):
@@ -222,7 +240,6 @@ class Cone:
     def theta_s(self):
         """Viewing angle from the jet axis to the observer."""
         return (np.arccos(self.mu_s) * u.rad).to("deg")
-
 
     def set_delta_D(self, Gamma, theta_s):
         """Set the Doppler factor by specifying the bulk Lorentz factor of the
