@@ -15,4 +15,5 @@ repos:
     hooks:
       - id: flake8
         exclude: experiments
+        language: system
         args: ["--count", "--max-line-length=100", "--extend-ignore=E203,E712,W503"]

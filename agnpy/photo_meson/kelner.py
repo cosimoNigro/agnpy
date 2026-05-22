@@ -1,34 +1,10 @@
 import astropy.units as u
-from astropy.constants import m_e, m_p, c, e, h, hbar, k_B
-from astropy.table import Table, Column
-from astropy.coordinates import Distance
-from scipy.integrate import quad, dblquad, nquad, simps, trapz
-from scipy.interpolate import interp1d
 import numpy as np
-import matplotlib.pyplot as plt
-import timeit
-import re
-from ..utils.math import axes_reshaper, gamma_p_to_integrate
-from ..utils.conversion import (
-    epsilon_equivalency,
-    nu_to_epsilon_prime,
-    B_to_cgs,
-    lambda_c_e,
-)
+from astropy.constants import c, m_e, m_p
+from scipy.integrate import nquad
+from scipy.interpolate import interp1d
 
-# to be used in the future to make the code faster:
-from numba import jit
-
-
-def epsilon_equivalency(nu, m=m_e):
-    if m == m_e:
-        epsilon_equivalency = h.to("eV s") * nu / mec2
-
-    elif m == m_p:
-        epsilon_equivalency = h.to("eV s") * nu / mpc2
-
-    return epsilon_equivalency
-
+from ..utils.conversion import epsilon_equivalency
 
 """ Photomeson process.
 
@@ -206,7 +182,8 @@ class KelnerAharonian:
     def spectrum_calculator(
         gammas, particle_distribution, soft_photon_distribution, particle
     ):
-        output_spec = gammas  # it is either gammas for electrons, positrons or epsilon for photons, neutrinos
+        # it is either gammas for electrons, positrons or epsilon for photons, neutrinos
+        output_spec = gammas
         spectrum_array = np.zeros(len(output_spec))
 
         for i, g in enumerate(output_spec):
@@ -222,7 +199,6 @@ class KelnerAharonian:
 
             gamma_max = 1e16
             dNdE = []
-            gamma_range = [gamma_limit, gamma_max]
             y_limit = np.log10(gamma_limit)
             y_max = np.log10(gamma_max)
             y_range = [y_limit, y_max]
