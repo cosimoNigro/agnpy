@@ -155,8 +155,8 @@ class Cone:
         """Electron distribution as obtained by agnpy.spectra, with modified normalization 
         imposed due to equipartition condition (check norm_equi)
         units: cm-3
-        """
-        return self._n_e(self.gamma_e)*self.norm_equi*u.cm**-3
+        """ 
+        return (self._n_e(self.gamma_e_cc)[1:-1:2])*self.norm_equi*u.cm**-3 *np.pi * self.R_o**2
 
     @property
     def norm_equi(self):
@@ -177,10 +177,11 @@ class Cone:
         gamma_e = self.gamma_e_cc,
         x = self.x_cc,
         R_o =self.R_o,
+        B_o = self.B_o,
         theta_open = self.theta,
-        n_e = self._n_e)
+        n_e = self.n_e_base)
         N_e_xg = cc_solver.run()
-        return N_e_xg*self.norm_equi
+        return N_e_xg
 
     @property
     def N_e_gamma(self):

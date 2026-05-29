@@ -1,42 +1,58 @@
-# module containing the synchrotron radiative process
 import numpy as np
+from agnpy.emission_regions import Cone, Blob
 import astropy.units as u
 from astropy.constants import e, h, c, m_e, sigma_T, mu0
 from ..utils.math import axes_reshaper, gamma_e_to_integrate
-from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e
+from ..utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e, mec2
 from ..radiative_process import RadiativeProcess
-
-
-__all__ = ["R", "nu_synch_peak", "Synchrotron"]
-
 e = e.gauss
-B_cr = 4.414e13 * u.G  # critical magnetic field
 
+# ============================================================
+# Utility Functions
+# ============================================================
 
-def R(x):
-    """Eq. 7.45 in [Dermer2009]_, angle-averaged integrand of the radiated power, the
-    approximation of this function, given in Eq. D7 of [Aharonian2010]_, is used.
-    """
-    term_1_num = 1.808 * np.power(x, 1 / 3)
-    term_1_denom = np.sqrt(1 + 3.4 * np.power(x, 2 / 3))
-    term_2_num = 1 + 2.21 * np.power(x, 2 / 3) + 0.347 * np.power(x, 4 / 3)
-    term_2_denom = 1 + 1.353 * np.power(x, 2 / 3) + 0.217 * np.power(x, 4 / 3)
-    return term_1_num / term_1_denom * term_2_num / term_2_denom * np.exp(-x)
-
+def nu_obs_to_nu_fluid(nu_obs, z, delta_D):
+    """Convert observed frequency to comoving (fluid) frame."""
+    nu_fluid = nu_obs * (1+ z) / delta_D
+    return nu_fluid 
 
 def nu_synch_peak(B, gamma, mass=m_e):
-    """observed peak frequency for monoenergetic electrons
-    Eq. 7.19 in [DermerMenon2009]_"""
+    """Critical synchrotron frequency (Dermer 2009 Eq. 7.19)."""
     B = B_to_cgs(B)
-    nu_peak = (e * B / (2 * np.pi * mass * c)) * np.power(gamma, 2)
+    nu_peak = (3 * e * B / (4 * np.pi * mass * c)) * np.power(gamma, 2)
     return nu_peak.to("Hz")
 
+def Z(eta):
+    """Synchrotron kernel approximation (Aharonian 2010, Eq. D7)."""
+    term_1_num = 1.808 * np.power(eta, 1 / 3)
+    term_1_denom = np.sqrt(1 + 3.4 * np.power(eta, 2 / 3))
+    term_2_num = 1 + 2.21 * np.power(eta, 2 / 3) + 0.347 * np.power(eta, 4 / 3)
+    term_2_denom = 1 + 1.353 * np.power(eta, 2 / 3) + 0.217 * np.power(eta, 4 / 3)
+    return term_1_num / term_1_denom * term_2_num / term_2_denom * np.exp(-eta)
 
-def calc_x(B_cgs, epsilon, gamma, mass=m_e):
+def tau_to_attenuation(tau):
+    """Convert SSA optical depth → attenuation factor.
+    Eq. 7.122 in [DermerMenon2009]_."""
+    u = 0.5 + np.exp(-tau) / tau - (1 - np.exp(-tau)) / np.power(tau, 2)
+    return np.where(tau < 1e-3, 1, 3 * u / tau)
+
+def epsilon_B(B):
+    r""":math:`\epsilon_B`, Eq. 7.21 [DermerMenon2009]_"""
+    return (B / B_cr).to_value("")
+
+def single_particle_synch_power(B_cgs, epsilon, gamma, mass=m_e):
+    """angle-averaged synchrotron power for a single particle of mass m_e,
+    to be folded with the electron distribution
+    """
+    eta = calc_eta(B_cgs, epsilon, gamma, mass)
+    prefactor = np.sqrt(3) * np.power(e, 3) * B_cgs / h
+    return prefactor * Z(eta)
+
+def calc_eta(B_cgs, epsilon, gamma, mass=m_e):
     """ratio of the frequency to the critical synchrotron frequency from
     Eq. 7.34 in [DermerMenon2009]_, argument of R(x),
     note B has to be in cgs Gauss units"""
-    x = (
+    eta = (
         4
         * np.pi
         * epsilon
@@ -44,28 +60,103 @@ def calc_x(B_cgs, epsilon, gamma, mass=m_e):
         * np.power(c, 3)
         / (3 * e * B_cgs * h * np.power(gamma, 2))
     )
-    return x.to_value("")
+    return eta.value
 
+def eta(nu_fluid, nu_peak):
+    """Calculates ration of frequency to critical synchrotron frequency
+    for Conical Jet Model"""
+    eta = nu_fluid / nu_peak
+    return eta
 
-def epsilon_B(B):
-    r""":math:`\epsilon_B`, Eq. 7.21 [DermerMenon2009]_"""
-    return (B / B_cr).to_value("")
-
-
-def single_particle_synch_power(B_cgs, epsilon, gamma, mass=m_e):
-    """angle-averaged synchrotron power for a single particle of mass m_e,
-    to be folded with the electron distribution
+def P_sync(
+        nu_fluid,         # Ratio b/w Observed Frequency Array and Critical Frequency 
+        B_x,           # magnetic field array along x (Quantity)
+        x,           # spatial coordinate array (Quantity)
+        gamma_e,       # Electron Lorentz factor array (ndarray)
+        N_e_xg,         # electron distribution array shape (N_x, N_gamma)
+        integrator=np.trapz,
+    ):
+ 
     """
-    x = calc_x(B_cgs, epsilon, gamma, mass)
-    prefactor = np.sqrt(3) * np.power(e, 3) * B_cgs / h
-    return prefactor * R(x)
+    Compute synchrotron emission for a conical jet.
+
+    Parameters
+    ----------
+    nu_fluid : array-like
+        Frequencies in the comoving (fluid) frame, shape (1,1,N_nu)
+    B_x : array-like
+        Magnetic field along the jet, shape (N_x,1,1)
+    x : array-like
+        Spatial coordinate along the jet (cm), shape (N_x,)
+    gamma_e : array-like
+        Electron Lorentz factors, shape (1,N_gamma,1)
+    N_e_xg : array-like
+        Electron distribution, shape (N_x,N_gamma,1)
+
+    Returns
+    -------
+    emission_x_nu : ndarray
+        Differential emissivity along the jet (before x-integration),
+        shape (N_x, N_nu)
+    kernel_Z : ndarray
+        Synchrotron kernel Z(η), shape (N_x, N_gamma, N_nu)
+    L_nu_fluid : Quantity
+        Total luminosity in fluid frame (integrated over x), [erg s⁻¹ Hz⁻¹]
+
+    Notes
+    -----
+    Implements Eq. 7.44 from Dermer (2009).
+    P_mu_fluid = ∫ dx  [ √3 e^3 B(x) / (m_e c^2) ] ∫ d(gamma) N_e(gamma,x) Z(eta = mu/mu_c)
+    """   
+
+    # Calculate Synchrotron Peak
+    nu_peak = nu_synch_peak(B_x, gamma_e)
+    #Calculate Eta
+    eta_ = eta(nu_fluid,nu_peak)
+    Z_eta = Z(eta_)
+    # --- integrate over gamma ---
+    gamma_integral = integrator(
+            B_x * N_e_xg * Z_eta,
+            gamma_e,
+            axis=1
+            )                                        
+    # --- prefactor √3 e³ / (m c²) ---
+    prefactor = (np.sqrt(3) * (e)**3 / (mec2.cgs)).cgs
+    emission = prefactor * gamma_integral  
+    P_synch = integrator(emission, x, axis=0)
+    return nu_peak, emission, Z_eta, P_synch.to("erg Hz-1 s-1")
 
 
-def tau_to_attenuation(tau):
-    """Converts the synchrotron self-absorption optical depth to an attenuation
-    Eq. 7.122 in [DermerMenon2009]_."""
-    u = 1 / 2 + np.exp(-tau) / tau - (1 - np.exp(-tau)) / np.power(tau, 2)
-    return np.where(tau < 1e-3, 1, 3 * u / tau)
+# ============================================================
+# Main Synchrotron Wrapper
+# ============================================================
+
+class Synchrotron(RadiativeProcess):
+    """Class for synchrotron radiation computation
+
+    Parameters
+    ----------
+    emitter : :class:`~agnpy.emission_region`
+        emitting region and electron distribution
+    ssa : bool
+        whether or not to consider synchrotron self absorption (SSA).
+        The absorption factor will be taken into account in
+        :func:`~agnpy.synchrotron.Synchrotron.com_sed_emissivity`, in order to be
+        propagated to :func:`~agnpy.synchrotron.Synchrotron.sed_luminosity` and
+        :func:`~agnpy.synchrotron.Synchrotron.sed_flux`.
+    integrator : func
+        function to be used for integration (default = `np.trapz`)
+	"""
+    def __init__(self, emitter, ssa=False, integrator=np.trapz):
+        self.ssa = ssa
+        self.integrator = integrator
+        if isinstance(emitter, Cone):
+            self._model = SynchrotronCone(emitter, ssa, integrator)
+        elif isinstance(emitter, Blob):
+            self._model = SynchrotronBlob(emitter, ssa, integrator)
+
+    def __getattr__(self, name):
+        return getattr(self._model, name)
 
 
 class SynchrotronBlob(RadiativeProcess):
@@ -275,5 +366,3 @@ class SynchrotronBlob(RadiativeProcess):
         """
         idx_max = self.sed_flux(nu).argmax()
         return nu[idx_max]
-
-
