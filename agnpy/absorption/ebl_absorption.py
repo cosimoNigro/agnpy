@@ -5,7 +5,6 @@ import astropy.units as u
 from astropy.io import fits
 from scipy.interpolate import RegularGridInterpolator
 
-
 __all__ = ["ebl_files_dict", "EBL"]
 
 agnpy_dir = Path(__file__).parent.parent
@@ -45,7 +44,9 @@ class EBL:
         """load the reference values from the table file to be interpolated later"""
         f = fits.open(self.model_file)
         # energies are in KeV, redshift is dimensionless
-        self.energy_ref = np.sqrt(f["ENERGIES"].data["ENERG_LO"] * f["ENERGIES"].data["ENERG_HI"])
+        self.energy_ref = np.sqrt(
+            f["ENERGIES"].data["ENERG_LO"] * f["ENERGIES"].data["ENERG_HI"]
+        )
         self.z_ref = f["SPECTRA"].data["PARAMVAL"]
         self.values_ref = f["SPECTRA"].data["INTPSPEC"]
         # Franceschini 2008 file has two PARAMVAL rows repeated
@@ -60,7 +61,7 @@ class EBL:
             points=(self.energy_ref, self.z_ref),
             values=self.values_ref.T,
             method="linear",
-            bounds_error=False
+            bounds_error=False,
         )
 
     def absorption(self, nu, z):

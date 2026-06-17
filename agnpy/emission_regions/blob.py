@@ -1,6 +1,5 @@
-"""This module describes the emission regions responsible for the
-acceleration of particles to relativistic energies. Beside physical quantities
-related to the emission itself it contains the electrons energy distributions"""
+#Module describing the blob emission region
+
 import numbers
 from typing import Iterable
 
@@ -12,7 +11,6 @@ from astropy.constants import c, sigma_T, m_e
 from .. import InterpolatedDistribution, ParticleDistribution
 from ..spectra import PowerLaw
 from ..utils.conversion import mec2, mpc2, B_to_cgs
-
 
 __all__ = ["Blob"]
 
@@ -65,12 +63,12 @@ class Blob:
         delta_D=10,
         Gamma=10,
         B=1 * u.G,
-        n_e : ParticleDistribution = PowerLaw(mass=m_e),
-        n_p : ParticleDistribution = None,
+        n_e: ParticleDistribution = PowerLaw(mass=m_e),
+        n_p: ParticleDistribution = None,
         xi=1.0,
         gamma_e_size=200,
         gamma_p_size=200,
-        cosmology=None
+        cosmology=None,
     ):
         if not isinstance(delta_D, numbers.Number) or delta_D <= 0:
             raise ValueError("delta_D must be a positive number")
@@ -82,8 +80,8 @@ class Blob:
         self.delta_D = delta_D
         self.Gamma = Gamma
         self.B = B
-        self._n_e : ParticleDistribution = n_e
-        self._n_p : ParticleDistribution = n_p
+        self._n_e: ParticleDistribution = n_e
+        self._n_p: ParticleDistribution = n_p
         self.xi = xi
 
         self.gamma_e_size = gamma_e_size
@@ -141,7 +139,9 @@ class Blob:
         """Array of electrons Lorentz factors, to be used for integration in the
         reference frame comoving with the emission region."""
         return np.logspace(
-            np.log10(self._n_e.gamma_min), np.log10(self._n_e.gamma_max), self.gamma_e_size
+            np.log10(self._n_e.gamma_min),
+            np.log10(self._n_e.gamma_max),
+            self.gamma_e_size,
         )
 
     @property
@@ -390,13 +390,15 @@ class Blob:
 
     def u_ph_synch_diff(self, epsilon_prime, sed_synch_lab_frame):
         r"""Differential energy density of the synchrotron photons"""
-        return Blob.evaluate_u_ph_synch_diff(self.R_b, self.d_L, self.delta_D, epsilon_prime, sed_synch_lab_frame)
+        return Blob.evaluate_u_ph_synch_diff(
+            self.R_b, self.d_L, self.delta_D, epsilon_prime, sed_synch_lab_frame
+        )
 
     @staticmethod
     def evaluate_u_ph_synch_diff(R_b, d_L, delta_D, epsilon_prime, sed_synch_lab_frame):
         # Eq. 8 [Finke2008]
         u_synch = (3 * np.power(d_L, 2) * sed_synch_lab_frame) / (
-                c * np.power(R_b, 2) * np.power(delta_D, 4) * epsilon_prime
+            c * np.power(R_b, 2) * np.power(delta_D, 4) * epsilon_prime
         )
         # factor 3 / 4 accounts for averaging in a sphere
         # not included in Dermer and Finke's papers

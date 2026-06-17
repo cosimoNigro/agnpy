@@ -16,7 +16,6 @@ from .core import (
     make_targets_parameters_dict,
 )
 
-
 gamma_size = 300
 gamma_to_integrate = np.logspace(1, 9, gamma_size)
 
@@ -325,7 +324,7 @@ class ExternalComptonSpectralModel(SpectralModel):
                 r,
                 self._n_e,
                 *args,
-                gamma=gamma_to_integrate
+                gamma=gamma_to_integrate,
             )
             sed += sed_ec_blr
 
@@ -345,7 +344,7 @@ class ExternalComptonSpectralModel(SpectralModel):
                 r,
                 self._n_e,
                 *args,
-                gamma=gamma_to_integrate
+                gamma=gamma_to_integrate,
             )
             sed += sed_ec_dt
             # add the thermal emission of the DT as well

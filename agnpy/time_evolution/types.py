@@ -3,16 +3,19 @@ from typing import Callable, Union, Sequence, Literal, NamedTuple, List
 from astropy.units import Quantity
 from numpy._typing import NDArray
 
+
 @dataclass(frozen=True)
 class BinsWithDensities:
     gamma_bins: NDArray
     densities: Quantity
+
 
 @dataclass(frozen=True)
 class FnParams:
     gamma: NDArray
     densities: Quantity
     density_subgroups: NDArray
+
 
 class TimeEvaluationResult(NamedTuple):
     total_time: Quantity
@@ -22,6 +25,7 @@ class TimeEvaluationResult(NamedTuple):
     en_chg_rates: dict[str, Quantity]
     rel_inj_rates: dict[str, Quantity]
     abs_inj_rates: dict[str, Quantity]
+
 
 GammaFn = Callable[[FnParams], Quantity]
 """ 
@@ -44,9 +48,15 @@ InjectionAbsFn = Callable[[FnParams], Quantity]
 A GammaFn function that returns absolute injections rates (unit: s-1 cm-3)
 """
 
-EnergyChangeFns = Union[EnergyChangeFn, Sequence[EnergyChangeFn], dict[str, EnergyChangeFn]]
-InjectionRelFns = Union[InjectionRelFn, Sequence[InjectionRelFn], dict[str, InjectionRelFn]]
-InjectionAbsFns = Union[InjectionAbsFn, Sequence[InjectionAbsFn], dict[str, InjectionAbsFn]]
+EnergyChangeFns = Union[
+    EnergyChangeFn, Sequence[EnergyChangeFn], dict[str, EnergyChangeFn]
+]
+InjectionRelFns = Union[
+    InjectionRelFn, Sequence[InjectionRelFn], dict[str, InjectionRelFn]
+]
+InjectionAbsFns = Union[
+    InjectionAbsFn, Sequence[InjectionAbsFn], dict[str, InjectionAbsFn]
+]
 NumericalMethod = Literal["euler", "heun"]
 CallbackFnType = Callable[[TimeEvaluationResult], None]
 SubgroupsList = List[List[str]]

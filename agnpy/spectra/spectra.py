@@ -8,7 +8,6 @@ from astropy.constants import m_e, m_p, c
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 
-
 __all__ = [
     "ParticleDistribution",
     "PowerLaw",
@@ -17,7 +16,7 @@ __all__ = [
     "LogParabola",
     "ExpCutoffBrokenPowerLaw",
     "InterpolatedDistribution",
-    "EmptyDistribution"
+    "EmptyDistribution",
 ]
 
 
@@ -33,7 +32,14 @@ class ParticleDistribution(ABC):
         function to be used to integrate the particle distribution
     """
 
-    def __init__(self, gamma_min, gamma_max, mass=m_e, integrator=np.trapz, tag="ParticleDistribution"):
+    def __init__(
+        self,
+        gamma_min,
+        gamma_max,
+        mass=m_e,
+        integrator=np.trapz,
+        tag="ParticleDistribution",
+    ):
         self.gamma_min = gamma_min
         self.gamma_max = gamma_max
         if mass is m_e:
@@ -75,7 +81,7 @@ class ParticleDistribution(ABC):
         values *= np.power(gamma, gamma_power)
         return integrator(values, gamma, axis=0)
 
-    def integrate(self, gamma_low:float=None, gamma_up:float=None, gamma_power=0):
+    def integrate(self, gamma_low: float = None, gamma_up: float = None, gamma_power=0):
         """Integral of **this particular** particle distribution over the range
         gamma_low, gamma_up.
 
@@ -226,8 +232,9 @@ class ParticleDistribution(ABC):
 
     @abstractmethod
     def __call__(self, gammas):
-        """ Mark ParticleDistribution as callable"""
+        """Mark ParticleDistribution as callable"""
         pass
+
 
 class PowerLaw(ParticleDistribution):
     r"""Class describing a power-law particle distribution.
@@ -282,7 +289,8 @@ class PowerLaw(ParticleDistribution):
     @staticmethod
     def evaluate_SSA_integrand(gamma, k, p, gamma_min, gamma_max):
         r"""Analytical integrand for the synchrotron self-absorption:
-        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n(\gamma)}{\gamma'^2}\right)`."""
+        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n(\gamma)}{\gamma'^2}\right)`.
+        """
         return k * np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
             -(p + 2) * np.power(gamma, -p - 1),
@@ -387,7 +395,8 @@ class BrokenPowerLaw(ParticleDistribution):
     @staticmethod
     def evaluate_SSA_integrand(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max):
         r"""Analytical integrand for the synchrotron self-absorption:
-        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`."""
+        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`.
+        """
         index = np.where(gamma <= gamma_b, p1, p2)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
@@ -492,7 +501,8 @@ class LogParabola(ParticleDistribution):
     @staticmethod
     def evaluate_SSA_integrand(gamma, k, p, q, gamma_0, gamma_min, gamma_max):
         r"""Analytical integrand for the synchrotron self-absorption:
-        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`."""
+        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`.
+        """
         prefactor = -(p + 2 * q * np.log10(gamma / gamma_0) + 2) / gamma
         return prefactor * LogParabola.evaluate(
             gamma, k, p, q, gamma_0, gamma_min, gamma_max
@@ -583,7 +593,8 @@ class ExpCutoffPowerLaw(ParticleDistribution):
     @staticmethod
     def evaluate_SSA_integrand(gamma, k, p, gamma_c, gamma_min, gamma_max):
         r"""(analytical) integrand for the synchrotron self-absorption:
-        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n(\gamma)}{\gamma'^2}\right)`"""
+        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n(\gamma)}{\gamma'^2}\right)`
+        """
         prefactor = -(p + 2) / gamma + (-1 / gamma_c)
 
         return prefactor * ExpCutoffPowerLaw.evaluate(
@@ -651,7 +662,9 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         mass=m_e,
         integrator=np.trapz,
     ):
-        super().__init__(gamma_min, gamma_max, mass, integrator, "ExpCutoffBrokenPowerLaw")
+        super().__init__(
+            gamma_min, gamma_max, mass, integrator, "ExpCutoffBrokenPowerLaw"
+        )
         self.k = k
         self.p1 = p1
         self.p2 = p2
@@ -697,7 +710,8 @@ class ExpCutoffBrokenPowerLaw(ParticleDistribution):
         gamma, k, p1, p2, gamma_c, gamma_b, gamma_min, gamma_max
     ):
         r"""Analytical integrand for the synchrotron self-absorption:
-        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`."""
+        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`.
+        """
         index = np.where(gamma <= gamma_b, p1, p2)
         prefactor = -(index + 2) / gamma + (-1 / gamma_c)
         return np.where(
@@ -756,8 +770,12 @@ class InterpolatedDistribution(ParticleDistribution):
         class to be used for interpolation, default is :class:`~scipy.interpolate.CubicSpline`
     """
 
-    def __init__(self, gamma, n, norm=1, mass=m_e, integrator=np.trapz, interpolator=CubicSpline):
-        super().__init__(gamma[0], gamma[-1], mass, integrator, "InterpolatedDistribution")
+    def __init__(
+        self, gamma, n, norm=1, mass=m_e, integrator=np.trapz, interpolator=CubicSpline
+    ):
+        super().__init__(
+            gamma[0], gamma[-1], mass, integrator, "InterpolatedDistribution"
+        )
         if n.unit != u.Unit("cm-3"):
             raise ValueError(
                 f"Provide a particle distribution in cm-3, instead of {n.unit}"
@@ -802,7 +820,9 @@ class InterpolatedDistribution(ParticleDistribution):
 
         valid_indices = (gamma_min <= gamma) & (gamma <= gamma_max)
         values = np.zeros_like(gamma)
-        values[valid_indices] = np.power(10, self.log10_interp(np.log10(gamma[valid_indices])))
+        values[valid_indices] = np.power(
+            10, self.log10_interp(np.log10(gamma[valid_indices]))
+        )
         return norm * values * u.Unit("cm-3")
 
     def __call__(self, gamma):
@@ -846,6 +866,7 @@ class InterpolatedDistribution(ParticleDistribution):
             + f" - gamma_min: {self.gamma_min:.2e}\n"
             + f" - gamma_max: {self.gamma_max:.2e}\n"
         )
+
 
 class EmptyDistribution(ParticleDistribution):
     """

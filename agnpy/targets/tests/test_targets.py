@@ -13,7 +13,6 @@ from agnpy.targets import (
     RingDustTorus,
 )
 
-
 # variables with _test are global and meant to be used in all tests
 blob_test = Blob()
 

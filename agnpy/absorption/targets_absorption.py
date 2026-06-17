@@ -25,7 +25,6 @@ from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustT
 from ..emission_regions import Blob
 from ..synchrotron import nu_synch_peak, Synchrotron
 
-
 __all__ = ["sigma", "Absorption"]
 
 agnpy_dir = Path(__file__).parent.parent
@@ -347,9 +346,7 @@ class Absorption:
         integral_mu = np.trapz(integrand, mu, axis=0)
         integral_phi = np.trapz(integral_mu, phi, axis=0)
         integral = np.trapz(integral_phi, l, axis=0)
-        prefactor = (L_disk * xi_line) / (
-            (4 * np.pi) ** 2 * epsilon_line * m_e * c**3
-        )
+        prefactor = (L_disk * xi_line) / ((4 * np.pi) ** 2 * epsilon_line * m_e * c**3)
         return (prefactor * integral).to_value("")
 
     @staticmethod
@@ -430,9 +427,7 @@ class Absorption:
         integral_mu = np.trapz(integrand, mu, axis=0)
         integral_phi = np.trapz(integral_mu, phi, axis=0)
         integral = np.trapz(integral_phi, uu, axis=0)
-        prefactor = (L_disk * xi_line) / (
-            (4 * np.pi) ** 2 * epsilon_line * m_e * c**3
-        )
+        prefactor = (L_disk * xi_line) / ((4 * np.pi) ** 2 * epsilon_line * m_e * c**3)
         return (prefactor * integral).to_value("")
 
     def tau_blr(self, nu):

@@ -25,7 +25,6 @@ from agnpy.utils.validation_utils import (
     clean_and_make_dir,
 )
 
-
 agnpy_dir = Path(__file__).parent.parent.parent
 # where to read sampled files
 data_dir = agnpy_dir / "data"

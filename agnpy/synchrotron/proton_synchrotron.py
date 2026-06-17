@@ -28,12 +28,12 @@ class ProtonSynchrotron(RadiativeProcess):
         :func:`~agnpy.synchrotron.Synchrotron.sed_flux`.
     integrator : func
         function to be used for integration (default = `np.trapz`)
-	"""
+    """
 
-    #def __init__(self, blob, ssa=False, integrator=np.trapz):
+    # def __init__(self, blob, ssa=False, integrator=np.trapz):
     def __init__(self, blob, integrator=np.trapz):
         self.blob = blob
-        #self.ssa = ssa
+        # self.ssa = ssa
         self.integrator = integrator
 
     # @staticmethod
@@ -63,7 +63,7 @@ class ProtonSynchrotron(RadiativeProcess):
     #         -1 / (8 * np.pi * m_p * np.power(epsilon, 2)) * np.power(lambda_c_p / c, 3)
     #     )
     #     k_epsilon = (prefactor_k_epsilon * integral).to("cm-1")
-    
+
     #     return (2 * k_epsilon * R_b).to_value("")
 
     @staticmethod
@@ -120,7 +120,7 @@ class ProtonSynchrotron(RadiativeProcess):
             array of the SED values corresponding to each frequency
         """
         # conversions
-        epsilon = nu_to_epsilon_prime(nu, z, delta_D, m = m_p)
+        epsilon = nu_to_epsilon_prime(nu, z, delta_D, m=m_p)
         B_cgs = B_to_cgs(B)
         # reshape for multidimensional integration
         _gamma, _epsilon = axes_reshaper(gamma, epsilon)
@@ -175,8 +175,7 @@ class ProtonSynchrotron(RadiativeProcess):
         return (sphere * self.sed_flux(nu)).to("erg s-1")
 
     def sed_peak_flux(self, nu):
-        """provided a grid of frequencies nu, returns the peak flux of the SED
-        """
+        """provided a grid of frequencies nu, returns the peak flux of the SED"""
         return self.sed_flux(nu).max()
 
     def sed_peak_nu(self, nu):

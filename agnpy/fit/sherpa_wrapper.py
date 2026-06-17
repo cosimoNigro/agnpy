@@ -21,7 +21,6 @@ from .core import (
     make_targets_parameters_dict,
 )
 
-
 gamma_size = 300
 gamma_to_integrate = np.logspace(1, 9, gamma_size)
 
@@ -53,7 +52,7 @@ def _evaluate_sed_ssc_scenario(x, pars, n_e, ssa):
     list, `pars`. This function sorts the parameters and evaluates the total SED
     for the SSC scenario.
     NOTE: sherpa parameters are NOT `~astropy.Quantities`, properly set them."""
-    (*args, z, delta_D, log10_B, t_var) = pars
+    *args, z, delta_D, log10_B, t_var = pars
 
     _scale_spectral_parameters(args, n_e)
 
@@ -145,7 +144,7 @@ def _evaluate_sed_ec_blr_scenario(x, pars, n_e, ssa):
         r,
         n_e,
         *args,
-        gamma=gamma_to_integrate
+        gamma=gamma_to_integrate,
     )
     return sed_synch + sed_ssc + sed_bb_disk + sed_ec_blr
 
@@ -220,7 +219,7 @@ def _evaluate_sed_ec_dt_scenario(x, pars, n_e, ssa):
         r,
         n_e,
         *args,
-        gamma=gamma_to_integrate
+        gamma=gamma_to_integrate,
     )
     return sed_synch + sed_ssc + sed_bb_disk + sed_bb_dt + sed_ec_dt
 
@@ -304,7 +303,7 @@ def _evaluate_sed_ec_blr_dt_scenario(x, pars, n_e, ssa):
         r,
         n_e,
         *args,
-        gamma=gamma_to_integrate
+        gamma=gamma_to_integrate,
     )
     sed_ec_dt = ExternalCompton.evaluate_sed_flux_dt(
         nu,
@@ -320,7 +319,7 @@ def _evaluate_sed_ec_blr_dt_scenario(x, pars, n_e, ssa):
         r,
         n_e,
         *args,
-        gamma=gamma_to_integrate
+        gamma=gamma_to_integrate,
     )
     return sed_synch + sed_ssc + sed_bb_disk + sed_bb_dt + sed_ec_blr + sed_ec_dt
 

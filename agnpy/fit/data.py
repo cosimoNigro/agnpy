@@ -11,7 +11,7 @@ def load_sherpa_flux_points(sed_path, E_min, E_max, systematics_dict=None):
     Note that low and high error on the flux are averaged. This is what is done
     in the chi2 computation of Gammapy, we adopt the same method in order to
     make crosschecks.
-    
+
     Parameters
     ----------
     sed_path : str
@@ -52,7 +52,7 @@ def load_sherpa_flux_points(sed_path, E_min, E_max, systematics_dict=None):
                 if name == instrument:
                     syst_rel_error = systematics_dict[instrument]
                     e2dnde_err_syst = syst_rel_error * e2dnde
-        else: 
+        else:
             e2dnde_err_syst = np.zeros_like(e2dnde)
 
         x = np.append(x, energy)
@@ -82,8 +82,8 @@ def add_systematic_errors_gammapy_flux_points(flux_points, syst_rel_error):
     """
     dnde_err_syst = syst_rel_error * flux_points.dnde.data
     # sum in quadrature with the stat error
-    dnde_errn_tot = np.sqrt(flux_points.dnde_errn.data ** 2 + dnde_err_syst ** 2)
-    dnde_errp_tot = np.sqrt(flux_points.dnde_errp.data ** 2 + dnde_err_syst ** 2)
+    dnde_errn_tot = np.sqrt(flux_points.dnde_errn.data**2 + dnde_err_syst**2)
+    dnde_errp_tot = np.sqrt(flux_points.dnde_errp.data**2 + dnde_err_syst**2)
     # the attributes we have to change is the norm_errn and norm_errp
     flux_points.norm_errn.data = dnde_errn_tot / flux_points.dnde_ref.data
     flux_points.norm_errp.data = dnde_errp_tot / flux_points.dnde_ref.data
@@ -92,7 +92,7 @@ def add_systematic_errors_gammapy_flux_points(flux_points, syst_rel_error):
 def load_gammapy_flux_points(sed_path, E_min, E_max, systematics_dict=None):
     """Load the MWL SED at `sed_path` in a list of
     `~gammapy.datasets.FluxPointsDataset`. Add the systematic errors.
-    
+
     Parameters
     ----------
     sed_path : str
@@ -130,7 +130,9 @@ def load_gammapy_flux_points(sed_path, E_min, E_max, systematics_dict=None):
         dataset = FluxPointsDataset(data=data, name=name)
 
         # set the minimum energy to be used for the fit
-        dataset.mask_fit = dataset.data.geom.energy_mask(energy_min=E_min, energy_max=E_max)
+        dataset.mask_fit = dataset.data.geom.energy_mask(
+            energy_min=E_min, energy_max=E_max
+        )
 
         datasets.append(dataset)
 

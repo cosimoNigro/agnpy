@@ -30,7 +30,7 @@ class ExternalCompton(RadiativeProcess):
     blob : :class:`~agnpy.emission_regions.Blob`
         emission region and electron distribution hitting the photon target
     target : :class:`~agnpy.targets`
-        class describing the target photon field    
+        class describing the target photon field
     r : :class:`~astropy.units.Quantity`
         distance of the blob from the Black Hole (i.e. from the target photons)
     integrator : func
@@ -75,9 +75,9 @@ class ExternalCompton(RadiativeProcess):
         integrator=np.trapz,
         gamma=gamma_e_to_integrate,
         mu=mu_to_integrate,
-        phi=phi_to_integrate
+        phi=phi_to_integrate,
     ):
-        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for external Compton 
+        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for external Compton
         on a monochromatic isotropic target photon field, for a general set of model parameters
 
         **Note** parameters after \*args need to be passed with a keyword
@@ -85,11 +85,11 @@ class ExternalCompton(RadiativeProcess):
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed 
+            array of frequencies, in Hz, to compute the sed
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
-        d_L : :class:`~astropy.units.Quantity` 
+        d_L : :class:`~astropy.units.Quantity`
             luminosity distance of the source
         delta_D : float
             Doppler factor of the relativistic outflow
@@ -109,7 +109,7 @@ class ExternalCompton(RadiativeProcess):
         integrator : func
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
-            array of Lorentz factor over which to integrate the electron 
+            array of Lorentz factor over which to integrate the electron
             distribution
         mu, phi : :class:`~numpy.ndarray`
             arrays of cosine of zenith and azimuth angles to integrate over
@@ -157,7 +157,7 @@ class ExternalCompton(RadiativeProcess):
             integrator=self.integrator,
             gamma=self.blob.gamma_e_external_frame,
             mu=self.mu,
-            phi=self.phi
+            phi=self.phi,
         )
 
     @staticmethod
@@ -174,9 +174,9 @@ class ExternalCompton(RadiativeProcess):
         n_e,
         *args,
         integrator=np.trapz,
-        gamma=gamma_e_to_integrate
+        gamma=gamma_e_to_integrate,
     ):
-        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for external Compton 
+        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for external Compton
         on a point source of photons behind the jet, for a general set of model parameters
 
         **Note** parameters after \*args need to be passed with a keyword
@@ -184,11 +184,11 @@ class ExternalCompton(RadiativeProcess):
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed 
+            array of frequencies, in Hz, to compute the sed
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
-        d_L : :class:`~astropy.units.Quantity` 
+        d_L : :class:`~astropy.units.Quantity`
             luminosity distance of the source
         delta_D : float
             Doppler factor of the relativistic outflow
@@ -210,7 +210,7 @@ class ExternalCompton(RadiativeProcess):
         integrator : func
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
-            array of Lorentz factor over which to integrate the electron 
+            array of Lorentz factor over which to integrate the electron
             distribution
 
         Returns
@@ -240,7 +240,7 @@ class ExternalCompton(RadiativeProcess):
         return (prefactor_num / prefactor_denom * integral).to("erg cm-2 s-1")
 
     def sed_flux_ps_behind_jet(self, nu):
-        """evaluates the flux SED for External Compton on a point source behind 
+        """evaluates the flux SED for External Compton on a point source behind
         the jet"""
         return self.evaluate_sed_flux_ps_behind_jet(
             nu,
@@ -255,7 +255,7 @@ class ExternalCompton(RadiativeProcess):
             self.blob.n_e,
             *self.blob.n_e.parameters,
             integrator=self.integrator,
-            gamma=self.blob.gamma_e_external_frame
+            gamma=self.blob.gamma_e_external_frame,
         )
 
     @staticmethod
@@ -277,9 +277,9 @@ class ExternalCompton(RadiativeProcess):
         integrator=np.trapz,
         gamma=gamma_e_to_integrate,
         mu_size=100,
-        phi=phi_to_integrate
+        phi=phi_to_integrate,
     ):
-        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for external Compton 
+        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for external Compton
         on the photon field of a Shakura Sunyaev disk, for a general set of model parameters
 
         **Note** parameters after \*args need to be passed with a keyword
@@ -287,11 +287,11 @@ class ExternalCompton(RadiativeProcess):
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed 
+            array of frequencies, in Hz, to compute the sed
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
-        d_L : :class:`~astropy.units.Quantity` 
+        d_L : :class:`~astropy.units.Quantity`
             luminosity distance of the source
         delta_D: float
             Doppler factor of the relativistic outflow
@@ -300,14 +300,14 @@ class ExternalCompton(RadiativeProcess):
         R_b : :class:`~astropy.units.Quantity`
             size of the emitting region (spherical blob assumed)
         M_BH : :class:`~astropy.units.Quantity`
-            Black Hole mass    
+            Black Hole mass
         L_disk : :class:`~astropy.units.Quantity`
-            luminosity of the disk 
+            luminosity of the disk
         eta : float
             accretion efficiency
-        R_in : :class:`~astropy.units.Quantity` 
+        R_in : :class:`~astropy.units.Quantity`
             inner disk radius
-        R_out : :class:`~astropy.units.Quantity` 
+        R_out : :class:`~astropy.units.Quantity`
             inner disk radius
         r : :class:`~astropy.units.Quantity`
             distance between the disk and the blob
@@ -318,10 +318,10 @@ class ExternalCompton(RadiativeProcess):
         integrator : func
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
-            array of Lorentz factor over which to integrate the electron 
+            array of Lorentz factor over which to integrate the electron
             distribution
         mu_size : int
-            size of the array of zenith angles to integrate over 
+            size of the array of zenith angles to integrate over
         phi : :class:`~numpy.ndarray`
             arrays of azimuth angles to integrate over
 
@@ -392,7 +392,7 @@ class ExternalCompton(RadiativeProcess):
             integrator=self.integrator,
             gamma=self.blob.gamma_e_external_frame,
             mu_size=self.mu_size,
-            phi=self.phi
+            phi=self.phi,
         )
 
     @staticmethod
@@ -413,9 +413,9 @@ class ExternalCompton(RadiativeProcess):
         integrator=np.trapz,
         gamma=gamma_e_to_integrate,
         mu=mu_to_integrate,
-        phi=phi_to_integrate
+        phi=phi_to_integrate,
     ):
-        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for External Compton on 
+        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for External Compton on
         the photon field of a spherical shell BLR, for a general set of model parameters
 
         **Note** parameters after \*args need to be passed with a keyword
@@ -423,11 +423,11 @@ class ExternalCompton(RadiativeProcess):
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed 
+            array of frequencies, in Hz, to compute the sed
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
-        d_L : :class:`~astropy.units.Quantity` 
+        d_L : :class:`~astropy.units.Quantity`
             luminosity distance of the source
         delta_D: float
             Doppler factor of the relativistic outflow
@@ -450,7 +450,7 @@ class ExternalCompton(RadiativeProcess):
         integrator : func
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
-            array of Lorentz factor over which to integrate the electron 
+            array of Lorentz factor over which to integrate the electron
             distribution
         mu, phi : :class:`~numpy.ndarray`
             arrays of cosine of zenith and azimuth angles to integrate over
@@ -508,7 +508,7 @@ class ExternalCompton(RadiativeProcess):
             integrator=self.integrator,
             gamma=self.blob.gamma_e_external_frame,
             mu=self.mu,
-            phi=self.phi
+            phi=self.phi,
         )
 
     @staticmethod
@@ -528,9 +528,9 @@ class ExternalCompton(RadiativeProcess):
         *args,
         integrator=np.trapz,
         gamma=gamma_e_to_integrate,
-        phi=phi_to_integrate
+        phi=phi_to_integrate,
     ):
-        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for External Compton on 
+        r"""Evaluates the flux SED (:math:`\nu F_{\nu}`) for External Compton on
         the photon field of a ring dust torus, for a general set of model parameters
 
         **Note** parameters after \*args need to be passed with a keyword
@@ -538,11 +538,11 @@ class ExternalCompton(RadiativeProcess):
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed 
+            array of frequencies, in Hz, to compute the sed
             **note** these are observed frequencies (observer frame)
         z : float
             redshift of the source
-        d_L : :class:`~astropy.units.Quantity` 
+        d_L : :class:`~astropy.units.Quantity`
             luminosity distance of the source
         delta_D: float
             Doppler factor of the relativistic outflow
@@ -553,7 +553,7 @@ class ExternalCompton(RadiativeProcess):
         xi_dt : float
             fraction of the disk radiation reprocessed by the disk
         epsilon_dt : string
-            peak (dimensionless) energy of the black body radiated by the torus 
+            peak (dimensionless) energy of the black body radiated by the torus
         R_dt : :class:`~astropy.units.Quantity`
             radius of the ting-like torus
         r : :class:`~astropy.units.Quantity`
@@ -565,7 +565,7 @@ class ExternalCompton(RadiativeProcess):
         integrator : func
             which function to use for integration, default `numpy.trapz`
         gamma : :class:`~numpy.ndarray`
-            array of Lorentz factor over which to integrate the electron 
+            array of Lorentz factor over which to integrate the electron
             distribution
         mu, phi : :class:`~numpy.ndarray`
             arrays of cosine of zenith and azimuth angles to integrate over
@@ -617,7 +617,7 @@ class ExternalCompton(RadiativeProcess):
             *self.blob.n_e.parameters,
             integrator=self.integrator,
             gamma=self.blob.gamma_e_external_frame,
-            phi=self.phi
+            phi=self.phi,
         )
 
     def sed_flux(self, nu):

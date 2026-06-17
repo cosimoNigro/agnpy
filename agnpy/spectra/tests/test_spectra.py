@@ -68,6 +68,7 @@ def broken_power_law_times_gamma_integral(k_e, p1, p2, gamma_b, gamma_min, gamma
         )
     return k_e * (term_1 + term_2)
 
+
 class TestParticleDistribution:
     """Class grouping all the tests related to the general class
     ParticleDistribution, from which all the other classes inherit."""
@@ -734,7 +735,7 @@ class TestInterpolatedDistribution:
         )
 
     def test_integration_is_consistent(self):
-        blob = Blob(n_e=PowerLaw(1 * u.cm ** -3, 2.3, gamma_min=1e2, gamma_max=1e7))
+        blob = Blob(n_e=PowerLaw(1 * u.cm**-3, 2.3, gamma_min=1e2, gamma_max=1e7))
         synch = Synchrotron(blob)
         initial_integrate = blob.n_e.integrate(blob.n_e.gamma_min, blob.n_e.gamma_max)
         # make sure the evaluation and integral are consistent no matter how the distribution changes

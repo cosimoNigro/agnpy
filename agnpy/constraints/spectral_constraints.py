@@ -9,7 +9,7 @@ __all__ = ["SpectralConstraints"]
 
 
 class SpectralConstraints:
-    r""" Class to describe the self-consistency constraints on the electron energy distribution
+    r"""Class to describe the self-consistency constraints on the electron energy distribution
 
     Parameters
     ----------

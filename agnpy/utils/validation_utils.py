@@ -151,9 +151,18 @@ def make_comparison_plot(
 
     # plot the SEDs or TAUs in the upper panel
     # plot the reference sed with a continuous line and agnpy sed with a dashed one
-    ax[0].loglog(nu, y_ref, marker=".", ls="-", color="k", lw=1.5, label=ref_label, zorder=1)
     ax[0].loglog(
-        nu, y_comp, marker=".", ls="--", color="crimson", lw=1.5, label=comp_label, zorder=2
+        nu, y_ref, marker=".", ls="-", color="k", lw=1.5, label=ref_label, zorder=1
+    )
+    ax[0].loglog(
+        nu,
+        y_comp,
+        marker=".",
+        ls="--",
+        color="crimson",
+        lw=1.5,
+        label=comp_label,
+        zorder=2,
     )
 
     # addd another second reference, if provided
@@ -166,7 +175,7 @@ def make_comparison_plot(
             color="goldenrod",
             lw=1.5,
             label=second_ref_label,
-            zorder=3
+            zorder=3,
         )
 
     ax[0].set_ylabel(y_label)

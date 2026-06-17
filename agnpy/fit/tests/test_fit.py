@@ -81,9 +81,7 @@ class TestFit:
             ("agnpy/data/mwl_seds/PKS1510-089_2015b.ecsv", systematics_dict_pks1510),
         ],
     )
-    @pytest.mark.parametrize(
-        "include_systematics", [True, False]
-    )
+    @pytest.mark.parametrize("include_systematics", [True, False])
     def test_sed_loading(self, sed_path, systematics_dict, include_systematics):
         """Test that the same values are loaded by gammapy and sherpa from the
         MWL SED files."""

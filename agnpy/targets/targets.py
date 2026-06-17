@@ -7,7 +7,6 @@ from astropy.modeling.models import BlackBody
 from ..utils.conversion import mec2
 from ..utils.math import axes_reshaper
 
-
 __all__ = [
     "lines_dictionary",
     "CMB",
@@ -409,7 +408,7 @@ class SSDisk:
             / nu_to_integrate
         )
         # renormalise, the factor 2 includes the two sides of the Disk
-        A = 4 * np.pi * d_L ** 2
+        A = 4 * np.pi * d_L**2
         L = 2 * (np.trapz(F_nu_norm, nu_to_integrate) * A).to("erg s-1")
         norm = (L_disk / L).to_value("")
         return norm * SSDisk.evaluate_multi_T_bb_sed(
@@ -605,7 +604,7 @@ class RingDustTorus:
         is equal to the torus luminosity (`xi_dt * L_disk`)"""
         sed_dt = RingDustTorus.evaluate_bb_sed(nu, z, T_dt, R_dt, d_L)
         # renormalise, total luminosity from theory (Stefan-Boltzmann Law)
-        L_tot = 4 * np.pi * R_dt ** 2 * sigma_sb * T_dt ** 4
+        L_tot = 4 * np.pi * R_dt**2 * sigma_sb * T_dt**4
         norm = (L_dt / L_tot).to_value("")
         return norm * sed_dt
 

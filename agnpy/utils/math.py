@@ -118,6 +118,7 @@ def trapz_loglog(y, x, axis=0):
 
     return np.add.reduce(vals, axis) * x_unit * y_unit
 
+
 def power_law_integral(k_e, p, gamma_min, gamma_max):
     """
     Analytical integral of the power law k_e * gamma^{-p}

@@ -5,7 +5,6 @@ import numpy as np
 import astropy.units as u
 from astropy.table import Table
 
-
 # - Mrk421 2011
 sed_file = np.loadtxt(
     "original/Mrk421_2011.txt",
@@ -33,9 +32,9 @@ sed_table["instrument"] = instruments[~UL]
 sed_table.meta["SED_TYPE"] = "e2dnde"
 sed_table.meta["source"] = "Mrk421"
 sed_table.meta["period"] = "2009"
-sed_table.meta[
-    "reference"
-] = "https://ui.adsabs.harvard.edu/abs/2011ApJ...736..131A/abstract"
+sed_table.meta["reference"] = (
+    "https://ui.adsabs.harvard.edu/abs/2011ApJ...736..131A/abstract"
+)
 sed_table.meta["redshift"] = 0.03
 # before writing sort in energy
 sed_table.sort("e_ref")
@@ -69,9 +68,9 @@ sed_table["instrument"] = instruments[~UL]
 sed_table.meta["SED_TYPE"] = "e2dnde"
 sed_table.meta["source"] = "PKS1510-089"
 sed_table.meta["period"] = "2015, B"
-sed_table.meta[
-    "reference"
-] = "https://ui.adsabs.harvard.edu/abs/2017A%26A...603A..29A/abstract"
+sed_table.meta["reference"] = (
+    "https://ui.adsabs.harvard.edu/abs/2017A%26A...603A..29A/abstract"
+)
 sed_table.meta["redshift"] = 0.361
 # before writing sort in energy
 sed_table.sort("e_ref")

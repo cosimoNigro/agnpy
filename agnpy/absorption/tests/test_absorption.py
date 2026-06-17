@@ -537,13 +537,14 @@ class TestEBL:
     """class grouping all tests related to the EBL class"""
 
     # adjust the comparison range to the increasing redshift
-    @pytest.mark.parametrize("z,comparison_range", 
+    @pytest.mark.parametrize(
+        "z,comparison_range",
         [
             (0.3, [1e24, 2e27] * u.Hz),
             (0.5, [1e24, 2e27] * u.Hz),
             (1.0, [1e24, 1e27] * u.Hz),
-            (1.5, [1e24, 8e26] * u.Hz)
-        ]
+            (1.5, [1e24, 8e26] * u.Hz),
+        ],
     )
     @pytest.mark.parametrize(
         "model",
@@ -552,8 +553,8 @@ class TestEBL:
             "franceschini_2017",
             "finke_2010",
             "dominguez_2011",
-            "saldana_lopez_2021"
-        ]
+            "saldana_lopez_2021",
+        ],
     )
     def test_correct_interpolation(self, model, z, comparison_range):
         # define the ebl model, evaluate it at the reference energies
@@ -576,19 +577,22 @@ class TestEBL:
             f"{figures_dir}/ebl/ebl_abs_interp_comparison_{model}_z_{z}.png",
             plot_type="absorption",
             comparison_range=comparison_range.to_value("Hz"),
-            #y_range=[1e-30, 1e2],
+            # y_range=[1e-30, 1e2],
         )
         # requires a 10% deviation from reference absorptions
-        assert check_deviation(nu_ref, absorption, absorption_ref, 0.1, comparison_range)
+        assert check_deviation(
+            nu_ref, absorption, absorption_ref, 0.1, comparison_range
+        )
 
     # adjust the comparison range to the increasing redshift
-    @pytest.mark.parametrize("z,e_max",
+    @pytest.mark.parametrize(
+        "z,e_max",
         [
             (0.3, 10 * u.TeV),
             (0.5, 5 * u.TeV),
             (1.0, 2 * u.TeV),
             (1.5, 1 * u.TeV),
-        ]
+        ],
     )
     @pytest.mark.parametrize(
         "model",
@@ -597,8 +601,8 @@ class TestEBL:
             "franceschini_2017",
             "finke_2010",
             "dominguez_2011",
-            "saldana_lopez_2021"
-        ]
+            "saldana_lopez_2021",
+        ],
     )
     def test_against_gammapy_ebl_models(self, model, z, e_max):
         """Test against Gammapy's EBL implementation."""
@@ -608,7 +612,9 @@ class TestEBL:
         energy_ref = np.logspace(2, 5) * u.GeV
         nu_ref = energy_ref.to("Hz", equivalencies=u.spectral())
         absorption_agnpy = ebl_agnpy.absorption(nu_ref, z)
-        absorption_gammapy = ebl_gammapy.evaluate(energy=energy_ref, redshift=z, alpha_norm=1)
+        absorption_gammapy = ebl_gammapy.evaluate(
+            energy=energy_ref, redshift=z, alpha_norm=1
+        )
         # establsih also the comparison range
         comparison_range = u.Quantity([energy_ref[0], e_max])
         # now let us add also the original values
@@ -618,7 +624,7 @@ class TestEBL:
         e_original_ref = (ebl_agnpy.energy_ref * u.keV).to("GeV")
         absorption_original_ref = ebl_agnpy.values_ref[z_idx]
         # select those around 1e2 GeV
-        mask_reference_2 = (e_original_ref > 50 * u.GeV)
+        mask_reference_2 = e_original_ref > 50 * u.GeV
 
         make_comparison_plot(
             energy_ref,

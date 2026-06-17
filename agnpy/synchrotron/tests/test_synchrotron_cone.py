@@ -10,8 +10,9 @@ from scipy.integrate import cumulative_trapezoid
 from agnpy.synchrotron.base_synchrotron import Synchrotron
 import numpy as np
 from astropy.constants import c, sigma_T, m_e, e, mu0
-#e = e.gauss
-mec2 = mec2.to('eV')
+
+# e = e.gauss
+mec2 = mec2.to("eV")
 import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
@@ -24,7 +25,8 @@ from agnpy.emission_regions import Blob
 from agnpy.spectra import ExpCutoffPowerLaw
 from agnpy.synchrotron import Synchrotron, nu_synch_peak
 from agnpy.utils.math import trapz_loglog
-mec2 = mec2.to('eV')
+
+mec2 = mec2.to("eV")
 
 from agnpy.utils.validation_utils import (
     make_comparison_plot,
@@ -40,12 +42,12 @@ data_dir = agnpy_dir / "data"
 figures_dir = clean_and_make_dir(agnpy_dir, "crosschecks/figures/synchrotron")
 
 # Parameters used in Table 1 of Potter and Cotter; Fitting BL Lac (abdo et al. 2011)
-z=0.0686
-B_o =  (3.63 * 1e-5 * u.T).to(u.G)
-u_B = ((B_to_cgs(B_o)**2)/(8*np.pi)).to('erg cm-3')
+z = 0.0686
+B_o = (3.63 * 1e-5 * u.T).to(u.G)
+u_B = ((B_to_cgs(B_o) ** 2) / (8 * np.pi)).to("erg cm-3")
 R_o = 7.32 * 1e15 * u.cm
-W_j = 7.63 * 1e36* u.W
-L = (100 * u.pc)
+W_j = 7.63 * 1e36 * u.W
+L = 100 * u.pc
 theta_open = 9.7 * u.deg
 Gamma = 12
 theta_s = 2 * u.deg
@@ -54,7 +56,14 @@ A_equi = 1.0
 p = 2
 gamma_minimum = (5.11 * 1e6 * u.eV / mec2.to("eV")).value
 gamma_c = (5.6 * 1e9 * u.eV / mec2.to("eV")).value
-n_e = ExpCutoffPowerLaw(k = 1 , mass=m_e, p=p, gamma_min = 0.1*gamma_minimum, gamma_max= 100*gamma_c, gamma_c= gamma_c )
+n_e = ExpCutoffPowerLaw(
+    k=1,
+    mass=m_e,
+    p=p,
+    gamma_min=gamma_minimum,
+    gamma_max=100 * gamma_c,
+    gamma_c=gamma_c,
+)
 
 
 class TestConeSynchrotron:
@@ -82,8 +91,20 @@ class TestConeSynchrotron:
         nu_ref, sed_ref = extract_columns_sample_file(file_ref, "Hz", "erg cm-2 s-1")
 
         # same parameters used to produce the jetset SED
-        jet = Cone.from_jet_power(W_j = W_j , B_o = B_o , L = L, n_e = n_e, theta = theta_open, Gamma=Gamma,x_size=100,gamma_e_size=1000, z =z,delta_D=20.39)
-
+        jet = Cone.from_jet_power(
+            W_j=W_j,
+            B_o=B_o,
+            L=L,
+            n_e=n_e,
+            theta=theta_open,
+            Gamma=Gamma,
+            x_size=100,
+            gamma_e_size=1000,
+            z=z,
+            delta_D=20.39,
+            electron_escape=True,
+            escape_coefficient=2.75,
+        )
         # recompute the SED at the same ordinates where the figure was sampled
         synch = Synchrotron(jet, ssa=True)
         synch.flux_obs(nu_ref)
@@ -91,7 +112,7 @@ class TestConeSynchrotron:
         sed_agnpy = synch.sed_flux(nu_ref, ssa=True)
 
         # sed comparison plot, we will check between 10^(11) and 10^(19) Hz
-        nu_range = [1e8, 1e19] * u.Hz
+        nu_range = [1e12, 3.36e17] * u.Hz
         make_comparison_plot(
             nu_ref,
             sed_agnpy,
