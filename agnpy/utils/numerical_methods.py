@@ -1,11 +1,8 @@
 import numpy as np
 import astropy.units as u
-import astropy.constants as const
-import matplotlib.pyplot as plt
-from astropy.constants import c, sigma_T, m_e, e, mu0
+from astropy.constants import c, sigma_T, m_e
 from scipy.sparse import diags
-from matplotlib import cycler, rcParams
-from agnpy.utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e, mec2
+from agnpy.utils.conversion import B_to_cgs
 
 
 def gamma_loss(gamma, B):
@@ -14,10 +11,14 @@ def gamma_loss(gamma, B):
     value = prefactor * (u_B) * np.power(gamma, 2)
     return -value.to("s-1")
 
+def cooling_time( gamma, B):
+    gamma_loss_rate = gamma_loss(gamma,B)
+    t_cool = - gamma / gamma_loss_rate
+    return t_cool.to('s')
 
 class ChangCooperSolver:
     def __init__(
-        self, gamma_e, x, R_o, B_o, theta_open, n_e, electron_escape, escape_coefficient
+        self, gamma_e, x, R_0, B_0, theta_open, n_e, electron_escape, escape_coefficient
     ):
         """class implementing the Chang and Cooper scheme in Chaiberge and Ghisellini (1998):
 
@@ -40,8 +41,8 @@ class ChangCooperSolver:
         injection_dict : dict
             dictionary with injection specifications (spectrum and maximum injection time)
         """
-        self.R_o = R_o
-        self.B_o = B_o
+        self.R_0 = R_0
+        self.B_0 = B_0
         self.theta_open = theta_open
         self.electron_escape = electron_escape
         self.escape_coefficient = escape_coefficient
@@ -58,18 +59,18 @@ class ChangCooperSolver:
 
     def run(self):
         """solve the temporal evolution, return the result at each step"""
+        solutions = dict()
         N_prev = self.n_e
-        N_e_tg = [self.n_e]
+        N_e_tg_list = [N_prev]  
         for i in range(len(self.t) - 1):
             if self.electron_escape:
                 coeff = self.escape_coefficient
             else:
                 coeff = np.inf
+            elapsed_time = self.t[i]
             dt = (self.t[i + 1] - self.t[i]).to("s")
-            B_t = self.B_o * (
-                self.R_o / (self.R_o + (self.t[i] * c.cgs) * np.tan(self.theta_open))
-            )
-            R_t = self.R_o + (self.t[i] * c.cgs) * np.tan(self.theta_open)
+            R_t = self.R_0 + (self.t[i] * c.cgs) * np.tan(self.theta_open)
+            B_t = self.B_0 * (self.R_0 /R_t)
             t_esc = coeff * R_t / c.cgs
             escape_term = (dt / t_esc).decompose().value
             loss_term = (
@@ -82,6 +83,9 @@ class ChangCooperSolver:
             )
             cc_matrix = diags([V2, V3], offsets=[0, 1]).toarray()
             N_next = np.linalg.solve(cc_matrix, N_prev)
-            N_e_tg.append(N_next)
-        N_e_xg = u.Quantity(N_e_tg)
+            solutions[f"{elapsed_time}"] = N_next 
+            N_prev = N_next              
+        for key in solutions:
+            N_e_tg_list.append(solutions[key])   
+        N_e_xg = u.Quantity(N_e_tg_list)     
         return N_e_xg

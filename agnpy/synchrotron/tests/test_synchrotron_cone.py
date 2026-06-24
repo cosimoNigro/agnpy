@@ -1,31 +1,14 @@
 # test the synchrotron module
 from agnpy.emission_regions import Cone
 import astropy.units as u
-from agnpy.spectra import ParticleDistribution
-from agnpy.utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e, mec2
+from agnpy.utils.conversion import B_to_cgs, mec2
 from agnpy.spectra.spectra import ExpCutoffPowerLaw
 from agnpy.synchrotron import *
-from scipy.interpolate import interp1d
-from scipy.integrate import cumulative_trapezoid
 from agnpy.synchrotron.base_synchrotron import Synchrotron
 import numpy as np
-from astropy.constants import c, sigma_T, m_e, e, mu0
-
-# e = e.gauss
-mec2 = mec2.to("eV")
-import matplotlib.pyplot as plt
-import numpy as np
-import astropy.units as u
 from astropy.constants import m_e
-from astropy.coordinates import Distance
-from agnpy.utils.conversion import nu_to_epsilon_prime, B_to_cgs, lambda_c_e, mec2
-import pytest
 from pathlib import Path
-from agnpy.emission_regions import Blob
-from agnpy.spectra import ExpCutoffPowerLaw
-from agnpy.synchrotron import Synchrotron, nu_synch_peak
-from agnpy.utils.math import trapz_loglog
-
+import pytest
 mec2 = mec2.to("eV")
 
 from agnpy.utils.validation_utils import (

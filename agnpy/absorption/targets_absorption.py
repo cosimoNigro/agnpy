@@ -23,7 +23,6 @@ from ..utils.geometry import (
 from ..utils.conversion import nu_to_epsilon_prime, to_R_g_units
 from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
 from ..emission_regions import Blob
-from ..synchrotron import nu_synch_peak, Synchrotron
 
 __all__ = ["sigma", "Absorption"]
 

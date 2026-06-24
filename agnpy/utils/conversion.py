@@ -34,6 +34,10 @@ def nu_to_epsilon_prime(nu, z=0, delta_D=1, m=m_e):
     epsilon = nu.to("", equivalencies=epsilon_eq)
     return (1 + z) * epsilon / delta_D
 
+def nu_obs_to_nu_fluid(nu_obs, z, delta_D):
+    """Convert observed frequency to comoving (fluid) frame."""
+    nu_fluid = nu_obs * (1 + z) / delta_D
+    return nu_fluid
 
 def B_to_cgs(B):
     """convert a magnetic field to CGS units"""

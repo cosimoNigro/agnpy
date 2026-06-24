@@ -2,19 +2,13 @@
 import numpy as np
 import astropy.units as u
 from astropy.constants import e, c, m_e
-from ..utils.conversion import B_to_cgs, mec2
-from ..utils.math import axes_reshaper
+from ..utils.conversion import B_to_cgs, mec2, nu_obs_to_nu_fluid
 from ..radiative_process import RadiativeProcess
 from ..utils.synchrotron import Z, tau_to_attenuation
 
 e = e.gauss
 c=c.cgs
 mec2=mec2.cgs
-
-def nu_obs_to_nu_fluid(nu_obs, z, delta_D):
-    """Convert observed frequency to comoving (fluid) frame."""
-    nu_fluid = nu_obs * (1 + z) / delta_D
-    return nu_fluid
 
 def nu_synch_peak(B, gamma, mass=m_e):
     """Critical synchrotron frequency (Dermer 2009 Eq. 7.19)."""
@@ -82,7 +76,7 @@ class SynchrotronCone(RadiativeProcess):
         Notes
         -----
         Implements Eq. 7.44 from Dermer (2009).
-        P_mu_fluid = ∫ dx  [ √3 e^3 B(x) / (m_e c^2) ] ∫ d(gamma) N_e(gamma,x) Z(eta = mu/mu_c)
+        P_mu_fluid = ∫ dx  [ np.sqrt(3) e^3 B(x) / (m_e c^2) ] ∫ d(gamma) N_e(gamma,x) Z(eta = mu/mu_c)
         """
         nu_peak = nu_synch_peak(B_x, gamma_e)
         eta_ = eta(nu_fluid, nu_peak)
@@ -101,10 +95,9 @@ class SynchrotronCone(RadiativeProcess):
         F_nu : Quantity (N_nu)
         """
         self.nu_fluid = nu_obs_to_nu_fluid(nu_obs,self.emitter.z,self.emitter.delta_D)
-        B_x_reshaped, gamma_e_reshaped, nu_fluid_reshaped = axes_reshaper(
-            self.emitter.B_x,
-            self.emitter.gamma_e,
-            self.nu_fluid)
+        B_x_reshaped = self.emitter.B_x[:,None,None]
+        gamma_e_reshaped = self.emitter.gamma_e[None,:,None]
+        nu_fluid_reshaped =  self.nu_fluid[None,None,:]
         N_e_xg_reshaped = self.emitter.N_e_xg[:, :, None]
         L_x_nu_fluid, self.Z_eta, L_nu_fluid = self.evaluate_sed_flux(
             nu_fluid_reshaped,
