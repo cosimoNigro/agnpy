@@ -196,10 +196,16 @@ def merge_points(x, y, merge_groups, interpolated_distribution):
     - x_new, y_new: arrays with merged points
     """
 
+    def merge_func(x_points):
+        if x_points[0] == x_points[-1]: # if all points are the same, just return the first one (they are sorted so just compare first to last)
+            return x_points[0]
+        else: # else calculate the average
+            return np.power(10, np.mean(np.log10(x_points)))
+
     labels = np.full(len(x), -1)
     for g_idx, group in enumerate(merge_groups):
         labels[group] = g_idx
-    x_means = np.array([np.exp(np.mean(np.log(x[labels == g]))) for g in range(len(merge_groups))])
+    x_means = np.array([merge_func(x[labels == g]) for g in range(len(merge_groups))])
     if interpolated_distribution is None:
         y_means = Quantity([np.mean(y[labels == g]) for g in range(len(merge_groups))])
     else:
