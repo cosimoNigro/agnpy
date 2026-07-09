@@ -1,0 +1,1031 @@
+import sys
+from contextlib import contextmanager
+from importlib import import_module
+from typing import (
+    Annotated,
+    AnyStr,
+    NamedTuple,
+    Literal,
+    NewType,
+    Optional,
+    Protocol,
+    TypeGuard,
+    Union,
+    TypedDict,
+    TypeVar,
+    List,
+    Callable,
+    Any,
+    Dict,
+)
+from functools import partial
+from IPython.core.guarded_eval import (
+    EvaluationContext,
+    GuardRejection,
+    guarded_eval,
+    _unbind_method,
+)
+from IPython.testing import decorators as dec
+import pytest
+from IPython.core.guarded_eval import _is_type_annotation
+
+
+from typing import Self, LiteralString
+
+if sys.version_info < (3, 12):
+    from typing_extensions import TypeAliasType
+else:
+    from typing import TypeAliasType
+
+
+def create_context(evaluation: str, **kwargs):
+    return EvaluationContext(locals=kwargs, globals={}, evaluation=evaluation)
+
+
+forbidden = partial(create_context, "forbidden")
+minimal = partial(create_context, "minimal")
+limited = partial(create_context, "limited")
+unsafe = partial(create_context, "unsafe")
+dangerous = partial(create_context, "dangerous")
+
+LIMITED_OR_HIGHER = [limited, unsafe, dangerous]
+MINIMAL_OR_HIGHER = [minimal, *LIMITED_OR_HIGHER]
+
+
+@contextmanager
+def module_not_installed(module: str):
+    import sys
+
+    try:
+        to_restore = sys.modules[module]
+        del sys.modules[module]
+    except KeyError:
+        to_restore = None
+    try:
+        yield
+    finally:
+        sys.modules[module] = to_restore
+
+
+def test_external_not_installed():
+    """
+    Because attribute check requires checking if object is not of allowed
+    external type, this tests logic for absence of external module.
+    """
+
+    class Custom:
+        def __init__(self):
+            self.test = 1
+
+        def __getattr__(self, key):
+            return key
+
+    with module_not_installed("pandas"):
+        context = limited(x=Custom())
+        with pytest.raises(GuardRejection):
+            guarded_eval("x.test", context)
+
+
+@dec.skip_without("pandas")
+def test_external_changed_api(monkeypatch):
+    """Check that the execution rejects if external API changed paths"""
+    import pandas as pd
+
+    series = pd.Series([1], index=["a"])
+
+    with monkeypatch.context() as m:
+        m.delattr(pd, "Series")
+        context = limited(data=series)
+        with pytest.raises(GuardRejection):
+            guarded_eval("data.iloc[0]", context)
+
+
+@dec.skip_without("pandas")
+def test_pandas_series_iloc():
+    import pandas as pd
+
+    series = pd.Series([1], index=["a"])
+    context = limited(data=series)
+    assert guarded_eval("data.iloc[0]", context) == 1
+
+
+def test_rejects_custom_properties():
+    class BadProperty:
+        @property
+        def iloc(self):
+            return [None]
+
+    series = BadProperty()
+    context = limited(data=series)
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("data.iloc[0]", context)
+
+
+@dec.skip_without("pandas")
+def test_accepts_non_overriden_properties():
+    import pandas as pd
+
+    class GoodProperty(pd.Series):
+        pass
+
+    series = GoodProperty([1], index=["a"])
+    context = limited(data=series)
+
+    assert guarded_eval("data.iloc[0]", context) == 1
+
+
+@dec.skip_without("pandas")
+def test_pandas_series():
+    import pandas as pd
+
+    context = limited(data=pd.Series([1], index=["a"]))
+    assert guarded_eval('data["a"]', context) == 1
+    with pytest.raises(KeyError):
+        guarded_eval('data["c"]', context)
+
+
+@dec.skip_without("pandas")
+def test_pandas_bad_series():
+    import pandas as pd
+
+    class BadItemSeries(pd.Series):
+        def __getitem__(self, key):
+            return "CUSTOM_ITEM"
+
+    class BadAttrSeries(pd.Series):
+        def __getattr__(self, key):
+            return "CUSTOM_ATTR"
+
+    bad_series = BadItemSeries([1], index=["a"])
+    context = limited(data=bad_series)
+
+    with pytest.raises(GuardRejection):
+        guarded_eval('data["a"]', context)
+    with pytest.raises(GuardRejection):
+        guarded_eval('data["c"]', context)
+
+    # note: here result is a bit unexpected because
+    # pandas `__getattr__` calls `__getitem__`;
+    # FIXME - special case to handle it?
+    assert guarded_eval("data.a", context) == "CUSTOM_ITEM"
+
+    context = unsafe(data=bad_series)
+    assert guarded_eval('data["a"]', context) == "CUSTOM_ITEM"
+
+    bad_attr_series = BadAttrSeries([1], index=["a"])
+    context = limited(data=bad_attr_series)
+    assert guarded_eval('data["a"]', context) == 1
+    with pytest.raises(GuardRejection):
+        guarded_eval("data.a", context)
+
+
+@dec.skip_without("pandas")
+def test_pandas_dataframe_loc():
+    import pandas as pd
+    from pandas.testing import assert_series_equal
+
+    data = pd.DataFrame([{"a": 1}])
+    context = limited(data=data)
+    assert_series_equal(guarded_eval('data.loc[:, "a"]', context), data["a"])
+
+
+def test_named_tuple():
+    class GoodNamedTuple(NamedTuple):
+        a: str
+        pass
+
+    class BadNamedTuple(NamedTuple):
+        a: str
+
+        def __getitem__(self, key):
+            return None
+
+    good = GoodNamedTuple(a="x")
+    bad = BadNamedTuple(a="x")
+
+    context = limited(data=good)
+    assert guarded_eval("data[0]", context) == "x"
+
+    context = limited(data=bad)
+    with pytest.raises(GuardRejection):
+        guarded_eval("data[0]", context)
+
+
+def test_dict():
+    context = limited(data={"a": 1, "b": {"x": 2}, ("x", "y"): 3})
+    assert guarded_eval('data["a"]', context) == 1
+    assert guarded_eval('data["b"]', context) == {"x": 2}
+    assert guarded_eval('data["b"]["x"]', context) == 2
+    assert guarded_eval('data["x", "y"]', context) == 3
+
+    assert guarded_eval("data.keys", context)
+
+
+def test_set():
+    context = limited(data={"a", "b"})
+    assert guarded_eval("data.difference", context)
+
+
+def test_list():
+    context = limited(data=[1, 2, 3])
+    assert guarded_eval("data[1]", context) == 2
+    assert guarded_eval("data.copy", context)
+
+
+def test_dict_literal():
+    context = limited()
+    assert guarded_eval("{}", context) == {}
+    assert guarded_eval('{"a": 1}', context) == {"a": 1}
+
+
+def test_list_literal():
+    context = limited()
+    assert guarded_eval("[]", context) == []
+    assert guarded_eval('[1, "a"]', context) == [1, "a"]
+
+
+def test_set_literal():
+    context = limited()
+    assert guarded_eval("set()", context) == set()
+    assert guarded_eval('{"a"}', context) == {"a"}
+
+
+def test_evaluates_if_expression():
+    context = limited()
+    assert guarded_eval("2 if True else 3", context) == 2
+    assert guarded_eval("4 if False else 5", context) == 5
+
+
+def test_object():
+    obj = object()
+    context = limited(obj=obj)
+    assert guarded_eval("obj.__dir__", context) == obj.__dir__
+
+
+@pytest.mark.parametrize(
+    "code,expected",
+    [
+        ["int.numerator", int.numerator],
+        ["float.is_integer", float.is_integer],
+        ["complex.real", complex.real],
+    ],
+)
+def test_number_attributes(code, expected):
+    assert guarded_eval(code, limited()) == expected
+
+
+def test_method_descriptor():
+    context = limited()
+    assert guarded_eval("list.copy.__name__", context) == "copy"
+
+
+class HeapType:
+    pass
+
+
+class CallCreatesHeapType:
+    def __call__(self) -> HeapType:
+        return HeapType()
+
+
+class CallCreatesBuiltin:
+    def __call__(self) -> frozenset:
+        return frozenset()
+
+
+class HasStaticMethod:
+    @staticmethod
+    def static_method() -> HeapType:
+        return HeapType()
+
+
+class InitReturnsFrozenset:
+    def __new__(self) -> frozenset:  # type:ignore[misc]
+        return frozenset()
+
+
+class StringAnnotation:
+    def heap(self) -> "HeapType":
+        return HeapType()
+
+    def copy(self) -> "StringAnnotation":
+        return StringAnnotation()
+
+
+CustomIntType = NewType("CustomIntType", int)
+CustomHeapType = NewType("CustomHeapType", HeapType)
+IntTypeAlias = TypeAliasType("IntTypeAlias", int)
+HeapTypeAlias = TypeAliasType("HeapTypeAlias", HeapType)
+
+
+class ProtocolTest(Protocol):
+    def test_method(self) -> bool:
+        pass
+
+
+class ProtocolTestImplementer(ProtocolTest):
+    def test_method(self) -> bool:
+        return True
+
+
+class TypedClass:
+    def test_method(self) -> bool:
+        return True
+
+
+class Movie(TypedDict):
+    name: str
+    year: int
+
+
+class SpecialTyping:
+    def custom_int_type(self) -> CustomIntType:
+        return CustomIntType(1)
+
+    def custom_heap_type(self) -> CustomHeapType:
+        return CustomHeapType(HeapType())
+
+    def int_type_alias(self) -> IntTypeAlias:
+        return 1
+
+    def heap_type_alias(self) -> HeapTypeAlias:
+        return 1
+
+    def literal(self) -> Literal[False]:
+        return False
+
+    def literal_string(self) -> LiteralString:
+        return "test"
+
+    def self(self) -> Self:
+        return self
+
+    def any_str(self, x: AnyStr) -> AnyStr:
+        return x
+
+    def with_kwargs(self, a=1, b=2, c=3) -> int:
+        return a + b + c
+
+    def annotated(self) -> Annotated[float, "positive number"]:
+        return 1
+
+    def annotated_self(self) -> Annotated[Self, "self with metadata"]:
+        self._metadata = "test"
+        return self
+
+    def int_type_guard(self, x) -> TypeGuard[int]:
+        return isinstance(x, int)
+
+    def optional_float(self) -> Optional[float]:
+        return 1.0
+
+    def union_str_and_int(self) -> Union[str, int]:
+        return ""
+
+    def protocol(self) -> ProtocolTest:
+        return ProtocolTestImplementer()
+
+    def typed_dict(self) -> Movie:
+        return {"name": "The Matrix", "year": 1999}
+
+
+@pytest.mark.parametrize(
+    "data,code,expected,equality",
+    [
+        [[1, 2, 3], "data.index(2)", 1, True],
+        [{"a": 1}, "data.keys().isdisjoint({})", True, True],
+        [StringAnnotation(), "data.heap()", HeapType, False],
+        [StringAnnotation(), "data.copy()", StringAnnotation, False],
+        # test cases for `__call__`
+        [CallCreatesHeapType(), "data()", HeapType, False],
+        [CallCreatesBuiltin(), "data()", frozenset, False],
+        # Test cases for `__init__`
+        [HeapType, "data()", HeapType, False],
+        [InitReturnsFrozenset, "data()", frozenset, False],
+        [HeapType(), "data.__class__()", HeapType, False],
+        # supported special cases for typing
+        [SpecialTyping(), "data.custom_int_type()", int, False],
+        [SpecialTyping(), "data.custom_heap_type()", HeapType, False],
+        [SpecialTyping(), "data.int_type_alias()", int, False],
+        [SpecialTyping(), "data.heap_type_alias()", HeapType, False],
+        [SpecialTyping(), "data.self()", SpecialTyping, False],
+        [SpecialTyping(), "data.literal()", False, True],
+        [SpecialTyping(), "data.literal_string()", str, False],
+        [SpecialTyping(), "data.any_str('a')", str, False],
+        [SpecialTyping(), "data.any_str(b'a')", bytes, False],
+        [SpecialTyping(), "data.with_kwargs(b=3)", int, False],
+        [SpecialTyping(), "data.annotated()", float, False],
+        [SpecialTyping(), "data.annotated_self()", SpecialTyping, False],
+        [SpecialTyping(), "data.int_type_guard()", int, False],
+        # test cases for static methods
+        [HasStaticMethod, "data.static_method()", HeapType, False],
+    ],
+)
+def test_evaluates_calls(data, code, expected, equality):
+    context = limited(data=data, HeapType=HeapType, StringAnnotation=StringAnnotation)
+    value = guarded_eval(code, context)
+    if equality:
+        assert value == expected
+    else:
+        assert isinstance(value, expected)
+
+
+@pytest.mark.parametrize(
+    "data,code,expected_attributes",
+    [
+        [SpecialTyping(), "data.optional_float()", ["is_integer"]],
+        [
+            SpecialTyping(),
+            "data.union_str_and_int()",
+            ["capitalize", "as_integer_ratio"],
+        ],
+        [SpecialTyping(), "data.protocol()", ["test_method"]],
+        [SpecialTyping(), "data.typed_dict()", ["keys", "values", "items"]],
+    ],
+)
+def test_mocks_attributes_of_call_results(data, code, expected_attributes):
+    context = limited(data=data, HeapType=HeapType, StringAnnotation=StringAnnotation)
+    result = guarded_eval(code, context)
+    for attr in expected_attributes:
+        assert hasattr(result, attr)
+        assert attr in dir(result)
+
+
+@pytest.mark.parametrize(
+    "data,code,expected_items",
+    [
+        [SpecialTyping(), "data.typed_dict()", {"year": int, "name": str}],
+    ],
+)
+def test_mocks_items_of_call_results(data, code, expected_items):
+    context = limited(data=data, HeapType=HeapType, StringAnnotation=StringAnnotation)
+    result = guarded_eval(code, context)
+    ipython_keys = result._ipython_key_completions_()
+    for key, value in expected_items.items():
+        assert isinstance(result[key], value)
+        assert key in ipython_keys
+
+
+@pytest.mark.parametrize(
+    "code,expected",
+    [
+        ["\n".join(["instance = TypedClass()", "instance.test_method()"]), bool],
+        ["\n".join(["def func() -> int:", "    pass", "func()"]), int],
+        [
+            "\n".join(
+                [
+                    "class NotYetDefined:",
+                    "    def method(self) -> str:",
+                    "        pass",
+                    "instance = NotYetDefined()",
+                    "instance.method()",
+                ]
+            ),
+            str,
+        ],
+        [
+            "\n".join(
+                [
+                    "class NotYetDefined:",
+                    "    def method(self, argument) -> int:",
+                    "        pass",
+                    "instance = NotYetDefined()",
+                    "instance.method()",
+                ]
+            ),
+            int,
+        ],
+        [
+            "\n".join(
+                [
+                    "class NotYetDefined:",
+                    "    @property",
+                    "    def my_prop(self) -> int:",
+                    "        pass",
+                    "instance = NotYetDefined()",
+                    "instance.my_prop",
+                ]
+            ),
+            int,
+        ],
+        [
+            "\n".join(
+                [
+                    "class NotYetDefined:",
+                    "    @unkown_decorator",
+                    "    @property",
+                    "    def my_prop(self) -> int:",
+                    "        pass",
+                    "instance = NotYetDefined()",
+                    "instance.my_prop",
+                ]
+            ),
+            int,
+        ],
+        [
+            "\n".join(
+                [
+                    "class NotYetDefined:",
+                    "    attribute = 42",
+                    "instance = NotYetDefined()",
+                    "instance.attribute",
+                ]
+            ),
+            int,
+        ],
+        [
+            "\n".join(
+                [
+                    "class NotYetDefined:",
+                    "    def any_str(self, argument: AnyStr) -> AnyStr:",
+                    "        pass",
+                    "instance = NotYetDefined()",
+                    "instance.any_str(b'test')",
+                ]
+            ),
+            bytes,
+        ],
+        [
+            "\n".join(
+                [
+                    "class NotYetDefined:",
+                    "    def any_str(self, argument: AnyStr) -> AnyStr:",
+                    "        pass",
+                    "instance = NotYetDefined()",
+                    "instance.any_str('test')",
+                ]
+            ),
+            str,
+        ],
+        [
+            "\n".join(
+                [
+                    "async def async_func():",
+                    "    return []",
+                    "(await async_func())",
+                ]
+            ),
+            list,
+        ],
+        [
+            "\n".join(
+                [
+                    "make_list = lambda:[]",
+                    "make_list()",
+                ]
+            ),
+            list,
+        ],
+    ],
+)
+def test_mock_class_and_func_instances(code, expected):
+    context = limited(TypedClass=TypedClass, AnyStr=AnyStr)
+    value = guarded_eval(code, context)
+    assert isinstance(value, expected)
+
+
+@pytest.mark.parametrize(
+    "annotation,expected",
+    [
+        # Basic types
+        (int, True),
+        (str, True),
+        (list, True),
+        # Typing generics
+        (list[str], True),
+        (dict[str, int], True),
+        (Optional[int], True),
+        (Union[int, str], True),
+        # Special forms
+        (AnyStr, True),
+        (TypeVar("T"), True),
+        (Callable[[int], str], True),
+        (Literal["GET", "POST"], True),
+        (Any, True),
+        (str | int, True),
+        # Nested
+        (List[Dict[str, int]], True),
+        # Non-annotations
+        (42, False),
+        ("string", False),
+        ([1, 2, 3], False),
+        (None, False),
+    ],
+)
+def test_is_type_annotation(annotation, expected):
+    assert _is_type_annotation(annotation) == expected
+
+
+@pytest.mark.parametrize(
+    "code,expected",
+    [
+        ["\n".join(["a = True", "a"]), bool],
+        ["\n".join(["a, b, c = 1, 'b', 3.0", "a"]), int],
+        ["\n".join(["a, b, c = 1, 'b', 3.0", "b"]), str],
+        ["\n".join(["a, b, c = 1, 'b', 3.0", "c"]), float],
+        ["\n".join(["a, *rest = 1, 'b', 3.0", "a"]), int],
+        ["\n".join(["a, *rest = 1, 'b', 3.0", "rest"]), list],
+    ],
+)
+def test_evaluates_assignments(code, expected):
+    context = limited()
+    value = guarded_eval(code, context)
+    assert isinstance(value, expected)
+
+
+def equals(a, b):
+    return a == b
+
+
+def quacks_like(test_duck, reference_duck):
+    return set(dir(reference_duck)) - set(dir(test_duck)) == set()
+
+
+@pytest.mark.parametrize(
+    "code,expected,check",
+    [
+        ["\n".join(["a: Literal[True]", "a"]), True, equals],
+        ["\n".join(["a: bool", "a"]), bool, isinstance],
+        ["\n".join(["a: str", "a"]), str, isinstance],
+        # for lists we need quacking as we do not know:
+        # - how many elements in the list
+        # - which element is of which type
+        ["\n".join(["a: list[str]", "a"]), list, quacks_like],
+        ["\n".join(["a: list[str]", "a[0]"]), str, quacks_like],
+        ["\n".join(["a: list[str]", "a[999]"]), str, quacks_like],
+        # set
+        ["\n".join(["a: set[str]", "a"]), set, quacks_like],
+        # for tuples we do know which element is which
+        ["\n".join(["a: tuple[str, int]", "a"]), tuple, isinstance],
+        ["\n".join(["a: tuple[str, int]", "a[0]"]), str, isinstance],
+        ["\n".join(["a: tuple[str, int]", "a[1]"]), int, isinstance],
+    ],
+)
+def test_evaluates_type_assignments(code, expected, check):
+    context = limited(Literal=Literal)
+    value = guarded_eval(code, context)
+    assert check(value, expected)
+
+
+@pytest.mark.parametrize(
+    "data,bad",
+    [
+        [[1, 2, 3], "data.append(4)"],
+        [{"a": 1}, "data.update()"],
+    ],
+)
+def test_rejects_calls_with_side_effects(data, bad):
+    context = limited(data=data)
+
+    with pytest.raises(GuardRejection):
+        guarded_eval(bad, context)
+
+
+@pytest.mark.parametrize(
+    "code,expected",
+    [
+        ["(1\n+\n1)", 2],
+        ["list(range(10))[-1:]", [9]],
+        ["list(range(20))[3:-2:3]", [3, 6, 9, 12, 15]],
+    ],
+)
+@pytest.mark.parametrize("context", LIMITED_OR_HIGHER)
+def test_evaluates_complex_cases(code, expected, context):
+    assert guarded_eval(code, context()) == expected
+
+
+@pytest.mark.parametrize(
+    "code,expected",
+    [
+        ["1", 1],
+        ["1.0", 1.0],
+        ["0xdeedbeef", 0xDEEDBEEF],
+        ["True", True],
+        ["None", None],
+        ["{}", {}],
+        ["[]", []],
+    ],
+)
+@pytest.mark.parametrize("context", MINIMAL_OR_HIGHER)
+def test_evaluates_literals(code, expected, context):
+    assert guarded_eval(code, context()) == expected
+
+
+@pytest.mark.parametrize(
+    "code,expected",
+    [
+        ["-5", -5],
+        ["+5", +5],
+        ["~5", -6],
+    ],
+)
+@pytest.mark.parametrize("context", LIMITED_OR_HIGHER)
+def test_evaluates_unary_operations(code, expected, context):
+    assert guarded_eval(code, context()) == expected
+
+
+@pytest.mark.parametrize(
+    "code,expected",
+    [
+        ["1 + 1", 2],
+        ["3 - 1", 2],
+        ["2 * 3", 6],
+        ["5 // 2", 2],
+        ["5 / 2", 2.5],
+        ["5**2", 25],
+        ["2 >> 1", 1],
+        ["2 << 1", 4],
+        ["1 | 2", 3],
+        ["1 & 1", 1],
+        ["1 & 2", 0],
+    ],
+)
+@pytest.mark.parametrize("context", LIMITED_OR_HIGHER)
+def test_evaluates_binary_operations(code, expected, context):
+    assert guarded_eval(code, context()) == expected
+
+
+@pytest.mark.parametrize(
+    "code,expected",
+    [
+        ["2 > 1", True],
+        ["2 < 1", False],
+        ["2 <= 1", False],
+        ["2 <= 2", True],
+        ["1 >= 2", False],
+        ["2 >= 2", True],
+        ["2 == 2", True],
+        ["1 == 2", False],
+        ["1 != 2", True],
+        ["1 != 1", False],
+        ["1 < 4 < 3", False],
+        ["(1 < 4) < 3", True],
+        ["4 > 3 > 2 > 1", True],
+        ["4 > 3 > 2 > 9", False],
+        ["1 < 2 < 3 < 4", True],
+        ["9 < 2 < 3 < 4", False],
+        ["1 < 2 > 1 > 0 > -1 < 1", True],
+        ["1 in [1] in [[1]]", True],
+        ["1 in [1] in [[2]]", False],
+        ["1 in [1]", True],
+        ["0 in [1]", False],
+        ["1 not in [1]", False],
+        ["0 not in [1]", True],
+        ["True is True", True],
+        ["False is False", True],
+        ["True is False", False],
+        ["True is not True", False],
+        ["False is not True", True],
+    ],
+)
+@pytest.mark.parametrize("context", LIMITED_OR_HIGHER)
+def test_evaluates_comparisons(code, expected, context):
+    assert guarded_eval(code, context()) == expected
+
+
+def test_guards_comparisons():
+    class GoodEq(int):
+        pass
+
+    class BadEq(int):
+        def __eq__(self, other):
+            assert False
+
+    context = limited(bad=BadEq(1), good=GoodEq(1))
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("bad == 1", context)
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("bad != 1", context)
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("1 == bad", context)
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("1 != bad", context)
+
+    assert guarded_eval("good == 1", context) is True
+    assert guarded_eval("good != 1", context) is False
+    assert guarded_eval("1 == good", context) is True
+    assert guarded_eval("1 != good", context) is False
+
+
+def test_guards_unary_operations():
+    class GoodOp(int):
+        pass
+
+    class BadOpInv(int):
+        def __inv__(self, other):
+            assert False
+
+    class BadOpInverse(int):
+        def __inv__(self, other):
+            assert False
+
+    context = limited(good=GoodOp(1), bad1=BadOpInv(1), bad2=BadOpInverse(1))
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("~bad1", context)
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("~bad2", context)
+
+
+def test_guards_binary_operations():
+    class GoodOp(int):
+        pass
+
+    class BadOp(int):
+        def __add__(self, other):
+            assert False
+
+    context = limited(good=GoodOp(1), bad=BadOp(1))
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("1 + bad", context)
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("bad + 1", context)
+
+    assert guarded_eval("good + 1", context) == 2
+    assert guarded_eval("1 + good", context) == 2
+
+
+def test_guards_attributes():
+    class GoodAttr(float):
+        pass
+
+    class BadAttr1(float):
+        def __getattr__(self, key):
+            assert False
+
+    class BadAttr2(float):
+        def __getattribute__(self, key):
+            assert False
+
+    context = limited(good=GoodAttr(0.5), bad1=BadAttr1(0.5), bad2=BadAttr2(0.5))
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("bad1.as_integer_ratio", context)
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("bad2.as_integer_ratio", context)
+
+    assert guarded_eval("good.as_integer_ratio()", context) == (1, 2)
+
+
+@pytest.mark.parametrize("context", MINIMAL_OR_HIGHER)
+def test_access_builtins(context):
+    assert guarded_eval("round", context()) == round
+
+
+def test_access_builtins_fails():
+    context = limited()
+    with pytest.raises(NameError):
+        guarded_eval("this_is_not_builtin", context)
+
+
+def test_rejects_forbidden():
+    context = forbidden()
+    with pytest.raises(GuardRejection):
+        guarded_eval("1", context)
+
+
+def test_guards_locals_and_globals():
+    context = EvaluationContext(
+        locals={"local_a": "a"}, globals={"global_b": "b"}, evaluation="minimal"
+    )
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("local_a", context)
+
+    with pytest.raises(GuardRejection):
+        guarded_eval("global_b", context)
+
+
+def test_access_locals_and_globals():
+    context = EvaluationContext(
+        locals={"local_a": "a"}, globals={"global_b": "b"}, evaluation="limited"
+    )
+    assert guarded_eval("local_a", context) == "a"
+    assert guarded_eval("global_b", context) == "b"
+
+
+@pytest.mark.parametrize(
+    "code",
+    ["x += 1", "del x"],
+)
+@pytest.mark.parametrize("context", [minimal(x=1), limited(x=1), unsafe(x=1)])
+def test_does_not_modify_namespace(code, context):
+    guarded_eval(code, context)
+    assert context.locals["x"] == 1
+
+
+@pytest.mark.parametrize(
+    "code",
+    ["def test(): pass", "class test: pass", "import ast as test"],
+)
+@pytest.mark.parametrize("context", [minimal(), limited(), unsafe()])
+def test_does_not_populate_namespace(code, context):
+    guarded_eval(code, context)
+    assert "test" not in context.locals
+    assert "test" not in context.globals
+
+
+def test_subscript():
+    context = EvaluationContext(
+        locals={}, globals={}, evaluation="limited", in_subscript=True
+    )
+    empty_slice = slice(None, None, None)
+    assert guarded_eval("", context) == tuple()
+    assert guarded_eval(":", context) == empty_slice
+    assert guarded_eval("1:2:3", context) == slice(1, 2, 3)
+    assert guarded_eval(':, "a"', context) == (empty_slice, "a")
+
+
+def test_unbind_method():
+    class X(list):
+        def index(self, k):
+            return "CUSTOM"
+
+    x = X()
+    assert _unbind_method(x.index) is X.index
+    assert _unbind_method([].index) is list.index
+    assert _unbind_method(list.index) is None
+
+
+def test_assumption_instance_attr_do_not_matter():
+    """This is semi-specified in Python documentation.
+
+    However, since the specification says 'not guaranteed
+    to work' rather than 'is forbidden to work', future
+    versions could invalidate this assumptions. This test
+    is meant to catch such a change if it ever comes true.
+    """
+
+    class T:
+        def __getitem__(self, k):
+            return "a"
+
+        def __getattr__(self, k):
+            return "a"
+
+    def f(self):
+        return "b"
+
+    t = T()
+    t.__getitem__ = f
+    t.__getattr__ = f
+    assert t[1] == "a"
+    assert t[1] == "a"
+
+
+def test_assumption_named_tuples_share_getitem():
+    """Check assumption on named tuples sharing __getitem__"""
+    from typing import NamedTuple
+
+    class A(NamedTuple):
+        pass
+
+    class B(NamedTuple):
+        pass
+
+    assert A.__getitem__ == B.__getitem__
+
+
+@dec.skip_without("numpy")
+def test_module_access():
+    import numpy
+
+    context = limited(numpy=numpy)
+    assert guarded_eval("numpy.linalg.norm", context) == numpy.linalg.norm
+
+    context = minimal(numpy=numpy)
+    with pytest.raises(GuardRejection):
+        guarded_eval("np.linalg.norm", context)
+
+
+def test_autoimport_module():
+    context = EvaluationContext(
+        locals={},
+        globals={},
+        evaluation="limited",
+        auto_import=import_module,
+        policy_overrides={"allow_auto_import": True},
+    )
+    pi = guarded_eval("math.pi", context)
+    assert round(pi, 2) == 3.14
+
+
+def test_autoimport_deep_module():
+    context = EvaluationContext(
+        locals={},
+        globals={},
+        evaluation="limited",
+        auto_import=import_module,
+        policy_overrides={"allow_auto_import": True},
+    )
+    ElementTree = guarded_eval("xml.etree.ElementTree", context)
+    assert hasattr(ElementTree, "ElementTree")

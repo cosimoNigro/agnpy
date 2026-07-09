@@ -2,9 +2,9 @@ import numpy as np
 import astropy.units as u
 from astropy.table import Table
 from sherpa.data import Data1D
-from gammapy.estimators import FluxPoints
+"""from gammapy.estimators import FluxPoints
 from gammapy.datasets import FluxPointsDataset, Datasets
-
+"""
 
 def load_sherpa_flux_points(sed_path, E_min, E_max, systematics_dict=None):
     """Load the MWL SED at `sed_path` in a `~sherpa.data.Data1D` object.

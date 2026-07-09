@@ -1,4 +1,4 @@
-# test the synchrotron module
+# test the synchrotron_cone module
 from agnpy.emission_regions import Cone
 import astropy.units as u
 from agnpy.utils.conversion import B_to_cgs, mec2

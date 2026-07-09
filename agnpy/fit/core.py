@@ -1,7 +1,7 @@
 # functions / classes shared by all wrapper types
 import numpy as np
 from sherpa.models import model
-from gammapy import modeling
+"""from gammapy import modeling"""
 from ..spectra import InterpolatedDistribution
 
 
@@ -137,7 +137,7 @@ def get_spectral_parameters_from_n_e(n_e, backend, modelname=None):
     return parameters
 
 
-def make_emission_region_parameters_dict(scenario, backend, modelname=None):
+def make_emission_region_parameters_dict(scenario, backend, modelname=None,electron_escape = False):
     """Return a dict of `~agnpy.fit.core.Parameter`s for the emission region.
     The list of parameters is different whether we are considering a SSC or EC
     model.
@@ -164,6 +164,13 @@ def make_emission_region_parameters_dict(scenario, backend, modelname=None):
     delta_D = Parameter("delta_D", 10, "", min=1, max=100)
     log10_B = Parameter("log10_B", -2, "", min=-4, max=2)
     t_var = Parameter("t_var", 600, "s", min=10, max=np.pi * 1e7)
+    
+    # parameters exlusive to Cone
+    L = Parameter("L", 1e18, "cm", min= 1e10, max = 1e30)
+    R_0 = Parameter("R_0", 1e16, "cm", min= 1e10, max= 1e20)
+    A_equi = Parameter("A_equi", 1, "", min=1, max=1000)
+    theta_open = Parameter("theta_open", 2, "deg", min= 0, max= 40)
+
     # parameters exclusive to EC
     mu_s = Parameter("mu_s", 0, "", min=0, max=1, frozen=True)
     log10_r = Parameter("log10_r", 18, "", min=16, max=22, frozen=True)
@@ -181,6 +188,23 @@ def make_emission_region_parameters_dict(scenario, backend, modelname=None):
             "log10_r",
         ]
         _pars = [z, delta_D, log10_B, t_var, mu_s, log10_r]
+    elif scenario =='synchrotroncone':
+        _pars_names = [
+            "L",
+            "R_0",
+            "log10_B",
+            "theta_open",
+            "z",
+            "delta_D",
+            "A_equi",
+        ]
+        _pars = [L, R_0, log10_B, theta_open, z, delta_D, A_equi]
+        if electron_escape:
+            escape_coefficient = Parameter(
+                "escape_coefficient", 1.0, "", min=0.1, max=10
+            )
+            _pars_names.append("escape_coefficient")
+            _pars.append(escape_coefficient)
 
     # transform the parameters to sherpa o gammapy parameters
     if backend == "gammapy":

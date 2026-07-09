@@ -1,0 +1,515 @@
+[build-system]
+requires = ["setuptools>=80.0"]
+# We need access to the 'setupbase' module at build time.
+# Hence we declare a custom build backend.
+build-backend = "_build_meta"  # just re-exports setuptools.build_meta definitions
+backend-path = ["."]
+
+[project]
+name = "ipython"
+description = "IPython: Productive Interactive Computing"
+keywords = ["Interactive", "Interpreter", "Shell", "Embedding"]
+classifiers = [
+    "Framework :: IPython",
+    "Framework :: Jupyter",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: System :: Shells",
+]
+license = "BSD-3-Clause"
+license-files = ["LICENSE", "COPYING.rst"]
+requires-python = ">=3.11"
+dependencies = [
+    'colorama>=0.4.4; sys_platform == "win32"',
+    "decorator>=5.1.0",
+    "ipython-pygments-lexers>=1.0.0",
+    "jedi>=0.18.2",
+    "matplotlib-inline>=0.1.6",
+    'pexpect>4.6; sys_platform != "win32" and sys_platform != "emscripten"',
+    "prompt_toolkit>=3.0.41,<3.1.0",
+    'psutil>=7; sys_platform != "emscripten" and sys_platform != "cygwin"',
+    "pygments>=2.14.0", # wheel
+    "stack_data>=0.6.0",
+    "traitlets>=5.13.0",
+    "typing_extensions>=4.6; python_version<'3.12'",
+]
+dynamic = ["authors", "version"]
+
+[project.scripts]
+ipython = "IPython:start_ipython"
+ipython3 = "IPython:start_ipython"
+
+[project.readme]
+file = "long_description.rst"
+content-type = "text/x-rst"
+
+[project.urls]
+Homepage = "https://ipython.org"
+Documentation = "https://ipython.readthedocs.io/"
+Funding = "https://jupyter.org/about#donate"
+Source = "https://github.com/ipython/ipython"
+Tracker = "https://github.com/ipython/ipython/issues"
+
+[project.optional-dependencies]
+black = [
+    "black",
+]
+doc = [
+    "docrepr",
+    "exceptiongroup",
+    "intersphinx_registry",
+    "ipykernel",
+    "ipython[test,matplotlib]",
+    "setuptools>=80.0",
+    "sphinx_toml==0.0.4",
+    "sphinx-rtd-theme>=0.1.8", # wheel
+    "sphinx>=8.0",
+    "typing_extensions",
+]
+test = [
+    "pytest>=7.0.0", # keep in sync with tool.pytest.ini_options.minversion
+    "pytest-asyncio>=1.0.0",
+    "testpath>=0.2",
+    "packaging>=23.0.0",
+    "setuptools>=80.0",
+]
+test_extra = [
+    "ipython[test]",
+    "curio",
+    "jupyter_ai",
+    "ipython[matplotlib]",
+    "nbformat",
+    "nbclient",
+    "ipykernel>6.30",
+    "numpy>=2.0",
+    "pandas>2.1",
+    "trio>=0.22.0",
+]
+matplotlib = [
+   "matplotlib>3.9"
+]
+all = [
+    "ipython[doc,matplotlib,terminal,test,test_extra]",
+    "argcomplete>=3.0",
+    "types-decorator"
+]
+
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+follow_imports = 'silent'
+exclude = [
+   'test_\.+\.py',
+   'IPython.utils.tests.test_wildcard',
+   'testing',
+   'tests',
+   '_process_win32_controller.py',
+   'IPython/core/application.py',
+   'IPython/core/profileapp.py',
+   'IPython/lib/deepreload.py',
+   'IPython/sphinxext/ipython_directive.py',
+   'IPython/terminal/ipapp.py',
+   'IPython/utils/path.py',
+   'IPython/core/debugger_backport.py',
+]
+check_untyped_defs = true
+# disallow_untyped_calls = true
+# disallow_untyped_decorators = true
+# ignore_errors = false
+# ignore_missing_imports = false
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+warn_redundant_casts = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+[[tool.mypy.overrides]]
+module = "sphinx.*"
+follow_imports = "skip"
+#warn_unreachable = true
+#strict = true
+
+[[tool.mypy.overrides]]
+# numpy's stubs use PEP 695 `type` statements (3.12+), which mypy rejects
+# when parsing under python_version = "3.11". Skip following its stubs.
+module = "numpy.*"
+follow_imports = "skip"
+follow_imports_for_stubs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "IPython.core.events",
+    "IPython.core.magic",
+    "IPython.utils._process_common",
+    "IPython.utils._process_win32",
+]
+# Strictest configuration, everything turned up to the max
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+warn_return_any = true
+warn_unused_ignores = true
+warn_unreachable = true
+strict_equality = true
+no_implicit_optional = true
+ignore_errors = false
+ignore_missing_imports = false
+
+[[tool.mypy.overrides]]
+module = [
+    "IPython.core.ultratb",
+]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = false
+disallow_untyped_decorators = true
+disallow_untyped_defs = false
+ignore_errors = false
+ignore_missing_imports = false
+
+[[tool.mypy.overrides]]
+module = [
+    "IPython.core.crashhandler",
+    "IPython.utils.text",
+    "IPython.utils.PyColorize",
+    "IPython.utils.sentinel",
+    "IPython.utils.data",
+    "IPython.utils.importstring",
+    "IPython.utils.syspathcontext",
+    "IPython.utils.generics",
+    "IPython.utils.encoding",
+    "IPython.utils.module_paths",
+]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+ignore_errors = false
+ignore_missing_imports = false
+
+[[tool.mypy.overrides]]
+module = [
+    "IPython.core.debugger",
+]
+disallow_untyped_defs = false
+ignore_errors = false
+ignore_missing_imports = true
+disallow_untyped_calls = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = true
+
+[[tool.mypy.overrides]]
+module = [
+    "IPython.core.interactiveshell",
+]
+disallow_untyped_defs = false
+ignore_errors = false
+ignore_missing_imports = true
+disallow_untyped_calls = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = false
+disable_error_code = [
+  "arg-type",
+  "assignment",
+  "attr-defined",
+  "index",
+  "var-annotated",
+  "union-attr"
+]
+
+# gloabl ignore error
+[[tool.mypy.overrides]]
+module = [
+    "IPython",
+    "IPython.conftest",
+    "IPython.core.alias",
+    "IPython.core.async_helpers",
+    "IPython.core.autocall",
+    "IPython.core.builtin_trap",
+    "IPython.core.compilerop",
+    "IPython.core.completer",
+    "IPython.core.completerlib",
+    "IPython.core.display",
+    "IPython.core.display_functions",
+    "IPython.core.display_trap",
+    "IPython.core.displayhook",
+    "IPython.core.displaypub",
+    "IPython.core.extensions",
+    "IPython.core.formatters",
+    "IPython.core.getipython",
+    "IPython.core.guarded_eval",
+    "IPython.core.historyapp",
+    "IPython.core.hooks",
+    "IPython.core.inputtransformer2",
+    "IPython.core.logger",
+    "IPython.core.macro",
+    "IPython.core.magic_arguments",
+    "IPython.core.magics.ast_mod",
+    "IPython.core.magics.auto",
+    "IPython.core.magics.basic",
+    "IPython.core.magics.code",
+    "IPython.core.magics.config",
+    "IPython.core.magics.display",
+    "IPython.core.magics.execution",
+    "IPython.core.magics.extension",
+    "IPython.core.magics.history",
+    "IPython.core.magics.logging",
+    "IPython.core.magics.namespace",
+    "IPython.core.magics.osm",
+    "IPython.core.magics.packaging",
+    "IPython.core.magics.pylab",
+    "IPython.core.magics.script",
+    "IPython.core.oinspect",
+    "IPython.core.page",
+    "IPython.core.payload",
+    "IPython.core.payloadpage",
+    "IPython.core.prefilter",
+    "IPython.core.profiledir",
+    "IPython.core.prompts",
+    "IPython.core.pylabtools",
+    "IPython.core.shellapp",
+    "IPython.core.splitinput",
+    "IPython.extensions.autoreload",
+    "IPython.extensions.storemagic",
+    "IPython.external.pickleshare",
+    "IPython.external.qt_for_kernel",
+    "IPython.external.qt_loaders",
+    "IPython.lib.backgroundjobs",
+    "IPython.lib.clipboard",
+    "IPython.lib.demo",
+    "IPython.lib.display",
+    "IPython.lib.editorhooks",
+    "IPython.lib.guisupport",
+    "IPython.lib.latextools",
+    "IPython.lib.lexers",
+    "IPython.lib.pretty",
+    "IPython.paths",
+    "IPython.sphinxext.ipython_console_highlighting",
+    "IPython.terminal.debugger",
+    "IPython.terminal.embed",
+    "IPython.terminal.interactiveshell",
+    "IPython.terminal.magics",
+    "IPython.terminal.prompts",
+    "IPython.terminal.pt_inputhooks",
+    "IPython.terminal.pt_inputhooks.asyncio",
+    "IPython.terminal.pt_inputhooks.glut",
+    "IPython.terminal.pt_inputhooks.gtk",
+    "IPython.terminal.pt_inputhooks.gtk3",
+    "IPython.terminal.pt_inputhooks.gtk4",
+    "IPython.terminal.pt_inputhooks.osx",
+    "IPython.terminal.pt_inputhooks.pyglet",
+    "IPython.terminal.pt_inputhooks.qt",
+    "IPython.terminal.pt_inputhooks.tk",
+    "IPython.terminal.pt_inputhooks.wx",
+    "IPython.terminal.ptutils",
+    "IPython.terminal.shortcuts",
+    "IPython.terminal.shortcuts.auto_match",
+    "IPython.terminal.shortcuts.auto_suggest",
+    "IPython.terminal.shortcuts.filters",
+    "IPython.utils._process_cli",
+    "IPython.utils._process_emscripten",
+    "IPython.utils.capture",
+    "IPython.utils.coloransi",
+    "IPython.utils.contexts",
+    "IPython.utils.decorators",
+    "IPython.utils.dir2",
+    "IPython.utils.frame",
+    "IPython.utils.io",
+    "IPython.utils.ipstruct",
+    "IPython.utils.openpy",
+    "IPython.utils.process",
+    "IPython.utils.py3compat",
+    "IPython.utils.strdispatch",
+    "IPython.utils.sysinfo",
+    "IPython.utils.tempdir",
+    "IPython.utils.terminal",
+    "IPython.utils.timing",
+    "IPython.utils.tokenutil",
+    "IPython.utils.version",
+    "IPython.utils.wildcard",
+
+]
+disallow_untyped_defs = false
+ignore_errors = true
+ignore_missing_imports = true
+disallow_untyped_calls = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = false
+
+[tool.pytest.ini_options]
+minversion = "7" # keep in sync with project.optional-dependencies.test
+addopts = [
+   "--durations=10",
+   "-pIPython.testing.plugin.pytest_ipdoctest",
+   "--ipdoctest-modules",
+   "--ignore=docs",
+   "--ignore=examples",
+   "--ignore=htmlcov",
+   "--ignore=ipython_kernel",
+   "--ignore=ipython_parallel",
+   "--ignore=results",
+   "--ignore=tmp",
+   "--ignore=tools",
+   "--ignore=traitlets",
+   "--ignore=tests/fake_ext_dir/",
+   "--ignore=IPython/sphinxext",
+   "--ignore=IPython/terminal/pt_inputhooks",
+   "--ignore=IPython/__main__.py",
+   "--ignore=IPython/external/qt_for_kernel.py",
+   "--ignore=IPython/html/widgets/widget_link.py",
+   "--ignore=IPython/html/widgets/widget_output.py",
+   "--ignore=IPython/terminal/console.py",
+   "--ignore=IPython/utils/_process_cli.py",
+   "--ignore=IPython/utils/_process_posix.py",
+   "--ignore=IPython/utils/_process_win32_controller.py",
+   "--ignore=IPython/utils/daemonize.py",
+   "--ignore=IPython/utils/eventful.py",
+   "--ignore=IPython/kernel",
+   "--ignore=IPython/consoleapp.py",
+   "--ignore=IPython/lib/kernel.py",
+   "--ignore=IPython/utils/jsonutil.py",
+   "--ignore=IPython/utils/log.py",
+   "--ignore=IPython/utils/signatures.py",
+   "--ignore=IPython/utils/version.py"
+]
+doctest_optionflags = [
+   "NORMALIZE_WHITESPACE",
+   "ELLIPSIS"
+]
+ipdoctest_optionflags = [
+   "NORMALIZE_WHITESPACE",
+   "ELLIPSIS"
+]
+asyncio_mode = "strict"
+filterwarnings = [
+    "error::ResourceWarning",
+]
+
+[tool.pyright]
+pythonPlatform="All"
+
+[tool.setuptools]
+zip-safe = false
+platforms = ["Linux", "Mac OSX", "Windows"]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+include = ["IPython*"]
+exclude = ["setupext", "tests*"]
+namespaces = false
+
+[tool.setuptools.package-data]
+"IPython" = ["py.typed"]
+"IPython.core" = ["profile/README*"]
+"IPython.testing.plugin" = ["*.txt"]
+
+[tool.setuptools.dynamic]
+version = {attr = "IPython.core.release.__version__"}
+
+[tool.coverage.run]
+omit = [
+    # omit everything in /tmp as we run tempfile
+    "/tmp/*",
+]
+
+[tool.ruff.lint]
+extend-select = [
+    #  "B",           # flake8-bugbear
+    #  "I",           # isort
+    # that will be a problem for pytest fixture unless you swap with the usefixture decorator https://docs.pytest.org/en/7.1.x/how-to/fixtures.html#use-fixtures-in-classes-and-modules-with-usefixtures
+    #  "ARG",         # flake8-unused-arguments
+    #  "C4",          # flake8-comprehensions
+    #  "EM",          # flake8-errmsg
+    #  "ICN",         # flake8-import-conventions
+    #  "G",           # flake8-logging-format
+    #  "PGH",         # pygrep-hooks
+    #  "PIE",         # flake8-pie
+    #  "PL",          # pylint
+    #  "PTH",         # flake8-use-pathlib
+    #  "PT",          # flake8-pytest-style
+    #  "RET",         # flake8-return
+    #  "RUF",         # Ruff-specific
+    #  "SIM",         # flake8-simplify
+    #  "T20",         # flake8-print
+    #    "UP",          # pyupgrade
+    "UP004",       #  1   [*] Class `...` inherits from `object`
+    # "UP006",        #  1   [*] Use `list` instead of `t.List` for type annotation
+    # "UP006",        #  1   [*] Use `tuple` instead of `t.Tuple` for type annotation
+    # "UP010",        #  1   [*] Unnecessary `__future__` import `print_function` for target Python version
+    "UP011",        #  1   [*] Unnecessary parentheses to `functools.lru_cache`
+    "UP018",        #  1   [*] Unnecessary `bool` call (rewrite as a literal)
+    # "UP006",        #182   [*] Use `...` instead of `...` for type annotation
+    # "UP007",        #  5   Use `X | Y` for type annotations
+    # "UP007",        #149   [*] Use `X | Y` for type annotations
+    # "UP008",        # 63   Use `super()` instead of `super(__class__, self)`
+    # "UP009",        # 61   [*] UTF-8 encoding declaration is unnecessary
+    # "UP015",        #  2   [*] Unnecessary modes, use `w`
+    # "UP015",        #  4   [*] Unnecessary mode argument
+    # "UP017",        #  2   [*] Use `datetime.UTC` alias
+    # "UP020",        # 15   [*] Use builtin `open`
+    # "UP024",        # 16   [*] Replace aliased errors with `OSError`
+    # "UP025",        # 91   [*] Remove unicode literals from strings
+    "UP028",        #  3   Replace `yield` over `for` loop with `yield from`
+    "UP029",        #  1   Unnecessary builtin import
+    # "UP030",        # 28   Use implicit references for positional format fields
+    # "UP031",        #386   Use format specifiers instead of percent format
+    # "UP032",        # 75   [*] Use f-string instead of `format` call
+    "UP034",        #  1   [*] Avoid extraneous parentheses
+    # "UP035",        #  1   [*] Import from `re` instead
+    # "UP035",        #  2   [*] Import from `typing` instead
+    # "UP035",        #  2   `typing.Type` is deprecated, use `type` instead
+    # "UP035",        #  4   `typing.Set` is deprecated, use `set` instead
+    # "UP035",        # 11   `typing.Dict` is deprecated, use `dict` instead
+    # "UP035",        # 12   `typing.Tuple` is deprecated, use `tuple` instead
+    # "UP035",        # 14   `typing.List` is deprecated, use `list` instead
+    # "UP035",        # 18   [*] Import from `collections.abc` instead
+    # "UP036",        #  3   Version block is outdated for minimum Python version
+    "UP037",        #  1   [*] Remove quotes from type annotation
+    # "UP038",        # 21   Use `X | Y` in `isinstance` call instead of `(X, Y)`
+    #  "YTT",         # flake8-2020
+    #  "EXE",         # flake8-executable
+    #  "PYI",         # flake8-pyi
+    #  "S",           # flake8-bandit
+]
+ignore = [
+    #  "E501",     # E501 Line too long (158 > 100 characters)
+    #  "SIM105",   # SIM105 Use `contextlib.suppress(...)`
+    #  "PLR",      # Design related pylint codes
+    #  "S101",     # Use of `assert` detected
+    "E713", #   1      Test for membership should be `not in`
+    "F601", #   3      Dictionary key literal `True` repeated (`True` hashes to the same value as `1`)
+    "E702", #   3      Multiple statements on one line (semicolon)
+    "E721", #   3      Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+    "E401", #   5      Multiple imports on one line
+    "E711", #  14      Comparison to `None` should be `cond is None`
+    "E701", #  19      Multiple statements on one line (colon)
+    "E741", #  25      Ambiguous variable name: `<one letter>`
+    "E731", #  27      Do not assign a `lambda` expression, use a `def`
+    "E402", #  28      Module level import not at top of file
+    "E722", #  75      Do not use bare `except`
+    "F523", #   1      ; at end of line
+    "F403", #   7      import *` used; unable to detect undefined names
+    "F841", #  38      Local variable `...` is assigned to but never used
+    "F401", #  69      imported but unused
+    "F821", # 624      Undefined name
+]
+unfixable = [
+    # Don't touch print statements
+    "T201",
+    # Don't touch noqa lines
+    "RUF100",
+]
+
+[tool.ruff]
+extend-exclude = ["tests"]

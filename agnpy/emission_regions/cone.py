@@ -15,38 +15,60 @@ from ..utils.conversion import mec2, B_to_cgs
 from ..utils.numerical_methods import *
 
 class Cone:
-    r"""Uniform Conical Jet Model.
+    r"""Uniform conical jet emission region.
 
-    **Note:** We will assume that the jet has an opening angle theta_open,
-    initial radius R_0 and length L, all defined in the centre of momentum
-    frame of the fluid.
+    Models the jet as a truncated cone of constant opening angle, with a
+    magnetic field that declines with radius to conserve magnetic flux, and
+    an electron population evolved along the jet axis using the Chang &
+    Cooper numerical scheme.
+
+    All geometric quantities (:attr:`R_0`, :attr:`L`, :attr:`theta_open`)
+    are defined in the centre-of-momentum (fluid) frame of the plasma.
 
     Parameters
     ----------
-    R_0 : :class:`~astropy.units.Quantity`
-        Initial radius at the base of the cone
     L : :class:`~astropy.units.Quantity`
-        Length of the Jet
-    theta_open : class:`~astropy.units.Quantity`
-        Opening angle of the cone
-    z : float
-        redshift of the source
-    delta_D : float
-        Doppler factor of the relativistic outflow
-    Gamma : float
-        Lorentz factor of the relativistic outflow
+        Length of the jet along its axis in the fluid frame.
+        Default ``1e18 cm``.
+    R_0 : :class:`~astropy.units.Quantity`
+        Radius of the jet at its base (:math:`x = 0`).
+        Default ``1e14 cm``.
     B_0 : :class:`~astropy.units.Quantity`
-        magnetic field at the base of the cone
+        Magnetic field strength at the jet base.
+        Default ``1 G``.
+    theta_open : :class:`~astropy.units.Quantity`
+        Half-opening angle of the cone.
+        Default ``5 deg``.
+    z : float
+        Redshift of the source. Default ``0.033``.
+    delta_D : float
+        Doppler factor of the relativistic outflow. Must be positive.
+        Default ``10``.
+    Gamma : float
+        Bulk Lorentz factor of the outflow. Default ``10``.
     n_e : :class:`~agnpy.spectra.ParticleDistribution`
-        electron distribution initialized at the base of the cone
+        Electron energy distribution injected at the jet base.
+        Default is a :class:`~agnpy.spectra.PowerLaw` with electron mass.
+    gamma_e_size : int
+        Number of points in the Lorentz factor grid used by the
+        Chang & Cooper solver. Default ``200``.
+    x_size : int
+        Number of points in the spatial grid along the jet axis.
+        Default ``100``.
     A_equi : float
-        Equipartition parameter at the base of the jet, 
-        defined as the ratio of electron energy density to magnetic
+        Equipartition parameter at the jet base, defined as
+        :math:`A_{\rm equi} = U_e / U_B`. Default ``1``.
+    cosmology : :class:`~astropy.cosmology.Cosmology`, optional
+        Cosmology used to convert ``z`` to a luminosity distance.
+        Defaults to the astropy default cosmology.
     electron_escape : bool
-        If True, includes particle escape losses in the electron transport equation. 
-        Escaping particles are removed from the electron population as they propagate along the jet.
+        If ``True``, particle escape losses are included in the electron
+        transport equation; escaping electrons are removed as they
+        propagate along the jet. Default ``False``.
     escape_coefficient : float, optional
-        Dimensionless coefficient controlling the strength of particle escape. 
+        Dimensionless coefficient controlling the strength of particle
+        escape. Required (and must be non-zero) when
+        ``electron_escape=True``.
     """
 
     def __init__(
@@ -59,7 +81,6 @@ class Cone:
         delta_D=10,
         Gamma=10,
         n_e: ParticleDistribution = PowerLaw(mass=m_e),
-        xi=1.0,
         gamma_e_size=200,
         x_size=100,
         A_equi=1,
@@ -80,7 +101,6 @@ class Cone:
         self.Gamma = Gamma
         self.A_equi = A_equi
         self._n_e: ParticleDistribution = n_e
-        self.xi = xi
         self.gamma_e_size = gamma_e_size
         self.x_size = x_size
         self.electron_escape = electron_escape
@@ -97,12 +117,29 @@ class Cone:
 
     @classmethod
     def from_jet_power(cls, W_j, **kwargs):
-        """ Initialize a conical jet from its total jet power.
+        r"""Initialise a conical jet from its total jet power.
 
-        Computes the radius at the base of the jet by assuming that the total
-        jet power is carried by the magnetic field and the electron population,
-        with their energy densities related through the equipartition parameter
-        ``A_equi = U_e / U_B``.
+        Derives the base radius :math:`R_0` by requiring that the jet
+        power is carried by the magnetic field and electron population
+        in the ratio set by ``A_equi``:
+
+        .. math::
+            R_0 = \sqrt{\frac{W_j}{(A_{\rm equi}+1)\,U_B\,\pi\,\Gamma^2\,c}},
+
+        where :math:`U_B = B_0^2 / (8\pi)`.
+
+        Parameters
+        ----------
+        W_j : :class:`~astropy.units.Quantity`
+            Total jet power in the lab frame (e.g. ``erg s-1``).
+        **kwargs
+            All parameters accepted by :class:`Cone`, except ``R_0``
+            which is computed here. ``B_0`` and ``Gamma`` are required.
+
+        Returns
+        -------
+        :class:`Cone`
+            Cone instance with ``R_0`` set from the jet power.
         """
         B = kwargs.get("B_0")
         A = kwargs.setdefault("A_equi", 1)
@@ -114,11 +151,34 @@ class Cone:
     
     @classmethod
     def from_volume_emission_region(cls, V, **kwargs):
-        """Initialize a conical jet from its total emission-region volume.
+        r"""Initialise a conical jet from its total emission-region volume.
 
-        Computes the base radius of a truncated conical jet from its total
-        volume, length, and opening angle by solving the truncated cone
-        volume equation"""
+        Derives the base radius :math:`R_0` by solving the truncated-cone
+        volume equation:
+
+        .. math::
+            V = \pi L \left(R_0^2 + R_0 R_0 \tan\theta + \frac{L^2 \tan^2\theta}{3}\right),
+
+        which is a quadratic in :math:`R_0` with solution:
+
+        .. math::
+            R_0 = \frac{-B + \sqrt{B^2 - 4C}}{2}, \quad
+            B = L\tan\theta, \quad
+            C = \frac{L^2\tan^2\theta}{3} - \frac{V}{\pi L}.
+
+        Parameters
+        ----------
+        V : :class:`~astropy.units.Quantity`
+            Total volume of the emission region (e.g. ``cm3``).
+        **kwargs
+            All parameters accepted by :class:`Cone`, except ``R_0``
+            which is computed here. ``L`` and ``theta`` are required.
+
+        Returns
+        -------
+        :class:`Cone`
+            Cone instance with ``R_0`` set from the volume.
+        """
 
         L = kwargs.get("L")
         theta_open = kwargs.get("theta")
@@ -132,58 +192,77 @@ class Cone:
     def V_c(self):
         r"""Volume of the truncated conical jet.
 
-        The volume is
-        :math:`V_{\rm c} = \frac{\pi L}{3}\left(R_0^2 + R_0 R_L + R_L^2\right)`,
-        where
-        :math:`R_L = R_0 + L \tan\theta_{\rm open}`.
-        
+        Computed as:
+
+        .. math::
+            V_c = \frac{\pi L}{3}\left(R_0^2 + R_0 R_L + R_L^2\right),
+
+        where :math:`R_L = R_0 + L\tan\theta_{\rm open}` is the radius
+        at the far end of the jet.
+
         Returns
         -------
-        astropy.units.Quantity
-            Total volume of the conical emission region."""
+        :class:`~astropy.units.Quantity`
+            Total volume of the conical emission region in cm³.
+        """
         
         R_L = self.R_0 + self.L * np.tan(self.theta_open)
         return 1 / 3 * (np.pi * self.L) * (self.R_0**2 + self.R_0 * R_L + R_L**2)
 
     @property
     def R_x(self):
-        r"""Jet radius as a function of distance along the jet axis.
+        r"""Jet radius as a function of position along the axis.
 
-        The radius expands linearly:
-        :math:`R(x) = R_0 + x \tan\theta_{\rm open}`.
-        
+        Follows the linear conical expansion:
+
+        .. math::
+            R(x) = R_0 + x\,\tan\theta_{\rm open}.
+
         Returns
         -------
-        astropy.units.Quantity
-            Jet radius at position :math:`x`."""
+        :class:`~astropy.units.Quantity`
+            Jet radius at each grid position :attr:`x`, shape ``(N_x,)``.
+        """
         
         return self.R_0 + self.x * np.tan(self.theta_open)
 
     @property
     def B_x(self):
-        r"""Magnetic field profile along the jet.
-        
-        Assuming magnetic flux conservation in a conical expansion:
-        :math:`B(x) = B_0 \left(\frac{R_0}{R(x)}\right)`.
-       
+        r"""Magnetic field profile along the jet axis.
+
+        Assumes magnetic flux conservation in the conical expansion,
+        giving a :math:`1/R` decline:
+
+        .. math::
+            B(x) = B_0\,\frac{R_0}{R(x)}.
+
         Returns
         -------
-        astropy.units.Quantity
-            Magnetic field at position :math:`x`."""
+        :class:`~astropy.units.Quantity`
+            Magnetic field strength at each grid position :attr:`x`,
+            shape ``(N_x,)``, in Gauss (cgs).
+        """
         
         return self.B_0 * (self.R_0 / self.R_x)
 
     @property
     def x(self, x_min=1e-9 * u.pc):
-        r"""Spatial grid along the jet axis. 
+        r"""Logarithmically spaced spatial grid along the jet axis.
 
-        The grid is logarithmically spaced: 
-            :math:`x \in [x_{\min}, L]`, with :math:`x = 10^{\log_{10}(x_{\min}) \to \log_{10}(L)}`. 
+        The grid spans from a an inner boundary to the jet length:
 
-        Returns 
-        ------- 
-        astropy.units.Quantity 
-            1D array of positions along the jet in cm. """
+        .. math::
+            x \in [x_{\min},\, L], \quad
+            x_i = 10^{\log_{10}(x_{\min}) + i\,\Delta},
+
+        with :attr:`x_size` points.
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            1D array of positions along the jet axis in cm,
+            shape ``(N_x,)`` where ``N_x = x_size``.
+        """
         
         x = (
             np.logspace(
@@ -194,15 +273,18 @@ class Cone:
 
     @property
     def gamma_e_cc(self):
-        r"""Electron Lorentz factor grid used for Chang and Cooper solver. 
-        
-        The grid is logarithmically spaced:  
-            :math:`\gamma_i \in [\gamma_{\min}, \gamma_{\max}]`. 
-        
-        Returns 
-        ------- 
-        numpy.ndarray 
-            Lorentz factor grid for numerical solution. """
+        r"""Electron Lorentz factor grid for the Chang & Cooper solver.
+
+        Logarithmically spaced between :attr:`~agnpy.spectra.ParticleDistribution.gamma_min`
+        and :attr:`~agnpy.spectra.ParticleDistribution.gamma_max` of the
+        injected distribution, with :attr:`gamma_e_size` points.
+
+        Returns
+        -------
+        :class:`~numpy.ndarray`
+            1D Lorentz factor array used as the full solver grid,
+            shape ``(gamma_e_size,)``.
+        """
 
         return np.logspace(
             np.log10(self._n_e.gamma_min),
@@ -212,32 +294,43 @@ class Cone:
 
     @property
     def gamma_e(self):
-        r"""Reduced Lorentz factor grid obtained from Chang and Cooper solver,
-        the electron distribution and subsequent quantities are calculated on this grid 
-        
-        Defined as every second interior point to represent the bin-edges: 
-            :math:`\gamma = \gamma_{\rm cc}[1:-1:2]`. 
-        
-        Returns 
-        ------- 
-        numpy.ndarray 
-            Reduced electron Lorentz factor grid. """
+        r"""Reduced electron Lorentz factor grid for post-solver quantities.
+
+        Taken as every second interior point of :attr:`gamma_e_cc` to
+        represent bin edges output by the Chang & Cooper scheme:
+
+        .. math::
+            \gamma = \gamma_{\rm cc}[1:-1:2].
+
+        All electron distributions and derived spectra (e.g.
+        :attr:`N_e_xg`) are defined on this grid.
+
+        Returns
+        -------
+        :class:`~numpy.ndarray`
+            1D reduced Lorentz factor array, shape
+            ``((gamma_e_size - 2) // 2,)``.
+        """
         return self.gamma_e_cc[1:-1:2]
 
     @property
     def norm_equi(self):
-        r"""Normalization factor enforcing equipartition.
-        Defined by equating electron and magnetic energy densities:
-            :math:`K = \frac{A_{\rm equi} U_B}{U_e}`,
-        where 
-        :math:`U_B = \frac{B_0^2}{8\pi}`,
-        and
-        :math:`U_e = m_e c^2 \int \gamma n_e(\gamma)\,d\gamma`.
+        r"""Equipartition normalisation factor for the electron distribution.
+
+        Scales the injected distribution so that the electron energy density
+        equals :math:`A_{\rm equi}` times the magnetic energy density at
+        the jet base:
+
+        .. math::
+            K = \frac{A_{\rm equi}\,U_B}{\int \gamma\,n_e(\gamma)\,d\gamma},
+            \quad U_B = \frac{B_0^2}{8\pi}.
 
         Returns
         -------
-        float
-            Dimensionless normalization constant."""
+        :class:`~astropy.units.Quantity`
+            Dimensionless normalisation constant (in cgs units with
+            implicit cm³ denominator absorbed into :attr:`n_e_base`).
+        """
         
         e_energy_initial = mec2.to("eV") * np.trapz(
             self.gamma_e_cc * self._n_e(self.gamma_e_cc), self.gamma_e_cc
@@ -249,15 +342,23 @@ class Cone:
     
     @property
     def n_e_base(self):
-        r"""Initial electron distribution at the jet base.
-        Given by:
-            :math:`N_e(\gamma) = K \, n_e(\gamma)\, \pi R_0^2`,
-        where :math:`K` enforces equipartition.
+        r"""Initial electron line density at the jet base.
+
+        Number of electrons per cm of jet length in a slice of unit width
+        at :math:`x = 0`, given by:
+
+        .. math::
+            N_e(\gamma) = K\,n_e(\gamma)\,\pi R_0^2,
+
+        where :math:`K` is the equipartition normalisation :attr:`norm_equi`.
+        Evaluated on the reduced grid :attr:`gamma_e`.
 
         Returns
         -------
-        astropy.units.Quantity
-            Number of electrons in a slice of width 1 cm at the jet base."""
+        :class:`~astropy.units.Quantity`
+            Electron line density at the base, shape ``(N_gamma,)``,
+            units ``cm⁻¹``.
+        """
         
         return (
             (self._n_e(self.gamma_e_cc)[1:-1:2])
@@ -269,16 +370,24 @@ class Cone:
 
     @property
     def N_e_xg(self):
-        r"""Electron distribution along the jet. Solution of the 
-        transport equation using the Chang and Cooper numerical scheme:
-            :math:`\frac{\partial N_e}{\partial x}
-            = \mathcal{L}[N_e(\gamma, x)] - \text{escape terms}`.
+        r"""Electron line density along the jet from the transport solver.
+
+        Solves the electron continuity equation along the jet using the
+        Chang & Cooper finite-difference scheme, taking into account
+        synchrotron and (optionally) inverse-Compton energy losses and
+        particle escape:
+
+        .. math::
+            \frac{\partial N_e}{\partial x}
+            = \mathcal{L}[N_e(\gamma, x)] - \text{escape terms}.
 
         Returns
         -------
-        astropy.units.Quantity
-            Number of electrons in a slice of width 1 cm. 
-            :math:`N_e(x,\gamma)`."""
+        :class:`~astropy.units.Quantity`
+            2D array of electron line densities (electrons per cm of jet
+            length) at each position and Lorentz factor,
+            shape ``(N_x, N_gamma)``, units ``cm⁻¹``.
+        """
         
         cc_solver = ChangCooperSolver(
             gamma_e=self.gamma_e_cc,
@@ -295,45 +404,66 @@ class Cone:
 
     @property
     def synch_cooling_time(self):
+        r"""Synchrotron cooling time at each :math:`(x, \gamma)` grid point.
+
+        Computed as:
+
+        .. math::
+            t_{\rm cool}(\gamma, x) = \frac{E}{\dot{E}_{\rm synch}}
+            = \frac{3\,m_e c}{4\,\sigma_T\,U_B(x)\,\gamma}.
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            2D array of cooling times, shape ``(N_x, N_gamma)``, in seconds.
+        """
         t_cool = cooling_time(self.gamma_e[None,:], self.B_x[:,None])
         return t_cool
     
     @property
     def N_e_gamma(self):
-        r"""Electron spectrum integrated over jet length.
-            :math:`N_e(\gamma) = \int N_e(x,\gamma)\,dx`.
+        r"""Electron distribution integrated over the jet length.
+
+        .. math::
+            N_e(\gamma) = \int_0^L N_e(x, \gamma)\,dx.
 
         Returns
         -------
-        astropy.units.Quantity
-            Electron distribution as a function of Lorentz factor."""
-        
+        :class:`~astropy.units.Quantity`
+            Total number of electrons per unit Lorentz factor (integrated
+            over all positions), shape ``(N_gamma,)``.
+        """
         N_e_gamma = np.trapz(self.N_e_xg, self.x, axis=0)
         return N_e_gamma
 
     @property
     def N_e_x(self):
-        r"""Electron in a slice of width 1 cm along the jet axis.
-            :math:`N_e(x) = \int N_e(x,\gamma)\,d\gamma`.
+        r"""Number of electrons per unit jet length at each position.
+
+        .. math::
+            N_e(x) = \int N_e(x, \gamma)\,d\gamma.
 
         Returns
         -------
-        astropy.units.Quantity
-            Electron number per unit length."""
-
+        :class:`~astropy.units.Quantity`
+            Electron line density integrated over :math:`\gamma`,
+            shape ``(N_x,)``, units ``cm⁻¹``.
+        """
         N_e_x = np.trapz(self.N_e_xg, self.gamma_e, axis=1)
         return N_e_x
 
     @property
     def U_e_x(self):
-        r"""Electron energy density along the jet.
-        Computed as:
-            :math:`U_e(x) = m_e c^2 \int \gamma N_e(x,\gamma)\,d\gamma`.
+        r"""Electron energy per unit jet length at each position.
+
+        .. math::
+            U_e(x) = m_e c^2 \int \gamma\,N_e(x, \gamma)\,d\gamma.
 
         Returns
         -------
-        astropy.units.Quantity
-            Electron energy per unit jet slice.
+        :class:`~astropy.units.Quantity`
+            Electron energy per unit length along the jet,
+            shape ``(N_x,)``, units ``erg cm⁻¹``.
         """
         U_e_x = mec2.cgs * np.trapz(
             self.gamma_e[None, :] * self.N_e_xg, self.gamma_e, axis=1
@@ -342,99 +472,120 @@ class Cone:
 
     @property
     def U_B_x(self):
-        r"""Magnetic energy in a jet slice.
-        Given by:
-            :math:`U_B(x) = \frac{B(x)^2}{8\pi} \, \pi R(x)^2`.
+        r"""Magnetic energy per unit jet length at each position.
+
+        .. math::
+            U_B(x) = \frac{B(x)^2}{8\pi}\,\pi R(x)^2.
 
         Returns
         -------
-        astropy.units.Quantity
-            Magnetic energy per unit length."""
-        
+        :class:`~astropy.units.Quantity`
+            Magnetic energy per unit length along the jet,
+            shape ``(N_x,)``, units ``erg cm⁻¹``.
+        """
         return np.pi * self.R_x**2 * np.power(self.B_x, 2) / (8 * np.pi)
 
     @property
     def W_e(self):
         r"""Total electron energy in the jet.
-            :math:`W_e = m_e c^2 \int \gamma N_e(\gamma)\,d\gamma`.
+
+        .. math::
+            W_e = m_e c^2 \int \gamma\,N_e(\gamma)\,d\gamma.
 
         Returns
         -------
-        astropy.units.Quantity
-            Total electron energy."""
-
+        :class:`~astropy.units.Quantity`
+            Total electron energy integrated over position and Lorentz
+            factor, in erg.
+        """
         W_e = mec2.cgs * np.trapz(self.gamma_e * self.N_e_gamma, self.gamma_e)
         return W_e
 
     @property
     def N_e(self):
         r"""Total number of electrons in the jet.
-        Obtained by integrating over position and energy:
-            :math:`N_e = \int \int N_e(x,\gamma)\, d\gamma \, dx`.
+
+        .. math::
+            N_e = \int\!\int N_e(x, \gamma)\,d\gamma\,dx.
 
         Returns
         -------
         float
-            Total electron number in the emission region. """
-       
+            Total (dimensionless) electron count integrated over all
+            positions and Lorentz factors.
+        """
         N_e = np.trapz(self.N_e_x, self.x)
         return N_e
 
     @property
     def Beta(self):
-        r"""Bulk velocity of the flow in units of c.
-            :math:`\beta = \sqrt{1 - \Gamma^{-2}}`.
+        r"""Bulk velocity of the outflow in units of :math:`c`.
+
+        .. math::
+            \beta = \sqrt{1 - \Gamma^{-2}}.
 
         Returns
         -------
         float
-            Dimensionless bulk velocity."""
-        
+            Dimensionless bulk velocity :math:`\beta \in (0, 1)`.
+        """
         return np.sqrt(1 - 1 / np.power(self.Gamma, 2))
 
     @property
     def mu_s(self):
-        r"""Cosine of the viewing angle.
-        Defined from relativistic beaming relation:
-            :math:`\mu_s = \frac{1 - 1/(\Gamma \delta_D)}{\beta}`.
+        r"""Cosine of the jet viewing angle.
+
+        Derived from the Doppler beaming relation:
+
+        .. math::
+            \mu_s = \frac{1 - 1/(\Gamma\,\delta_D)}{\beta}.
 
         Returns
         -------
         float
-            Cosine of the viewing angle."""
-        
+            :math:`\cos\theta_s`, where :math:`\theta_s` is the angle
+            between the jet axis and the line of sight.
+        """
         return (1 - 1 / (self.Gamma * self.delta_D)) / self.Beta
 
     @property
     def theta_s(self):
         r"""Viewing angle of the jet.
-        Computed as:
-            :math:`\theta_s = \arccos(\mu_s)`.
+
+        .. math::
+            \theta_s = \arccos(\mu_s).
 
         Returns
         -------
-        astropy.units.Quantity
-            Jet viewing angle in degrees."""
-        
+        :class:`~astropy.units.Quantity`
+            Jet viewing angle in degrees.
+        """
         return (np.arccos(self.mu_s) * u.rad).to("deg")
 
     def set_delta_D(self, Gamma, theta_s):
-        """Set the Doppler factor by specifying the bulk Lorentz factor of the
-        outflow and the viewing angle.
+        r"""Set the Doppler factor from the bulk Lorentz factor and viewing angle.
+
+        Computes:
+
+        .. math::
+            \delta_D = \frac{1}{\Gamma\,(1 - \beta\,\cos\theta_s)}.
+
+        Also updates :attr:`Gamma`.
 
         Parameters
         ----------
         Gamma : float
-            Lorentz factor of the relativistic outflow
+            Bulk Lorentz factor of the outflow.
         theta_s : :class:`~astropy.units.Quantity`
-            viewing angle of the jet
+            Viewing angle of the jet (angle between jet axis and line of
+            sight).
         """
         self.Gamma = Gamma
         mu_s = np.cos(theta_s.to("rad").value)
         self.delta_D = 1 / (self.Gamma * (1 - self.Beta * mu_s))
 
     def __str__(self):
-        """Printable summary of the Conical Jet."""
+        """Printable summary of the conical jet parameters."""
         resume = (
             "* Conical emission region\n"
             + f" - R_0 (Radius at the base of the cone): {self.R_0.cgs:.2e}\n"
@@ -442,10 +593,11 @@ class Cone:
             + f" - theta_open (Opening Angle of the Conical Jet): {self.theta_open:.2e}\n"
             + f" - V_c (Volume of the Cone): {self.V_c.cgs:.2e}\n"
             + f" - z (source redshift): {self.z:.2f}\n"
-            + f" - d_L (source luminosity distance):{self.d_L.cgs:.2e}\n"
+            + f" - d_L (source luminosity distance): {self.d_L.cgs:.2e}\n"
             + f" - delta_D (Cone Doppler factor): {self.delta_D:.2e}\n"
             + f" - Gamma (Bulk Lorentz factor): {self.Gamma:.2e}\n"
             + f" - Beta (Bulk relativistic velocity): {self.Beta:.2e}\n"
             + f" - theta_s (jet viewing angle): {self.theta_s:.2e}\n"
-            + f" - B (Magnetic field at the base the jet): {self.B_0:.2e}\n"
+            + f" - B_0 (Magnetic field at the base of the jet): {self.B_0:.2e}\n"
         )
+        return resume

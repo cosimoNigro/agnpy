@@ -1,4 +1,4 @@
-# module containing the synchrotron radiative process inside a blob
+ # module containing the synchrotron radiative process inside a blob
 import numpy as np
 import astropy.units as u
 from astropy.constants import e, h, c, m_e, sigma_T

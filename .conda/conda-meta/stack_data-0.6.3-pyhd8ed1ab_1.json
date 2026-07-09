@@ -1,0 +1,188 @@
+{
+  "name": "stack_data",
+  "version": "0.6.3",
+  "build": "pyhd8ed1ab_1",
+  "build_number": 1,
+  "channel": "https://conda.anaconda.org/conda-forge/noarch",
+  "subdir": "noarch",
+  "fn": "stack_data-0.6.3-pyhd8ed1ab_1.conda",
+  "md5": "b1b505328da7a6b246787df4b5a49fbc",
+  "url": "https://conda.anaconda.org/conda-forge/noarch/stack_data-0.6.3-pyhd8ed1ab_1.conda",
+  "sha256": "570da295d421661af487f1595045760526964f41471021056e993e73089e9c41",
+  "depends": [
+    "asttokens",
+    "executing",
+    "pure_eval",
+    "python >=3.9"
+  ],
+  "constrains": [],
+  "noarch": "python",
+  "license": "MIT",
+  "package_type": "noarch_python",
+  "timestamp": 1733569565000,
+  "size": 26988,
+  "requested_spec": "None",
+  "package_tarball_full_path": "/opt/anaconda3/pkgs/stack_data-0.6.3-pyhd8ed1ab_1.conda",
+  "extracted_package_dir": "/opt/anaconda3/pkgs/stack_data-0.6.3-pyhd8ed1ab_1",
+  "files": [
+    "lib/python3.12/site-packages/stack_data-0.6.3.dist-info/INSTALLER",
+    "lib/python3.12/site-packages/stack_data-0.6.3.dist-info/LICENSE.txt",
+    "lib/python3.12/site-packages/stack_data-0.6.3.dist-info/METADATA",
+    "lib/python3.12/site-packages/stack_data-0.6.3.dist-info/RECORD",
+    "lib/python3.12/site-packages/stack_data-0.6.3.dist-info/REQUESTED",
+    "lib/python3.12/site-packages/stack_data-0.6.3.dist-info/WHEEL",
+    "lib/python3.12/site-packages/stack_data-0.6.3.dist-info/direct_url.json",
+    "lib/python3.12/site-packages/stack_data-0.6.3.dist-info/top_level.txt",
+    "lib/python3.12/site-packages/stack_data/__init__.py",
+    "lib/python3.12/site-packages/stack_data/core.py",
+    "lib/python3.12/site-packages/stack_data/formatting.py",
+    "lib/python3.12/site-packages/stack_data/py.typed",
+    "lib/python3.12/site-packages/stack_data/serializing.py",
+    "lib/python3.12/site-packages/stack_data/utils.py",
+    "lib/python3.12/site-packages/stack_data/version.py",
+    "lib/python3.12/site-packages/stack_data/__pycache__/__init__.cpython-312.pyc",
+    "lib/python3.12/site-packages/stack_data/__pycache__/core.cpython-312.pyc",
+    "lib/python3.12/site-packages/stack_data/__pycache__/formatting.cpython-312.pyc",
+    "lib/python3.12/site-packages/stack_data/__pycache__/serializing.cpython-312.pyc",
+    "lib/python3.12/site-packages/stack_data/__pycache__/utils.cpython-312.pyc",
+    "lib/python3.12/site-packages/stack_data/__pycache__/version.cpython-312.pyc"
+  ],
+  "paths_data": {
+    "paths_version": 1,
+    "paths": [
+      {
+        "_path": "site-packages/stack_data-0.6.3.dist-info/INSTALLER",
+        "path_type": "hardlink",
+        "sha256": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8",
+        "size_in_bytes": 5,
+        "sha256_in_prefix": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8"
+      },
+      {
+        "_path": "site-packages/stack_data-0.6.3.dist-info/LICENSE.txt",
+        "path_type": "hardlink",
+        "sha256": "a476a2cb0ef4c41450340a577a28b91ac4c7f669136b2ee148047fabd5fc4181",
+        "size_in_bytes": 1066,
+        "sha256_in_prefix": "a476a2cb0ef4c41450340a577a28b91ac4c7f669136b2ee148047fabd5fc4181"
+      },
+      {
+        "_path": "site-packages/stack_data-0.6.3.dist-info/METADATA",
+        "path_type": "hardlink",
+        "sha256": "4920255091b6f6566ab12f54c5f63185fc2f1c345bf9ae62cb60b49c30b13c06",
+        "size_in_bytes": 18433,
+        "sha256_in_prefix": "4920255091b6f6566ab12f54c5f63185fc2f1c345bf9ae62cb60b49c30b13c06"
+      },
+      {
+        "_path": "site-packages/stack_data-0.6.3.dist-info/RECORD",
+        "path_type": "hardlink",
+        "sha256": "cffdb55aa88db9f96187851970ce8ed4d213742239851e74186ad2d43478c88d",
+        "size_in_bytes": 1539,
+        "sha256_in_prefix": "cffdb55aa88db9f96187851970ce8ed4d213742239851e74186ad2d43478c88d"
+      },
+      {
+        "_path": "site-packages/stack_data-0.6.3.dist-info/REQUESTED",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0,
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "_path": "site-packages/stack_data-0.6.3.dist-info/WHEEL",
+        "path_type": "hardlink",
+        "sha256": "3d9504c5d7fbd548bfb28ebb417a724ae1ed0a2dfe277c2f1783912ba93f4bc5",
+        "size_in_bytes": 91,
+        "sha256_in_prefix": "3d9504c5d7fbd548bfb28ebb417a724ae1ed0a2dfe277c2f1783912ba93f4bc5"
+      },
+      {
+        "_path": "site-packages/stack_data-0.6.3.dist-info/direct_url.json",
+        "path_type": "hardlink",
+        "sha256": "390494db555dedd90adb88dd0f99827d32504edc8d0508603ec2785b59383a6a",
+        "size_in_bytes": 106,
+        "sha256_in_prefix": "390494db555dedd90adb88dd0f99827d32504edc8d0508603ec2785b59383a6a"
+      },
+      {
+        "_path": "site-packages/stack_data-0.6.3.dist-info/top_level.txt",
+        "path_type": "hardlink",
+        "sha256": "21aacf058618f5e7c99008149eeca43143f39d047e79b590618b1072a606c42a",
+        "size_in_bytes": 11,
+        "sha256_in_prefix": "21aacf058618f5e7c99008149eeca43143f39d047e79b590618b1072a606c42a"
+      },
+      {
+        "_path": "site-packages/stack_data/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "a02d0f23f72687a4767af1c52e05056eb31912017f62f0a1ea91d76cfba83d2c",
+        "size_in_bytes": 419,
+        "sha256_in_prefix": "a02d0f23f72687a4767af1c52e05056eb31912017f62f0a1ea91d76cfba83d2c"
+      },
+      {
+        "_path": "site-packages/stack_data/core.py",
+        "path_type": "hardlink",
+        "sha256": "12bf047de33bb1c3489791baa6645219a26ca59bc7c8c18b81def4a970e7065e",
+        "size_in_bytes": 33355,
+        "sha256_in_prefix": "12bf047de33bb1c3489791baa6645219a26ca59bc7c8c18b81def4a970e7065e"
+      },
+      {
+        "_path": "site-packages/stack_data/formatting.py",
+        "path_type": "hardlink",
+        "sha256": "74889ac38ec7e0f2ec5d946c782d231278a3e5116cf7c940aa5f2bec35784a5d",
+        "size_in_bytes": 8508,
+        "sha256_in_prefix": "74889ac38ec7e0f2ec5d946c782d231278a3e5116cf7c940aa5f2bec35784a5d"
+      },
+      {
+        "_path": "site-packages/stack_data/py.typed",
+        "path_type": "hardlink",
+        "sha256": "e64f0169cbc512f44e3433509ba153b23e43c13f293199f20a4ec520770b92ff",
+        "size_in_bytes": 73,
+        "sha256_in_prefix": "e64f0169cbc512f44e3433509ba153b23e43c13f293199f20a4ec520770b92ff"
+      },
+      {
+        "_path": "site-packages/stack_data/serializing.py",
+        "path_type": "hardlink",
+        "sha256": "b402695ca71838019d03ed24f10026257673713d9428999e1c2002fde672b4ed",
+        "size_in_bytes": 6468,
+        "sha256_in_prefix": "b402695ca71838019d03ed24f10026257673713d9428999e1c2002fde672b4ed"
+      },
+      {
+        "_path": "site-packages/stack_data/utils.py",
+        "path_type": "hardlink",
+        "sha256": "9c7939cddde3cff96db3a9dfff19a66d529320ce5cc112bae458a95f75fe8323",
+        "size_in_bytes": 5898,
+        "sha256_in_prefix": "9c7939cddde3cff96db3a9dfff19a66d529320ce5cc112bae458a95f75fe8323"
+      },
+      {
+        "_path": "site-packages/stack_data/version.py",
+        "path_type": "hardlink",
+        "sha256": "d08097f0f792996a223f220456233145892f0a3404d4abd03c9a7da39d8a463c",
+        "size_in_bytes": 22,
+        "sha256_in_prefix": "d08097f0f792996a223f220456233145892f0a3404d4abd03c9a7da39d8a463c"
+      },
+      {
+        "_path": "lib/python3.12/site-packages/stack_data/__pycache__/__init__.cpython-312.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.12/site-packages/stack_data/__pycache__/core.cpython-312.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.12/site-packages/stack_data/__pycache__/formatting.cpython-312.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.12/site-packages/stack_data/__pycache__/serializing.cpython-312.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.12/site-packages/stack_data/__pycache__/utils.cpython-312.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.12/site-packages/stack_data/__pycache__/version.cpython-312.pyc",
+        "path_type": "pyc_file"
+      }
+    ]
+  },
+  "link": {
+    "source": "/opt/anaconda3/pkgs/stack_data-0.6.3-pyhd8ed1ab_1",
+    "type": 1
+  }
+}

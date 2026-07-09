@@ -1,0 +1,34 @@
+{
+  "name": "cpython",
+  "version": "3.12.13",
+  "build": "py312hd8ed1ab_0",
+  "build_number": 0,
+  "channel": "https://conda.anaconda.org/conda-forge/noarch",
+  "subdir": "noarch",
+  "fn": "cpython-3.12.13-py312hd8ed1ab_0.conda",
+  "md5": "f54c1ffb8ecedb85a8b7fcde3a187212",
+  "url": "https://conda.anaconda.org/conda-forge/noarch/cpython-3.12.13-py312hd8ed1ab_0.conda",
+  "sha256": "d3e9bbd7340199527f28bbacf947702368f31de60c433a16446767d3c6aaf6fe",
+  "depends": [
+    "python >=3.12,<3.13.0a0",
+    "python_abi * *_cp312"
+  ],
+  "constrains": [],
+  "noarch": "generic",
+  "license": "Python-2.0",
+  "package_type": "noarch_generic",
+  "timestamp": 1772728929000,
+  "size": 46463,
+  "requested_spec": "None",
+  "package_tarball_full_path": "/opt/anaconda3/pkgs/cpython-3.12.13-py312hd8ed1ab_0.conda",
+  "extracted_package_dir": "/opt/anaconda3/pkgs/cpython-3.12.13-py312hd8ed1ab_0",
+  "files": [],
+  "paths_data": {
+    "paths_version": 1,
+    "paths": []
+  },
+  "link": {
+    "source": "/opt/anaconda3/pkgs/cpython-3.12.13-py312hd8ed1ab_0",
+    "type": 1
+  }
+}

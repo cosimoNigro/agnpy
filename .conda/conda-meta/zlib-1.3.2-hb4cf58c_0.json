@@ -1,0 +1,75 @@
+{
+  "name": "zlib",
+  "version": "1.3.2",
+  "build": "hb4cf58c_0",
+  "build_number": 0,
+  "channel": "https://repo.anaconda.com/pkgs/main/osx-arm64",
+  "subdir": "osx-arm64",
+  "fn": "zlib-1.3.2-hb4cf58c_0.conda",
+  "md5": "20d6a8a398dcfa5aa728e95dc49084db",
+  "url": "https://repo.anaconda.com/pkgs/main/osx-arm64/zlib-1.3.2-hb4cf58c_0.conda",
+  "sha256": "3dfa81321ce0fe70dffb95d71d1f5987f33b9add6389bb6e881af8ce78ad2621",
+  "depends": [
+    "__osx >=12.1",
+    "libzlib 1.3.2 hb4cf58c_0"
+  ],
+  "constrains": [],
+  "license": "Zlib",
+  "timestamp": 1780962568000,
+  "size": 79077,
+  "requested_spec": "None",
+  "package_tarball_full_path": "/opt/anaconda3/pkgs/zlib-1.3.2-hb4cf58c_0.conda",
+  "extracted_package_dir": "/opt/anaconda3/pkgs/zlib-1.3.2-hb4cf58c_0",
+  "files": [
+    "include/zconf.h",
+    "include/zlib.h",
+    "lib/libz.a",
+    "lib/libz.dylib",
+    "lib/pkgconfig/zlib.pc"
+  ],
+  "paths_data": {
+    "paths_version": 1,
+    "paths": [
+      {
+        "_path": "include/zconf.h",
+        "path_type": "hardlink",
+        "sha256": "0718a11beb3295b345fb29a63b44b654b282d82c4cd0513f6225587f2b29b8bb",
+        "size_in_bytes": 16921,
+        "sha256_in_prefix": "0718a11beb3295b345fb29a63b44b654b282d82c4cd0513f6225587f2b29b8bb"
+      },
+      {
+        "_path": "include/zlib.h",
+        "path_type": "hardlink",
+        "sha256": "818667d6ab6a37fe7469cb06a7f0cb2c2cb2f2c948a03e5accf1a4a74bf3020a",
+        "size_in_bytes": 103848,
+        "sha256_in_prefix": "818667d6ab6a37fe7469cb06a7f0cb2c2cb2f2c948a03e5accf1a4a74bf3020a"
+      },
+      {
+        "_path": "lib/libz.a",
+        "path_type": "hardlink",
+        "sha256": "c5846725d98d7b7f9beb6bbee624a1fe7c296fe11b626e4b7bad2515b2264f49",
+        "size_in_bytes": 105376,
+        "sha256_in_prefix": "c5846725d98d7b7f9beb6bbee624a1fe7c296fe11b626e4b7bad2515b2264f49"
+      },
+      {
+        "_path": "lib/libz.dylib",
+        "path_type": "softlink",
+        "sha256": "0df43045052f04c4098d1239cc66fcd21d4f1d64f771ea63ed0472e4a7d3fe76",
+        "size_in_bytes": 106576
+      },
+      {
+        "_path": "lib/pkgconfig/zlib.pc",
+        "prefix_placeholder": "/Users/ec2-user/croot/zlib-split_1780962532664/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_p",
+        "file_mode": "text",
+        "path_type": "hardlink",
+        "sha256": "49b4e79ced1d6fb19f14e0fa48ce2eb4f79a76fedacf795388ef08918e5ab632",
+        "size_in_bytes": 517,
+        "sha256_in_prefix": "032778862b3a20c57c3a28273c9e19e7743a2bc7087abf897a4b591b357500fc"
+      }
+    ]
+  },
+  "link": {
+    "source": "/opt/anaconda3/pkgs/zlib-1.3.2-hb4cf58c_0",
+    "type": 1
+  }
+}

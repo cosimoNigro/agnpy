@@ -1,0 +1,130 @@
+{
+  "name": "libffi",
+  "version": "3.4.8",
+  "build": "h4a3ca97_3",
+  "build_number": 3,
+  "channel": "https://repo.anaconda.com/pkgs/main/osx-arm64",
+  "subdir": "osx-arm64",
+  "fn": "libffi-3.4.8-h4a3ca97_3.conda",
+  "md5": "326b7c1e607c02cafbe73d8850faf103",
+  "url": "https://repo.anaconda.com/pkgs/main/osx-arm64/libffi-3.4.8-h4a3ca97_3.conda",
+  "sha256": "7526776e86af792dd19f5a231012b31459f555a40ea1263924073808f9af5ca4",
+  "depends": [
+    "__osx >=12.1",
+    "libcxx >=20"
+  ],
+  "constrains": [],
+  "license": "MIT",
+  "timestamp": 1781629213000,
+  "size": 118043,
+  "requested_spec": "None",
+  "package_tarball_full_path": "/opt/anaconda3/pkgs/libffi-3.4.8-h4a3ca97_3.conda",
+  "extracted_package_dir": "/opt/anaconda3/pkgs/libffi-3.4.8-h4a3ca97_3",
+  "files": [
+    "include/ffi.h",
+    "include/ffitarget.h",
+    "lib/libffi.7.dylib",
+    "lib/libffi.8.dylib",
+    "lib/libffi.a",
+    "lib/libffi.dylib",
+    "lib/pkgconfig/libffi.pc",
+    "share/info/libffi.info",
+    "share/man/man3/ffi.3",
+    "share/man/man3/ffi_call.3",
+    "share/man/man3/ffi_prep_cif.3",
+    "share/man/man3/ffi_prep_cif_var.3"
+  ],
+  "paths_data": {
+    "paths_version": 1,
+    "paths": [
+      {
+        "_path": "include/ffi.h",
+        "path_type": "hardlink",
+        "sha256": "0fffdd5254961ef8c03bf1922b3896cf67976a97c46f1a5be8d63c51ce370908",
+        "size_in_bytes": 14041,
+        "sha256_in_prefix": "0fffdd5254961ef8c03bf1922b3896cf67976a97c46f1a5be8d63c51ce370908"
+      },
+      {
+        "_path": "include/ffitarget.h",
+        "path_type": "hardlink",
+        "sha256": "521c9eda334d6b369d527b684a84d50690c7a785d68b55514b6ead24300a0ebf",
+        "size_in_bytes": 2782,
+        "sha256_in_prefix": "521c9eda334d6b369d527b684a84d50690c7a785d68b55514b6ead24300a0ebf"
+      },
+      {
+        "_path": "lib/libffi.7.dylib",
+        "path_type": "softlink",
+        "sha256": "6536e8b762bd85f5b28b80551dc062008360cbe481b9e55e3f94102be5faa704",
+        "size_in_bytes": 137760
+      },
+      {
+        "_path": "lib/libffi.8.dylib",
+        "path_type": "hardlink",
+        "sha256": "6536e8b762bd85f5b28b80551dc062008360cbe481b9e55e3f94102be5faa704",
+        "size_in_bytes": 137760,
+        "sha256_in_prefix": "6536e8b762bd85f5b28b80551dc062008360cbe481b9e55e3f94102be5faa704"
+      },
+      {
+        "_path": "lib/libffi.a",
+        "path_type": "hardlink",
+        "sha256": "abb15f9679a8ac0a2f5fb5cd5e5b7179802ba4cb983edf8b04027cc1ef1f6d18",
+        "size_in_bytes": 54288,
+        "sha256_in_prefix": "abb15f9679a8ac0a2f5fb5cd5e5b7179802ba4cb983edf8b04027cc1ef1f6d18"
+      },
+      {
+        "_path": "lib/libffi.dylib",
+        "path_type": "softlink",
+        "sha256": "6536e8b762bd85f5b28b80551dc062008360cbe481b9e55e3f94102be5faa704",
+        "size_in_bytes": 137760
+      },
+      {
+        "_path": "lib/pkgconfig/libffi.pc",
+        "prefix_placeholder": "/Users/ec2-user/croot/libffi_1781629180614/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_place",
+        "file_mode": "text",
+        "path_type": "hardlink",
+        "sha256": "9d886645b3415411a3f4c89a878b7025c96a4517dd3ff016151f5133becb5404",
+        "size_in_bytes": 756,
+        "sha256_in_prefix": "1a2126c15c6ec8e7bf3fdef6e9132f9d5234420af25b1f72a56da59f168c1409"
+      },
+      {
+        "_path": "share/info/libffi.info",
+        "path_type": "hardlink",
+        "sha256": "a2693cd0afb818554a6522cc5ba39b7e8777ec61aef616c6c74171caafc54596",
+        "size_in_bytes": 39151,
+        "sha256_in_prefix": "a2693cd0afb818554a6522cc5ba39b7e8777ec61aef616c6c74171caafc54596"
+      },
+      {
+        "_path": "share/man/man3/ffi.3",
+        "path_type": "hardlink",
+        "sha256": "aa4730e114c305943a2226a524ed8447dc6b66a184523999868e5433c2c9de74",
+        "size_in_bytes": 850,
+        "sha256_in_prefix": "aa4730e114c305943a2226a524ed8447dc6b66a184523999868e5433c2c9de74"
+      },
+      {
+        "_path": "share/man/man3/ffi_call.3",
+        "path_type": "hardlink",
+        "sha256": "2817ce7b78cb737d7b85b18b45899470f5f565f990d056d3d8cfabf6d779477f",
+        "size_in_bytes": 2333,
+        "sha256_in_prefix": "2817ce7b78cb737d7b85b18b45899470f5f565f990d056d3d8cfabf6d779477f"
+      },
+      {
+        "_path": "share/man/man3/ffi_prep_cif.3",
+        "path_type": "hardlink",
+        "sha256": "f60c5bb9d04b55988da13511a2c3edfa0f39fb6f51abfb8ac24d0b161c4169c0",
+        "size_in_bytes": 1158,
+        "sha256_in_prefix": "f60c5bb9d04b55988da13511a2c3edfa0f39fb6f51abfb8ac24d0b161c4169c0"
+      },
+      {
+        "_path": "share/man/man3/ffi_prep_cif_var.3",
+        "path_type": "hardlink",
+        "sha256": "9365685252f33f13627c9303bc01883b764227132069260c19e94100ff442a51",
+        "size_in_bytes": 1321,
+        "sha256_in_prefix": "9365685252f33f13627c9303bc01883b764227132069260c19e94100ff442a51"
+      }
+    ]
+  },
+  "link": {
+    "source": "/opt/anaconda3/pkgs/libffi-3.4.8-h4a3ca97_3",
+    "type": 1
+  }
+}

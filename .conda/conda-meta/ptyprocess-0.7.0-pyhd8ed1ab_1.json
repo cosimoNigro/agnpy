@@ -1,0 +1,143 @@
+{
+  "name": "ptyprocess",
+  "version": "0.7.0",
+  "build": "pyhd8ed1ab_1",
+  "build_number": 1,
+  "channel": "https://conda.anaconda.org/conda-forge/noarch",
+  "subdir": "noarch",
+  "fn": "ptyprocess-0.7.0-pyhd8ed1ab_1.conda",
+  "md5": "7d9daffbb8d8e0af0f769dbbcd173a54",
+  "url": "https://conda.anaconda.org/conda-forge/noarch/ptyprocess-0.7.0-pyhd8ed1ab_1.conda",
+  "sha256": "a7713dfe30faf17508ec359e0bc7e0983f5d94682492469bd462cdaae9c64d83",
+  "depends": [
+    "python >=3.9"
+  ],
+  "constrains": [],
+  "noarch": "python",
+  "license": "ISC",
+  "package_type": "noarch_python",
+  "timestamp": 1733302371000,
+  "size": 19457,
+  "requested_spec": "None",
+  "package_tarball_full_path": "/opt/anaconda3/pkgs/ptyprocess-0.7.0-pyhd8ed1ab_1.conda",
+  "extracted_package_dir": "/opt/anaconda3/pkgs/ptyprocess-0.7.0-pyhd8ed1ab_1",
+  "files": [
+    "lib/python3.12/site-packages/ptyprocess-0.7.0.dist-info/INSTALLER",
+    "lib/python3.12/site-packages/ptyprocess-0.7.0.dist-info/LICENSE",
+    "lib/python3.12/site-packages/ptyprocess-0.7.0.dist-info/METADATA",
+    "lib/python3.12/site-packages/ptyprocess-0.7.0.dist-info/RECORD",
+    "lib/python3.12/site-packages/ptyprocess-0.7.0.dist-info/REQUESTED",
+    "lib/python3.12/site-packages/ptyprocess-0.7.0.dist-info/WHEEL",
+    "lib/python3.12/site-packages/ptyprocess-0.7.0.dist-info/direct_url.json",
+    "lib/python3.12/site-packages/ptyprocess/__init__.py",
+    "lib/python3.12/site-packages/ptyprocess/_fork_pty.py",
+    "lib/python3.12/site-packages/ptyprocess/ptyprocess.py",
+    "lib/python3.12/site-packages/ptyprocess/util.py",
+    "lib/python3.12/site-packages/ptyprocess/__pycache__/__init__.cpython-312.pyc",
+    "lib/python3.12/site-packages/ptyprocess/__pycache__/_fork_pty.cpython-312.pyc",
+    "lib/python3.12/site-packages/ptyprocess/__pycache__/ptyprocess.cpython-312.pyc",
+    "lib/python3.12/site-packages/ptyprocess/__pycache__/util.cpython-312.pyc"
+  ],
+  "paths_data": {
+    "paths_version": 1,
+    "paths": [
+      {
+        "_path": "site-packages/ptyprocess-0.7.0.dist-info/INSTALLER",
+        "path_type": "hardlink",
+        "sha256": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8",
+        "size_in_bytes": 5,
+        "sha256_in_prefix": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8"
+      },
+      {
+        "_path": "site-packages/ptyprocess-0.7.0.dist-info/LICENSE",
+        "path_type": "hardlink",
+        "sha256": "c822d385b1a73329846241799becf18690b5d44764c1bed69300b536a405030a",
+        "size_in_bytes": 905,
+        "sha256_in_prefix": "c822d385b1a73329846241799becf18690b5d44764c1bed69300b536a405030a"
+      },
+      {
+        "_path": "site-packages/ptyprocess-0.7.0.dist-info/METADATA",
+        "path_type": "hardlink",
+        "sha256": "1073312a5f6fb5291d1360220b30fdbc691aeaafe2e6c2f19b05fccadbf51649",
+        "size_in_bytes": 1295,
+        "sha256_in_prefix": "1073312a5f6fb5291d1360220b30fdbc691aeaafe2e6c2f19b05fccadbf51649"
+      },
+      {
+        "_path": "site-packages/ptyprocess-0.7.0.dist-info/RECORD",
+        "path_type": "hardlink",
+        "sha256": "9cbbc8ed56aa0341cb82a56d3a30926514ae98ea9466545a0f1d1030dba9ea83",
+        "size_in_bytes": 1109,
+        "sha256_in_prefix": "9cbbc8ed56aa0341cb82a56d3a30926514ae98ea9466545a0f1d1030dba9ea83"
+      },
+      {
+        "_path": "site-packages/ptyprocess-0.7.0.dist-info/REQUESTED",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0,
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "_path": "site-packages/ptyprocess-0.7.0.dist-info/WHEEL",
+        "path_type": "hardlink",
+        "sha256": "b2c43ce04679807d6908eba3777896ec70a5a3f3bf6836829546d7e01f1b8ca6",
+        "size_in_bytes": 100,
+        "sha256_in_prefix": "b2c43ce04679807d6908eba3777896ec70a5a3f3bf6836829546d7e01f1b8ca6"
+      },
+      {
+        "_path": "site-packages/ptyprocess-0.7.0.dist-info/direct_url.json",
+        "path_type": "hardlink",
+        "sha256": "3a0353abb9237e2694c7caeed24da1e7367244261147a074bacb9eecbd5ea981",
+        "size_in_bytes": 324,
+        "sha256_in_prefix": "3a0353abb9237e2694c7caeed24da1e7367244261147a074bacb9eecbd5ea981"
+      },
+      {
+        "_path": "site-packages/ptyprocess/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "b27f96ff59cd453b883a2d9a0841d52f4eb009525c47e2ce65d8295f3c05b935",
+        "size_in_bytes": 138,
+        "sha256_in_prefix": "b27f96ff59cd453b883a2d9a0841d52f4eb009525c47e2ce65d8295f3c05b935"
+      },
+      {
+        "_path": "site-packages/ptyprocess/_fork_pty.py",
+        "path_type": "hardlink",
+        "sha256": "555bcccbc7386698c332220c4a0f13d414358374817b10e97b2fdcc62d27e5ac",
+        "size_in_bytes": 2362,
+        "sha256_in_prefix": "555bcccbc7386698c332220c4a0f13d414358374817b10e97b2fdcc62d27e5ac"
+      },
+      {
+        "_path": "site-packages/ptyprocess/ptyprocess.py",
+        "path_type": "hardlink",
+        "sha256": "b24dac536236d98ca5d60537163166a562f7078de8d0aa86ddddc223caf436af",
+        "size_in_bytes": 31686,
+        "sha256_in_prefix": "b24dac536236d98ca5d60537163166a562f7078de8d0aa86ddddc223caf436af"
+      },
+      {
+        "_path": "site-packages/ptyprocess/util.py",
+        "path_type": "hardlink",
+        "sha256": "ad001d0d165fa0e88e9fabf2916b61d3023a145280a7b689b4149db7e28159d5",
+        "size_in_bytes": 2785,
+        "sha256_in_prefix": "ad001d0d165fa0e88e9fabf2916b61d3023a145280a7b689b4149db7e28159d5"
+      },
+      {
+        "_path": "lib/python3.12/site-packages/ptyprocess/__pycache__/__init__.cpython-312.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.12/site-packages/ptyprocess/__pycache__/_fork_pty.cpython-312.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.12/site-packages/ptyprocess/__pycache__/ptyprocess.cpython-312.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.12/site-packages/ptyprocess/__pycache__/util.cpython-312.pyc",
+        "path_type": "pyc_file"
+      }
+    ]
+  },
+  "link": {
+    "source": "/opt/anaconda3/pkgs/ptyprocess-0.7.0-pyhd8ed1ab_1",
+    "type": 1
+  }
+}

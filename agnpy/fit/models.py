@@ -1,12 +1,20 @@
-from .gammapy_wrapper import (
+"""from .gammapy_wrapper import (
     SynchrotronSelfComptonSpectralModel,
     ExternalComptonSpectralModel,
-)
+)"""
 from .sherpa_wrapper import (
     SynchrotronSelfComptonRegriddableModel1D,
     ExternalComptonRegriddableModel1D,
 )
 
+from.sherpa_wrapper import (
+    SynchrotronConeRegriddableModel1D
+)
+
+class SynchrotronConeModel:
+    """Model for Synchrotron Scenario for a Conical Extended Jet"""
+    def __new__(cls, n_e, ssa=False, electron_escape=False):
+        return SynchrotronConeRegriddableModel1D(n_e, ssa, electron_escape=electron_escape)
 
 class SynchrotronSelfComptonModel:
     """Model for synchrotron self-Compton scenario."""

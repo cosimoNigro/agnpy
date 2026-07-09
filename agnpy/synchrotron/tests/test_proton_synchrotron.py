@@ -1,4 +1,4 @@
-# test the synchrotron module
+# test the proton_synchrotron module
 import numpy as np
 import astropy.units as u
 from astropy.constants import m_e, m_p

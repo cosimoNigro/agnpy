@@ -13,7 +13,8 @@ from ..spectra import (
     InterpolatedDistribution,
 )
 from ..targets import SSDisk, RingDustTorus
-from ..synchrotron import Synchrotron
+from.. emission_regions import Cone
+from ..synchrotron import Synchrotron, synchrotron_cone
 from ..compton import SynchrotronSelfCompton, ExternalCompton
 from .core import (
     get_spectral_parameters_from_n_e,
@@ -45,6 +46,36 @@ def _scale_spectral_parameters(args, n_e):
         if isinstance(n_e, (ExpCutoffBrokenPowerLaw)):
             args[-3] = 10 ** args[-3]
             args[-4] = 10 ** args[-4]
+
+def _evaluate_sed_cone_scenario(x, pars, n_e, ssa, electron_escape):
+    """At the model evaluation, sherpa passes the model parameters as a simple
+    list, `pars`. This function sorts the parameters and evaluates the total SED
+    for the synchrotron conical jet scenario.
+    NOTE: sherpa parameters are NOT `~astropy.Quantities`, properly set them."""
+    if electron_escape:
+        *args, L, R_0, log10_B, theta_open, z, delta_D, A_equi, escape_coefficient = pars
+        _scale_spectral_parameters(args, n_e)
+        n_e_new = (n_e.__class__)(*args)
+        B_0=10**(log10_B)*u.G
+        L *= u.cm
+        R_0 *= u.cm
+        theta_open *= u.deg
+        cone= Cone(L=L, R_0=R_0, B_0=B_0,theta_open=theta_open,z=z,delta_D=delta_D,A_equi=A_equi, n_e = n_e_new,
+        electron_escape=electron_escape, escape_coefficient = escape_coefficient )
+    else:
+        *args, L, R_0, log10_B, theta_open, z, delta_D, A_equi = pars
+        _scale_spectral_parameters(args, n_e) 
+        n_e_new = (n_e.__class__)(*args)
+        B_0=10**(log10_B)*u.G
+        L *= u.cm
+        R_0 *= u.cm
+        theta_open *= u.deg       
+        cone= Cone(L=L, R_0=R_0, B_0=B_0,theta_open=theta_open,z=z,delta_D=delta_D,A_equi=A_equi, n_e=n_e_new, 
+               electron_escape=electron_escape )
+    x *= u.Hz
+    synchrotron = Synchrotron(cone,ssa = ssa)
+    sed = synchrotron.sed_flux(x)
+    return sed  
 
 
 def _evaluate_sed_ssc_scenario(x, pars, n_e, ssa):
@@ -323,6 +354,47 @@ def _evaluate_sed_ec_blr_dt_scenario(x, pars, n_e, ssa):
     )
     return sed_synch + sed_ssc + sed_bb_disk + sed_bb_dt + sed_ec_blr + sed_ec_dt
 
+class SynchrotronConeRegriddableModel1D(model.RegriddableModel1D):
+    def __init__(self, n_e, ssa=False, electron_escape=False):
+        self.name = 'synchrotroncone'
+        self._n_e = n_e
+        self.ssa = ssa
+        self.electron_escape = electron_escape
+
+        spectral_pars = get_spectral_parameters_from_n_e(
+            self._n_e, backend="sherpa", modelname=self.name
+            )
+        
+        emission_region_pars = make_emission_region_parameters_dict(
+            "synchrotroncone", backend="sherpa", modelname=self.name, electron_escape = self.electron_escape
+        )
+
+        pars_list = [*spectral_pars.values(), *emission_region_pars.values()]
+
+        # each parameter should be declared as an attribute, see
+        # https://sherpa.readthedocs.io/en/4.14.0/model_classes/usermodel.html
+        pars_attr_list = []
+
+        for par in pars_list:
+            setattr(self, par.name, par)
+            pars_attr_list.append(getattr(self, par.name))
+
+        super().__init__(self.name, tuple(pars_attr_list))
+
+    def set_emission_region_parameters_from_cone(self,cone):
+        self.L = cone.L.to_value('cm')
+        self.R_0 = cone.R_0.to_value('cm')
+        self.log10_B = np.log10(cone.B_0.to_value('G'))
+        self.theta_open = cone.theta_open.to_value('deg')
+        self.z = cone.z
+        self.delta_D = cone.delta_D
+        self.A_equi = cone.A_equi
+        if self.electron_escape:
+            self.escape_coefficient = cone.escape_coefficient
+
+    def calc(self, pars, x):
+        """Evaluate the SED model."""
+        return _evaluate_sed_cone_scenario(x, pars, self._n_e, self.ssa,self.electron_escape)
 
 class SynchrotronSelfComptonRegriddableModel1D(model.RegriddableModel1D):
     def __init__(self, n_e, ssa=False):

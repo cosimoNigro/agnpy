@@ -1,0 +1,48 @@
+{
+  "name": "libcxx",
+  "version": "22.1.2",
+  "build": "hf894667_0",
+  "build_number": 0,
+  "channel": "https://repo.anaconda.com/pkgs/main/osx-arm64",
+  "subdir": "osx-arm64",
+  "fn": "libcxx-22.1.2-hf894667_0.conda",
+  "md5": "344e08f75d799c1e5b57441a2a4c357d",
+  "url": "https://repo.anaconda.com/pkgs/main/osx-arm64/libcxx-22.1.2-hf894667_0.conda",
+  "sha256": "7c72e11f71def84a9737daddc3a8b5828a77db918dbbfdf087cd86cfc6ec2fc2",
+  "depends": [
+    "__osx >=12.1"
+  ],
+  "constrains": [],
+  "license": "Apache-2.0 WITH LLVM-exception",
+  "timestamp": 1775479658000,
+  "size": 316282,
+  "requested_spec": "None",
+  "package_tarball_full_path": "/opt/anaconda3/pkgs/libcxx-22.1.2-hf894667_0.conda",
+  "extracted_package_dir": "/opt/anaconda3/pkgs/libcxx-22.1.2-hf894667_0",
+  "files": [
+    "lib/libc++.1.0.dylib",
+    "lib/libc++.1.dylib"
+  ],
+  "paths_data": {
+    "paths_version": 1,
+    "paths": [
+      {
+        "_path": "lib/libc++.1.0.dylib",
+        "path_type": "hardlink",
+        "sha256": "2e81d73ef4a318bf155bc49660bd0418b8c4b3b06cd482c3b20aa04039d98a41",
+        "size_in_bytes": 1189536,
+        "sha256_in_prefix": "2e81d73ef4a318bf155bc49660bd0418b8c4b3b06cd482c3b20aa04039d98a41"
+      },
+      {
+        "_path": "lib/libc++.1.dylib",
+        "path_type": "softlink",
+        "sha256": "2e81d73ef4a318bf155bc49660bd0418b8c4b3b06cd482c3b20aa04039d98a41",
+        "size_in_bytes": 1189536
+      }
+    ]
+  },
+  "link": {
+    "source": "/opt/anaconda3/pkgs/libcxx-22.1.2-hf894667_0",
+    "type": 1
+  }
+}
