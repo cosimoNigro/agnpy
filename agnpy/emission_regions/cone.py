@@ -83,7 +83,6 @@ class Cone:
         n_e: ParticleDistribution = PowerLaw(mass=m_e),
         gamma_e_size=200,
         x_size=100,
-        A_equi=1,
         cosmology=None,
         electron_escape=False,
         escape_coefficient=None,
@@ -99,7 +98,6 @@ class Cone:
         self.d_L = Distance(z=self.z, cosmology=cosmology).cgs
         self.delta_D = delta_D
         self.Gamma = Gamma
-        self.A_equi = A_equi
         self._n_e: ParticleDistribution = n_e
         self.gamma_e_size = gamma_e_size
         self.x_size = x_size
@@ -116,7 +114,7 @@ class Cone:
             self.escape_coefficient = None
 
     @classmethod
-    def from_jet_power(cls, W_j, **kwargs):
+    def from_jet_power(cls, W_j, A_equi, **kwargs):
         r"""Initialise a conical jet from its total jet power.
 
         Derives the base radius :math:`R_0` by requiring that the jet
@@ -142,12 +140,53 @@ class Cone:
             Cone instance with ``R_0`` set from the jet power.
         """
         B = kwargs.get("B_0")
-        A = kwargs.setdefault("A_equi", 1)
+        _n_e = kwargs.get("n_e")
         gamma = kwargs.get("Gamma")
+        gamma_size = kwargs.get("gamma_e_size")
+        gamma_min = _n_e.gamma_min
+        gamma_max = _n_e.gamma_max
+        _gamma = np.logspace(np.log10(gamma_min),np.log10(gamma_max),gamma_size)
         u_B = ((B_to_cgs(B) ** 2) / (8 * np.pi)).to("erg cm-3")
-        R_0_squared = (W_j) / ((A+1) * u_B * np.pi * (gamma**2) * c.cgs)
+        R_0_squared = (W_j) / ((1+A_equi) * u_B * np.pi * (gamma**2) * c.cgs)
         R_0 = np.sqrt(R_0_squared).to("cm")
+        u_e = (mec2.to('eV')*np.trapezoid(_gamma * _n_e(_gamma),_gamma)).to("erg cm-3")
+        k_norm = A_equi*(u_B/u_e)
+        _n_e.k *= k_norm
         return cls(R_0=R_0, **kwargs)
+    
+    @classmethod
+    def from_equipartition_parameter(cls, A_equi, **kwargs):
+        r"""Initialise a conical jet from its equipartition ratio.
+
+        Modifies the electron normalization ``k`` requiring that the jet
+        power is carried by the magnetic field and electron population
+        in the ratio set by ``A_equi``:
+
+        .. math::
+            R_0 = \sqrt{\frac{W_j}{(A_{\rm equi}+1)\,U_B\,\pi\,\Gamma^2\,c}},
+
+        where :math:`U_B = B_0^2 / (8\pi)`.
+
+        Parameters
+        ----------
+        A_equi : :float
+
+        Returns
+        -------
+        :class:`Cone`
+            Cone instance with ``k`` set from the jet equipartition ratio.
+        """
+        B = kwargs.get("B_0")
+        _n_e = kwargs.get("n_e")
+        gamma_size = kwargs.get("gamma_e_size")
+        gamma_min = _n_e.gamma_min
+        gamma_max = _n_e.gamma_max
+        gamma = np.logspace(np.log10(gamma_min),np.log10(gamma_max),gamma_size)
+        u_B = ((B_to_cgs(B) ** 2) / (8 * np.pi)).to("erg cm-3")
+        u_e = (mec2.to('eV')*np.trapezoid(gamma * _n_e(gamma),gamma)).to("erg cm-3")
+        k_norm = A_equi*(u_B/u_e)
+        _n_e.k *= k_norm
+        return cls( **kwargs)
     
     @classmethod
     def from_volume_emission_region(cls, V, **kwargs):
@@ -312,36 +351,16 @@ class Cone:
             ``((gamma_e_size - 2) // 2,)``.
         """
         return self.gamma_e_cc[1:-1:2]
-
-    @property
-    def norm_equi(self):
-        r"""Equipartition normalisation factor for the electron distribution.
-
-        Scales the injected distribution so that the electron energy density
-        equals :math:`A_{\rm equi}` times the magnetic energy density at
-        the jet base:
-
-        .. math::
-            K = \frac{A_{\rm equi}\,U_B}{\int \gamma\,n_e(\gamma)\,d\gamma},
-            \quad U_B = \frac{B_0^2}{8\pi}.
-
-        Returns
-        -------
-        :class:`~astropy.units.Quantity`
-            Dimensionless normalisation constant (in cgs units with
-            implicit cm³ denominator absorbed into :attr:`n_e_base`).
-        """
-        
-        e_energy_initial = mec2.to("eV") * np.trapz(
-            self.gamma_e_cc * self._n_e(self.gamma_e_cc), self.gamma_e_cc
-        )
-
-        e_energy_initial *= u.Unit("cm-3")
-        K_dash = (self.A_equi * (self.B_0**2)) / (8 * np.pi * e_energy_initial)
-        return K_dash.cgs
     
     @property
-    def n_e_base(self):
+    def A_equi(self):
+        u_B = ((B_to_cgs(self.B_0) ** 2) / (8 * np.pi)).to("erg cm-3")
+        u_e = (mec2.to('eV')*np.trapezoid(self.gamma_e_cc*self._n_e(self.gamma_e_cc),self.gamma_e_cc)).to('erg cm-3')
+        A = u_B/u_e
+        return A
+
+    @property
+    def N_e_base(self):
         r"""Initial electron line density at the jet base.
 
         Number of electrons per cm of jet length in a slice of unit width
@@ -362,8 +381,6 @@ class Cone:
         
         return (
             (self._n_e(self.gamma_e_cc)[1:-1:2])
-            * self.norm_equi
-            * u.cm**-3
             * np.pi
             * self.R_0**2
         )
@@ -395,7 +412,7 @@ class Cone:
             R_0=self.R_0,
             B_0=self.B_0,
             theta_open=self.theta_open,
-            n_e=self.n_e_base,
+            n_e= self.N_e_base,
             electron_escape=self.electron_escape,
             escape_coefficient=self.escape_coefficient,
         )

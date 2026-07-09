@@ -53,24 +53,24 @@ def _evaluate_sed_cone_scenario(x, pars, n_e, ssa, electron_escape):
     for the synchrotron conical jet scenario.
     NOTE: sherpa parameters are NOT `~astropy.Quantities`, properly set them."""
     if electron_escape:
-        *args, L, R_0, log10_B, theta_open, z, delta_D, A_equi, escape_coefficient = pars
+        *args, L, R_0, log10_B, theta_open, z, delta_D, escape_coefficient = pars
         _scale_spectral_parameters(args, n_e)
         n_e_new = (n_e.__class__)(*args)
         B_0=10**(log10_B)*u.G
         L *= u.cm
         R_0 *= u.cm
         theta_open *= u.deg
-        cone= Cone(L=L, R_0=R_0, B_0=B_0,theta_open=theta_open,z=z,delta_D=delta_D,A_equi=A_equi, n_e = n_e_new,
+        cone= Cone(L=L, R_0=R_0, B_0=B_0,theta_open=theta_open,z=z,delta_D=delta_D, n_e = n_e_new,
         electron_escape=electron_escape, escape_coefficient = escape_coefficient )
     else:
-        *args, L, R_0, log10_B, theta_open, z, delta_D, A_equi = pars
+        *args, L, R_0, log10_B, theta_open, z, delta_D= pars
         _scale_spectral_parameters(args, n_e) 
         n_e_new = (n_e.__class__)(*args)
         B_0=10**(log10_B)*u.G
         L *= u.cm
         R_0 *= u.cm
         theta_open *= u.deg       
-        cone= Cone(L=L, R_0=R_0, B_0=B_0,theta_open=theta_open,z=z,delta_D=delta_D,A_equi=A_equi, n_e=n_e_new, 
+        cone= Cone(L=L, R_0=R_0, B_0=B_0,theta_open=theta_open,z=z,delta_D=delta_D, n_e=n_e_new, 
                electron_escape=electron_escape )
     x *= u.Hz
     synchrotron = Synchrotron(cone,ssa = ssa)
@@ -388,7 +388,6 @@ class SynchrotronConeRegriddableModel1D(model.RegriddableModel1D):
         self.theta_open = cone.theta_open.to_value('deg')
         self.z = cone.z
         self.delta_D = cone.delta_D
-        self.A_equi = cone.A_equi
         if self.electron_escape:
             self.escape_coefficient = cone.escape_coefficient
 
