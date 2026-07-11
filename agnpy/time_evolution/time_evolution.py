@@ -270,8 +270,8 @@ class TimeEvolution:
             total_time_elapsed += step_time
             if self._distribution_change_callback is not None:
                 self._distribution_change_callback(TimeEvaluationResult(total_time_elapsed,
-                    gm_bins[0], density, subgroups_density, energy_changes_lb(en_chg_rates), abs_injection_rates,
-                    rel_injection_rates))
+                    gm_bins[0], density, subgroups_density, energy_changes_lb(en_chg_rates), rel_injection_rates,
+                    abs_injection_rates))
             progress_percent = int((100 * total_time_elapsed / self._total_time_sec).round(0))
             log.info("Progress: %3d%% %s (%i bins)", progress_percent, total_time_elapsed, gm_bins.shape[-1])
 
