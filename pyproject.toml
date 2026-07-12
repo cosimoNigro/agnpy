@@ -23,14 +23,14 @@ dependencies = [
     "astropy>=7.0",
     "numpy>=1.24,<2.3",
     "pandas>=1.5",
-    "scipy>=1.14",
+    "scipy>=1.14,<1.18",
     "pyyaml>=6.0", # needed to read astropy ecsv file
     "matplotlib>=3.9.1",
     "pre-commit",
 ]
 
 [project.optional-dependencies]
-gammapy = ["gammapy>=1.3"]
+gammapy = ["gammapy>=1.3", "regions<0.11"] # gammapy-2.1 not compatible with regions 0.11+
 sherpa = ["sherpa"]
 all = ["agnpy[gammapy]", "agnpy[sherpa]"]
 

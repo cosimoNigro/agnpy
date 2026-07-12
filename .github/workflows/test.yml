@@ -24,9 +24,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install flake8 pytest pytest-cov
-        python -m pip install -e . --config-settings editable_mode=compat
-        python -m pip install gammapy
-        python -m pip install sherpa
+        python -m pip install -e ".[all]" --config-settings editable_mode=compat
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
