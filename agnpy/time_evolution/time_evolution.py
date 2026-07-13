@@ -421,12 +421,12 @@ class TimeEvolution:
         return en_chg_rates_grouped, rel_injection_rates_grouped, abs_injection_rates_grouped
 
     def _sort_and_merge_bins(self, gm_bins, densities, interpolated_distribution):
-        gm_bins, densities, mapping_deduplication = sort_and_merge_duplicates(gm_bins, densities, interpolated_distribution)
+        gm_bins_sorted, densities_sorted, mapping_deduplication = sort_and_merge_duplicates(gm_bins, densities, interpolated_distribution)
         if self._merge_bins_closer_than is None:
-            return gm_bins, densities, mapping_deduplication
-        gm_bins, densities, mapping_too_close = self._remove_too_close_bins(gm_bins, densities, interpolated_distribution)
+            return gm_bins_sorted, densities_sorted, mapping_deduplication
+        gm_bins_sorted_and_merged, densities_sorted_and_merged, mapping_too_close = self._remove_too_close_bins(gm_bins_sorted, densities_sorted, interpolated_distribution)
         additional_mapping = combine_mapping(mapping_deduplication, mapping_too_close)
-        return gm_bins, densities, additional_mapping
+        return gm_bins_sorted_and_merged, densities_sorted_and_merged, additional_mapping
 
     def _remove_gamma_beyond_bounds(self, gm_bins):
         gm_bins_lb = gm_bins[0]
@@ -438,8 +438,8 @@ class TimeEvolution:
             return gm_bins[..., mapping], mapping
         return gm_bins, initial
 
-    def _remove_too_close_bins(self, gm_bins, densities, interpolated_distribution):
-        gm_bins_lb_log = np.log10(gm_bins[0])
+    def _remove_too_close_bins(self, gm_bins_sorted, densities, interpolated_distribution):
+        gm_bins_lb_log = np.log10(gm_bins_sorted[0])
         gaps = np.diff(gm_bins_lb_log)
         too_close_bins_mask = gaps < self._merge_bins_closer_than
         # don't merge first and last bin
@@ -450,12 +450,12 @@ class TimeEvolution:
             keep_idx = np.setdiff1d(np.arange(len(densities)), close_bins_idx, assume_unique=True)
             close_bins_groups = group_duplicates(close_bins_idx)
             log.info("Merging groups of bins %s", close_bins_groups)
-            gm_bins_lb_merged, densities_merged = merge_points(gm_bins[0], densities, close_bins_groups,
+            gm_bins_lb_merged, densities_merged = merge_points(gm_bins_sorted[0], densities, close_bins_groups,
                                                                interpolated_distribution)
             groups_start_idx = [lst[0] for lst in close_bins_groups]
-            groups_start_mask = np.isin(np.arange(gm_bins.shape[1]), groups_start_idx)
-            gm_bins_ub_merged = gm_bins[1][keep_idx]
+            groups_start_mask = np.isin(np.arange(gm_bins_sorted.shape[1]), groups_start_idx)
+            gm_bins_ub_merged = gm_bins_sorted[1][keep_idx]
             gm_bins_ub_merged[groups_start_mask[keep_idx]] = 0
             return np.array([gm_bins_lb_merged, gm_bins_ub_merged]), densities_merged, keep_idx
         else:
-            return gm_bins, densities, np.arange(gm_bins.shape[-1])
+            return gm_bins_sorted, densities, np.arange(gm_bins_sorted.shape[-1])
