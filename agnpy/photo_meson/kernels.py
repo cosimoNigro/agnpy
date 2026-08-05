@@ -262,7 +262,7 @@ def build_interp2d(x_grid, y_grid, values):
         values,
         method="linear",
         bounds_error=False,
-        fill_value=None,
+        fill_value=0.0,
     )
 
     def f(x, y):
@@ -275,7 +275,7 @@ def build_interp2d(x_grid, y_grid, values):
     return f
 
 
-def interpolate_dphi_dtheta_parameter(particle, parameter):
+def interpolate_g_parameter(particle, parameter):
     interp_file = f"{data_dir}/data/photo_meson/dphi_dtheta_tables/{particle}.txt"
 
     eta_eta0_tab, theta_tab, x_cut, A0, A1, A2, A3, A4 = np.genfromtxt(
@@ -310,22 +310,20 @@ def interpolate_dphi_dtheta_parameter(particle, parameter):
     return build_interp2d(eta_unique, theta_unique, values)
 
 
-class dPhi_dtheta_Kernel:
-    """Phi function, Eq. (27) in [KelnerAharonian2008]_."""
-
+class gKernel:
     def __init__(self, particle):
         if particle not in secondaries:
             raise ValueError(f"{particle} not available among the secondaries")
         else:
             self.particle = particle
 
-            # parameters of the dphi_dtheta function
-            self.x_cut = interpolate_dphi_dtheta_parameter(particle, "x_cut")
-            self.A0 = interpolate_dphi_dtheta_parameter(particle, "A0")
-            self.A1 = interpolate_dphi_dtheta_parameter(particle, "A1")
-            self.A2 = interpolate_dphi_dtheta_parameter(particle, "A2")
-            self.A3 = interpolate_dphi_dtheta_parameter(particle, "A3")
-            self.A4 = interpolate_dphi_dtheta_parameter(particle, "A4")
+            # parameters of the g function
+            self.x_cut = interpolate_g_parameter(particle, "x_cut")
+            self.A0 = interpolate_g_parameter(particle, "A0")
+            self.A1 = interpolate_g_parameter(particle, "A1")
+            self.A2 = interpolate_g_parameter(particle, "A2")
+            self.A3 = interpolate_g_parameter(particle, "A3")
+            self.A4 = interpolate_g_parameter(particle, "A4")
 
     def __call__(self, eta, theta, x):
         # evaluate the interpolated parameters
@@ -339,8 +337,6 @@ class dPhi_dtheta_Kernel:
         A4 = self.A4(eta_eta0, theta)
 
         X = -A3 * (np.log10(x) - A4)
-        _dphi_dtheta = np.where(
-            x <= x_cut, np.pow(10.0, A0 * X ** (A1 + np.log10(X)) + A2), 0.0
-        )
+        g = np.where(x <= x_cut, np.pow(10.0, A0 * X ** (A1 + np.log10(X)) + A2), 0.0)
 
-        return _dphi_dtheta
+        return g
