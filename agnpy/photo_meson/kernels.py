@@ -276,7 +276,7 @@ def build_interp2d(x_grid, y_grid, values):
 
 
 def interpolate_g_parameter(particle, parameter):
-    interp_file = f"{data_dir}/data/photo_meson/dphi_dtheta_tables/{particle}.txt"
+    interp_file = f"{data_dir}/data/photo_meson/g_tables/{particle}.txt"
 
     eta_eta0_tab, theta_tab, x_cut, A0, A1, A2, A3, A4 = np.genfromtxt(
         interp_file,

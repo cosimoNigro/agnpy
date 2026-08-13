@@ -49,14 +49,11 @@ class PhotoMesonProduction:
         # Integral on E_p to be made from E to infinity
         _eta, _E = axes_reshaper(eta, E)  # shape (len(eta), 1), (1, len(E))
 
-        _E_min = _E.copy()
-        _E_max = _E.copy() * 1e8
-
         Emin = self.blob.n_p.gamma_min * mpc2
         Emax = self.blob.n_p.gamma_max * mpc2
 
-        _E_min = np.clip(_E_min, Emin, None)  # replace values smaller than Emin
-        _E_max = np.clip(_E_max, None, Emax)  # replace values larger than Emax
+        _E_min = np.full_like(_E, Emin)
+        _E_max = np.full_like(_E, Emax)
 
         _E_p = np.logspace(
             log10(_E_min.to_value("eV")), log10(_E_max.to_value("eV")), 200
@@ -121,7 +118,18 @@ class PhotoMesonProduction:
 
 
 class PhotoMesonProductionAngular:
-    def __init__(self, blob, target, particle, theta_s, r, integrator=np.trapz):
+    r"""
+    Parameters
+    ----------
+    theta_s : class:`~astropy.units.Quantity`
+              observer viewing angle
+
+    r       : class:`~astropy.units.Quantity`
+              distance along the jet axis
+
+    """
+
+    def __init__(self, blob, target, integrator=np.trapz):
         self.blob = blob
         # check that this blob has a proton distribution
         if self.blob._n_p is None:
@@ -129,27 +137,22 @@ class PhotoMesonProductionAngular:
                 "There is no proton distribution in this emission region"
             )
         self.delta_D = blob.delta_D
+        self.theta_s = blob.theta_s
         self.target = target
-        self.particle = particle
-        self.theta_s = theta_s
-        self.r = r
         self.integrator = integrator
 
         return
 
-    def H(self, phi, E, r_b, g_kernel, integrator=np.trapz):
+    def H(self, phi, E, r, g_kernel, integrator=np.trapz):
 
         # Integral on E_p to be made from E to infinity
-        _phi, _E = axes_reshaper(phi, E)  # shape (len(eta), 1), (1, len(E))
-
-        _E_min = _E.copy()
-        _E_max = _E.copy() * 1e8
+        _phi, _E = axes_reshaper(phi, E)  # shape (len(phi), 1), (1, len(E))
 
         Emin = self.blob.n_p.gamma_min * mpc2
         Emax = self.blob.n_p.gamma_max * mpc2
 
-        _E_min = np.clip(_E_min, Emin, None)  # replace values smaller than Emin
-        _E_max = np.clip(_E_max, None, Emax)  # replace values larger than Emax
+        _E_min = np.full_like(_E, Emin)
+        _E_max = np.full_like(_E, Emax)
 
         _E_p = np.logspace(
             log10(_E_min.to_value("eV")), log10(_E_max.to_value("eV")), 200
@@ -163,13 +166,13 @@ class PhotoMesonProductionAngular:
         _eta = _eta.to("")
 
         if type(self.target).__name__ == "RingDustTorus":
-            n_ph = self.target.u(self.r) / (2.0 * np.pi * mec2 * self.target.epsilon_dt)
+            n_ph = self.target.u(r) / (2.0 * np.pi * mec2 * self.target.epsilon_dt)
 
             prefactor = self.blob.V_b / mpc2
 
             N_p_prim = prefactor * self.blob.n_p(_gamma_p_prim)
 
-            rR = r_b / self.target.R_dt
+            rR = r / self.target.R_dt
             rR.to("")
             sqr = np.sqrt(1 + rR**2)
             theta_pgam = (
@@ -200,14 +203,14 @@ class PhotoMesonProductionAngular:
         ).to("erg-1 cm-3")
         return _H
 
-    def evaluate_spectrum(self, E, r_b, particle, integrator=np.trapz):
+    def evaluate_spectrum(self, E, r, particle, integrator=np.trapz):
 
         if particle not in secondaries:
             raise AttributeError(
                 f"There is no secondary particle from photomeson interactions named {particle}."
             )
 
-        g_kernel = gKernel(self.particle)
+        g_kernel = gKernel(particle)
 
         # Integral on phi angle to be done from 0 to 2 pi
         phi = np.linspace(
@@ -218,7 +221,7 @@ class PhotoMesonProductionAngular:
         _H = self.H(
             phi,
             E,
-            r_b,
+            r,
             g_kernel,
             integrator=integrator,
         )
