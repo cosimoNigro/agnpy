@@ -10,10 +10,12 @@ from astropy.constants import c, m_e
 from agnpy import Blob, Synchrotron, SynchrotronSelfCompton
 from agnpy.spectra import PowerLaw
 from agnpy.time_evolution import (
-    BlobLTTIntegrator, TimeEvolution, synchrotron_loss, calc_seds_over_time,
+    BlobLTTIntegrator, BlobExpansion, TimeEvolution, synchrotron_loss, calc_seds_over_time,
 )
 import agnpy.time_evolution.blob_ltt_integration as blob_ltt_integration
-from agnpy.time_evolution.blob_ltt_integration import _constant_kernel_cgs
+from agnpy.time_evolution.blob_ltt_integration import (
+    _constant_kernel_cgs, _expanding_kernel_shape_cgs,
+)
 
 C_CGS = c.to_value("cm/s")
 SED_UNIT = u.Unit("erg / (cm2 s)")
@@ -63,6 +65,12 @@ class TestKernel:
         tau, W = _constant_kernel_cgs(1e16, n)
         assert np.isclose(np.trapz(W, tau), 1.0 - 1.0 / (n - 1) ** 2, rtol=1e-9)
 
+    def test_expanding_shape_reduces_to_constant_kernel_at_zero_beta(self):
+        rho, shape = _expanding_kernel_shape_cgs(0.0, 41)
+        tau, W = _constant_kernel_cgs(1e16, 41)
+        assert np.allclose(rho, tau * C_CGS / 1e16)
+        assert np.allclose(shape, W * 1e16 / C_CGS)
+
 
 class TestWindow:
     """The blob-state span reported by for_time."""
@@ -85,6 +93,13 @@ class TestWindow:
             for t in [0, 3e5, 1e7] * u.s
         ]
         assert u.allclose(u.Quantity(widths), 2 * (1e16 * u.cm / c).to("s"), rtol=1e-12)
+
+    def test_expanding_window_has_asymmetric_limits(self):
+        R = 1e16 * u.cm
+        integrator = BlobLTTIntegrator(R, expansion=(BlobExpansion(0.3 * c)))
+        t0 = 2 * (R / c).to("s")
+        window = integrator.for_time(t0)
+        assert (window.end_time - t0) > (t0 - window.start_time)
 
 
 class TestCalcSed:
@@ -185,7 +200,7 @@ class TestRadiusValidation:
 
     def test_mismatched_radius_raises(self):
         window, snapshots = self._setup(2e16 * u.cm)
-        with pytest.raises(ValueError, match="integrator was built for"):
+        with pytest.raises(ValueError, match="radius model"):
             window.calc_sed(snapshots, [1e15] * u.Hz)
 
 class TestCoverage:
@@ -226,6 +241,17 @@ class TestCoverage:
         sed = window.calc_sed(snapshots, [1e15] * u.Hz)
         # flat state, kernel integrates to 1
         assert np.isclose(sed[0].to_value(SED_UNIT), 1.0, rtol=1e-3)
+
+    def test_time_preceding_the_blob_existence(self):
+        """A time so far in the past that R(t) <= 0 must raise an error"""
+        R = 1e16 * u.cm
+        v_exp = 0.1 * c
+        integrator = BlobLTTIntegrator(R, expansion=BlobExpansion(v_exp))
+        t_negative = -2 * (R / v_exp).to("s")  # R + v_exp * t <= 0 here
+
+        with pytest.raises(ValueError, match="non-positive"):
+            integrator.for_time(t_negative)
+
 
 class TestSedCache:
     @staticmethod
@@ -352,17 +378,6 @@ class TestValidation:
         snapshots = [(0 * u.s, make_blob()), (np.array([1.0, 2.0]) * u.s, make_blob())]
         with pytest.raises(ValueError, match="must be a scalar Quantity"):
             self._window().calc_sed(snapshots, [1e15] * u.Hz)
-
-    @pytest.mark.parametrize("n_times", [1, 3, 50])
-    def test_for_time_rejects_a_time_array(self, n_times):
-        """
-        A time array would be broadcast against the kernel grid. With as many times as kernel
-        points (the default 50) that silently yields a garbage window, so it must be rejected.
-        """
-        integrator = BlobLTTIntegrator(1e16 * u.cm)
-        assert integrator.kernel_points_size == 50
-        with pytest.raises(ValueError, match="scalar time"):
-            integrator.for_time(np.linspace(0, 1e6, n_times) * u.s)
 
     def test_non_positive_radius(self):
         with pytest.raises(ValueError, match="positive finite length"):

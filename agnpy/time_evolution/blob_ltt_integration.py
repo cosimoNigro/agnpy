@@ -5,26 +5,63 @@ Problem
 -------
 A blob does not radiate as a single snapshot. Photons that reach the observer together were
 emitted at different blob-frame times from different depths along the line of sight: the volume
-element at line-of-sight offset xi (positive = towards the observer) contributes emission from
-blob-frame time t0 + xi/c. Writing tau = xi/c, the observed SED at blob-frame time t0 is
+element at line-of-sight offset ξ (positive = towards the observer) contributes emission from
+blob-frame time t_bc + τ, where τ = ξ/c, and t_bc is the observed (lab) time transformed to the "blob-center" time
+in the blob frame.
 
-    F(nu, t0) = integral W(tau) * F_std(nu, t0 + tau) dtau
+Then the observed SED at blob-frame center time t_bc is:
 
-where F_std(nu, t') is the ordinary agnpy SED of a uniform blob in state t', and W is a purely
-geometric kernel: the cross-section of the sphere at offset tau, divided by the blob volume. For
-a blob of constant radius R, with V = 4/3 pi R^3,
+    ∫ W(ξ) * F_std(nu, ξ) dξ
 
-    W(tau) = pi c (R^2 - c^2 tau^2) / V = (3c / 4R) (1 - (c tau / R)^2)
+or, converting to the integration over dτ:
 
-The integration limits are such that tau spans [-R/c, +R/c].
+    F(nu, t_bc) = ∫ W(τ) * F_std(nu, t_bc + τ) dτ
+
+where F_std(nu, t') is the ordinary agnpy SED of a uniform blob in state at t', and W is a purely
+geometric kernel: a slice volume (the cross-section A of the sphere at offset ξ, times dξ), divided by the total blob volume V.
+
+W(τ) = c * A(τ) / V(τ)
+A(τ) = π (R^2 - ξ^2) = π (R^2 - (τc)^2)
+
+Constant radius
+---------------
+For a blob of constant radius R, with V = 4/3 π R^3,
+
+    W(τ) = c π (R^2 - (τc)^2) / V = (3c / 4R) (1 - (τc/R)^2)
+
+The integration limits are such that τ spans [-R/c, +R/c].
 The kernel is a symmetric parabola vanishing at both ends, and
 
-    integral W dtau = 1     exactly,
+    ∫ W(τ) dτ = 1
 
 so a blob whose state does not change reproduces the ordinary SED.
 
 Because R and the sampling points are both fixed, the kernel is computed once when
 the integrator is built and reused for every requested time.
+
+Linear expansion
+----------------
+Passing ``expansion`` to ``BlobLTTIntegrator`` models a blob whose radius grows
+at a constant rate BlobExpansion.v_exp, ``R(t) = R_0 + v_exp t``
+(it uses the same ``agnpy.time_evolution.BlobExpansion`` class as used by ``agnpy.time_evolution.TimeEvolution``).
+Writing: ``β_exp = v_exp/c``,``R_t = R(t_bc)`` and ``ρ = cτ/R_t`` (ρ is a line-of-sight depth measured in units of the R_t),
+we obtain:
+
+R(t_bc+τ) = R_t + v_exp·τ = R_t + β_exp·c·τ = R_t(1 + β_exp·ρ)
+
+And the general kernel above becomes:
+
+    W(τ) = (3c / 4 R_t) [(1 + β_exp ρ)^2 - ρ^2] / (1 + β_exp ρ)^3
+
+whose shape in ρ depends only on β_exp, not on t0, so it is computed once per integrator and
+merely rescaled by R_t for each requested time. The kernel vanishes at asymmetric limits
+
+    ρ_max =  1 / (1 - β_exp)  ->  τ_max =  R_t / (c - v_exp)
+    ρ_min = -1 / (1 + β_exp)  ->  τ_min = -R_t / (c + v_exp)
+
+and, unlike the constant-radius case, does not integrate to 1.
+
+``beta_exp = 0`` recovers the constant-radius kernel exactly.
 
 All times in this module are blob-frame times. Convert an observer-frame time with
 :meth:`~agnpy.emission_regions.Blob.lab_time_to_blob_time`. Nothing here needs z or delta_D: the
@@ -59,6 +96,7 @@ function `calc_seds_over_time`, which already implements this workflow:
         blob, # initial blob state
         times, # a sorted list of times for which you need SEDs
         nu_obs, # energy points for SED
+        expansion=..., # optional, provide it if blob is expanding
         energy_change_functions=synchrotron_loss(Synchrotron(blob)) # any params needed for TimeEvolution constructor
     )
 
@@ -87,6 +125,7 @@ from scipy.interpolate import interp1d
 
 from agnpy import Blob
 from agnpy.time_evolution.time_evolution import TimeEvolution
+from agnpy.time_evolution.types import BlobExpansion
 
 __all__ = [
     "BlobLTTIntegrator",
@@ -118,6 +157,19 @@ def _constant_kernel_cgs(R_cm: float, n_points: int):
     tau_s = rho * R_cm / _C_CGS
     W_cgs = 0.75 * (_C_CGS / R_cm) * (1.0 - rho ** 2)
     return tau_s, W_cgs
+
+
+def _expanding_kernel_shape_cgs(beta_exp: float, n_points: int):
+    """
+    Dimensionless LTT kernel shape for R(t) = R_0 + v_exp*t, in ρ = c*τ/R(t0).
+
+    Depends only on β_exp = v_exp/c, not on t0, so it is computed once per integrator and
+    merely rescaled by R(t) for each requested time; see BlobLTTIntegrator.for_time.
+    """
+    rho = np.linspace(-1.0 / (1.0 + beta_exp), 1.0 / (1.0 - beta_exp), n_points)
+    one_plus = 1.0 + beta_exp * rho
+    shape = 0.75 * np.maximum(one_plus ** 2 - rho ** 2, 0.0) / one_plus ** 3
+    return rho, shape
 
 
 def _default_sed_flux(blob: Blob, nu: u.Quantity) -> u.Quantity:
@@ -279,17 +331,22 @@ class BlobLTTIntegrator:
     Parameters
     ----------
     R : :class:`~astropy.units.Quantity`
-        Blob radius in the blob frame; must be a scalar length.
+        Blob radius at blob-frame time 0; must be a scalar length. Constant over time unless
+        ``expansion`` is given.
+    expansion : :class:`~agnpy.time_evolution.BlobExpansion`, optional
+        If given, the blob radius grows at the constant rate ``R(t) = R + expansion.v_exp * t``
+        and the kernel accounts for it.
+        Note: ``expansion.magnetic_field_index`` is not used here.
     kernel_points_size : int
         Number of quadrature points across the blob diameter. The default gives roughly 1e-3
         relative accuracy; the quadrature is second order, so doubling it cuts the error by
-        about four. Raising it is cheap, as the kernel is computed once.
+        about four. Raising it is cheap, as the kernel shape is computed once.
     sed_flux_fn : callable, optional
         ``f(blob, nu) -> Quantity[erg / (cm2 s)]``. Defaults to Synchrotron + SSC; override to
         add external Compton or absorption.
     """
 
-    def __init__(self, R: u.Quantity, *,
+    def __init__(self, R: u.Quantity, *, expansion: BlobExpansion = None,
                  kernel_points_size: int = 50, sed_flux_fn=None):
         if not R.isscalar:
             raise ValueError(f"blob radius must be a scalar length, got shape {R.shape}")
@@ -301,28 +358,31 @@ class BlobLTTIntegrator:
                 f"kernel_points_size must be at least 2, got {kernel_points_size}"
             )
 
-        self._R = R.to("cm")
         self._R_cm = R_cm
+        self._beta_exp = (
+            0.0 if expansion is None
+            else float((expansion.v_exp / c_light).to_value(u.dimensionless_unscaled))
+        )
         self._sed_flux_fn = sed_flux_fn if sed_flux_fn is not None else _default_sed_flux
-        # R and the sampling are fixed, so the kernel never changes: compute it once.
-        self._tau_s, self._W_cgs = _constant_kernel_cgs(R_cm, kernel_points_size)
+
+        if self._beta_exp == 0.0:
+            # R and the sampling are fixed, so the kernel never changes: compute it once.
+            self._tau_s, self._W_cgs = _constant_kernel_cgs(R_cm, kernel_points_size)
+        else:
+            self._rho, self._shape = _expanding_kernel_shape_cgs(self._beta_exp, kernel_points_size)
+
         # (snapshot time [s], nu_obs bytes) -> (id(blob), sed row); see _sed_table.
         self._sed_cache: dict[tuple[float, bytes], tuple[int, np.ndarray]] = {}
 
-    @property
-    def R(self) -> u.Quantity:
+    def radius_at(self, t_blob: u.Quantity) -> u.Quantity:
         """
-        The blob radius this integrator assumes.
+        Blob radius this integrator assumes at blob-frame time ``t_blob``.
 
-        Each snapshot's ``R_b`` is checked against this value by
-        :meth:`BlobLTTWindow.calc_sed`.
+        Constant (equal to the ``R`` the integrator was built with) if built without
+        ``expansion``, otherwise ``R + expansion.v_exp * t_blob``. Unlike :meth:`for_time`,
+        accepts an array ``t_blob``.
         """
-        return self._R
-
-    @property
-    def kernel_points_size(self) -> int:
-        """Number of quadrature points across the blob."""
-        return self._tau_s.size
+        return (self._R_cm + self._beta_exp * _C_CGS * t_blob.to_value("s")) * u.cm
 
     def for_time(self, t_blob: u.Quantity) -> BlobLTTWindow:
         """
@@ -332,22 +392,41 @@ class BlobLTTIntegrator:
         coverage grounds. ``for_time(0)`` legitimately returns a negative
         :attr:`~BlobLTTWindow.start_time`, which is how you discover how much blob state is
         needed before the nominal start of a run.
+
+        Raises
+        ------
+        ValueError
+            If ``expansion`` was given and the blob radius at ``t_blob`` would be non-positive,
+            i.e. ``t_blob`` precedes the blob's existence.
         """
         if not t_blob.isscalar:
             raise ValueError(
                 f"t_blob must be a scalar time, got shape {t_blob.shape}. Call for_time once "
                 "per time; a time array would be broadcast against the kernel grid."
             )
-        return BlobLTTWindow(self, t_blob.to("s").value + self._tau_s, self._W_cgs)
+        t_s = t_blob.to("s").value
+        if self._beta_exp == 0.0:
+            tau_s, W_cgs = self._tau_s, self._W_cgs
+        else:
+            R_t = self._R_cm + self._beta_exp * _C_CGS * t_s
+            if R_t <= 0:
+                raise ValueError(
+                    f"blob radius is non-positive at blob-frame time {t_s:.6g} s "
+                    f"(R = {R_t:.6g} cm); the requested time precedes the blob's existence"
+                )
+            tau_s = self._rho * R_t / _C_CGS
+            W_cgs = self._shape * _C_CGS / R_t
+        return BlobLTTWindow(self, t_s + tau_s, W_cgs)
 
     def _validate_radii(self, snapshots_s: Sequence[Tuple[float, Blob]]) -> None:
         for i, (t, blob) in enumerate(snapshots_s):
             actual = blob.R_b.to("cm").value
-            if not np.isclose(actual, self._R_cm, rtol=_RADIUS_RTOL, atol=0.0):
+            expected = self._R_cm + self._beta_exp * _C_CGS * t
+            if not np.isclose(actual, expected, rtol=_RADIUS_RTOL, atol=0.0):
                 raise ValueError(
-                    f"snapshot {i} at t = {t:.6g} s has R_b = {actual:.6e} cm "
-                    f"but the integrator was built for R = {self._R_cm:.6e} cm. All snapshots "
-                    "must share the integrator's radius."
+                    f"snapshot {i} at t = {t:.6g} s has R_b = {actual:.6e} cm but the "
+                    f"integrator's R(t) gives {expected:.6e} cm. Snapshot radii must match the "
+                    "radius model; see BlobLTTIntegrator.radius_at()."
                 )
 
     def _sed_table(
@@ -390,6 +469,7 @@ def calc_seds_over_time(
     times: u.Quantity,
     nu_obs: u.Quantity,
     *,
+    expansion: BlobExpansion = None,
     kernel_points_size: int = 50,
     sed_flux_fn=None,
     assume_steady_before_start: bool = True,
@@ -406,22 +486,25 @@ def calc_seds_over_time(
         Blob-frame times to compute the SED at, strictly increasing.
     nu_obs : :class:`~astropy.units.Quantity`
         Observed frequencies the SEDs are evaluated at; forwarded to :class:`BlobLTTIntegrator`.
+    expansion : :class:`~agnpy.time_evolution.BlobExpansion`, optional
+        Forwarded to both :class:`BlobLTTIntegrator` and every internal ``TimeEvolution`` call,
+        so the geometric kernel and the simulated radius growth stay in sync automatically.
     kernel_points_size, sed_flux_fn
         Forwarded to :class:`BlobLTTIntegrator`.
     assume_steady_before_start : bool
         The first requested time's window may reach before blob-frame time 0, if its
         light-crossing margin is larger than ``times[0]`` itself. When ``True`` (the default),
-        ``blob``'s given state is treated as unchanged for as far back that window needs --
+        ``blob``'s particle state is treated as unchanged for as far back that window needs --
         the same assumption the manual workflow above makes implicitly by seeding at
-        ``start_time`` rather than at 0. When ``False``, that situation raises instead, naming
-        how much earlier ``blob``'s history would need to start.
+        ``start_time`` rather than at 0. Its radius is not an assumption, though: under
+        ``expansion`` the backdated snapshot's ``R_b`` is set to ``integrator.radius_at(start)``,
+        the value the radius model deterministically requires there. When ``False``, that
+        situation raises instead, naming how much earlier ``blob``'s history would need to start.
     **time_evolution_kwargs
         Forwarded to every internal :class:`~agnpy.time_evolution.TimeEvolution` call, e.g.
         ``energy_change_functions``, ``max_energy_change_per_interval``, ``method``. Must not
         include ``blob``, ``total_duration_time``, ``t0`` or ``distribution_change_callback``,
-        which this function manages itself. Passing ``expansion`` is not meaningful here: this
-        integrator assumes a constant radius, so an expanding blob's later snapshots will fail
-        the radius check in :meth:`BlobLTTWindow.calc_sed`.
+        which this function manages itself.
 
     Returns
     -------
@@ -446,16 +529,18 @@ def calc_seds_over_time(
         raise ValueError("times must be strictly increasing")
 
     integrator = BlobLTTIntegrator(
-        blob.R_b, kernel_points_size=kernel_points_size, sed_flux_fn=sed_flux_fn
+        blob.R_b, expansion=expansion, kernel_points_size=kernel_points_size,
+        sed_flux_fn=sed_flux_fn,
     )
 
     snapshots = []
     first_start = integrator.for_time(times[0]).start_time
-    initial_state_snapshot = deepcopy(blob)
     now = 0 * u.s
     if first_start < now:
         if assume_steady_before_start:
-            snapshots.append((first_start, initial_state_snapshot))
+            backdated = deepcopy(blob)
+            backdated.R_b = integrator.radius_at(first_start)
+            snapshots.append((first_start, backdated))
         else:
             raise ValueError(
                 f"The window for the first requested time starts at {first_start}, before "
@@ -463,7 +548,7 @@ def calc_seds_over_time(
                 "assume_steady_before_start=True to treat its given state as unchanged that far back."
             )
 
-    snapshots.append((now, initial_state_snapshot))
+    snapshots.append((now, deepcopy(blob)))
 
     def callback(result):
         snapshots.append((result.blob_time, deepcopy(blob)))
@@ -476,7 +561,7 @@ def calc_seds_over_time(
             # just fast-forward to the start of the window
             TimeEvolution(
                 blob, total_duration_time=(window.start_time - now),
-                **time_evolution_kwargs,
+                expansion=expansion, **time_evolution_kwargs,
             ).evaluate()
             now = window.start_time
             # take a snapshot at the start of the window
@@ -486,7 +571,8 @@ def calc_seds_over_time(
             # proceed till the end of the window, gathering snapshots on the way
             TimeEvolution(
                 blob, total_duration_time=(window.end_time - now), t0=now,
-                distribution_change_callback=callback, **time_evolution_kwargs,
+                distribution_change_callback=callback, expansion=expansion,
+                **time_evolution_kwargs,
             ).evaluate()
             now = window.end_time
 
