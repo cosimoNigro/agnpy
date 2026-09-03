@@ -33,7 +33,7 @@ class TimeEvaluationResult(NamedTuple):
 @dataclass(frozen=True)
 class BlobExpansion:
     """
-    Describes the expansion of the blob at a constant radius growth rate: R(t) = R_0 + v_exp * t.
+    Describes the expansion of the blob at a constant radius growth rate: R(t) = R_0 + v_exp * t, in the blob frame.
 
     Parameters
     ----------
@@ -71,17 +71,17 @@ Quantity array that represents energy change rate or injection rate.
 
 EnergyChangeFn = GammaFn
 """ 
-A GammaFn function that returns energy change rates (unit: erg s-1)
+A GammaFn function that returns energy change rates, in the blob frame (unit: erg s-1)
 """
 
 InjectionRelFn = GammaFn
 """ 
-A GammaFn function that returns relative injections rates (unit: s-1) 
+A GammaFn function that returns relative injections rates, in the blob frame (unit: s-1) 
 """
 
 InjectionAbsFn = Callable[[FnParams], Quantity]
 """
-A GammaFn function that returns absolute injections rates (unit: s-1 cm-3)
+A GammaFn function that returns absolute injections rates, in the blob frame (unit: s-1 cm-3)
 """
 
 EnergyChangeFns = Union[EnergyChangeFn, Sequence[EnergyChangeFn], dict[str, EnergyChangeFn]]

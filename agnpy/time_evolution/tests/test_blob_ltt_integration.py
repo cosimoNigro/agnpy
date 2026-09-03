@@ -95,11 +95,27 @@ class TestWindow:
         assert u.allclose(u.Quantity(widths), 2 * (1e16 * u.cm / c).to("s"), rtol=1e-12)
 
     def test_expanding_window_has_asymmetric_limits(self):
-        R = 1e16 * u.cm
-        integrator = BlobLTTIntegrator(R, expansion=(BlobExpansion(0.3 * c)))
-        t0 = 2 * (R / c).to("s")
-        window = integrator.for_time(t0)
-        assert (window.end_time - t0) > (t0 - window.start_time)
+        """
+        Each edge of the window is the moment at which the emitting point lies exactly on the
+        blob surface, i.e. its line-of-sight depth equals the radius the blob had when it
+        emitted: |c tau| = R(t_bc + tau). That condition has a single positive and a single
+        negative root, it pins both edges exactly -- without repeating the kernel's own formula for them.
+        """
+        R_0 = 1e16 * u.cm
+        v_exp = 0.3 * c
+        integrator = BlobLTTIntegrator(R_0, expansion=BlobExpansion(v_exp))
+        t_bc = (R_0 / c).to("s") # actual t_bc value does not matter here, but single time crossing simplifies the math
+        window = integrator.for_time(t_bc)
+
+        def radius_when_it_emitted(tau):
+            return R_0 + v_exp * (t_bc + tau)
+
+        tau_max = window.end_time - t_bc
+        tau_min = window.start_time - t_bc
+        assert tau_max > 0 * u.s > tau_min
+        assert tau_max > -tau_min
+        assert u.isclose(c * tau_max, radius_when_it_emitted(tau_max), rtol=1e-12)
+        assert u.isclose(-c * tau_min, radius_when_it_emitted(tau_min), rtol=1e-12)
 
 
 class TestCalcSed:
@@ -507,7 +523,7 @@ class TestCalcSedsOverTime:
             blob_ltt_integration, "TimeEvolution", side_effect=_FakeTimeEvolution
         ) as mock_time_evolution:
             calc_seds_over_time(
-                blob, times, self.nu,
+                blob, times, self.nu, assume_steady_before_start=True,
                 energy_change_functions=synchrotron_loss(Synchrotron(blob)),
             )
 
@@ -545,3 +561,19 @@ class TestCalcSedsOverTime:
         # if each window re-simulated independently it would need dozens of evaluations per
         # window; heavy reuse keeps the total far below that
         assert len(calls) < 10 * len(tight_times)
+
+    def test_expanding_blob_refuses_to_assume_a_steady_state_before_the_start(self):
+        """
+        A window reaching before blob-frame time 0 covers a period when the blob was smaller,
+        so its state there cannot be assumed to be steady.
+        """
+        blob = make_blob(self.R)
+        early_times = np.array([0.5 * self._lc()]) * u.s  # its window reaches before 0
+
+        with pytest.raises(ValueError):
+            calc_seds_over_time(
+                blob, early_times, self.nu, expansion=BlobExpansion(0.1 * c),
+                sed_flux_fn=flat_sed(1.0),
+                energy_change_functions=synchrotron_loss(Synchrotron(blob)),
+            )
+
