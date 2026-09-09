@@ -1,26 +1,29 @@
 # wrap agnpy SED computation via sherpa's 1D model
-import numpy as np
 import astropy.units as u
+import numpy as np
+from astropy.constants import c, h, k_B
 from astropy.coordinates import Distance
-from astropy.constants import c, k_B
+from scipy.interpolate import interp1d
 from sherpa.models import model
-from ..utils.conversion import mec2
+
+from ..compton import ExternalCompton, SynchrotronSelfCompton
+from ..emission_regions import Blob
+from ..photo_meson.photo_meson import PhotoMesonProduction
 from ..spectra import (
     BrokenPowerLaw,
-    LogParabola,
-    ExpCutoffPowerLaw,
     ExpCutoffBrokenPowerLaw,
+    ExpCutoffPowerLaw,
     InterpolatedDistribution,
+    LogParabola,
 )
-from ..targets import SSDisk, RingDustTorus
 from ..synchrotron import Synchrotron
-from ..compton import SynchrotronSelfCompton, ExternalCompton
+from ..targets import RingDustTorus, SSDisk
+from ..utils.conversion import mec2, nu_to_epsilon_prime
 from .core import (
     get_spectral_parameters_from_n_e,
     make_emission_region_parameters_dict,
     make_targets_parameters_dict,
 )
-
 
 gamma_size = 300
 gamma_to_integrate = np.logspace(1, 9, gamma_size)
@@ -73,6 +76,77 @@ def _evaluate_sed_ssc_scenario(x, pars, n_e, ssa):
         nu, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
     )
     return sed_synch + sed_ssc
+
+
+def _evaluate_sed_ssc_photomeson_scenario(x, pars, n_e, n_p, ssa):
+    """At the model evaluation, sherpa passes the model parameters as a simple
+    list, `pars`. This function sorts the parameters and evaluates the total SED
+    for the SSC scenario.
+    NOTE: sherpa parameters are NOT `~astropy.Quantities`, properly set them."""
+    (*args, z, delta_D, log10_B, t_var) = pars
+
+    _scale_spectral_parameters(args, n_e)
+
+    # parameters of the emission region
+    B = 10**log10_B * u.G
+    # compute the luminosity distance and the size of the emission region
+    d_L = Distance(z=z).to("cm")
+    R_b = (c.to_value("cm s-1") * t_var * delta_D) / (1 + z) * u.cm
+
+    # evaluate the SED
+    x *= u.eV
+    nu = x.to("Hz", equivalencies=u.spectral())
+    sed_synch = Synchrotron.evaluate_sed_flux(
+        nu, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
+    )
+    sed_ssc = SynchrotronSelfCompton.evaluate_sed_flux(
+        nu, z, d_L, delta_D, B, R_b, n_e, *args, ssa=ssa
+    )
+
+    blob = Blob(R_b=R_b, z=z, delta_D=delta_D, B=B, n_p=n_p)
+
+    epsilon = nu_to_epsilon_prime(nu, z, delta_D)
+    log_nu = np.log10(nu.to_value("Hz"))
+
+    n_IC = (3 * np.power(d_L, 2) * sed_ssc) / (
+        c
+        * np.power(R_b, 2)
+        * np.power(delta_D, 4)
+        * np.power(epsilon, 2)
+        * np.power(mec2, 2)
+    )
+
+    n_IC *= 3 / 4
+
+    log_n_IC = np.where(
+        n_IC.to_value("erg-1 cm-3") > 0.0, np.log10(n_IC.to_value("erg-1 cm-3")), -100
+    )
+
+    n_IC_interp = interp1d(
+        log_nu,
+        log_n_IC,
+        bounds_error=False,
+        fill_value=-100,
+    )
+
+    def IC_target(nu):
+        return 10 ** n_IC_interp(np.log10(nu.to_value("Hz"))) * (
+            u.erg**-1 * u.cm**-3
+        )
+
+    E_prim = (nu * h).to("eV") / delta_D
+
+    sed_photomeson = (
+        PhotoMesonProduction(blob, IC_target).evaluate_spectrum(
+            E_prim, particle="gamma"
+        )
+        * blob.V_b
+        * np.power(E_prim, 2)
+        * np.power(delta_D, 4)
+        / (4.0 * np.pi * np.power(d_L, 2))
+    )
+
+    return sed_synch + sed_ssc + sed_photomeson
 
 
 def _evaluate_sed_ec_blr_scenario(x, pars, n_e, ssa):
@@ -376,6 +450,62 @@ class SynchrotronSelfComptonRegriddableModel1D(model.RegriddableModel1D):
     def calc(self, pars, x):
         """Evaluate the SED model."""
         return _evaluate_sed_ssc_scenario(x, pars, self._n_e, self.ssa)
+
+
+class SynchrotronSelfComptonPhotomesonRegriddableModel1D(model.RegriddableModel1D):
+    def __init__(self, n_e, n_p, ssa=False):
+        """sherpa wrapper for a source emitting Synchrotron and SSC radiation.
+
+        Parameters
+        ----------
+        n_e : `~agnpy.spectra.ElectronDistribution`
+            electron distribution to be used for this modelling
+        ssa : bool
+            whether or not to calculate synchrotron self-absorption
+
+        Returns
+        -------
+        `~sherpa.models.Regriddable1DModel`
+        """
+        self.name = "ssc"
+        self._n_e = n_e
+        self._n_p = n_p
+        self.ssa = ssa
+
+        # parameters of the particles energy distribution
+        spectral_pars = get_spectral_parameters_from_n_e(
+            self._n_e, backend="sherpa", modelname=self.name
+        )
+
+        # parameters of the emission region
+        emission_region_pars = make_emission_region_parameters_dict(
+            "ssc", backend="sherpa", modelname=self.name
+        )
+
+        pars_list = [*spectral_pars.values(), *emission_region_pars.values()]
+
+        # each parameter should be declared as an attribute, see
+        # https://sherpa.readthedocs.io/en/4.14.0/model_classes/usermodel.html
+        pars_attr_list = []
+
+        for par in pars_list:
+            setattr(self, par.name, par)
+            pars_attr_list.append(getattr(self, par.name))
+
+        super().__init__(self.name, tuple(pars_attr_list))
+
+    def set_emission_region_parameters_from_blob(self, blob):
+        """Set the parameter of the emission region from a Blob instance"""
+        self.z = blob.z
+        self.delta_D = blob.delta_D
+        self.log10_B = np.log10(blob.B.to_value("G"))
+        self.t_var = blob.t_var.to_value("s")
+
+    def calc(self, pars, x):
+        """Evaluate the SED model."""
+        return _evaluate_sed_ssc_photomeson_scenario(
+            x, pars, self._n_e, self._n_p, self.ssa
+        )
 
 
 class ExternalComptonRegriddableModel1D(model.RegriddableModel1D):

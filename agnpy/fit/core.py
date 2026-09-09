@@ -1,7 +1,8 @@
 # functions / classes shared by all wrapper types
 import numpy as np
-from sherpa.models import model
 from gammapy import modeling
+from sherpa.models import model
+
 from ..spectra import InterpolatedDistribution
 
 
@@ -91,11 +92,11 @@ def get_spectral_parameters_from_n_e(n_e, backend, modelname=None):
             )
         elif name == "gamma_min":
             par = Parameter(
-                "log10_gamma_min", np.log10(value), "", min=0, max=4, frozen=True
+                "log10_gamma_min", np.log10(value), "", min=0, max=3, frozen=True
             )
         elif name == "gamma_max":
             par = Parameter(
-                "log10_gamma_max", np.log10(value), "", min=4, max=8, frozen=True
+                "log10_gamma_max", np.log10(value), "", min=3, max=8, frozen=True
             )
         elif name in ["gamma_b", "gamma_0", "gamma_c"]:
             par = Parameter("log10_" + name, np.log10(value), "", min=2, max=6)

@@ -1,32 +1,34 @@
 # module containing the gamma-gamma absorption
 from pathlib import Path
-import numpy as np
+
 import astropy.units as u
+import numpy as np
+from astropy.constants import G, c, m_e, sigma_T
 from astropy.io import fits
-from astropy.constants import c, G, m_e, sigma_T
 from scipy.interpolate import RegularGridInterpolator
+
+from ..compton import SynchrotronSelfCompton
+from ..emission_regions import Blob
+from ..synchrotron import Synchrotron, nu_synch_peak
+from ..targets import PointSourceBehindJet, RingDustTorus, SphericalShellBLR, SSDisk
+from ..utils.conversion import nu_to_epsilon_prime, to_R_g_units
+from ..utils.geometry import (
+    cos_psi,
+    mu_star_shell,
+    phi_mu_re_ring,
+    phi_mu_re_shell,
+    x_re_ring,
+    x_re_ring_mu_s,
+    x_re_shell,
+    x_re_shell_mu_s,
+)
 from ..utils.math import (
     axes_reshaper,
     log,
+    min_rel_distance,
     mu_to_integrate,
     phi_to_integrate,
-    min_rel_distance,
 )
-from ..utils.geometry import (
-    cos_psi,
-    x_re_shell,
-    mu_star_shell,
-    x_re_ring,
-    x_re_ring_mu_s,
-    phi_mu_re_shell,
-    phi_mu_re_ring,
-    x_re_shell_mu_s,
-)
-from ..utils.conversion import nu_to_epsilon_prime, to_R_g_units
-from ..targets import PointSourceBehindJet, SSDisk, SphericalShellBLR, RingDustTorus
-from ..emission_regions import Blob
-from ..synchrotron import nu_synch_peak, Synchrotron
-
 
 __all__ = ["sigma", "Absorption", "ebl_files_dict", "EBL"]
 
@@ -426,8 +428,8 @@ class Absorption:
         # distance between soft photon and gamma ray
         x = x_re_shell_mu_s(R_line, r, _phi_re, _mu_re, _u, mu_s)
 
-        # convert the phi and mu angles of the position in the sphere into the actual phi and mu angles
-        # the actual phi and mu angles of the soft photon catching up with the gamma ray
+        # convert the phi and mu angles of the position in the sphere into the actual phi and mu
+        # angles the actual phi and mu angles of the soft photon catching up with the gamma ray
         _phi, _mu_star = phi_mu_re_shell(R_line, r, _phi_re, _mu_re, _u, mu_s)
 
         # angle between the soft photon and gamma ray
@@ -701,6 +703,79 @@ class Absorption:
 
         return (2 * blob.R_b * np.trapz(_n_synch * sigma(_s), epsilon, axis=0)).to("")
 
+    def tau_on_SSC(self, blob, nu, nu_s_size=200, delta_margin_low=1.0e-6):
+        r"""Optical depth for absorption of gamma rays in SSC radiation of the blob.
+        It assumes the same radiation field as the Synchrotron class.
+
+        Parameters
+        ----------
+        blob : :class:`~agnpy.emission_regions.Blob`
+            emission region and electron distribution hitting the photon target
+        nu : :class:`~astropy.units.Quantity`
+            array of frequencies, in Hz, to compute the opacity
+            **note** these are observed frequencies (observer frame)
+        nu_s_size : int
+            size of the array over the SSC frequencies
+        delta_margin_low : float
+            extension of the integration range of the SSC radiation beyond
+            the delta approximation, default = 0.01, but lower value might be needed
+            if the calculations are performed up to very high energies
+        """
+        # energy of the gamma rays in blob frame
+        epsilon1 = nu_to_epsilon_prime(nu, blob.z, blob.delta_D)
+
+        # first derive the ranges of the SSC spectrum
+        # add margin on both sides to allow for the energy distribution
+        nu_range = np.logspace(9, 32, 1000) * u.Unit("Hz")
+        nu_peak = SynchrotronSelfCompton(blob).sed_peak_nu(nu_range)
+
+        nu_s_min = nu_peak * delta_margin_low
+        # nu_s_min = nu_synch_peak(blob.B, blob.n_e.gamma_min) * delta_margin_low
+
+        nu_s_max = nu_peak * 1.0e4
+        # nu_s_max = nu_synch_peak(blob.B, blob.n_e.gamma_max) * 1.0e2
+
+        # frequencies in the blob frame
+        nu_s = (
+            np.logspace(
+                np.log10(nu_s_min.to_value("Hz")),
+                np.log10(nu_s_max.to_value("Hz")),
+                nu_s_size,
+            )
+            * u.Hz
+        )
+
+        # and in observers frame
+        nu_s_obs = nu_s * blob.delta_D / (1 + blob.z)
+        # energy of the synchrotron photons in blob frame
+        epsilon = nu_to_epsilon_prime(nu_s_obs, blob.z, blob.delta_D)
+
+        SSC = SynchrotronSelfCompton(blob)
+        sed_SSC = SSC.sed_flux(nu_s_obs)
+
+        # Eq. 8 [Finke2008]_ analogy divided by extra epsilon mc^2
+        n_SSC = (
+            (3 * np.power(blob.d_L, 2) * sed_SSC)
+            / (
+                c
+                * np.power(blob.R_b, 2)
+                * np.power(blob.delta_D, 4)
+                * epsilon**2
+                * m_e
+                * c**2
+            )
+        ).to("cm-3")
+
+        # factor 3 / 4 accounts for averaging in a sphere
+        # not included in Dermer and Finke's papers
+        n_SSC *= 3 / 4
+
+        _epsilon, _epsilon1 = axes_reshaper(epsilon, epsilon1)
+        _s = _epsilon * _epsilon1 / 2
+        _n_SSC = n_SSC[..., np.newaxis]
+
+        return (2 * blob.R_b * np.trapz(_n_SSC * sigma(_s), epsilon, axis=0)).to("")
+
     def tau(self, nu):
         """optical depth
 
@@ -758,8 +833,8 @@ class Absorption:
 class EBL:
     """Class representing for the Extragalactic Background Light absorption.
     Tabulated values of absorption as a function of redshift and energy according
-    to the models of [Franceschini2008]_, [Finke2010]_, [Dominguez2011]_, [Saldana-Lopez2021]_ are available
-    in `data/ebl_models`.
+    to the models of [Franceschini2008]_, [Finke2010]_, [Dominguez2011]_, [Saldana-Lopez2021]_
+    are available in `data/ebl_models`.
     They are interpolated by `agnpy` and can be later evaluated for a given redshift
     and range of frequencies.
 

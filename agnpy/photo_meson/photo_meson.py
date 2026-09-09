@@ -172,8 +172,8 @@ class PhotoMesonProductionAngular:
 
             N_p_prim = prefactor * self.blob.n_p(_gamma_p_prim)
 
-            rR = r / self.target.R_dt
-            rR.to("")
+            rR = (r / self.target.R_dt).to_value("")
+
             sqr = np.sqrt(1 + rR**2)
             theta_pgam = (
                 np.acos(
