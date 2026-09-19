@@ -33,12 +33,14 @@ agnpy_dir = Path(__file__).parent.parent
 
 def sigma(s):
     """photon-photon pair production cross section, Eq. 17 of [Dermer2009]"""
-    beta_cm = np.sqrt(1 - 1 / s)
+    above = s > 1
+    s_eval = np.where(above, s, 1.0)
+    beta_cm = np.sqrt(1 - 1 / s_eval)
     prefactor = 3 / 16 * sigma_T * (1 - np.power(beta_cm, 2))
     term1 = (3 - np.power(beta_cm, 4)) * log((1 + beta_cm) / (1 - beta_cm))
     term2 = -2 * beta_cm * (2 - np.power(beta_cm, 2))
     values = prefactor * (term1 + term2)
-    values[s < 1] = 0
+    values = np.where(above, values, 0 * values)
     return values
 
 
@@ -744,4 +746,4 @@ class Absorption:
         See e.g. section 2.5.1. of Finke et al. 2008.
         """
         t = self.tau(nu)
-        return (1 - np.exp(-t)) / t
+        return -np.expm1(-t) / t
