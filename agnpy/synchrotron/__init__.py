@@ -1,2 +1,2 @@
-from .base_synchrotron import *
+from .Synchrotron import *
 from .proton_synchrotron import *

@@ -13,8 +13,8 @@ from ..spectra import (
     InterpolatedDistribution,
 )
 from ..targets import SSDisk, RingDustTorus
-from.. emission_regions import Cone
-from ..synchrotron import Synchrotron, synchrotron_cone
+from.. emission_regions import Blob, Cone
+from ..synchrotron import Synchrotron
 from ..compton import SynchrotronSelfCompton, ExternalCompton
 from .core import (
     get_spectral_parameters_from_n_e,
@@ -47,10 +47,10 @@ def _scale_spectral_parameters(args, n_e):
             args[-3] = 10 ** args[-3]
             args[-4] = 10 ** args[-4]
 
-def _evaluate_sed_cone_scenario(x, pars, n_e, ssa, electron_escape):
+def _evaluate_sed_ssc_cone(x, pars, n_e, ssa, electron_escape):
     """At the model evaluation, sherpa passes the model parameters as a simple
     list, `pars`. This function sorts the parameters and evaluates the total SED
-    for the synchrotron conical jet scenario.
+    for the synchrotron and synchrotron self compton scenario in a conical jet.
     NOTE: sherpa parameters are NOT `~astropy.Quantities`, properly set them."""
     if electron_escape:
         *args, L, R_0, log10_B, theta_open, z, delta_D, escape_coefficient = pars
@@ -75,10 +75,12 @@ def _evaluate_sed_cone_scenario(x, pars, n_e, ssa, electron_escape):
     x *= u.Hz
     synchrotron = Synchrotron(cone,ssa = ssa)
     sed = synchrotron.sed_flux(x)
-    return sed  
+    ssc = SynchrotronSelfCompton(cone, ssa=ssa)
+    sed_ssc = ssc.sed_flux(x)
+    return sed + sed_ssc
 
 
-def _evaluate_sed_ssc_scenario(x, pars, n_e, ssa):
+def _evaluate_sed_ssc_blob(x, pars, n_e, ssa):
     """At the model evaluation, sherpa passes the model parameters as a simple
     list, `pars`. This function sorts the parameters and evaluates the total SED
     for the SSC scenario.
@@ -354,9 +356,22 @@ def _evaluate_sed_ec_blr_dt_scenario(x, pars, n_e, ssa):
     )
     return sed_synch + sed_ssc + sed_bb_disk + sed_bb_dt + sed_ec_blr + sed_ec_dt
 
-class SynchrotronConeRegriddableModel1D(model.RegriddableModel1D):
+class SynchrotronSelfComptonConeRegriddableModel1D(model.RegriddableModel1D):
+    """sherpa wrapper for a conical region emitting Synchrotron and SSC radiation.
+
+        Parameters
+        ----------
+        n_e : `~agnpy.spectra.ElectronDistribution`
+            electron distribution to be used for this modelling
+        ssa : bool
+            whether or not to calculate synchrotron self-absorption
+
+        Returns
+        -------
+        `~sherpa.models.Regriddable1DModel`
+        """
     def __init__(self, n_e, ssa=False, electron_escape=False):
-        self.name = 'synchrotroncone'
+        self.name = 'ssc_cone'
         self._n_e = n_e
         self.ssa = ssa
         self.electron_escape = electron_escape
@@ -364,9 +379,9 @@ class SynchrotronConeRegriddableModel1D(model.RegriddableModel1D):
         spectral_pars = get_spectral_parameters_from_n_e(
             self._n_e, backend="sherpa", modelname=self.name
             )
-        
+    
         emission_region_pars = make_emission_region_parameters_dict(
-            "synchrotroncone", backend="sherpa", modelname=self.name, electron_escape = self.electron_escape
+            "ssc_cone", backend="sherpa", modelname=self.name, electron_escape = self.electron_escape
         )
 
         pars_list = [*spectral_pars.values(), *emission_region_pars.values()]
@@ -393,9 +408,9 @@ class SynchrotronConeRegriddableModel1D(model.RegriddableModel1D):
 
     def calc(self, pars, x):
         """Evaluate the SED model."""
-        return _evaluate_sed_cone_scenario(x, pars, self._n_e, self.ssa,self.electron_escape)
+        return _evaluate_sed_ssc_cone(x, pars, self._n_e, self.ssa,self.electron_escape)
 
-class SynchrotronSelfComptonRegriddableModel1D(model.RegriddableModel1D):
+class SynchrotronSelfComptonBlobRegriddableModel1D(model.RegriddableModel1D):
     def __init__(self, n_e, ssa=False):
         """sherpa wrapper for a source emitting Synchrotron and SSC radiation.
 
@@ -445,7 +460,7 @@ class SynchrotronSelfComptonRegriddableModel1D(model.RegriddableModel1D):
 
     def calc(self, pars, x):
         """Evaluate the SED model."""
-        return _evaluate_sed_ssc_scenario(x, pars, self._n_e, self.ssa)
+        return _evaluate_sed_ssc_blob(x, pars, self._n_e, self.ssa)
 
 
 class ExternalComptonRegriddableModel1D(model.RegriddableModel1D):

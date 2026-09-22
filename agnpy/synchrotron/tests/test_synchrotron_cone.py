@@ -4,7 +4,7 @@ import astropy.units as u
 from agnpy.utils.conversion import B_to_cgs, mec2
 from agnpy.spectra.spectra import ExpCutoffPowerLaw
 from agnpy.synchrotron import *
-from agnpy.synchrotron.base_synchrotron import Synchrotron
+from agnpy.synchrotron.Synchrotron import Synchrotron
 import numpy as np
 from astropy.constants import m_e
 from pathlib import Path

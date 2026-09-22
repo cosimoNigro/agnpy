@@ -334,13 +334,16 @@ class SynchrotronCone(RadiativeProcess):
             n_e_xg_reshaped / gamma_e_reshaped**2, self.emitter.gamma_e, axis=1
         )
         integrand *= gamma_e_reshaped **2
-        self.kappa_x_nu = -prefactor * np.trapz(integrand, self.emitter.gamma_e, axis=1)
+        kappa_x_nu = -prefactor * np.trapz(integrand, self.emitter.gamma_e, axis=1)
         geom = self.emitter.Gamma**2 * (1 / self.emitter.mu_s - self.emitter.Beta)
-        tau_x_nu = - (
-        cumulative_trapezoid(self.kappa_x_nu[::-1],self.emitter.x[::-1],axis=0,initial=0,)[::-1])
-        tau_x_nu *= geom
-        self.attenuation = np.exp(-tau_x_nu)
+        self.tau_x_nu = - (
+        cumulative_trapezoid(kappa_x_nu[::-1],self.emitter.x[::-1],axis=0,initial=0,)[::-1])
+        self.tau_x_nu *= geom
+        self.attenuation = np.exp(-self.tau_x_nu)
         return self.attenuation
+    
+    def opacity(self):
+        return self.tau_x_nu
 
     def sed_peak_flux(self):
         """provided a grid of frequencies nu, returns the peak flux of the SED"""

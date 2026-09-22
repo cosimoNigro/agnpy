@@ -1,27 +1,23 @@
-"""from .gammapy_wrapper import (
+from .gammapy_wrapper import (
     SynchrotronSelfComptonSpectralModel,
     ExternalComptonSpectralModel,
-)"""
+)
 from .sherpa_wrapper import (
-    SynchrotronSelfComptonRegriddableModel1D,
+    SynchrotronSelfComptonConeRegriddableModel1D,
+    SynchrotronSelfComptonBlobRegriddableModel1D,
     ExternalComptonRegriddableModel1D,
 )
 
-from.sherpa_wrapper import (
-    SynchrotronConeRegriddableModel1D
-)
-
-class SynchrotronConeModel:
-    """Model for Synchrotron Scenario for a Conical Extended Jet"""
+class SynchrotronSelfComptonConeModel:
+    """Model for Synchrotron+SSC Scenario for a Conical Extended Jet"""
     def __new__(cls, n_e, ssa=False, electron_escape=False):
-        return SynchrotronConeRegriddableModel1D(n_e, ssa, electron_escape=electron_escape)
+        return SynchrotronSelfComptonConeRegriddableModel1D(n_e, ssa, electron_escape=electron_escape)
 
-class SynchrotronSelfComptonModel:
+class SynchrotronSelfComptonBlobModel:
     """Model for synchrotron self-Compton scenario."""
-
     def __new__(cls, n_e, ssa=False, backend="gammapy"):
         if backend == "sherpa":
-            return SynchrotronSelfComptonRegriddableModel1D(n_e, ssa)
+            return SynchrotronSelfComptonBlobRegriddableModel1D(n_e, ssa)
         elif backend == "gammapy":
             return SynchrotronSelfComptonSpectralModel(n_e, ssa)
         else:
@@ -29,10 +25,8 @@ class SynchrotronSelfComptonModel:
                 f"{backend} is not an available backend, try gammapy or sherpa"
             )
 
-
 class ExternalComptonModel:
     """Model for external Compton scenario."""
-
     def __new__(cls, n_e, targets, ssa=False, backend="gammapy"):
         if backend == "sherpa":
             return ExternalComptonRegriddableModel1D(n_e, targets, ssa)

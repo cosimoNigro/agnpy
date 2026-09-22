@@ -4,7 +4,7 @@ from astropy.constants import c, sigma_T, m_e
 
 from .kernels import isotropic_kernel
 from .. import Blob
-from ..synchrotron import Synchrotron
+from ..synchrotron.synchrotron_blob import SynchrotronBlob
 from ..utils.math import axes_reshaper, gamma_e_to_integrate, nu_to_integrate, log
 from ..utils.conversion import nu_to_epsilon_prime
 from ..radiative_process import RadiativeProcess
@@ -12,7 +12,7 @@ from ..radiative_process import RadiativeProcess
 __all__ = ["SynchrotronSelfCompton"]
 
 
-class SynchrotronSelfCompton(RadiativeProcess):
+class SynchrotronSelfComptonBlob(RadiativeProcess):
     """class for Synchrotron Self Compton radiation computation
 
     Parameters
@@ -38,7 +38,7 @@ class SynchrotronSelfCompton(RadiativeProcess):
 
     def electron_energy_loss_rate(self, gamma):
         epsilon = nu_to_epsilon_prime(nu_to_integrate, self.blob.z, self.blob.delta_D)
-        sed_flux_synch = Synchrotron.evaluate_sed_flux(
+        sed_flux_synch = SynchrotronBlob.evaluate_sed_flux(
             nu_to_integrate,
             self.blob.z,
             self.blob.d_L,
@@ -126,7 +126,7 @@ class SynchrotronSelfCompton(RadiativeProcess):
         epsilon = nu_to_epsilon_prime(nu_to_integrate, z, delta_D)
         # frequencies of the final sed
         epsilon_s = nu_to_epsilon_prime(nu, z, delta_D)
-        sed_synch = Synchrotron.evaluate_sed_flux(
+        sed_synch = SynchrotronBlob.evaluate_sed_flux(
             nu_to_integrate,
             z,
             d_L,

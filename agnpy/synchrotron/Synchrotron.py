@@ -1,7 +1,6 @@
 from ..radiative_process import RadiativeProcess
-import numpy as np
 from agnpy.emission_regions import Cone, Blob
-
+import numpy as np
 
 class Synchrotron(RadiativeProcess):
     """Class for synchrotron radiation computation
@@ -25,11 +24,9 @@ class Synchrotron(RadiativeProcess):
         self.integrator = integrator
         if isinstance(emitter, Cone):
             from .synchrotron_cone import SynchrotronCone
-
             self._model = SynchrotronCone(emitter, ssa, integrator)
         elif isinstance(emitter, Blob):
             from .synchrotron_blob import SynchrotronBlob
-
             self._model = SynchrotronBlob(emitter, ssa, integrator)
 
     def __getattr__(self, name):

@@ -7,7 +7,6 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import Distance
 from astropy.constants import c, m_e
-from ..utils.numerical_methods import cooling_time
 
 from .. import ParticleDistribution
 from ..spectra import PowerLaw
@@ -406,7 +405,7 @@ class Cone:
             shape ``(N_x, N_gamma)``, units ``cm⁻¹``.
         """
         
-        cc_solver = ChangCooperSolver(
+        self.cc_solver = ChangCooperSolver(
             gamma_e=self.gamma_e_cc,
             x=self.x,
             R_0=self.R_0,
@@ -416,9 +415,46 @@ class Cone:
             electron_escape=self.electron_escape,
             escape_coefficient=self.escape_coefficient,
         )
-        N_e_xg = cc_solver.run()
+        N_e_xg = self.cc_solver.run()
         return N_e_xg
 
+
+    @property
+    def radiative_cooling_time(self):
+        r"""Synchrotron cooling time at each :math:`(x, \gamma)` grid point.
+
+        Computed as:
+
+        .. math::
+            t_{\rm cool}(\gamma, x) = \frac{E}{\dot{E}_{\rm synch}}
+            = \frac{3\,m_e c}{4\,\sigma_T\,U_B(x)\,\gamma}.
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            2D array of cooling times, shape ``(N_x, N_gamma)``, in seconds.
+        """
+        t_cool = self.cc_solver.cooling_time()
+        return t_cool
+    
+    @property
+    def ssc_cooling_time(self):
+        r"""Synchrotron cooling time at each :math:`(x, \gamma)` grid point.
+
+        Computed as:
+
+        .. math::
+            t_{\rm cool}(\gamma, x) = \frac{E}{\dot{E}_{\rm synch}}
+            = \frac{3\,m_e c}{4\,\sigma_T\,U_B(x)\,\gamma}.
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            2D array of cooling times, shape ``(N_x, N_gamma)``, in seconds.
+        """
+        t_cool_ssc = self.cc_solver.ssc_cooling_time()
+        return t_cool_ssc
+    
     @property
     def synch_cooling_time(self):
         r"""Synchrotron cooling time at each :math:`(x, \gamma)` grid point.
@@ -434,8 +470,9 @@ class Cone:
         :class:`~astropy.units.Quantity`
             2D array of cooling times, shape ``(N_x, N_gamma)``, in seconds.
         """
-        t_cool = cooling_time(self.gamma_e[None,:], self.B_x[:,None])
-        return t_cool
+        t_cool_synch = self.cc_solver.synch_cooling_time()
+        return t_cool_synch
+
     
     @property
     def N_e_gamma(self):

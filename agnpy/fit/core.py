@@ -166,9 +166,9 @@ def make_emission_region_parameters_dict(scenario, backend, modelname=None,elect
     t_var = Parameter("t_var", 600, "s", min=10, max=np.pi * 1e7)
     
     # parameters exlusive to Cone
-    L = Parameter("L", 1e18, "cm", min= 1e10, max = 1e30)
-    R_0 = Parameter("R_0", 1e16, "cm", min= 1e10, max= 1e20)
-    theta_open = Parameter("theta_open", 8, "deg", min= 0, max= 40)
+    L = Parameter("L", 1e18, "cm", min= 1e10, max = 1e24) #Maximum length of the jet is 1e24 cm, which is ~1 Mpc
+    R_0 = Parameter("R_0", 1e16, "cm", min= 1e14, max= 1e18)
+    theta_open = Parameter("theta_open", 8, "deg", min= 0, max= 15)
 
     # parameters exclusive to EC
     mu_s = Parameter("mu_s", 0, "", min=0, max=1, frozen=True)
@@ -187,7 +187,7 @@ def make_emission_region_parameters_dict(scenario, backend, modelname=None,elect
             "log10_r",
         ]
         _pars = [z, delta_D, log10_B, t_var, mu_s, log10_r]
-    elif scenario =='synchrotroncone':
+    elif scenario =='ssc_cone':
         _pars_names = [
             "L",
             "R_0",
@@ -199,7 +199,7 @@ def make_emission_region_parameters_dict(scenario, backend, modelname=None,elect
         _pars = [L, R_0, log10_B, theta_open, z, delta_D]
         if electron_escape:
             escape_coefficient = Parameter(
-                "escape_coefficient", 1.0, "", min=0.1, max=10
+                "escape_coefficient", 1.0, "", min=0.1, max=6
             )
             _pars_names.append("escape_coefficient")
             _pars.append(escape_coefficient)
