@@ -3,7 +3,7 @@ from agnpy.emission_regions import Cone, Blob
 import numpy as np
 
 class SynchrotronSelfCompton(RadiativeProcess):
-    """Class for synchrotron radiation computation
+    """Class for Synchrotron Self-Compton radiation computation
 
     Parameters
     ----------
@@ -11,10 +11,6 @@ class SynchrotronSelfCompton(RadiativeProcess):
         emitting region and electron distribution
     ssa : bool
         whether or not to consider synchrotron self absorption (SSA).
-        The absorption factor will be taken into account in
-        :func:`~agnpy.synchrotron.Synchrotron.com_sed_emissivity`, in order to be
-        propagated to :func:`~agnpy.synchrotron.Synchrotron.sed_luminosity` and
-        :func:`~agnpy.synchrotron.Synchrotron.sed_flux`.
     integrator : func
         function to be used for integration (default = `np.trapz`)
     """

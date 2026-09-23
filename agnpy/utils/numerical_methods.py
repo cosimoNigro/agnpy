@@ -25,7 +25,7 @@ def gamma_loss(gamma, B, u_ph):
     value = prefactor * (u_B +u_ph) * np.power(gamma, 2)
     return -value.to("s-1")
 
-def local_synchrotron_energy_density(gamma, N_gamma, B, R, escape_coefficient, n_nu=60):
+def local_synchrotron_energy_density(gamma, N_gamma, B, R, n_nu=60):
     """Single-zone, self-consistent synchrotron photon energy density
     produced by N_gamma(gamma) in a zone of field B and radius R,
     trapped for t_esc = escape_coefficient * R / c.
@@ -46,7 +46,7 @@ def local_synchrotron_energy_density(gamma, N_gamma, B, R, escape_coefficient, n
     prefactor = (np.sqrt(3) * e.gauss**3 / mec2.cgs).cgs
     L_nu = prefactor * B_to_cgs(B) * np.trapz(N_gamma[:, None] * Z_eta, gamma, axis=0)  # (,N_nu) erg/s/Hz/cm
 
-    t_esc = escape_coefficient * R / c.cgs
+    t_esc = 3 * R / c.cgs
     u_nu = (L_nu * t_esc / (np.pi * R**2)).to("erg cm-3 Hz-1")
 
     return np.trapz(u_nu, nu).to("erg cm-3")    
@@ -111,7 +111,7 @@ class ChangCooperSolver:
             B_t = self.B_0 * (self.R_0 /R_t)
             t_esc = coeff * R_t / c.cgs
             escape_term = (dt / t_esc).decompose().value
-            U_ph_t = local_synchrotron_energy_density(self.gamma, N_prev, B_t, R_t, self.escape_coefficient)
+            U_ph_t = local_synchrotron_energy_density(self.gamma, N_prev, B_t, R_t)
             loss_rate = gamma_loss(self.gamma_midpts, B_t, U_ph_t)   # full array, matches gamma_midpts
             self.t_cool.append((- self.gamma / gamma_loss(self.gamma, B_t, U_ph_t)).to('s'))
             self.t_cool_synch.append((- self.gamma / gamma_loss_synch(self.gamma, B_t)).to('s'))

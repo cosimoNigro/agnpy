@@ -1,15 +1,6 @@
 # module containing the synchrotron self-Compton (SSC) radiative process
 # for a conical jet emission region.
-#
-# NOTE on import paths: this module is written to sit alongside
-# `synchrotron_self_compton.py` (i.e. in the same sub-package that
-# exposes `.kernels`). Adjust the relative imports below if your package
-# layout differs -- the only real requirements are:
-#   - `isotropic_kernel`   (same Klein-Nishina kernel used for the Blob)
-#   - `axes_reshaper`, `nu_to_integrate` from utils.math
-#   - `nu_to_epsilon_prime`, `mec2` from utils.conversion
-#   - `RadiativeProcess` base class
-#   - `SynchrotronCone` and `nu_synch_peak` from synchrotron_cone.py
+
 
 import numpy as np
 import astropy.units as u
@@ -22,7 +13,7 @@ from ..radiative_process import RadiativeProcess
 from ..utils.synchrotron import nu_synch_peak
 from ..synchrotron.synchrotron_cone import SynchrotronCone
 
-#__all__ = ["SynchrotronSelfComptonCone"]
+__all__ = ["SynchrotronSelfComptonCone"]
 
 c = c.cgs
 h = h.cgs
@@ -32,24 +23,6 @@ mec2 = mec2.cgs
 
 class SynchrotronSelfComptonCone(RadiativeProcess):
     r"""Synchrotron self-Compton (SSC) emission from a conical jet.
-
-    Generalises :class:`~agnpy.compton.synchrotron_self_compton.SynchrotronSelfCompton`
-    (implemented for the spherical :class:`~agnpy.emission_regions.Blob`) to
-    the spatially resolved :class:`~agnpy.emission_regions.cone.Cone`.
-
-    The jet is treated, following Potter & Cotter (2012), as a sequence of
-    thin slices along the axis :math:`x`. In each slice the synchrotron
-    photons produced locally (computed already by
-    :class:`~agnpy.synchrotron.synchrotron_cone.SynchrotronCone`) form an
-    isotropic seed photon field for inverse-Compton scattering off the
-    local electron population :math:`N_e(x,\gamma)`. Unlike Potter &
-    Cotter, who assume each electron radiates its synchrotron power at a
-    single critical frequency, the Compton scattering here is computed
-    with the full angle-averaged Klein-Nishina kernel
-    (:func:`~agnpy.compton.kernels.isotropic_kernel`), i.e. the same
-    Finke, Dermer & Boettcher (2008), Eq. 9 formalism already used for the
-    spherical blob. The local emissivities are integrated over :math:`x`
-    and the total is Doppler-boosted into the observer frame.
 
     Parameters
     ----------
@@ -77,15 +50,6 @@ class SynchrotronSelfComptonCone(RadiativeProcess):
     def nu_seed(self):
         r"""Fluid-frame frequency grid used to sample the local synchrotron
         seed photon field.
-
-        Since the single-electron synchrotron peak frequency scales as
-        :math:`\nu_c \propto B(x)\,\gamma^2`, the base of the jet (largest
-        :math:`B`, together with the highest electron energies) sets the
-        upper end of the range that needs to be resolved, and the far end
-        of the jet (smallest :math:`B`, lowest surviving :math:`\gamma`)
-        sets the lower end. A few extra decades of padding are added on
-        each side so that the wings of the synchrotron kernel :math:`Z(\eta)`
-        are not clipped.
         """
         cone = self.cone
         nu_pk_max = nu_synch_peak(cone.B_x[0], cone.gamma_e[-1])
@@ -103,20 +67,6 @@ class SynchrotronSelfComptonCone(RadiativeProcess):
     def local_seed_photon_field(self):
         r"""Local (fluid-frame) synchrotron seed photon energy density in
         every slice of the jet, :math:`u(\epsilon, x)`.
-
-        For a slice of cross-sectional radius :math:`R(x)`, photons
-        produced at rate :math:`L_\nu^{\rm fluid}(x,\nu)/(h\nu)` per unit
-        length (already computed by
-        :meth:`~agnpy.synchrotron.synchrotron_cone.SynchrotronCone.evaluate_sed_flux`)
-        are assumed to be confined for an effective light-crossing time
-        :math:`t_{\rm esc}(x) = (3/4)\,R(x)/c` (the same geometric
-        averaging factor adopted for the spherical blob, e.g. Dermer &
-        Menon 2009 Sect. 7.6.2), giving a steady-state photon density
-
-        .. math::
-            u(\epsilon, x) = \frac{3}{4}\,
-            \frac{m_ec^2\,L_\nu^{\rm fluid}(x,\nu)}{h\,\pi\,R(x)\,c},
-            \qquad \nu = \epsilon\,m_ec^2/h.
 
         Returns
         -------
@@ -153,14 +103,6 @@ class SynchrotronSelfComptonCone(RadiativeProcess):
 
     def sed_flux(self, nu_obs):
         r"""Observer-frame SSC SED, :math:`\nu F_\nu`.
-
-        Computes, for every slice :math:`x`, the local SSC emissivity per
-        unit jet length using the isotropic Klein-Nishina kernel folded
-        with the local seed photon field and the local electron line
-        density :math:`N_e(x,\gamma)`, then integrates over :math:`x` and
-        applies the :math:`\delta_D^4/(4\pi d_L^2)` Doppler boost (one
-        :math:`\delta_D` from the seed photon field, three -- as for
-        synchrotron -- from the up-scattered emission itself).
 
         Parameters
         ----------

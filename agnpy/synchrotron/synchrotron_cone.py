@@ -290,7 +290,7 @@ class SynchrotronCone(RadiativeProcess):
         volume number density and :math:`P(\nu,\gamma,x)` is the
         single-electron synchrotron power computed from :attr:`Z_eta`.
 
-        The numerical derivative is taken in log-:math:`\gamma` space to
+        !To-do: The numerical derivative should be taken in log-:math:`\gamma` space to
         preserve accuracy on the logarithmically spaced Lorentz factor grid:
 
         .. math::
