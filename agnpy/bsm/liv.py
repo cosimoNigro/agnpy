@@ -18,21 +18,13 @@ class LIVdelay:
         Parameter encompassing the LIV kappa model and the distance of the source.
     n_liv :
         Order of the LIV correction (n=1 or n=2 usually).
-    energies :
-        List of energy values.
     """
 
-    def __init__(self, lambda_liv, n_liv, energies):
+    def __init__(self, lambda_liv: u.Quantity, n_liv: int):
         self.lambda_liv = lambda_liv
         self.n_liv = n_liv
-        self.energies = eneries
 
-    def calculate_time_delay (self, energy):
+    def evaluate (self, energy):
         """Calculates the time delay
         """
         return self.lambda_liv * energy**self.n_liv
-
-
-    # def functions that will be needed like Doppler boosting? 
-    # def plot function?
-    # def lightcurve function?
