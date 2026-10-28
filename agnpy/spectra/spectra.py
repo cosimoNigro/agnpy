@@ -17,7 +17,8 @@ __all__ = [
     "LogParabola",
     "ExpCutoffBrokenPowerLaw",
     "InterpolatedDistribution",
-    "EmptyDistribution"
+    "EmptyDistribution",
+    "SmoothBrokenPowerLaw",
 ]
 
 
@@ -867,3 +868,113 @@ class EmptyDistribution(ParticleDistribution):
 
     def evaluate(self, gamma, *args):
         return np.zeros_like(gamma) * u.Unit("cm-3")
+
+class SmoothBrokenPowerLaw (ParticleDistribution):
+    r"""Class describing a smooth broken power-law particle distribution.
+        When called, the particle density :math:`n(\gamma)` in :math:`\mathrm{cm}^{-3}` is returned.
+    
+        .. math::
+            n(\gamma') = k \, {\gamma'}^{-p_1}
+            \left(1 + \frac{\gamma'}{\gamma'_b}\right)^{p_1-p_2}
+            H(\gamma'; \gamma'_{\rm min}, \gamma'_{\rm max})
+    
+        Parameters
+        ----------
+        k : :class:`~astropy.units.Quantity`
+            spectral normalisation
+        p1 : float
+            spectral index before the break (positive by definition)
+        p2 : float
+            spectral index after the break (positive by definition)
+        gamma_b : float
+            Lorentz factor at which the change in spectral index is occurring
+        gamma_min : float
+            minimum Lorentz factor of the particle distribution
+        gamma_max : float
+            maximum Lorentz factor of the particle distribution
+        mass : :class:`~astropy.units.Quantity`
+            particle mass, default is the electron mass
+        integrator : func
+            function to be used for integration, default is :class:`~numpy.trapz`
+        """
+    def __init__(
+        self,
+        k=1e-7 * u.Unit("cm-3"),
+        p1=2.0,
+        p2=3.0,
+        gamma_b=1e3,
+        gamma_min=10,
+        gamma_max=1e7,
+        mass=m_e,
+        integrator=np.trapz,
+    ):
+        super().__init__(gamma_min, gamma_max, mass, integrator, "SmoothBrokenPowerLaw")
+        self.k = k
+        self.p1 = p1
+        self.p2 = p2
+        self.gamma_b = gamma_b
+
+    @property
+    def parameters(self):
+        return [
+            self.k,
+            self.p1,
+            self.p2,
+            self.gamma_b,
+            self.gamma_min,
+            self.gamma_max,
+        ]
+
+    @staticmethod
+    def evaluate(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max):
+        ParticleDistribution._correct_array_boundary_values(gamma, gamma_min, gamma_max)
+        return np.where(
+            (gamma_min <= gamma) * (gamma <= gamma_max),
+            k * gamma ** (-p1) * (1 + gamma / gamma_b)**(p1-p2),
+            0,
+        )
+
+    def __call__(self, gamma):
+        return self.evaluate(
+            gamma,
+            self.k,
+            self.p1,
+            self.p2,
+            self.gamma_b,
+            self.gamma_min,
+            self.gamma_max,
+        )
+
+    @staticmethod
+    def evaluate_SSA_integrand(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max):
+        r"""Analytical integrand for the synchrotron self-absorption:
+        :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`."""
+        index = np.where(gamma <= gamma_b, p1, p2)
+        return np.where(
+            (gamma_min <= gamma) * (gamma <= gamma_max),
+            k * -(index + 2) / gamma * (gamma / gamma_b) ** (-index),
+            0,
+        )
+
+    def SSA_integrand(self, gamma):
+        return self.evaluate_SSA_integrand(
+            gamma,
+            self.k,
+            self.p1,
+            self.p2,
+            self.gamma_b,
+            self.gamma_min,
+            self.gamma_max,
+        )
+
+    def __str__(self):
+        return (
+            f"* {self.particle} energy distribution\n"
+            + f" - smooth broken power law\n"
+            + f" - k: {self.k:.2e}\n"
+            + f" - p1: {self.p1:.2f}\n"
+            + f" - p2: {self.p2:.2f}\n"
+            + f" - gamma_b: {self.gamma_b:.2e}\n"
+            + f" - gamma_min: {self.gamma_min:.2e}\n"
+            + f" - gamma_max: {self.gamma_max:.2e}\n"
+        )

@@ -13,6 +13,7 @@ The following analytical functions are available:
 - :class:`~agnpy.spectra.BrokenPowerLaw`;
 - :class:`~agnpy.spectra.LogParabola`;
 - :class:`~agnpy.spectra.ExpCutoffPowerLaw`.
+- :class:`~agnpy.spectra.SmoothBrokenPowerLaw`.
 
 Additionaly, an :class:`~agnpy.spectra.InterpolatedDistribution` is available to interpolate an array of densities and
 Lorentz factors. This might be useful if you have obtained an electron distribution from another software (e.g. performing
