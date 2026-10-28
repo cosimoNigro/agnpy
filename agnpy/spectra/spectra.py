@@ -18,7 +18,7 @@ __all__ = [
     "ExpCutoffBrokenPowerLaw",
     "InterpolatedDistribution",
     "EmptyDistribution",
-    "SmoothBrokenPowerLaw",
+    "SmoothBrokenPowerLaw"
 ]
 
 
