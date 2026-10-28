@@ -127,7 +127,6 @@ class SynchrotronCone(RadiativeProcess):
     def evaluate_sed_flux(
         nu_fluid,
         B_x,
-        x,
         gamma_e,
         N_e_xg,
         integrator=np.trapz,
@@ -141,9 +140,6 @@ class SynchrotronCone(RadiativeProcess):
         .. math::
             P_\nu^{\rm fluid} = \int dx\,\frac{\sqrt{3}\,e^3\,B(x)}{m_e c^2}
             \int d\gamma\,N_e(\gamma, x)\,Z\!\left(\frac{\nu}{\nu_c(\gamma,x)}\right).
-
-        All array arguments should be pre-shaped for broadcasting before
-        calling this method (see :meth:`sed_flux`).
 
         Parameters
         ----------
@@ -182,11 +178,10 @@ class SynchrotronCone(RadiativeProcess):
         gamma_integral = integrator(B_x * N_e_xg * Z_eta, gamma_e, axis=1)
         prefactor = (np.sqrt(3) * (e) ** 3 / (mec2)).cgs
         emission = prefactor * gamma_integral
-        P_synch = integrator(emission, x, axis=0)
-        return emission, Z_eta, P_synch.to("erg Hz-1 s-1")
+        return emission.to("erg Hz-1 s-1 cm-1"), Z_eta
 
 
-    def sed_flux(self, nu_obs,ssa=False):
+    def sed_flux(self, nu_obs):
         r"""Compute the observed synchrotron SED :math:`\nu F_\nu`.
 
         Transforms the fluid-frame luminosity to the observer frame using
@@ -230,36 +225,39 @@ class SynchrotronCone(RadiativeProcess):
         gamma_e_reshaped = self.emitter.gamma_e[None,:,None]
         nu_fluid_reshaped =  self.nu_fluid[None,None,:]
         N_e_xg_reshaped = self.emitter.N_e_xg[:, :, None]
-        self.L_x_nu_fluid, self.Z_eta, L_nu_fluid = self.evaluate_sed_flux(
+        self.L_x_nu_fluid, self.Z_eta = self.evaluate_sed_flux(
             nu_fluid_reshaped,
             B_x_reshaped,
-            self.emitter.x,
             gamma_e_reshaped,
             N_e_xg_reshaped,
-            integrator=np.trapz,
+            integrator=np.trapezoid,
         )
-        self.sed_nossa  = L_nu_fluid *  self.emitter.delta_D**3 / (4 * np.pi * np.power(self.emitter.d_L, 2)) * nu_obs
+        self.flux_nossa_x = self.L_x_nu_fluid * self.emitter.delta_D**3 / (4 * np.pi * np.power(self.emitter.d_L, 2)) 
         self.sed_nossa_x = self.L_x_nu_fluid * self.emitter.delta_D**3 / (4 * np.pi * np.power(self.emitter.d_L, 2)) * nu_obs
+        self.flux_nossa = np.trapezoid(self.flux_nossa_x,self.emitter.x,axis=0)
+        self.sed_nossa  = np.trapezoid(self.sed_nossa_x,self.emitter.x,axis=0)
         self.sed = self.sed_nossa
-        if ssa:
-            self.evaluate_attenuation()
-            self.sed_ssa_x = self.sed_nossa_x * self.attenuation
-            self.sed_ssa = np.trapz(self.sed_ssa_x,self.emitter.x,axis=0) 
+        if self.ssa:
+            attenuation = self.evaluate_attenuation()
+            self.sed_ssa_x = self.sed_nossa_x * attenuation
+            self.flux_ssa_x = self.flux_nossa_x * attenuation
+            self.sed_ssa = np.trapezoid(self.sed_ssa_x,self.emitter.x,axis=0)
+            self.flux_ssa = np.trapezoid(self.flux_ssa_x,self.emitter.x,axis=0)
             self.sed = self.sed_ssa
         return self.sed.to("erg cm-2 s-1")
-    
-    def sed_flux_x(self, ssa=False):
+
+    def sed_flux_x(self):
         r"""Return the spatially resolved SED per unit jet length.
 
-        Provides the differential contribution :math:`d(\nu F_\nu)/dx`
+        Provides the interval integrated contribution :math:`d(\nu F_\nu)/dx`
         from each position along the jet axis, after the last call to
-        :meth:`sed_flux`.
+        :math:`sed_flux`.
 
         Parameters
         ----------
         ssa : bool, optional
             If ``True``, return the SSA-attenuated spatially resolved SED
-            :attr:`sed_ssa_x`. Requires that :meth:`sed_flux` was
+            :attr:`sed_ssa_x`. Requires that :math:`sed_flux` was
             previously called with ``ssa=True``. Default is ``False``.
 
         Returns
@@ -268,10 +266,32 @@ class SynchrotronCone(RadiativeProcess):
             Spatially resolved SED in ``erg cm⁻³ s⁻¹``,
             shape ``(N_x, N_nu)``.
         """
-        sed_x = self.sed_nossa_x.to("erg cm-3 s-1 ")
-        if ssa:
-            sed_x = self.sed_ssa_x
-        return sed_x.to("erg cm-3 s-1 ")
+        sed_density = self.sed_nossa_x
+        if self.ssa:
+            sed_density = self.sed_ssa_x
+        #Using the trapezoidal rule
+        sed_x = (
+            0.5 * (sed_density[:-1,:] + sed_density[1:,:])
+            * np.diff(self.emitter.x)[:,None]
+        )
+        return sed_x.to("erg cm-2 s-1 ")
+
+    def flux(self):
+        flux = self.flux_nossa
+        if self.ssa:
+            flux = self.flux_ssa
+        return (flux).to("erg cm-2 s-1 Hz-1")
+    
+    def flux_x(self):
+        flux_density = self.flux_nossa_x
+        if self.ssa:
+            flux_density = self.flux_ssa_x
+        #using the trapezoidal rule
+        flux_x = (
+            0.5 * (flux_density[:-1,:] + flux_density[1:,:])
+            * np.diff(self.emitter.x)[:,None]
+        )
+        return (flux_x).to("erg cm-2 s-1 Hz-1")
 
     def evaluate_attenuation(self):
         r"""Compute the SSA optical depth and attenuation along the jet.
@@ -289,9 +309,6 @@ class SynchrotronCone(RadiativeProcess):
         where :math:`n_e(\gamma,x) = N_e(\gamma,x) / (\pi R(x)^2)` is the
         volume number density and :math:`P(\nu,\gamma,x)` is the
         single-electron synchrotron power computed from :attr:`Z_eta`.
-
-        !To-do: The numerical derivative should be taken in log-:math:`\gamma` space to
-        preserve accuracy on the logarithmically spaced Lorentz factor grid:
 
         .. math::
             \frac{\partial f}{\partial\gamma}
@@ -330,14 +347,15 @@ class SynchrotronCone(RadiativeProcess):
             / (m_e.cgs * c.cgs**2)
         ).cgs
 
-        integrand = P_xg_nu * np.gradient(
-            n_e_xg_reshaped / gamma_e_reshaped**2, self.emitter.gamma_e, axis=1
-        )
-        integrand *= gamma_e_reshaped **2
-        kappa_x_nu = -prefactor * np.trapz(integrand, self.emitter.gamma_e, axis=1)
+        f =  n_e_xg_reshaped / gamma_e_reshaped**2          # shape (Nx, Ngamma, Nnu)
+        ln_gamma = np.log(self.emitter.gamma_e)            
+        df_dlngamma = np.gradient(f, ln_gamma, axis=1)      
+        df_dgamma = df_dlngamma / gamma_e_reshaped          # derivative on log-space to presere accuracy
+        integrand =  P_xg_nu * df_dgamma * gamma_e_reshaped**2
+        kappa_x_nu = -prefactor *  np.trapz(integrand, self.emitter.gamma_e, axis=1)
         geom = self.emitter.Gamma**2 * (1 / self.emitter.mu_s - self.emitter.Beta)
         self.tau_x_nu = - (
-        cumulative_trapezoid(kappa_x_nu[::-1],self.emitter.x[::-1],axis=0,initial=0,)[::-1])
+        cumulative_trapezoid(kappa_x_nu[::-1],self.emitter.x[::-1],axis=0,initial=0)[::-1])
         self.tau_x_nu *= geom
         self.attenuation = np.exp(-self.tau_x_nu)
         return self.attenuation

@@ -1,5 +1,4 @@
 #Module describing the conical emission region
-
 import numbers
 from astropy.constants import c, m_e
 from agnpy.utils.conversion import B_to_cgs, mec2
@@ -17,12 +16,12 @@ class Cone:
     r"""Uniform conical jet emission region.
 
     Models the jet as a truncated cone of constant opening angle, with a
-    magnetic field that declines with radius to conserve magnetic flux, and
+    magnetic field that declines with radius to conserve magnetic flux and
     an electron population evolved along the jet axis using the Chang &
     Cooper numerical scheme.
 
     All geometric quantities (:attr:`R_0`, :attr:`L`, :attr:`theta_open`)
-    are defined in the centre-of-momentum (fluid) frame of the plasma.
+    are defined in the host-galaxy frame of reference.
 
     Parameters
     ----------
@@ -84,7 +83,7 @@ class Cone:
         x_size=100,
         cosmology=None,
         electron_escape=False,
-        escape_coefficient=None,
+        escape_coefficient=np.inf,
     ):
         if not isinstance(delta_D, numbers.Number) or delta_D <= 0:
             raise ValueError("delta_D must be a positive number")
@@ -110,10 +109,12 @@ class Cone:
                 )
             self.escape_coefficient = escape_coefficient
         else:
-            self.escape_coefficient = None
+            self.escape_coefficient = np.inf
         self.x, self.R_x, self.B_x = self.calculate_spatial_grid_quantities()
         self.gamma_e_cc, self.gamma_e = self.define_gamma_grid()
         self.N_e_xg = self.solve_electron_evolution()
+        print(self.__str__())
+        
 
     @classmethod
     def from_jet_power(cls, W_j, A_equi, **kwargs):
@@ -158,25 +159,47 @@ class Cone:
     
     @classmethod
     def from_equipartition_parameter(cls, A_equi, **kwargs):
-        r"""Initialise a conical jet from its equipartition ratio.
+        r"""Initialise a conical jet with a specified equipartition ratio.
 
-        Modifies the electron normalization ``k`` requiring that the jet
-        power is carried by the magnetic field and electron population
-        in the ratio set by ``A_equi``:
+        Rescales the normalization ``k`` of the injected electron
+        distribution so that the ratio of electron to magnetic energy
+        density at the jet base equals ``A_equi``:
 
         .. math::
-            R_0 = \sqrt{\frac{W_j}{(A_{\rm equi}+1)\,U_B\,\pi\,\Gamma^2\,c}},
+        A_{\rm equi} = \frac{U_e}{U_B},
 
-        where :math:`U_B = B_0^2 / (8\pi)`.
+        where the magnetic energy density is
+
+        .. math::
+            U_B = \frac{B_0^2}{8\pi},
+
+        and the electron energy density is calculated from the injected
+        distribution as
+
+        .. math::
+            U_e = m_e c^2 \int_{\gamma_{\min}}^{\gamma_{\max}}
+            \gamma\,n_e(\gamma)\,d\gamma.
+
+        The method multiplies the electron normalization by
+        :math:`A_{\rm equi} U_B/U_e` so that the resulting distribution
+        has the requested electron energy to magnetic energy density ratio. 
+        The remaining jet parameters are passed to :class:`Cone` through ``kwargs``.
 
         Parameters
         ----------
-        A_equi : :float
+        A_equi : float
+            Desired ratio of electron to magnetic energy density at the
+            jet base, :math:`U_e/U_B`.
+        **kwargs
+            Keyword arguments forwarded to :class:`Cone`. Must include
+            ``B_0`` and ``n_e``. ``gamma_e_size`` specifies the number of
+            points in the Lorentz-factor integration grid.
 
         Returns
         -------
         :class:`Cone`
-            Cone instance with ``k`` set from the jet equipartition ratio.
+            Cone instance whose injected electron distribution is
+            normalized to the requested equipartition ratio.
         """
         B = kwargs.get("B_0")
         _n_e = kwargs.get("n_e")
@@ -222,7 +245,7 @@ class Cone:
         """
 
         L = kwargs.get("L")
-        theta_open = kwargs.get("theta")
+        theta_open = kwargs.get("theta_open")
         A = 1
         B = L * np.tan(theta_open)
         C = (L**2 * np.tan(theta_open)**2) / 3 - V / (np.pi * L)
@@ -254,64 +277,70 @@ class Cone:
     def A_equi(self):
         u_B = ((B_to_cgs(self.B_0) ** 2) / (8 * np.pi)).to("erg cm-3")
         u_e = (mec2.to('eV')*np.trapezoid(self.gamma_e_cc*self._n_e(self.gamma_e_cc),self.gamma_e_cc)).to('erg cm-3')
-        A = u_B/u_e
+        A = u_e/u_B
         return A
     
     def calculate_spatial_grid_quantities(self):
-        r"""Define logarithmically spaced spatial grid along the jet axis. 
-        The grid spans from a an inner boundary to the jet length:
+        r"""Define the spatial grid and geometric quantities along the jet axis.
 
-        .. math::
-            x \in [x_{\min},\, L], \quad
-            x_i = 10^{\log_{10}(x_{\min}) + i\,\Delta},
+            The spatial grid is logarithmically spaced between the inner boundary
+            :math:`x_{\min}` and the outer boundary :math:`L`:
 
-        with :attr:`x_size` points.
-        
-        Defines Jet radius as a function of position along the axis.
-        Follows the linear conical expansion:
+            .. math::
+                x \in [x_{\min}, L],
 
-        .. math::
-            R(x) = R_0 + x\,\tan\theta_{\rm open}.
+            where :math:`x_{\min} = 10^{12}\,\mathrm{cm}` and ``x_size`` specifies
+            the number of spatial grid points.
 
-        Define the magnetic field profile along the jet axis.
-        Assumes magnetic flux conservation in the conical expansion, giving a :math:`1/R` decline:
+            The jet radius increases linearly with distance from the inner boundary,
+            such that the radius at the first grid point is :math:`R_0`:
 
-        .. math::
-            B(x) = B_0\,\frac{R_0}{R(x)}.
+            .. math::
+                R(x) = R_0 + (x - x_{\min})\tan\theta_{\rm open}.
 
+            The magnetic field profile assumes that the field strength decreases
+            inversely with the jet radius during conical expansion:
 
-        Returns
-        -------
-        :class:`~astropy.units.Quantity`
-            1D array of positions along the jet axis in cm,
-            shape ``(N_x,)`` where ``N_x = x_size``.
+            .. math::
+                B(x) = B_0\frac{R_0}{R(x)}.
 
-        :class:`~astropy.units.Quantity`
-            Jet radius at each grid position :attr:`x`, shape ``(N_x,)``.
-        
-        :class:`~astropy.units.Quantity`
-            Magnetic field strength at each grid position :attr:`x`,
-            shape ``(N_x,)``, in Gauss (cgs).
-        """
-        x_min = 1e-9 * u.pc 
-        x = (np.logspace(np.log10(x_min.to_value("pc")),np.log10(self.L.to_value("pc")),self.x_size)* u.pc)
-        R = self.R_0 + x * np.tan(self.theta_open)
+            Parameters
+            ----------
+            None
+
+            Returns
+            -------
+            x : :class:`~astropy.units.Quantity`
+                One-dimensional array of spatial coordinates along the jet axis,
+                in cm, with shape ``(x_size,)``.
+
+            R : :class:`~astropy.units.Quantity`
+                Jet radius evaluated at each spatial grid point, in cm, with shape
+                ``(x_size,)``.
+
+            B : :class:`~astropy.units.Quantity`
+                Magnetic field strength evaluated at each spatial grid point,
+                in gauss, with shape ``(x_size,)``.
+            """
+        x_min = 1e12 * u.cm #x_min is set at ~10R_{g} for M_BH estimates of FR0 RGs.
+        x = (np.logspace((np.log10(x_min.to_value("cm"))),np.log10((self.L.to_value("cm"))),self.x_size)* u.cm)
+        R = self.R_0 + (x-x[0]) * np.tan(self.theta_open)
         B = self.B_0 * (self.R_0 / R)
 
         return x, R, B
 
 
     def define_gamma_grid(self):
-        r"""Define logarithmically spaced Lorentz factor grid for the Chang & Cooper solver.
+        r"""Defines the logarithmically spaced Lorentz factor grid for the Chang & Cooper 
+        solver and the reduced electron Lorentz factor grid for post-solver quantities.
 
-        The grid spans from :attr:`~agnpy.spectra.ParticleDistribution.gamma_min`
+        The grid used as an inpit for the Chang and Cooper solver
+        spans from :attr:`~agnpy.spectra.ParticleDistribution.gamma_min`
         to :attr:`~agnpy.spectra.ParticleDistribution.gamma_max` of the
         injected distribution, with :attr:`gamma_e_size` points.
 
-        Define reduced electron Lorentz factor grid for post-solver quantities.
-
-        Taken as every second interior point of :attr:`gamma_e_cc` to
-        represent bin edges output by the Chang & Cooper scheme:
+        The post-solver quantities are defined at every second interior point of :attr:`gamma_e_cc` 
+        to represent bin edges output by the Chang & Cooper scheme:
 
         .. math::
             \gamma = \gamma_{\rm cc}[1:-1:2].
@@ -333,7 +362,11 @@ class Cone:
             np.log10(self._n_e.gamma_max),
             self.gamma_e_size,
         )
-        gamma_e = gamma_e_cc[1:-1:2]
+        gamma_e = np.logspace(
+            np.log10(5),
+            np.log10(self._n_e.gamma_max),
+            self.gamma_e_size,
+        )[1:-1:2]
         return gamma_e_cc, gamma_e 
 
     def solve_electron_evolution(self):
@@ -341,37 +374,81 @@ class Cone:
 
         Solves the electron continuity equation along the jet using the
         Chang & Cooper finite-difference scheme, taking into account
-        synchrotron and (optionally) inverse-Compton energy losses and
-        particle escape:
+        radiative energy losses, adiabatic losses and particle escape:
 
         .. math::
-            \frac{\partial N_e}{\partial x}
-            = \mathcal{L}[N_e(\gamma, x)] - \text{escape terms}.
+        \frac{\partial N_e(\gamma, x)}{\partial x}
+        = \frac{1}{c}\frac{\partial}{\partial \gamma}
+        \left[
+            \left(
+                \dot{\gamma}_{\rm rad}
+                + \dot{\gamma}_{\rm ad}
+            \right) N_e(\gamma, x)
+        \right]
+        - \frac{N_e(\gamma, x)}{c\,t_{\rm esc}(x)},
 
         Returns
         -------
         :class:`~astropy.units.Quantity`
-            2D array of electron line densities (electrons per cm of jet
-            length) at each position and Lorentz factor,
-            shape ``(N_x, N_gamma)``, units ``cm⁻¹``.
+            Two-dimensional array of electron line densities as a function
+            of distance and Lorentz factor, with shape ``(N_x, N_gamma)``
+            and units of cm\ :sup:`-1`.
         """
-        N_e_base = (self._n_e(self.gamma_e_cc)[1:-1:2])* np.pi* self.R_0**2
-        self.cc_solver = ChangCooperSolver(
-            gamma_e=self.gamma_e_cc,
-            x=self.x,
-            R_0=self.R_0,
-            B_0=self.B_0,
-            theta_open=self.theta_open,
-            n_e= N_e_base,
-            electron_escape=self.electron_escape,
-            escape_coefficient=self.escape_coefficient,
-        )
+        self.cc_solver = ChangCooperSolver(self)
         return self.cc_solver.run()
 
+    def check_timescale_consistency(self):
+        """Warn once if any timescale is shorter than the spatial advection time."""
+
+        warned_radiative = False
+        warned_adiabatic = False
+        warned_escape = False
+
+        for i in range(len(self.x) - 1):
+
+            # Spatial advection time for the interval x[i] -> x[i+1]
+            dt = (self.x[i + 1] - self.x[i]) / c.cgs
+
+            # Radiative cooling: check every gamma at each spatial position
+            if not warned_radiative:
+                if np.any(self.radiative_cooling_time[i, :] < dt):
+                    print(
+                        "WARNING: Radiative cooling time is shorter than the "
+                        "spatial advection time at one or more grid points."
+                    )
+                    warned_radiative = True
+
+            # Adiabatic cooling time
+            if not warned_adiabatic:
+                if self.adiabatic_loss_time[i] < dt:
+                    print(
+                        "WARNING: Adiabatic cooling time is shorter than the "
+                        "spatial advection time at one or more grid points."
+                    )
+                    warned_adiabatic = True
+
+            # Electron escape time
+            if self.electron_escape and not warned_escape:
+                t_escape = self.escape_coefficient * self.R_x[i] / c.cgs
+
+                if t_escape < dt:
+                    print(
+                        "WARNING: Escape time is shorter than the spatial "
+                        "advection time at one or more grid points."
+                    )
+                    warned_escape = True
+
+            # Stop once every relevant warning has been issued
+            if (
+                warned_radiative
+                and warned_adiabatic
+                and (warned_escape or not self.electron_escape)
+            ):
+                break
 
     @property
     def radiative_cooling_time(self):
-        r"""Synchrotron cooling time at each :math:`(x, \gamma)` grid point.
+        r"""Radiative cooling time at each :math:`(x, \gamma)` grid point.
 
         Computed as:
 
@@ -389,7 +466,7 @@ class Cone:
     
     @property
     def ssc_cooling_time(self):
-        r"""Synchrotron cooling time at each :math:`(x, \gamma)` grid point.
+        r"""SSC cooling time at each :math:`(x, \gamma)` grid point.
 
         Computed as:
 
@@ -422,7 +499,48 @@ class Cone:
         """
         t_cool_synch = self.cc_solver.synch_cooling_time()
         return t_cool_synch
+        
+    @property
+    def adiabatic_loss_time(self):
+        r"""
+        The adiabatic cooling time is defined as the electron Lorentz factor
+        divided by the magnitude of its adiabatic loss rate:
+        
+        .. math::
+                t_{\rm ad}(x) = \frac{\gamma}{|\dot{\gamma}_{\rm ad}|}
+                = \frac{3R(x)}{2c\tan\theta_{\rm open}},
+        
+        for a conical jet expanding with half-opening angle
+        :math:`\theta_{\rm open}`, where :math:`R(x)` is the jet radius
+        and :math:`c` is the speed of light. This timescale is independent
+        of electron Lorentz factor for the assumed adiabatic loss rate.
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            One-dimensional array of adiabatic cooling times evaluated at
+            the spatial grid points, with shape ``(N_x,)`` and units of
+            seconds.    
+        """
+        t_adiabatic_loss = self.cc_solver.adiabatic_loss_time()
+        return t_adiabatic_loss
 
+    @property
+    def escape_time(self):
+        r"""Electron escape timescale along the jet.
+
+        The escape timescale is defined as the escape coefficient
+        multiplied by the light crossing time. 
+
+        .. math::
+            t_{\rm esc}(x) = \eta_{\rm esc}\frac{R(x)}{c},
+    
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            One-dimensional array of escape times evaluated at the spatial
+            grid points, with shape ``(N_x,)`` and units of seconds.
+        """
+        return self.escape_coefficient * self.R_x / c.cgs
     
     @property
     def N_e_gamma(self):
@@ -591,18 +709,25 @@ class Cone:
     def __str__(self):
         """Printable summary of the conical jet parameters."""
         resume = (
-            "* Conical emission region\n"
-            + f" - R_0 (Radius at the base of the cone): {self.R_0.cgs:.2e}\n"
-            + f" - B_0 (Magnetic field at the base of the jet): {self.B_0:.2e}\n"
-            + f" - L (Length of the Jet): {self.L.cgs:.2e}\n"
-            + f" - theta_open (Opening Angle of the Conical Jet): {self.theta_open:.2e}\n"
-            + f" - V_c (Volume of the Cone): {self.V_c.cgs:.2e}\n"
-            + f" - z (source redshift): {self.z:.2f}\n"
-            + f" - d_L (source luminosity distance): {self.d_L.cgs:.2e}\n"
-            + f" - delta_D (Cone Doppler factor): {self.delta_D:.2e}\n"
-            + f" - Gamma (Bulk Lorentz factor): {self.Gamma:.2e}\n"
-            + f" - Beta (Bulk relativistic velocity): {self.Beta:.2e}\n"
-            + f" - theta_s (jet viewing angle): {self.theta_s:.2e}\n"
-            + f" - A_equi (Equipartition parameter): {self.A_equi:.2e}\n"
+        "Conical emission region initialized\n"
+        "------------------------\n"
+        f"R_0              : {self.R_0.cgs:.2e}\n"
+        f"B_0              : {self.B_0:.2e}\n"
+        f"L                : {self.L.cgs:.2e}\n"
+        f"theta_open       : {self.theta_open.to('deg'):.2f}\n"
+        f"V_c              : {self.V_c.cgs:.2e}\n"
+        f"z                : {self.z:.3f}\n"
+        f"d_L              : {self.d_L.cgs:.2e}\n"
+        f"delta_D          : {self.delta_D:.2f}\n"
+        f"Gamma            : {self.Gamma:.2f}\n"
+        f"Beta             : {self.Beta:.4f}\n"
+        f"theta_s          : {self.theta_s:.2f}\n"
+        f"A_equi           : {self.A_equi:.2e}\n"
+        f"gamma_e_size     : {self.gamma_e_size}\n"
+        f"x_size           : {self.x_size}\n"
+        f"electron_escape  : {self.electron_escape}\n"
+        f"escape_coefficient: {self.escape_coefficient}\n"
+        f"\nElectron distribution:\n"
+        f"{self._n_e}"
         )
         return resume

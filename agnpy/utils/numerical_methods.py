@@ -28,7 +28,7 @@ def gamma_loss(gamma, B, u_ph):
 def local_synchrotron_energy_density(gamma, N_gamma, B, R, n_nu=60):
     """Single-zone, self-consistent synchrotron photon energy density
     produced by N_gamma(gamma) in a zone of field B and radius R,
-    trapped for t_esc = escape_coefficient * R / c.
+    trapped for t_stay = 2 * R / c.
     Returns U_ph in erg/cm^3 (integrated over frequency).
     """
     nu_pk_max = nu_synch_peak(B, gamma[-1])
@@ -46,88 +46,106 @@ def local_synchrotron_energy_density(gamma, N_gamma, B, R, n_nu=60):
     prefactor = (np.sqrt(3) * e.gauss**3 / mec2.cgs).cgs
     L_nu = prefactor * B_to_cgs(B) * np.trapz(N_gamma[:, None] * Z_eta, gamma, axis=0)  # (,N_nu) erg/s/Hz/cm
 
-    t_esc = 3 * R / c.cgs
-    u_nu = (L_nu * t_esc / (np.pi * R**2)).to("erg cm-3 Hz-1")
+    t_stay = 2 * R / c.cgs
+    u_nu = (L_nu * t_stay / (np.pi * R**2 )).to("erg cm-3 Hz-1")
 
     return np.trapz(u_nu, nu).to("erg cm-3")    
 
 class ChangCooperSolver:
-    def __init__(
-        self, gamma_e, x, R_0, B_0, theta_open, n_e, electron_escape, escape_coefficient
-    ):
-        """class implementing the Chang and Cooper scheme in Chaiberge and Ghisellini (1998):
-
-        Parameters
-        ----------
-        gamma_min : float
-            minimum Lorentz factor of the electorn distribution
-        gamma_max : float
-            maximum Lorentz factor of the electron distribution
-        n_gamma : int
-            number of steps in the Lorentz factor grid
-        t_max_ev : `~astropy.Units.Quantity`
-            maximum time of the evolution
-        n_t : int
-            number of time steps
-        t_max_inj : `~astropy.Units.Quantity`
-            maximum time of injection
-        t_esc : `~astropy.Units.Quantity`
-            escape time
-        injection_dict : dict
-            dictionary with injection specifications (spectrum and maximum injection time)
-        """
-        self.R_0 = R_0
-        self.B_0 = B_0
-        self.theta_open = theta_open
-        self.electron_escape = electron_escape
-        self.escape_coefficient = escape_coefficient
-        _gamma = gamma_e
+    """class implementing the Chang and Cooper scheme in Chaiberge and Ghisellini (1998):
+        """   
+    def __init__(self, emitter):
+        self.emitter = emitter
+        #Extend the gamma grid to lower values to allow cooled electrons to accumlate
+        self.gamma_min = 5 
+        _gamma = np.logspace(np.log10(self.gamma_min),np.log10(self.emitter._n_e.gamma_max), self.emitter.gamma_e_size)
         # $\gamma_{i \pm 1/2}$ in Chiaberge et al. (1998)
         self.gamma_midpts = _gamma[::2]
         # $\delta gamma_i$ in Chiaberge et al. (1998)
         self.delta_gamma = self.gamma_midpts[:-1] - self.gamma_midpts[1:]
         # $\gamma_i$ in Chiaberge et al. (1998)
         self.gamma = _gamma[1:-1:2]
-        self.n_e = n_e
-        self.x = x.to("cm")
-        self.t = x / c.cgs
+        self.t_max_ev = (self.emitter.L/c).to("s") 
+        self.t = (self.emitter.x/c.cgs).to('s')
+        self.x0 = self.emitter.x[0]
+        self.t0 = (self.x0 / c.cgs).to('s')
+        self.delta_x = np.diff(self.emitter.x) 
+        self.delta_t = self.delta_x/c.cgs
+        #We don't use injection, because we are trying to model the steady state.
+        # self.t_max_inj = t_max_inj.to("s")
+        #self.injection_dict = injection_dict
+        # choose which injection we are using
+        #if self.injection_dict["type"] == "PowerLaw":
+            #self.Q = _power_law(self.gamma, **self.injection_dict["parameters"])
 
     def run(self):
-        """solve the temporal evolution, return the result at each step"""
         solutions = dict()
-        N_prev = self.n_e
-        self.t_cool = []
+        N_prev = self.emitter._n_e(self.gamma)* np.pi* self.emitter.R_0**2
+        self.t_radiative_loss = []
         self.t_cool_synch = []
         self.t_cool_ssc = []
+        self.t_adiabatic = []
         N_e_tg_list = [N_prev]  
         for i in range(len(self.t) - 1):
-            if self.electron_escape:
-                coeff = self.escape_coefficient
+            elapsed_time = self.t[i]
+            dt = self.delta_t[i]
+            if self.emitter.electron_escape:
+                coeff = self.emitter.escape_coefficient
             else:
                 coeff = np.inf
-            elapsed_time = self.t[i]
-            dt = (self.t[i + 1] - self.t[i]).to("s")
-            R_t = self.R_0 + (self.t[i] * c.cgs) * np.tan(self.theta_open)
-            B_t = self.B_0 * (self.R_0 /R_t)
-            t_esc = coeff * R_t / c.cgs
-            escape_term = (dt / t_esc).decompose().value
-            U_ph_t = local_synchrotron_energy_density(self.gamma, N_prev, B_t, R_t)
-            loss_rate = gamma_loss(self.gamma_midpts, B_t, U_ph_t)   # full array, matches gamma_midpts
-            self.t_cool.append((- self.gamma / gamma_loss(self.gamma, B_t, U_ph_t)).to('s'))
-            self.t_cool_synch.append((- self.gamma / gamma_loss_synch(self.gamma, B_t)).to('s'))
-            self.t_cool_ssc.append((- self.gamma / gamma_loss_ssc(self.gamma, U_ph_t)).to('s'))
-            loss_term = (dt * loss_rate[1:]).decompose().value / self.delta_gamma
-            V2 = 1 + loss_term + escape_term
-            V3 = -(dt * loss_rate[1:]).decompose().value / self.delta_gamma
+            
+            self.t_esc = (
+                coeff * self.emitter.R_x[i+1] 
+                / c.cgs)
+            
+            escape_term = (
+                dt
+                / self.t_esc)
+            
+            adiabatic_loss_lower_bin = (
+                - 2 * c.cgs * np.tan(self.emitter.theta_open) 
+                * self.gamma_midpts[:-1] 
+                / (3 * self.emitter.R_x[i])
+            )
+
+            adiabatic_loss_higher_bin = (
+                - 2 * c.cgs * np.tan(self.emitter.theta_open) 
+                * self.gamma_midpts[1:] 
+                / (3 * self.emitter.R_x[i])
+            )
+
+            U_ph_t = local_synchrotron_energy_density(
+                self.gamma, N_prev, self.emitter.B_x[i], self.emitter.R_x[i])
+
+            loss_rate_lower_bin = gamma_loss(
+                self.gamma_midpts[:-1], self.emitter.B_x[i], U_ph_t
+                ) + adiabatic_loss_lower_bin
+            
+            loss_rate_higher_bin = gamma_loss(
+                self.gamma_midpts[1:], self.emitter.B_x[i], U_ph_t
+                ) + adiabatic_loss_higher_bin
+            
+            loss_rate_lower_bin[0] = 0.0 #Imposing zero flux condition on the gamma minimum
+            loss_term = (dt * loss_rate_lower_bin).decompose().value / self.delta_gamma
+            V2 = 1 + loss_term + escape_term 
+            V3 = -(dt * loss_rate_higher_bin).decompose().value / self.delta_gamma
+
             cc_matrix = diags([V2, V3], offsets=[0, 1]).toarray()
             N_next = np.linalg.solve(cc_matrix, N_prev)
+
+            self.t_adiabatic.append(((3*self.emitter.R_x[i])/(2*c.cgs*np.tan(self.emitter.theta_open))).to("s"))
+            self.t_cool_synch.append((- self.gamma / gamma_loss_synch(self.gamma, self.emitter.B_x[i])).to('s'))
+            self.t_cool_ssc.append((- self.gamma / gamma_loss_ssc(self.gamma, U_ph_t)).to('s'))
+            self.t_radiative_loss.append((-self.gamma/gamma_loss(self.gamma,self.emitter.B_x[i],U_ph_t)).to('s'))
+
             solutions[f"{elapsed_time}"] = N_next 
-            N_prev = N_next              
+            N_prev = N_next      
         for key in solutions:
             N_e_tg_list.append(solutions[key])   
         N_e_xg = u.Quantity(N_e_tg_list)     
         return N_e_xg
-    
+
+        
     def synch_cooling_time(self):
         return u.Quantity(self.t_cool_synch)
     
@@ -135,4 +153,9 @@ class ChangCooperSolver:
         return u.Quantity(self.t_cool_ssc)
 
     def cooling_time(self):
-        return u.Quantity(self.t_cool)
+        return u.Quantity(self.t_radiative_loss)
+
+    def adiabatic_loss_time(self):
+        return u.Quantity(self.t_adiabatic)
+    
+

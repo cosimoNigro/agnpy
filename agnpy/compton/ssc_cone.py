@@ -77,25 +77,24 @@ class SynchrotronSelfComptonCone(RadiativeProcess):
             ``erg cm-3``
         """
         nu_seed = self.nu_seed
-
+        delta_x = np.diff(self.cone.x)
         R_x = self.cone.R_x
         B_x_reshaped = self.cone.B_x[:, None, None]
         gamma_e_reshaped = self.cone.gamma_e[None, :, None]
         nu_seed_reshaped = nu_seed[None, None, :]
         N_e_xg_reshaped = self.cone.N_e_xg[:, :, None]
-        t_esc = 3 * R_x[:,None] / c
+        t_stay = 2 * R_x[:,None] / c
 
         epsilon_seed = nu_to_epsilon_prime(nu_seed, z=0, delta_D=1)
 
-        L_x_nu_fluid, _, _ = SynchrotronCone.evaluate_sed_flux(
+        L_x_nu_fluid, _= SynchrotronCone.evaluate_sed_flux(
             nu_seed_reshaped,
             B_x_reshaped,
-            self.cone.x,
             gamma_e_reshaped,
             N_e_xg_reshaped,
             integrator=self.integrator,
         )
-        u_nu_x = ( L_x_nu_fluid * t_esc / (np.pi * R_x[:, None]**2))
+        u_nu_x = L_x_nu_fluid * t_stay / (np.pi * R_x[:,None]**2)
 
         u_epsilon_x = (u_nu_x * mec2 / h).to("erg cm-3")
         
@@ -144,14 +143,20 @@ class SynchrotronSelfComptonCone(RadiativeProcess):
             0.75 * c * sigma_T * np.power(epsilon_s, 2) * integral_epsilon 
             )
 
-        # shape (N_x, N_nu), units erg s-1 cm-1 (emissivity per unit jet length)
-        local_ssc = u.Quantity(local_ssc)
-
-        L_ssc_fluid = self.integrator(local_ssc, self.cone.x, axis=0)
         prefactor = np.power(self.cone.delta_D, 4) / (4 * np.pi * np.power(self.cone.d_L, 2))
+        # shape (N_x, N_nu), units erg s-1 cm-1 (emissivity per unit jet length)
+        self.local_ssc = prefactor * u.Quantity(local_ssc)
+        
+        L_ssc_fluid = np.trapezoid(self.local_ssc, self.cone.x, axis=0)
 
-        self.sed = (prefactor * L_ssc_fluid).to("erg cm-2 s-1")
+        self.sed = ( L_ssc_fluid).to("erg cm-2 s-1")
         return self.sed
+    
+    def sed_flux_x(self):
+        return (
+            0.5 * (self.local_ssc[:-1,:] + self.local_ssc[1:,:])
+            * np.diff(self.cone.x)[:, None]
+            ).to("erg cm-2 s-1")
 
     def sed_luminosity(self, nu_obs):
         r"""SSC luminosity SED, :math:`\nu L_\nu` in erg s-1."""

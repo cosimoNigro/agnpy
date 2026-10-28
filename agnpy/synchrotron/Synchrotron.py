@@ -24,10 +24,10 @@ class Synchrotron(RadiativeProcess):
         self.integrator = integrator
         if isinstance(emitter, Cone):
             from .synchrotron_cone import SynchrotronCone
-            self._model = SynchrotronCone(emitter, ssa, integrator)
+            self._model = SynchrotronCone(emitter, self.ssa, integrator)
         elif isinstance(emitter, Blob):
             from .synchrotron_blob import SynchrotronBlob
-            self._model = SynchrotronBlob(emitter, ssa, integrator)
+            self._model = SynchrotronBlob(emitter, self.ssa, integrator)
 
     def __getattr__(self, name):
         return getattr(self._model, name)
