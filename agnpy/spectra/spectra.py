@@ -949,10 +949,11 @@ class SmoothBrokenPowerLaw (ParticleDistribution):
     def evaluate_SSA_integrand(gamma, k, p1, p2, gamma_b, gamma_min, gamma_max):
         r"""Analytical integrand for the synchrotron self-absorption:
         :math:`\gamma'^2 \frac{d}{d \gamma'} \left(\frac{n_e(\gamma)}{\gamma'^2}\right)`."""
-        index = np.where(gamma <= gamma_b, p1, p2)
         return np.where(
             (gamma_min <= gamma) * (gamma <= gamma_max),
-            k * -(index + 2) / gamma * (gamma / gamma_b) ** (-index),
+            k * gamma ** (-p1) * (1 + gamma / gamma_b)**(p1-p2) * (
+                -1. * (p1 + 2) / gamma + (p1 - p2) / (gamma_b + gamma)
+            ),
             0,
         )
 
