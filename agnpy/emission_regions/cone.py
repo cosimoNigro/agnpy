@@ -80,9 +80,11 @@ class Cone:
         Gamma=10,
         n_e: ParticleDistribution = PowerLaw(mass=m_e),
         gamma_e_size=200,
-        x_size=100,
+        x_min=1e12*u.cm,
+        x_resolution = 0.01,
         cosmology=None,
         electron_escape=False,
+        adiabatic_cooling = False,
         escape_coefficient=np.inf,
     ):
         if not isinstance(delta_D, numbers.Number) or delta_D <= 0:
@@ -98,8 +100,10 @@ class Cone:
         self.Gamma = Gamma
         self._n_e: ParticleDistribution = n_e
         self.gamma_e_size = gamma_e_size
-        self.x_size = x_size
+        self.x_min = x_min
+        self.x_resolution = x_resolution
         self.electron_escape = electron_escape
+        self.adiabatic_cooling = adiabatic_cooling
         if self.electron_escape:
             if escape_coefficient is None:
                 raise ValueError("escape_coefficient must be provided")
@@ -110,9 +114,9 @@ class Cone:
             self.escape_coefficient = escape_coefficient
         else:
             self.escape_coefficient = np.inf
-        self.x, self.R_x, self.B_x = self.calculate_spatial_grid_quantities()
         self.gamma_e_cc, self.gamma_e = self.define_gamma_grid()
         self.N_e_xg = self.solve_electron_evolution()
+        self.x, self.R_x, self.B_x = self.calculate_spatial_grid_quantities()
         print(self.__str__())
         
 
@@ -322,17 +326,14 @@ class Cone:
                 Magnetic field strength evaluated at each spatial grid point,
                 in gauss, with shape ``(x_size,)``.
             """
-        x_min = 1e12 * u.cm #x_min is set at ~10R_{g} for M_BH estimates of FR0 RGs.
-        x = (np.logspace((np.log10(x_min.to_value("cm"))),np.log10((self.L.to_value("cm"))),self.x_size)* u.cm)
-        R = self.R_0 + (x-x[0]) * np.tan(self.theta_open)
-        B = self.B_0 * (self.R_0 / R)
+        x, R, B = self.cc_solver.calculate_spatial_grid_quantities()
 
         return x, R, B
 
 
     def define_gamma_grid(self):
-        r"""Defines the logarithmically spaced Lorentz factor grid for the Chang & Cooper 
-        solver and the reduced electron Lorentz factor grid for post-solver quantities.
+        r"""Defines the reduced logarithmically spaced Lorentz factor grid 
+        for post Chang and Cooper solver quantities.
 
         The grid used as an inpit for the Chang and Cooper solver
         spans from :attr:`~agnpy.spectra.ParticleDistribution.gamma_min`
@@ -399,10 +400,7 @@ class Cone:
 
     def check_timescale_consistency(self):
         """Warn once if any timescale is shorter than the spatial advection time."""
-
-        warned_radiative = False
-        warned_adiabatic = False
-        warned_escape = False
+        warned_cooling = False
 
         for i in range(len(self.x) - 1):
 
@@ -410,45 +408,22 @@ class Cone:
             dt = (self.x[i + 1] - self.x[i]) / c.cgs
 
             # Radiative cooling: check every gamma at each spatial position
-            if not warned_radiative:
-                if np.any(self.radiative_cooling_time[i, :] < dt):
+            if not warned_cooling:
+                if np.any(self.cooling_timescale[i, :] < dt):
                     print(
-                        "WARNING: Radiative cooling time is shorter than the "
+                        "WARNING: Cooling time is shorter than the "
                         "spatial advection time at one or more grid points."
                     )
-                    warned_radiative = True
-
-            # Adiabatic cooling time
-            if not warned_adiabatic:
-                if self.adiabatic_loss_time[i] < dt:
-                    print(
-                        "WARNING: Adiabatic cooling time is shorter than the "
-                        "spatial advection time at one or more grid points."
-                    )
-                    warned_adiabatic = True
-
-            # Electron escape time
-            if self.electron_escape and not warned_escape:
-                t_escape = self.escape_coefficient * self.R_x[i] / c.cgs
-
-                if t_escape < dt:
-                    print(
-                        "WARNING: Escape time is shorter than the spatial "
-                        "advection time at one or more grid points."
-                    )
-                    warned_escape = True
+                    warned_cooling = True
 
             # Stop once every relevant warning has been issued
-            if (
-                warned_radiative
-                and warned_adiabatic
-                and (warned_escape or not self.electron_escape)
-            ):
+            if (warned_cooling):
                 break
-
+          
     @property
-    def radiative_cooling_time(self):
-        r"""Radiative cooling time at each :math:`(x, \gamma)` grid point.
+    def cooling_timescale(self):
+        r"""Cooling time at each :math:`(x, \gamma)` grid point 
+        taking into account, adiabatic, synchrotron and ssc cooling
 
         Computed as:
 
@@ -461,8 +436,25 @@ class Cone:
         :class:`~astropy.units.Quantity`
             2D array of cooling times, shape ``(N_x, N_gamma)``, in seconds.
         """
-        t_cool = self.cc_solver.cooling_time()
-        return t_cool
+        self.t_radiative, self.t_synch, self.t_ssc, self.t_adiabatic, self.t_cooling_loss = self.cc_solver.calculate_timescales()
+        return self.t_cooling_loss
+    
+    @property
+    def radiative_cooling_timescale(self):
+        r"""Radiative cooling (synchrotron + ssc) time at each :math:`(x, \gamma)` grid point.
+
+        Computed as:
+
+        .. math::
+            t_{\rm cool}(\gamma, x) = \frac{E}{\dot{E}_{\rm synch}}
+            = \frac{3\,m_e c}{4\,\sigma_T\,U_B(x)\,\gamma}.
+
+        Returns
+        -------
+        :class:`~astropy.units.Quantity`
+            2D array of cooling times, shape ``(N_x, N_gamma)``, in seconds.
+        """
+        return self.t_radiative
     
     @property
     def ssc_cooling_time(self):
@@ -479,8 +471,7 @@ class Cone:
         :class:`~astropy.units.Quantity`
             2D array of cooling times, shape ``(N_x, N_gamma)``, in seconds.
         """
-        t_cool_ssc = self.cc_solver.ssc_cooling_time()
-        return t_cool_ssc
+        return self.t_ssc
     
     @property
     def synch_cooling_time(self):
@@ -497,8 +488,7 @@ class Cone:
         :class:`~astropy.units.Quantity`
             2D array of cooling times, shape ``(N_x, N_gamma)``, in seconds.
         """
-        t_cool_synch = self.cc_solver.synch_cooling_time()
-        return t_cool_synch
+        return self.t_synch
         
     @property
     def adiabatic_loss_time(self):
@@ -521,8 +511,7 @@ class Cone:
             the spatial grid points, with shape ``(N_x,)`` and units of
             seconds.    
         """
-        t_adiabatic_loss = self.cc_solver.adiabatic_loss_time()
-        return t_adiabatic_loss
+        return self.t_adiabatic
 
     @property
     def escape_time(self):
@@ -724,7 +713,7 @@ class Cone:
         f"theta_s          : {self.theta_s:.2f}\n"
         f"A_equi           : {self.A_equi:.2e}\n"
         f"gamma_e_size     : {self.gamma_e_size}\n"
-        f"x_size           : {self.x_size}\n"
+        f"x_min           : {self.x_min}\n"
         f"electron_escape  : {self.electron_escape}\n"
         f"escape_coefficient: {self.escape_coefficient}\n"
         f"\nElectron distribution:\n"
