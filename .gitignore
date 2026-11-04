@@ -24,6 +24,9 @@ _build
 # pyenv
 .python-version
 
+# conda
+.conda/
+
 # pytest
 .pytest_cache/
 
