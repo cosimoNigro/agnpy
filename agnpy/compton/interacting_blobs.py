@@ -15,6 +15,7 @@ from ..radiative_process import RadiativeProcess
 
 __all__ = ["InteractingBlobs"]
 
+
 class InteractingBlobs(RadiativeProcess):
     """class for the computation of the inverse Compton radiation from the interaction of two nested blobs,
     where the target low-energy synchrotron photons are produced by one blob and up-scattered by the electrons of the other blob
@@ -33,7 +34,9 @@ class InteractingBlobs(RadiativeProcess):
         self.blob_e = blob_e
         self.blob_t = blob_t
         self.integrator = integrator
-        assert np.isclose(self.blob_e.z, self.blob_t.z, atol=0.0001, rtol=0), "The two blobs must be at the same redshift"
+        assert np.isclose(
+            self.blob_e.z, self.blob_t.z, atol=0.0001, rtol=0
+        ), "The two blobs must be at the same redshift"
 
     def relative_Gamma_factor(self):
         """Relative Gamma factor between the two blobs, Eq. 1 in [Ghisellini2005]_"""
@@ -55,7 +58,7 @@ class InteractingBlobs(RadiativeProcess):
         Parameters
         ----------
         nu : :class:`~astropy.units.Quantity`
-            array of frequencies, in Hz, to compute the sed 
+            array of frequencies, in Hz, to compute the sed
             **note** these are observed frequencies (observer frame)
 
         Returns
@@ -83,7 +86,7 @@ class InteractingBlobs(RadiativeProcess):
         # transformation from blob_t to blob_e frame
         Gamma_r = self.relative_Gamma_factor()
         Beta_r = self.relative_Beta_factor()
-        delta_D_r = 1. / (Gamma_r * (1 - Beta_r))
+        delta_D_r = 1.0 / (Gamma_r * (1 - Beta_r))
         epsilon_s /= delta_D_r
 
         # compute the SED of the inverse Compton radiation by the electrons of blob_e
