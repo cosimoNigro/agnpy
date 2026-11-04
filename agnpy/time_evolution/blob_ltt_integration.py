@@ -132,6 +132,7 @@ from typing import Sequence, Tuple
 import numpy as np
 import astropy.units as u
 from astropy.constants import c as c_light
+from astropy.constants import h
 from scipy.interpolate import interp1d
 
 from agnpy import Blob
@@ -484,10 +485,11 @@ def calc_seds_over_time(
     kernel_points_size: int = 50,
     sed_flux_fn=None,
     assume_steady_before_start: bool = False,
+    propagation_effect = None,
     **time_evolution_kwargs,
 ) -> list[u.Quantity]:
     """
-   Utility function to run TimeEvolution starting from time = 0 over ``times`` and return the light-travel-time smeared SED at each one.
+    Utility function to run TimeEvolution starting from time = 0 over ``times`` and return the light-travel-time smeared SED at each one.
 
     Parameters
     ----------
@@ -511,6 +513,8 @@ def calc_seds_over_time(
         Not available together with ``expansion``: a state held steady while the radius keeps
         growing contradicts the expansion model, so an expanding blob whose first window reaches
         before blob-frame time 0 always raises, whatever this is set to.
+    propagation_effect :
+        Optionnal object describing an energy dependent time delay during the propagation.
     **time_evolution_kwargs
         Forwarded to every internal :class:`~agnpy.time_evolution.TimeEvolution` call, e.g.
         ``energy_change_functions``, ``max_energy_change_per_interval``, ``method``. Must not
@@ -606,5 +610,27 @@ def calc_seds_over_time(
         # finally, calculate the actual SED and add it to the final list
         sed = window.calc_sed(snapshots, nu_obs)
         seds.append(sed)
+    
+    # add any propagation effect if specified
+    def interpolate_seds(t, nu_index):
+        """Interpolates SEDs in between time frames.
+        """
+        if (t < times[0]):
+            return 0. # Sets the SEDs for all times before the "start" equal to zero
+        if (t >= times[-1]):
+            return seds[-1][nu_index] # Sets the SEDs for all times after the last simulated value equals to the last simulated SED
+        time_index = np.searchsorted(times, t, side='right')
+        slope = (seds[time_index][nu_index]-seds[time_index-1][nu_index]) / (times[time_index] - times[time_index-1])
+        return seds[time_index-1][nu_index] + slope * (t-times[time_index-1])
 
-    return seds
+    if propagation_effect:
+        seds_postprop = []
+        for t_i, t in enumerate(times):
+            sed = np.zeros(len(nu_obs))
+            for nu_index, nu in enumerate(nu_obs):
+                t_liv = t + propagation_effect.evaluate(nu*h.to("TeV s"))
+                sed[nu_index] = interpolate_seds(t_liv, nu_index).value
+            seds_postprop.append(sed*seds[0].unit)
+        return seds_postprop
+    else:
+        return seds
