@@ -8,7 +8,7 @@ agnpy.spectra module
 --------------------
 
 .. automodule:: agnpy.spectra
-   :members: ParticleDistribution, PowerLaw, BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw, InterpolatedDistribution
+   :members: ParticleDistribution, PowerLaw, BrokenPowerLaw, LogParabola, ExpCutoffPowerLaw, InterpolatedDistribution, SmoothBrokenPowerLaw
    :undoc-members:
    :show-inheritance:
 
@@ -40,7 +40,7 @@ agnpy.compton module
 --------------------
 
 .. automodule:: agnpy.compton
-   :members: SynchrotronSelfCompton, ExternalCompton
+   :members: SynchrotronSelfCompton, ExternalCompton, InteractingBlobs
    :undoc-members:
    :show-inheritance:
 

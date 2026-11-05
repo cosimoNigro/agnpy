@@ -1,0 +1,34 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: source, datatype: string}
+# - {name: component, datatype: string}
+# - {name: z, datatype: float64, description: Redshift}
+# - {name: gamma_min, datatype: float64, description: Minimum electron Lorentz factor}
+# - {name: gamma_b, datatype: float64, description: Break electron Lorentz factor}
+# - {name: gamma_max, datatype: float64, description: Maximum electron Lorentz factor}
+# - {name: p1, datatype: float64, description: First electron spectral index}
+# - {name: p2, datatype: float64, description: Second electron spectral index}
+# - {name: B, unit: G, datatype: float64}
+# - {name: K, unit: 1 / cm3, datatype: float64}
+# - {name: R_b, unit: cm, datatype: float64}
+# - {name: delta_D, datatype: float64, description: Doppler factor}
+# - {name: Gamma, datatype: float64, description: Bulk Lorentz factor}
+# schema: astropy-2.0
+source component z gamma_min gamma_b gamma_max p1 p2 B K R_b delta_D Gamma
+"VER J0521+211" blob 0.18 1000.0 30000.0 400000.0 1.95 3.1 0.1 31500.0 1.3e+16 12.0 12.0
+"VER J0521+211" core 0.18 350.0 1100.0 16000.0 1.64 2.77 0.1 12.0 3.7e+17 11.0 11.0
+"PKS 1424+240 (2014)" blob 0.604 9000.0 32000.0 300000.0 1.98 3.35 0.1 17000.0 1.9e+16 20.0 20.0
+"PKS 1424+240 (2014)" core 0.604 350.0 3000.0 28000.000000000004 1.69 3.0 0.1 7.0 1.02e+18 10.0 10.0
+"PKS 1424+240 (2015)" blob 0.604 6000.0 45000.0 330000.0 1.98 3.85 0.1 32000.0 1.31e+16 18.0 18.0
+"PKS 1424+240 (2015)" core 0.604 330.0 3000.0 30000.0 1.68 3.0 0.1 7.0 1.02e+18 10.0 10.0
+"1ES 1727+502" blob 0.055 5000.0 50000.0 1300000.0 1.95 2.45 0.1 7000.0 7100000000000000.0 11.0 11.0
+"1ES 1727+502" core 0.055 160.0 3000.0 80000.0 1.95 2.7 0.1 150.0 1.54e+17 4.0 4.0
+"1ES 1959+650 (low state)" blob 0.047 3000.0 70000.0 650000.0 1.97 3.35 0.2 900.0 7100000000000000.0 27.0 27.0
+"1ES 1959+650 (low state)" core 0.047 290.0 2000.0 45000.0 1.68 2.9 0.2 80.0 1.26e+17 4.0 4.0
+"1ES 1959+650 (intermediate state)" blob 0.047 3800.0 95000.0 654000.0 1.98 2.5 0.1 7500.0 5500000000000000.0 23.0 23.0
+"1ES 1959+650 (intermediate state)" core 0.047 330.0 2600.0 56999.99999999999 1.67 2.85 0.1 130.0 1.26e+17 4.0 4.0
+"1ES 1959+650 (high state)" blob 0.047 7000.0 60000.0 1300000.0 1.95 2.72 0.1 10500.0 4300000000000000.0 27.0 27.0
+"1ES 1959+650 (high state)" core 0.047 330.0 3000.0 35000.0 1.67 3.0 0.1 130.0 1.26e+17 4.0 4.0
+"1ES 2344+514" blob 0.044 5800.0 54000.0 2800000.0 2.0 2.65 0.1 19000.0 1.07e+16 6.0 6.0
+"1ES 2344+514" core 0.044 260.0 2000.0 130000.0 1.8 2.95 0.1 60.0 1.6e+17 4.0 4.0

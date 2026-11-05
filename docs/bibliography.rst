@@ -94,3 +94,20 @@ Bibliography
    Monthly Notices of the Royal Astronomical Society, Volume 363, Issue 3, pp. 954-966. (2005)
    <https://ui.adsabs.harvard.edu/abs/2005MNRAS.363..954M/abstract>`_
 
+..  [Ghisellini2005]
+   `Ghisellini, G.; Tavecchio F.; Chiaberge, M.
+   "Structured jets in TeV BL Lac objects and radiogalaxies. Implications for the observed properties".
+   Astronomy and Astrophysics, Volume 432, Issue 2, pp. 401-410 (2005).
+   <https://ui.adsabs.harvard.edu/abs/2005A%26A...432..401G/abstract>`_
+
+..  [Tavecchio2011]
+   `Tavecchio, F. et al.
+   "On the origin of the γ-ray emission from the flaring blazar PKS 1222+216".
+   Astronomy and Astrophysics, Volume 534, A86 (2011).
+   <https://ui.adsabs.harvard.edu/abs/2011A%26A...534A..86T/abstract>`_
+
+..  [MAGIC2020]
+   `MAGIC Collaboration et al.
+   "Testing two-component models on very high-energy gamma-ray-emitting BL Lac objects".
+   Astronomy and Astrophysics, Volume 640, A132 (2020).
+   <https://ui.adsabs.harvard.edu/abs/2020A%26A...640A.132M/abstract>`_
