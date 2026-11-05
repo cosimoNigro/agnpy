@@ -34,7 +34,9 @@ figures_dir_ec_disk = clean_and_make_dir(
 figures_dir_ec_blr = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/ec_blr")
 figures_dir_ec_dt = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/ec_dt")
 figures_dir_ec_cmb = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/ec_cmb")
-figures_dir_interacting_blobs = clean_and_make_dir(agnpy_dir, "crosschecks/figures/compton/interacting_blobs")
+figures_dir_interacting_blobs = clean_and_make_dir(
+    agnpy_dir, "crosschecks/figures/compton/interacting_blobs"
+)
 
 # parameters of the Blob and EED used in Figure 7.4 of Dermer 2009
 # and for the EC scenario in Finke 2016
@@ -412,11 +414,25 @@ class TestInteractingBlobs:
     # tests for the interacting blobs
     def test_interacting_blobs_integration_methods(self):
         """Test the interacting blobs for different integration methods."""
-        blob_e = Blob(R_b=1e15 * u.cm, z=0.1, delta_D=20, B=0.1 * u.G, n_e=PowerLaw(k=1e4 * u.Unit("cm-3"), p=2.0, gamma_min=1e2, gamma_max=1e6))
-        blob_t = Blob(R_b=1e17 * u.cm, z=0.1, delta_D=4, B=0.05 * u.G, n_e=PowerLaw(k=1e2 * u.Unit("cm-3"), p=2.2, gamma_min=1e1, gamma_max=1e5))
+        blob_e = Blob(
+            R_b=1e15 * u.cm,
+            z=0.1,
+            delta_D=20,
+            B=0.1 * u.G,
+            n_e=PowerLaw(k=1e4 * u.Unit("cm-3"), p=2.0, gamma_min=1e2, gamma_max=1e6),
+        )
+        blob_t = Blob(
+            R_b=1e17 * u.cm,
+            z=0.1,
+            delta_D=4,
+            B=0.05 * u.G,
+            n_e=PowerLaw(k=1e2 * u.Unit("cm-3"), p=2.2, gamma_min=1e1, gamma_max=1e5),
+        )
 
         interacting_blobs_trapz = InteractingBlobs(blob_e, blob_t, integrator=np.trapz)
-        interacting_blobs_trapz_loglog = InteractingBlobs(blob_e, blob_t, integrator=trapz_loglog)
+        interacting_blobs_trapz_loglog = InteractingBlobs(
+            blob_e, blob_t, integrator=trapz_loglog
+        )
 
         nu = np.logspace(15, 28) * u.Hz
         sed_interacting_blobs_trapz = interacting_blobs_trapz.sed_flux(nu)
@@ -434,12 +450,24 @@ class TestInteractingBlobs:
         )
 
         # requires that the SED points deviate less than 20%
-        assert check_deviation(nu, sed_interacting_blobs_trapz_loglog, sed_interacting_blobs_trapz, 0.2, x_range=[1e15, 1e26] * u.Hz)
+        assert check_deviation(
+            nu,
+            sed_interacting_blobs_trapz_loglog,
+            sed_interacting_blobs_trapz,
+            0.2,
+            x_range=[1e15, 1e26] * u.Hz,
+        )
 
     def test_interacting_blobs(self):
         """Test the interacting blobs for unique blob."""
-        blob = Blob(R_b=1e15 * u.cm, z=0.1, delta_D=20, B=0.1 * u.G, n_e=PowerLaw(k=1e4 * u.Unit("cm-3"), p=2.0, gamma_min=1e2, gamma_max=1e6))
-        
+        blob = Blob(
+            R_b=1e15 * u.cm,
+            z=0.1,
+            delta_D=20,
+            B=0.1 * u.G,
+            n_e=PowerLaw(k=1e4 * u.Unit("cm-3"), p=2.0, gamma_min=1e2, gamma_max=1e6),
+        )
+
         interacting_blobs = InteractingBlobs(blob, blob)
         ssc = SynchrotronSelfCompton(blob)
         nu = np.logspace(15, 28) * u.Hz
@@ -458,4 +486,6 @@ class TestInteractingBlobs:
         )
 
         # requires that the SED points deviate less than 20%
-        assert check_deviation(nu, sed_interacting_blobs, sed_ssc, 0.2, x_range=[1e15, 1e27] * u.Hz)
+        assert check_deviation(
+            nu, sed_interacting_blobs, sed_ssc, 0.2, x_range=[1e15, 1e27] * u.Hz
+        )

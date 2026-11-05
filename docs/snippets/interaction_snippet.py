@@ -16,11 +16,18 @@ p2_e = 3.0
 gamma_b_e = 1e4
 gamma_min_e = 1e2
 gamma_max_e = 1e6
-n_blob_e = BrokenPowerLaw(k=k_e, p1=p1_e, p2=p2_e, gamma_b = gamma_b_e, gamma_min=gamma_min_e, gamma_max=gamma_max_e)
+n_blob_e = BrokenPowerLaw(
+    k=k_e,
+    p1=p1_e,
+    p2=p2_e,
+    gamma_b=gamma_b_e,
+    gamma_min=gamma_min_e,
+    gamma_max=gamma_max_e,
+)
 delta_D_e = 20
 R_b_e = 1e15 * u.cm
 B_e = 0.1 * u.G
-blob_e = Blob(R_b=R_b_e, z=z, delta_D=delta_D_e, B=B_e, n_e = n_blob_e)
+blob_e = Blob(R_b=R_b_e, z=z, delta_D=delta_D_e, B=B_e, n_e=n_blob_e)
 
 # Define the second emission region and its electron distribution
 # The synchrotron photons produced in this blob will be used as target for the inverse Compton scattering of the electrons from the first blob
@@ -35,7 +42,7 @@ B_t = 0.05 * u.G
 blob_t = Blob(R_b=R_b_t, z=z, delta_D=delta_D_t, B=B_t, n_e=n_blob_t)
 
 # Declare the interacting blobs instance
-interacting_blobs = InteractingBlobs(blob_e = blob_e, blob_t = blob_t)
+interacting_blobs = InteractingBlobs(blob_e=blob_e, blob_t=blob_t)
 
 # Compute the SED over an array of frequencies
 nu = np.logspace(15, 28) * u.Hz
